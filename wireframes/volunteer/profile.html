@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Volunteer Profile - Siembra NC VMS</title>
+  <link rel="stylesheet" href="../css/wireframe.css">
+</head>
+<body>
+  <div class="wireframe-container">
+    <!-- Header -->
+    <div class="app-header">
+      <div class="app-title">Volunteer Profile</div>
+      <div class="header-actions">
+        <button class="btn btn-outline" style="color: white; border-color: white;">Edit</button>
+        <button class="btn btn-outline" style="color: white; border-color: white;">Message</button>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div style="padding: 24px; max-width: 900px; margin: 0 auto;">
+      <!-- Profile Header -->
+      <div class="flex items-center gap-2 mb-3">
+        <div style="width: 80px; height: 80px; background: var(--primary-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 32px; font-weight: bold;">
+          MR
+        </div>
+        <div>
+          <h2 style="margin-bottom: 4px;">Maria Rodriguez</h2>
+          <div class="text-muted">maria.rodriguez@email.com | (919) 555-0123</div>
+          <div class="mt-1">
+            <span class="status-badge status-active">✓ Active Volunteer</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Qualifications & Training -->
+      <div class="card mb-3">
+        <div class="card-header">QUALIFICATIONS & TRAINING</div>
+        <div class="card-content">
+          <div class="mb-2">
+            <span class="status-badge status-completed">✓</span>
+            <strong>Initial Orientation</strong>
+            <span class="text-muted"> - Completed: Oct 15, 2025</span>
+          </div>
+          <div class="mb-2">
+            <span class="status-badge status-completed">✓</span>
+            <strong>Safety Protocols</strong>
+            <span class="text-muted"> - Completed: Oct 20, 2025</span>
+          </div>
+          <div class="mb-2">
+            <span class="status-badge status-completed">✓</span>
+            <strong>Communication Training</strong>
+            <span class="text-muted"> - Completed: Oct 22, 2025</span>
+          </div>
+          <div class="mb-2">
+            <span class="status-badge status-completed">✓</span>
+            <strong>Team Lead Certification</strong>
+            <span class="text-muted"> - Completed: Nov 1, 2025</span>
+          </div>
+          <div class="mb-3">
+            <span class="status-badge status-pending">⚠</span>
+            <strong>Advanced Response Training</strong>
+            <span class="text-muted"> - Scheduled: Dec 5, 2025</span>
+          </div>
+
+          <p><strong>Qualified Roles:</strong> Monitor, Team Lead</p>
+        </div>
+      </div>
+
+      <!-- Availability -->
+      <div class="card mb-3">
+        <div class="card-header">AVAILABILITY</div>
+        <div class="card-content">
+          <table class="data-table">
+            <tr>
+              <td><strong>Monday:</strong></td>
+              <td>Not Available</td>
+            </tr>
+            <tr>
+              <td><strong>Tuesday:</strong></td>
+              <td>2pm - 8pm</td>
+            </tr>
+            <tr>
+              <td><strong>Wednesday:</strong></td>
+              <td>2pm - 8pm</td>
+            </tr>
+            <tr>
+              <td><strong>Thursday:</strong></td>
+              <td>Not Available</td>
+            </tr>
+            <tr>
+              <td><strong>Friday:</strong></td>
+              <td>4pm - 10pm</td>
+            </tr>
+            <tr>
+              <td><strong>Saturday:</strong></td>
+              <td>Anytime</td>
+            </tr>
+            <tr>
+              <td><strong>Sunday:</strong></td>
+              <td>10am - 6pm</td>
+            </tr>
+          </table>
+
+          <div class="mt-2">
+            <p><strong>Emergency Contact Available:</strong> Yes</p>
+            <button class="btn btn-outline mt-2">Update Availability</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Activity Summary -->
+      <div class="card mb-3">
+        <div class="card-header">ACTIVITY SUMMARY</div>
+        <div class="card-content">
+          <div class="dashboard-grid">
+            <div>
+              <p class="mb-1"><strong>Member Since:</strong> October 2025</p>
+              <p class="mb-1"><strong>Total Shifts:</strong> 12</p>
+            </div>
+            <div>
+              <p class="mb-1"><strong>Hours Volunteered:</strong> 48</p>
+              <p class="mb-1"><strong>Last Active:</strong> Nov 20, 2025</p>
+            </div>
+          </div>
+          <div class="mt-2">
+            <strong>Reliability Score:</strong> 98% <span class="text-muted">(attended 12 of 12 shifts)</span>
+          </div>
+          <button class="btn btn-outline mt-2">View Full Activity Log</button>
+        </div>
+      </div>
+
+      <!-- Notes (Admin Only) -->
+      <div class="card">
+        <div class="card-header">NOTES (Admin Only)</div>
+        <div class="card-content">
+          <p class="text-muted mb-2">
+            Excellent communicator. Strong community ties in downtown area.
+            Bilingual (Spanish/English). Recommended for team lead positions.
+          </p>
+          <button class="btn btn-outline">Add Note</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align: center; margin-top: 20px;">
+    <a href="../index.html" style="color: var(--primary-color);">← Back to Index</a>
+  </div>
+</body>
+</html>

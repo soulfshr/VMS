@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Volunteer Dashboard - Siembra NC VMS</title>
+  <link rel="stylesheet" href="../css/wireframe.css">
+</head>
+<body>
+  <div class="wireframe-container">
+    <!-- Header -->
+    <div class="app-header">
+      <div class="app-title">SIEMBRA NC VMS</div>
+      <div class="header-actions">
+        <div class="notification-badge">
+          🔔
+          <span class="badge-count">2</span>
+        </div>
+        <div>👤</div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="dashboard-grid" style="padding: 24px;">
+      <!-- Welcome Section -->
+      <div style="grid-column: 1 / -1;">
+        <h2 style="margin-bottom: 24px;">Welcome back, Maria Rodriguez</h2>
+      </div>
+
+      <!-- My Profile Card -->
+      <div class="card">
+        <div class="card-header">MY PROFILE</div>
+        <div class="card-content">
+          <p class="mb-2">
+            <strong>Status:</strong> <span class="status-badge status-active">✓ Active</span>
+          </p>
+          <p class="mb-2"><strong>Trained:</strong> Yes</p>
+          <p class="mb-2"><strong>Roles:</strong></p>
+          <ul style="margin-left: 20px; margin-bottom: 16px;">
+            <li>Monitor</li>
+            <li>Team Lead</li>
+          </ul>
+          <button class="btn btn-outline">Edit Profile</button>
+        </div>
+      </div>
+
+      <!-- Upcoming Shifts Card -->
+      <div class="card" style="grid-column: span 2;">
+        <div class="card-header">UPCOMING SHIFTS</div>
+        <div class="card-content">
+          <div class="list-item mb-2">
+            <div class="item-title">📅 Nov 25, 2-6pm</div>
+            <div class="item-meta">
+              <span>Location: Downtown Zone</span>
+              <span>Role: Monitor</span>
+            </div>
+            <button class="btn btn-primary btn-sm mt-1">View Details</button>
+          </div>
+
+          <div class="list-item mb-2">
+            <div class="item-title">📅 Nov 27, 10am-2pm</div>
+            <div class="item-meta">
+              <span>Location: North Zone</span>
+              <span>Role: Team Lead</span>
+            </div>
+            <button class="btn btn-primary btn-sm mt-1">View Details</button>
+          </div>
+
+          <button class="btn btn-outline mt-2">View All Shifts</button>
+        </div>
+      </div>
+
+      <!-- Available Shifts Card -->
+      <div class="card">
+        <div class="card-header">AVAILABLE SHIFTS</div>
+        <div class="card-content">
+          <div class="alert alert-warning">
+            🔔 <strong>3 New Shifts</strong><br>
+            Need Volunteers
+          </div>
+          <button class="btn btn-primary">Browse & Sign Up</button>
+        </div>
+      </div>
+
+      <!-- Training Status Card -->
+      <div class="card" style="grid-column: span 2;">
+        <div class="card-header">TRAINING STATUS</div>
+        <div class="card-content">
+          <div class="mb-2">
+            <span class="status-badge status-completed">✓</span>
+            <strong>Initial Training</strong> - Completed: Oct 15, 2025
+          </div>
+          <div class="mb-2">
+            <span class="status-badge status-completed">✓</span>
+            <strong>Safety Protocol</strong> - Completed: Oct 20, 2025
+          </div>
+          <div class="mb-2">
+            <span class="status-badge status-pending">⚠</span>
+            <strong>Advanced Response</strong> - Scheduled: Dec 5, 2025
+          </div>
+          <button class="btn btn-outline mt-2">View Training Calendar</button>
+        </div>
+      </div>
+
+      <!-- Quick Actions Card -->
+      <div class="card">
+        <div class="card-header">QUICK ACTIONS</div>
+        <div class="card-content">
+          <button class="btn btn-outline mb-2" style="width: 100%;">📝 Update Availability</button>
+          <button class="btn btn-outline mb-2" style="width: 100%;">📧 Contact Coordinator</button>
+          <button class="btn btn-outline" style="width: 100%;">📚 Training Resources</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align: center; margin-top: 20px;">
+    <a href="../index.html" style="color: var(--primary-color);">← Back to Index</a>
+  </div>
+</body>
+</html>

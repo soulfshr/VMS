@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Coordinator Dashboard - Siembra NC VMS</title>
+  <link rel="stylesheet" href="../css/wireframe.css">
+</head>
+<body>
+  <div class="wireframe-container">
+    <!-- Header -->
+    <div class="app-header">
+      <div class="app-title">SIEMBRA NC VMS - COORDINATOR VIEW</div>
+      <div class="header-actions">
+        <div class="notification-badge">🔔</div>
+        <div>👤</div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div style="padding: 24px;">
+      <h2 style="margin-bottom: 24px;">Shift Coordination Dashboard</h2>
+
+      <!-- Quick Stats -->
+      <div class="stats-grid mb-3">
+        <div class="stat-card">
+          <div class="stat-value">47</div>
+          <div class="stat-label">Active Volunteers</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">12</div>
+          <div class="stat-label">Upcoming Shifts</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">8</div>
+          <div class="stat-label">Need Response</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value priority-high">3</div>
+          <div class="stat-label">Unfilled Critical</div>
+        </div>
+      </div>
+
+      <!-- Upcoming Shifts Section -->
+      <div class="card mb-3">
+        <div class="card-header">
+          UPCOMING SHIFTS
+          <button class="btn btn-primary">+ Create New Shift</button>
+        </div>
+        <div class="card-content">
+          <!-- Shift 1 -->
+          <div class="list-item mb-2">
+            <div class="item-title">Nov 24, 2025 | 2-6pm | Downtown Zone</div>
+            <div class="item-meta">
+              <span>Monitor Role</span>
+              <span>4/6 volunteers confirmed</span>
+              <span class="status-badge status-pending">⚠ Needs 2 more</span>
+            </div>
+            <div class="btn-group">
+              <button class="btn btn-outline">View</button>
+              <button class="btn btn-outline">Edit</button>
+              <button class="btn btn-primary">Send Invite</button>
+            </div>
+          </div>
+
+          <!-- Shift 2 -->
+          <div class="list-item mb-2">
+            <div class="item-title">Nov 25, 2025 | 10am-2pm | North Zone</div>
+            <div class="item-meta">
+              <span>Team Lead Role</span>
+              <span>2/2 volunteers confirmed</span>
+              <span class="status-badge status-completed">✓ Fully Staffed</span>
+            </div>
+            <div class="btn-group">
+              <button class="btn btn-outline">View</button>
+              <button class="btn btn-outline">Edit</button>
+            </div>
+          </div>
+
+          <div class="btn-group mt-2">
+            <button class="btn btn-outline">View All Shifts</button>
+            <button class="btn btn-outline">Calendar View</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Row -->
+      <div class="dashboard-grid">
+        <!-- Volunteer Requests -->
+        <div class="card">
+          <div class="card-header">VOLUNTEER REQUESTS</div>
+          <div class="card-content">
+            <ul style="list-style: none; padding: 0;">
+              <li class="mb-2">• 2 Availability Updates</li>
+              <li class="mb-2">• 1 Training Completion</li>
+            </ul>
+            <button class="btn btn-primary mt-2">Review Requests</button>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card" style="grid-column: span 2;">
+          <div class="card-header">QUICK ACTIONS</div>
+          <div class="card-content">
+            <div class="btn-group">
+              <button class="btn btn-outline">📋 View Volunteer Directory</button>
+              <button class="btn btn-outline">📊 Generate Report</button>
+              <button class="btn btn-outline">📧 Send Announcement</button>
+              <button class="btn btn-outline">📅 Shift Calendar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align: center; margin-top: 20px;">
+    <a href="../index.html" style="color: var(--primary-color);">← Back to Index</a>
+  </div>
+</body>
+</html>

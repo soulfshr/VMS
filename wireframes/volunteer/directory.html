@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Volunteer Directory - Siembra NC VMS</title>
+  <link rel="stylesheet" href="../css/wireframe.css">
+</head>
+<body>
+  <div class="wireframe-container">
+    <!-- Header -->
+    <div class="app-header">
+      <div class="app-title">Volunteer Directory</div>
+      <div class="header-actions">
+        <button class="btn btn-primary">+ Add Volunteer</button>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div style="padding: 24px;">
+      <!-- Search and Filters -->
+      <div class="card mb-3">
+        <div class="card-content">
+          <div class="flex gap-2 items-center mb-2">
+            <input type="text" class="form-input" placeholder="Search volunteers..." style="flex: 1;">
+            <button class="btn btn-primary">🔍 Search</button>
+          </div>
+
+          <div class="flex gap-2">
+            <select class="form-select">
+              <option>All Roles</option>
+              <option>Monitor</option>
+              <option>Team Lead</option>
+              <option>Dispatcher</option>
+            </select>
+            <select class="form-select">
+              <option>All Status</option>
+              <option>Active</option>
+              <option>Inactive</option>
+              <option>Training</option>
+            </select>
+            <select class="form-select">
+              <option>All Zones</option>
+              <option>Downtown</option>
+              <option>North Zone</option>
+              <option>East Zone</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Results Header -->
+      <div class="flex justify-between items-center mb-2">
+        <div><strong>Showing 47 volunteers</strong></div>
+        <div class="btn-group">
+          <button class="btn btn-outline">List View</button>
+          <button class="btn btn-outline">Grid View</button>
+        </div>
+      </div>
+
+      <!-- Volunteer List -->
+      <div class="card">
+        <div class="card-content">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Role(s)</th>
+                <th>Status</th>
+                <th>Last Active</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Rodriguez, Maria</strong></td>
+                <td>Monitor, Team Lead</td>
+                <td><span class="status-badge status-active">✓ Active</span></td>
+                <td>Nov 20, 2025</td>
+                <td>
+                  <button class="btn btn-outline btn-sm">View</button>
+                  <button class="btn btn-outline btn-sm">Edit</button>
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Kim, James</strong></td>
+                <td>Monitor</td>
+                <td><span class="status-badge status-active">✓ Active</span></td>
+                <td>Nov 21, 2025</td>
+                <td>
+                  <button class="btn btn-outline btn-sm">View</button>
+                  <button class="btn btn-outline btn-sm">Edit</button>
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Chen, Patricia</strong></td>
+                <td>Team Lead, Dispatcher</td>
+                <td><span class="status-badge status-active">✓ Active</span></td>
+                <td>Nov 19, 2025</td>
+                <td>
+                  <button class="btn btn-outline btn-sm">View</button>
+                  <button class="btn btn-outline btn-sm">Edit</button>
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Williams, David</strong></td>
+                <td>Monitor</td>
+                <td><span class="status-badge status-pending">⚠ Training</span></td>
+                <td>Oct 30, 2025</td>
+                <td>
+                  <button class="btn btn-outline btn-sm">View</button>
+                  <button class="btn btn-outline btn-sm">Edit</button>
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Lopez, Ana</strong></td>
+                <td>Monitor, Team Lead</td>
+                <td><span class="status-badge status-active">✓ Active</span></td>
+                <td>Nov 22, 2025</td>
+                <td>
+                  <button class="btn btn-outline btn-sm">View</button>
+                  <button class="btn btn-outline btn-sm">Edit</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Pagination -->
+          <div class="flex justify-between items-center mt-3">
+            <button class="btn btn-outline">Export to CSV</button>
+            <div class="flex gap-1 items-center">
+              <span class="text-muted">Page 1 of 5</span>
+              <button class="btn btn-outline btn-sm">&lt;</button>
+              <button class="btn btn-primary btn-sm">1</button>
+              <button class="btn btn-outline btn-sm">2</button>
+              <button class="btn btn-outline btn-sm">&gt;</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bulk Actions -->
+      <div class="card mt-3">
+        <div class="card-header">BULK ACTIONS</div>
+        <div class="card-content">
+          <div class="form-checkbox mb-2">
+            <input type="checkbox" id="select-all">
+            <label for="select-all">Select All Visible</label>
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-outline">Send Message</button>
+            <button class="btn btn-outline">Export Selected</button>
+            <button class="btn btn-outline">Update Status</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align: center; margin-top: 20px;">
+    <a href="../index.html" style="color: var(--primary-color);">← Back to Index</a>
+  </div>
+</body>
+</html>

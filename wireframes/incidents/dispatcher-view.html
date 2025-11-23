@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Incident Detail - Siembra NC VMS</title>
+  <link rel="stylesheet" href="../css/wireframe.css">
+</head>
+<body>
+  <div class="wireframe-container">
+    <!-- Header -->
+    <div class="app-header">
+      <div class="app-title">Incident #2025-1122-001</div>
+      <div class="header-actions">
+        <button class="btn btn-outline" style="color: white; border-color: white;">Print</button>
+        <button style="background: transparent; border: none; color: white; font-size: 20px; cursor: pointer;">✕</button>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div style="padding: 24px; max-width: 900px; margin: 0 auto;">
+      <!-- Status Header -->
+      <div class="flex justify-between items-center mb-3">
+        <div>
+          <h3>Status: <span class="status-badge status-urgent">🔴 PENDING DISPATCH</span></h3>
+        </div>
+        <div>
+          <strong class="priority-high">Priority: HIGH</strong>
+        </div>
+      </div>
+
+      <!-- Incident Overview -->
+      <div class="card mb-3">
+        <div class="card-header">INCIDENT OVERVIEW</div>
+        <div class="card-content">
+          <p class="mb-1">
+            <strong>Reported:</strong> Nov 22, 2025 at 2:35 PM
+            <span class="text-muted">(15 minutes ago)</span>
+          </p>
+          <p class="mb-1">
+            <strong>Location:</strong> 5th Street & Main Ave, Downtown Zone
+          </p>
+          <p class="mb-2">
+            <strong>Type:</strong> Suspected Law Enforcement Activity
+          </p>
+
+          <div class="mb-2" style="padding: 12px; background: var(--bg-light); border-radius: 6px;">
+            <strong>Reporter:</strong> Maria Rodriguez<br>
+            <span class="text-muted">maria.rodriguez@email.com | (919) 555-0123</span>
+            <div class="btn-group mt-1">
+              <button class="btn btn-outline btn-sm">📞 Call Reporter</button>
+              <button class="btn btn-outline btn-sm">📧 Email</button>
+            </div>
+          </div>
+
+          <button class="btn btn-outline">📍 View on Map</button>
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div class="card mb-3">
+        <div class="card-header">DESCRIPTION</div>
+        <div class="card-content">
+          <p class="mb-2">
+            Multiple unmarked vehicles observed near community center. Approximately 2-3 dark SUVs with tinted windows.
+            Several individuals in plain clothes but with visible equipment. Activity ongoing as of report time.
+          </p>
+
+          <div class="mb-1"><strong>Vehicles:</strong> 2-3 dark SUVs, unmarked</div>
+          <div class="mb-1"><strong>Individuals:</strong> 4-6 persons</div>
+          <div><strong>Details:</strong> Plain clothes, visible radio equipment</div>
+        </div>
+      </div>
+
+      <!-- Dispatch Assignment -->
+      <div class="card mb-3" style="border: 2px solid var(--danger-color);">
+        <div class="card-header" style="background: var(--danger-color); color: white;">
+          DISPATCH ASSIGNMENT
+        </div>
+        <div class="card-content">
+          <div class="form-group">
+            <label class="form-label required">Assign Response Team</label>
+
+            <div class="form-radio mb-2" style="padding: 12px; background: var(--bg-light); border-radius: 6px;">
+              <input type="radio" name="team" id="alpha" value="alpha" checked>
+              <label for="alpha">
+                <strong>Unit Alpha (2) - ✓ Available Now</strong><br>
+                <span class="text-small text-muted">Maria Rodriguez, James Kim</span><br>
+                <span class="text-small text-muted">Current location: Downtown Zone | ETA: 5 minutes</span>
+              </label>
+            </div>
+
+            <div class="form-radio mb-2" style="padding: 12px; background: var(--bg-light); border-radius: 6px;">
+              <input type="radio" name="team" id="bravo" value="bravo">
+              <label for="bravo">
+                <strong>Unit Bravo (2) - Available 4:00 PM</strong><br>
+                <span class="text-small text-muted">Ana Lopez, David Williams</span><br>
+                <span class="text-small text-muted">Current location: North Zone | ETA: 15 minutes</span>
+              </label>
+            </div>
+
+            <div class="form-radio">
+              <input type="radio" name="team" id="custom" value="custom">
+              <label for="custom">Create Custom Team</label>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Instructions for Team</label>
+            <textarea class="form-textarea" placeholder="Enter specific instructions for the response team..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Notify team via:</label>
+            <div class="flex gap-2">
+              <div class="form-checkbox">
+                <input type="checkbox" id="sms" checked>
+                <label for="sms">SMS</label>
+              </div>
+              <div class="form-checkbox">
+                <input type="checkbox" id="app" checked>
+                <label for="app">App Notification</label>
+              </div>
+              <div class="form-checkbox">
+                <input type="checkbox" id="phone">
+                <label for="phone">Phone Call</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-between mt-3">
+            <button class="btn btn-outline">🚫 Mark as False Alarm</button>
+            <button class="btn btn-danger">📤 DISPATCH TEAM</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Timeline -->
+      <div class="card mb-3">
+        <div class="card-header">TIMELINE</div>
+        <div class="card-content">
+          <div class="timeline">
+            <div class="timeline-item">
+              <div class="timeline-time">2:30 PM</div>
+              <div class="timeline-content">Incident occurred</div>
+            </div>
+            <div class="timeline-item">
+              <div class="timeline-time">2:35 PM</div>
+              <div class="timeline-content">Report submitted by Maria Rodriguez</div>
+            </div>
+            <div class="timeline-item">
+              <div class="timeline-time">2:35 PM</div>
+              <div class="timeline-content">Auto-assigned to dispatch queue</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Internal Notes -->
+      <div class="card">
+        <div class="card-header">INTERNAL NOTES (Dispatcher Only)</div>
+        <div class="card-content">
+          <textarea class="form-textarea" placeholder="Add note..."></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align: center; margin-top: 20px;">
+    <a href="../index.html" style="color: var(--primary-color);">← Back to Index</a>
+  </div>
+</body>
+</html>

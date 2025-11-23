@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ojo Publication - Siembra NC VMS</title>
+  <link rel="stylesheet" href="../css/wireframe.css">
+</head>
+<body>
+  <div class="wireframe-container">
+    <!-- Header -->
+    <div class="app-header">
+      <div class="app-title">Publish to Ojo</div>
+    </div>
+
+    <!-- Main Content -->
+    <div style="padding: 24px; max-width: 1000px; margin: 0 auto;">
+      <div class="alert alert-info mb-3">
+        Review and publish verified incidents to the Ojo community alert system.
+      </div>
+
+      <!-- Ready for Publication Section -->
+      <div class="card mb-3">
+        <div class="card-header">READY FOR PUBLICATION (2)</div>
+        <div class="card-content">
+          <div class="form-checkbox mb-2" style="padding: 12px; background: var(--bg-light); border-radius: 6px;">
+            <input type="checkbox" id="incident1" checked>
+            <label for="incident1">
+              <strong>Incident #2025-1122-001</strong><br>
+              <span class="text-small text-muted">
+                Verified: Nov 22, 3:15 PM | Location: 5th St & Main Ave, Downtown<br>
+                Type: Confirmed Law Enforcement Activity | Field Team: Unit Alpha
+              </span>
+            </label>
+            <div class="btn-group mt-1">
+              <button class="btn btn-outline btn-sm">Preview</button>
+              <button class="btn btn-outline btn-sm">Edit</button>
+              <button class="btn btn-outline btn-sm">View Details</button>
+            </div>
+          </div>
+
+          <div class="form-checkbox" style="padding: 12px; background: var(--bg-light); border-radius: 6px;">
+            <input type="checkbox" id="incident2" checked>
+            <label for="incident2">
+              <strong>Incident #2025-1122-004</strong><br>
+              <span class="text-small text-muted">
+                Verified: Nov 22, 1:45 PM | Location: Park Ave, North Zone<br>
+                Type: Vehicle Sighting | Field Team: Unit Bravo
+              </span>
+            </label>
+            <div class="btn-group mt-1">
+              <button class="btn btn-outline btn-sm">Preview</button>
+              <button class="btn btn-outline btn-sm">Edit</button>
+              <button class="btn btn-outline btn-sm">View Details</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Publication Preview Section -->
+      <div class="card mb-3" style="border: 2px solid var(--primary-color);">
+        <div class="card-header" style="background: var(--primary-color); color: white;">
+          PUBLICATION PREVIEW - #2025-1122-001
+        </div>
+        <div class="card-content">
+          <div class="form-group">
+            <label class="form-label">Title</label>
+            <input type="text" class="form-input" value="Law Enforcement Activity - Downtown">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Date/Time</label>
+            <p>Nov 22, 2025 at 2:30 PM</p>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Location (Public)</label>
+            <select class="form-select">
+              <option>5th Street area, Downtown</option>
+              <option>Downtown Zone (general)</option>
+              <option>City Center area</option>
+            </select>
+            <p class="text-small text-muted">(Exact address hidden for privacy)</p>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Message</label>
+            <textarea class="form-textarea" rows="4">Confirmed law enforcement activity in downtown area near community center. Multiple unmarked vehicles and personnel observed. Verified by community monitors at 3:15 PM. Exercise caution in the area.</textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Alert Level</label>
+            <div class="form-radio">
+              <input type="radio" name="alert" id="high" value="high" checked>
+              <label for="high">🔴 High - Immediate community notification</label>
+            </div>
+            <div class="form-radio">
+              <input type="radio" name="alert" id="medium" value="medium">
+              <label for="medium">🟡 Medium - Standard notification</label>
+            </div>
+            <div class="form-radio">
+              <input type="radio" name="alert" id="low" value="low">
+              <label for="low">🟢 Low - Information only</label>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Languages</label>
+            <div class="flex gap-2">
+              <div class="form-checkbox">
+                <input type="checkbox" id="english" checked>
+                <label for="english">English</label>
+              </div>
+              <div class="form-checkbox">
+                <input type="checkbox" id="spanish" checked>
+                <label for="spanish">Spanish</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Duration</label>
+            <div class="form-radio">
+              <input type="radio" name="duration" id="manual" value="manual">
+              <label for="manual">Active until manually ended</label>
+            </div>
+            <div class="form-radio">
+              <input type="radio" name="duration" id="hours" value="hours" checked>
+              <label for="hours">Active for:</label>
+              <select class="form-select" style="width: 150px; margin-left: 8px;">
+                <option>2 hours</option>
+                <option>4 hours</option>
+                <option>8 hours</option>
+                <option>24 hours</option>
+              </select>
+            </div>
+            <div class="form-radio">
+              <input type="radio" name="duration" id="until" value="until">
+              <label for="until">Active until:</label>
+              <input type="datetime-local" class="form-input" style="width: 200px; margin-left: 8px;">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Include</label>
+            <div class="form-checkbox">
+              <input type="checkbox" id="timestamp" checked>
+              <label for="timestamp">Verification timestamp</label>
+            </div>
+            <div class="form-checkbox">
+              <input type="checkbox" id="team">
+              <label for="team">Response team name</label>
+            </div>
+            <div class="form-checkbox">
+              <input type="checkbox" id="photo">
+              <label for="photo">Photo evidence (if available)</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Publication Channels Section -->
+      <div class="card mb-3">
+        <div class="card-header">PUBLICATION CHANNELS</div>
+        <div class="card-content">
+          <div class="form-checkbox">
+            <input type="checkbox" id="app" checked>
+            <label for="app">Ojo Mobile App</label>
+          </div>
+          <div class="form-checkbox">
+            <input type="checkbox" id="website" checked>
+            <label for="website">Ojo Website</label>
+          </div>
+          <div class="form-checkbox">
+            <input type="checkbox" id="sms-alerts" checked>
+            <label for="sms-alerts">SMS Alerts (High priority subscribers)</label>
+          </div>
+          <div class="form-checkbox">
+            <input type="checkbox" id="email-list">
+            <label for="email-list">Email Distribution List</label>
+          </div>
+          <div class="form-checkbox">
+            <input type="checkbox" id="social">
+            <label for="social">Social Media (Twitter, Facebook)</label>
+          </div>
+
+          <div class="alert alert-info mt-2">
+            <strong>Estimated Reach:</strong> ~2,500 community members
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex justify-between">
+        <div class="btn-group">
+          <button class="btn btn-secondary">Cancel</button>
+          <button class="btn btn-outline">Save Draft</button>
+        </div>
+        <button class="btn btn-success">Publish Selected (2)</button>
+      </div>
+
+      <div class="alert alert-warning mt-3">
+        <strong>Warning:</strong> Once published, alerts cannot be deleted, only updated or ended.
+        Ensure all information is accurate.
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align: center; margin-top: 20px;">
+    <a href="../index.html" style="color: var(--primary-color);">← Back to Index</a>
+  </div>
+</body>
+</html>

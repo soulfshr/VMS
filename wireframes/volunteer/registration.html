@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Volunteer Registration - Siembra NC VMS</title>
+  <link rel="stylesheet" href="../css/wireframe.css">
+</head>
+<body>
+  <div class="wireframe-container">
+    <!-- Header -->
+    <div class="app-header">
+      <div class="app-title">SIEMBRA NC VMS - Volunteer Registration</div>
+    </div>
+
+    <!-- Main Content -->
+    <div style="padding: 40px; max-width: 800px; margin: 0 auto;">
+      <div class="mb-3">
+        <h2>Welcome!</h2>
+        <p class="text-muted">Thank you for joining our community support network.</p>
+      </div>
+
+      <!-- Progress Indicator -->
+      <div class="mb-3">
+        <h3>STEP 1 of 3: Personal Information</h3>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: 33%;"></div>
+        </div>
+      </div>
+
+      <!-- Form -->
+      <div class="card">
+        <div class="card-content">
+          <div class="form-group">
+            <label class="form-label required">First Name</label>
+            <input type="text" class="form-input" placeholder="Enter your first name">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required">Last Name</label>
+            <input type="text" class="form-input" placeholder="Enter your last name">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required">Email Address</label>
+            <input type="email" class="form-input" placeholder="your.email@example.com">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required">Phone Number</label>
+            <input type="tel" class="form-input" placeholder="(919) 555-0123">
+            <div class="mt-1">
+              <label class="form-label">Preferred contact method:</label>
+              <div class="form-radio">
+                <input type="radio" name="contact" id="email" value="email">
+                <label for="email">Email</label>
+              </div>
+              <div class="form-radio">
+                <input type="radio" name="contact" id="sms" value="sms">
+                <label for="sms">SMS</label>
+              </div>
+              <div class="form-radio">
+                <input type="radio" name="contact" id="either" value="either" checked>
+                <label for="either">Either</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required">Preferred Language</label>
+            <select class="form-select">
+              <option value="en">English</option>
+              <option value="es">Spanish</option>
+              <option value="both">Both</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required">Zip Code</label>
+            <input type="text" class="form-input" placeholder="27701">
+          </div>
+        </div>
+      </div>
+
+      <!-- Form Actions -->
+      <div class="flex justify-between mt-3">
+        <button class="btn btn-outline">Cancel</button>
+        <button class="btn btn-primary">Next: Availability →</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align: center; margin-top: 20px;">
+    <a href="../index.html" style="color: var(--primary-color);">← Back to Index</a>
+  </div>
+</body>
+</html>

@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Shift - Siembra NC VMS</title>
+  <link rel="stylesheet" href="../css/wireframe.css">
+</head>
+<body>
+  <div class="wireframe-container">
+    <!-- Header -->
+    <div class="app-header">
+      <div class="app-title">Create New Shift</div>
+    </div>
+
+    <!-- Main Content -->
+    <div style="padding: 40px; max-width: 900px; margin: 0 auto;">
+      <!-- Shift Details Section -->
+      <div class="card mb-3">
+        <div class="card-header">SHIFT DETAILS</div>
+        <div class="card-content">
+          <div class="form-group">
+            <label class="form-label required">Shift Name</label>
+            <input type="text" class="form-input" placeholder="e.g., Downtown Morning Monitor">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required">Date</label>
+            <input type="date" class="form-input" value="2025-11-25">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Time</label>
+            <div class="flex gap-2">
+              <div style="flex: 1;">
+                <label class="form-label">Start</label>
+                <select class="form-select">
+                  <option>2:00 PM</option>
+                  <option>3:00 PM</option>
+                  <option>4:00 PM</option>
+                </select>
+              </div>
+              <div style="flex: 1;">
+                <label class="form-label">End</label>
+                <select class="form-select">
+                  <option>6:00 PM</option>
+                  <option>7:00 PM</option>
+                  <option>8:00 PM</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required">Location/Zone</label>
+            <select class="form-select">
+              <option>Downtown Zone</option>
+              <option>North Zone</option>
+              <option>East Zone</option>
+              <option>South Zone</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Description</label>
+            <textarea class="form-textarea" placeholder="Provide details about the shift..."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Volunteer Requirements Section -->
+      <div class="card mb-3">
+        <div class="card-header">VOLUNTEER REQUIREMENTS</div>
+        <div class="card-content">
+          <div class="form-group">
+            <label class="form-label required">Required Role</label>
+            <select class="form-select">
+              <option>Monitor</option>
+              <option>Team Lead</option>
+              <option>Dispatcher</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Number of Volunteers Needed</label>
+            <div class="flex gap-2">
+              <div style="flex: 1;">
+                <label class="form-label">Minimum</label>
+                <select class="form-select">
+                  <option>2</option>
+                  <option>3</option>
+                  <option>4</option>
+                </select>
+              </div>
+              <div style="flex: 1;">
+                <label class="form-label">Ideal</label>
+                <select class="form-select">
+                  <option>4</option>
+                  <option>5</option>
+                  <option>6</option>
+                </select>
+              </div>
+              <div style="flex: 1;">
+                <label class="form-label">Maximum</label>
+                <select class="form-select">
+                  <option>6</option>
+                  <option>8</option>
+                  <option>10</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Special Requirements</label>
+            <div class="form-checkbox">
+              <input type="checkbox" id="bilingual">
+              <label for="bilingual">Bilingual (Spanish/English)</label>
+            </div>
+            <div class="form-checkbox">
+              <input type="checkbox" id="vehicle">
+              <label for="vehicle">Vehicle Required</label>
+            </div>
+            <div class="form-checkbox">
+              <input type="checkbox" id="advanced">
+              <label for="advanced">Advanced Training</label>
+            </div>
+            <div class="form-checkbox">
+              <input type="checkbox" id="teamlead">
+              <label for="teamlead">Team Lead Present</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Invitation Settings Section -->
+      <div class="card mb-3">
+        <div class="card-header">INVITATION SETTINGS</div>
+        <div class="card-content">
+          <div class="form-group">
+            <label class="form-label">Send invitations to:</label>
+            <div class="form-radio">
+              <input type="radio" name="invite" id="all" value="all">
+              <label for="all">All qualified volunteers</label>
+            </div>
+            <div class="form-radio">
+              <input type="radio" name="invite" id="matching" value="matching">
+              <label for="matching">Volunteers with matching availability</label>
+            </div>
+            <div class="form-radio">
+              <input type="radio" name="invite" id="specific" value="specific" checked>
+              <label for="specific">Specific volunteers (select below)</label>
+            </div>
+          </div>
+
+          <div class="alert alert-info mb-2">
+            <strong>Selected Volunteers (8):</strong><br>
+            ✓ Maria Rodriguez, ✓ James Kim, ✓ Ana Lopez, ✓ Patricia Chen
+            <button class="btn btn-outline btn-sm mt-1">Edit Selection</button>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Send invitations:</label>
+            <div class="form-radio">
+              <input type="radio" name="timing" id="immediate" value="immediate" checked>
+              <label for="immediate">Immediately</label>
+            </div>
+            <div class="form-radio">
+              <input type="radio" name="timing" id="schedule" value="schedule">
+              <label for="schedule">Schedule for:</label>
+              <input type="datetime-local" class="form-input" style="margin-left: 8px;">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">RSVP Deadline</label>
+            <input type="datetime-local" class="form-input" value="2025-11-23T17:00">
+          </div>
+        </div>
+      </div>
+
+      <!-- Reminder Settings Section -->
+      <div class="card mb-3">
+        <div class="card-header">REMINDER SETTINGS</div>
+        <div class="card-content">
+          <div class="form-checkbox">
+            <input type="checkbox" id="reminder24" checked>
+            <label for="reminder24">Send reminder 24 hours before shift</label>
+          </div>
+          <div class="form-checkbox">
+            <input type="checkbox" id="reminder2" checked>
+            <label for="reminder2">Send reminder 2 hours before shift</label>
+          </div>
+          <div class="form-checkbox">
+            <input type="checkbox" id="thankyou">
+            <label for="thankyou">Send thank you message after shift</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Form Actions -->
+      <div class="flex justify-between">
+        <div class="btn-group">
+          <button class="btn btn-outline">Save as Draft</button>
+          <button class="btn btn-secondary">Cancel</button>
+        </div>
+        <button class="btn btn-primary">Create Shift & Send Invites</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align: center; margin-top: 20px;">
+    <a href="../index.html" style="color: var(--primary-color);">← Back to Index</a>
+  </div>
+</body>
+</html>

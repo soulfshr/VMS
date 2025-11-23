@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Field Response - Siembra NC VMS</title>
+  <link rel="stylesheet" href="../css/wireframe.css">
+  <style>
+    /* Mobile-optimized styles */
+    body {
+      padding: 0;
+    }
+    .mobile-container {
+      max-width: 400px;
+      margin: 20px auto;
+      box-shadow: 0 0 30px rgba(0,0,0,0.2);
+    }
+    .mobile-header {
+      background: var(--primary-color);
+      color: white;
+      padding: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .mobile-content {
+      padding: 16px;
+    }
+    .mobile-card {
+      background: white;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .mobile-card-header {
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: var(--text-primary);
+    }
+    .mobile-btn {
+      width: 100%;
+      margin-bottom: 8px;
+    }
+    .mobile-footer {
+      padding: 16px;
+      background: var(--bg-light);
+      border-top: 1px solid var(--border-color);
+    }
+  </style>
+</head>
+<body style="background: var(--bg-light);">
+  <div class="mobile-container wireframe-container">
+    <!-- Mobile Header -->
+    <div class="mobile-header">
+      <div style="font-weight: 600;">SIEMBRA VMS</div>
+      <div style="font-size: 20px;">☰</div>
+    </div>
+
+    <!-- Mobile Content -->
+    <div class="mobile-content">
+      <h3 style="margin-bottom: 8px;">Active Assignment</h3>
+      <p class="text-muted" style="margin-bottom: 16px;">Incident #2025-1122-001</p>
+
+      <!-- Location Card -->
+      <div class="mobile-card">
+        <div class="mobile-card-header">LOCATION</div>
+        <p style="margin-bottom: 8px;"><strong>5th St & Main Ave</strong><br>Downtown Zone</p>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-primary" style="flex: 1;">📍 Navigate</button>
+          <button class="btn btn-outline" style="flex: 1;">📞 Call Team</button>
+        </div>
+      </div>
+
+      <!-- Report Summary Card -->
+      <div class="mobile-card">
+        <div class="mobile-card-header">REPORT SUMMARY</div>
+        <p style="margin-bottom: 4px;"><strong>Type:</strong> Suspected LE Activity</p>
+        <p style="margin-bottom: 4px;"><strong>Time:</strong> 2:30 PM</p>
+        <p style="margin-bottom: 12px;"><strong>Priority:</strong> <span class="priority-high">HIGH</span></p>
+        <p class="text-small text-muted" style="margin-bottom: 12px;">
+          2-3 unmarked SUVs near community center. 4-6 individuals with equipment.
+        </p>
+        <button class="btn btn-outline mobile-btn">View Full Details</button>
+      </div>
+
+      <!-- Team Card -->
+      <div class="mobile-card">
+        <div class="mobile-card-header">TEAM</div>
+        <p style="margin-bottom: 4px;"><strong>Unit Alpha</strong></p>
+        <p class="text-small text-muted">
+          • You (Maria Rodriguez)<br>
+          • James Kim <a href="tel:9195550124" style="color: var(--primary-color);">📞</a>
+        </p>
+      </div>
+
+      <!-- Update Status Card -->
+      <div class="mobile-card">
+        <div class="mobile-card-header">UPDATE STATUS</div>
+        <p style="margin-bottom: 12px;">
+          <strong>Current:</strong> <span class="status-badge status-pending">🟡 En Route</span>
+        </p>
+        <button class="btn btn-success mobile-btn">✓ Arrived on Scene</button>
+        <button class="btn btn-warning mobile-btn">⚠ Needs Support</button>
+        <button class="btn btn-outline mobile-btn">📝 Submit Update</button>
+      </div>
+
+      <!-- Verification Card (shown after arrival) -->
+      <div class="mobile-card" style="border: 2px solid var(--success-color);">
+        <div class="mobile-card-header" style="color: var(--success-color);">
+          VERIFICATION (After Arrival)
+        </div>
+
+        <div class="form-group">
+          <label class="form-label required">Disposition</label>
+          <div class="form-radio">
+            <input type="radio" name="disposition" id="verified" value="verified">
+            <label for="verified">✓ Verified - Confirmed</label>
+          </div>
+          <div class="form-radio">
+            <input type="radio" name="disposition" id="false" value="false">
+            <label for="false">✗ False Alarm</label>
+          </div>
+          <div class="form-radio">
+            <input type="radio" name="disposition" id="inconclusive" value="inconclusive">
+            <label for="inconclusive">⚠ Inconclusive</label>
+          </div>
+          <div class="form-radio">
+            <input type="radio" name="disposition" id="followup" value="followup">
+            <label for="followup">📌 Requires Follow-up</label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Field Notes</label>
+          <textarea class="form-textarea" rows="3" placeholder="Enter your observations..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Photo Evidence</label>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-outline" style="flex: 1;">📷 Take Photo</button>
+            <button class="btn btn-outline" style="flex: 1;">🖼️ Upload Image</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Additional Details</label>
+          <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+            <div style="flex: 1;">
+              <label class="form-label text-small">Vehicles Present</label>
+              <input type="number" class="form-input" placeholder="0">
+            </div>
+            <div style="flex: 1;">
+              <label class="form-label text-small">Individuals</label>
+              <input type="number" class="form-input" placeholder="0">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Verification Time</label>
+          <input type="time" class="form-input" value="15:15">
+        </div>
+
+        <div class="form-checkbox mb-2">
+          <input type="checkbox" id="safe-publish" checked>
+          <label for="safe-publish">Safe to publish to Ojo</label>
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-secondary" style="flex: 1;">Cancel</button>
+          <button class="btn btn-success" style="flex: 1;">Submit & Complete</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Footer -->
+    <div class="mobile-footer">
+      <div style="display: flex; gap: 8px;">
+        <button class="btn btn-danger" style="flex: 1;">Emergency Contact</button>
+        <button class="btn btn-outline" style="flex: 1;">End Shift</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align: center; margin-top: 20px;">
+    <a href="../index.html" style="color: var(--primary-color);">← Back to Index</a>
+  </div>
+</body>
+</html>

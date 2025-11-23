@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sighting Intake - Siembra NC VMS</title>
+  <link rel="stylesheet" href="../css/wireframe.css">
+</head>
+<body>
+  <div class="wireframe-container">
+    <!-- Header -->
+    <div class="app-header">
+      <div class="app-title">Report New Sighting</div>
+    </div>
+
+    <!-- Main Content -->
+    <div style="padding: 40px; max-width: 800px; margin: 0 auto;">
+      <div class="alert alert-info mb-3">
+        Please provide details about the sighting. All fields marked with * are required.
+      </div>
+
+      <!-- When & Where Section -->
+      <div class="card mb-3">
+        <div class="card-header">WHEN & WHERE</div>
+        <div class="card-content">
+          <div class="form-group">
+            <label class="form-label required">Date of Sighting</label>
+            <input type="date" class="form-input" value="2025-11-22">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required">Time of Sighting</label>
+            <select class="form-select">
+              <option>2:30 PM</option>
+              <option>3:00 PM</option>
+              <option>3:30 PM</option>
+            </select>
+            <p class="text-small text-muted">(approximate is okay)</p>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required">Location</label>
+            <label class="form-label">Street Address or Intersection:</label>
+            <input type="text" class="form-input" placeholder="e.g., 5th St & Main Ave">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Zone</label>
+            <select class="form-select">
+              <option>Downtown</option>
+              <option>North Zone</option>
+              <option>East Zone</option>
+              <option>South Zone</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">GPS Coordinates (if available)</label>
+            <div class="flex gap-2">
+              <input type="text" class="form-input" placeholder="Latitude" style="flex: 1;">
+              <input type="text" class="form-input" placeholder="Longitude" style="flex: 1;">
+              <button class="btn btn-outline">📍 Use My Location</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- What Happened Section -->
+      <div class="card mb-3">
+        <div class="card-header">WHAT HAPPENED</div>
+        <div class="card-content">
+          <div class="form-group">
+            <label class="form-label required">Type of Activity</label>
+            <div class="form-radio">
+              <input type="radio" name="activity" id="le" value="le">
+              <label for="le">Suspected Law Enforcement Activity</label>
+            </div>
+            <div class="form-radio">
+              <input type="radio" name="activity" id="vehicle" value="vehicle">
+              <label for="vehicle">Vehicle Sighting</label>
+            </div>
+            <div class="form-radio">
+              <input type="radio" name="activity" id="safety" value="safety">
+              <label for="safety">Community Safety Concern</label>
+            </div>
+            <div class="form-radio">
+              <input type="radio" name="activity" id="other" value="other">
+              <label for="other">Other:</label>
+              <input type="text" class="form-input" style="margin-left: 8px; width: 200px;" placeholder="Specify">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required">Description</label>
+            <p class="text-small text-muted">Please be as detailed as possible:</p>
+            <textarea class="form-textarea" placeholder="Describe what you observed..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Number of Vehicles (if applicable)</label>
+            <input type="number" class="form-input" style="width: 100px;">
+            <label class="form-label mt-2">Vehicle Description(s):</label>
+            <input type="text" class="form-input" placeholder="e.g., Dark SUV, unmarked">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Number of Individuals Involved</label>
+            <input type="number" class="form-input" style="width: 100px;">
+            <label class="form-label mt-2">Clothing/Identification Details:</label>
+            <input type="text" class="form-input" placeholder="e.g., Plain clothes, visible badges">
+          </div>
+        </div>
+      </div>
+
+      <!-- Priority & Status Section -->
+      <div class="card mb-3">
+        <div class="card-header">PRIORITY & STATUS</div>
+        <div class="card-content">
+          <div class="form-group">
+            <label class="form-label required">Urgency Level</label>
+            <div class="form-radio">
+              <input type="radio" name="urgency" id="immediate" value="immediate">
+              <label for="immediate">🔴 Immediate/Active (happening now)</label>
+            </div>
+            <div class="form-radio">
+              <input type="radio" name="urgency" id="recent" value="recent" checked>
+              <label for="recent">🟡 Recent (within last hour)</label>
+            </div>
+            <div class="form-radio">
+              <input type="radio" name="urgency" id="historical" value="historical">
+              <label for="historical">🟢 Historical (more than 1 hour ago)</label>
+            </div>
+          </div>
+
+          <div class="form-checkbox">
+            <input type="checkbox" id="followup" checked>
+            <label for="followup">I am available to provide follow-up information</label>
+          </div>
+
+          <div class="form-checkbox">
+            <input type="checkbox" id="dispatch">
+            <label for="dispatch">Request immediate dispatch for verification</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reporter Information Section -->
+      <div class="card mb-3">
+        <div class="card-header">REPORTER INFORMATION</div>
+        <div class="card-content">
+          <p class="mb-2">
+            <strong>Your Name:</strong> Maria Rodriguez (logged in)<br>
+            <strong>Contact:</strong> maria.rodriguez@email.com | (919) 555-0123
+          </p>
+
+          <div class="form-checkbox">
+            <input type="checkbox" id="anonymous">
+            <label for="anonymous">Submit report anonymously</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Form Actions -->
+      <div class="flex justify-between">
+        <button class="btn btn-secondary">Cancel</button>
+        <button class="btn btn-primary">Submit Report</button>
+      </div>
+
+      <div class="alert alert-info mt-3">
+        <strong>Note:</strong> Submitting this report will notify the dispatch team immediately for urgent reports,
+        or within 15 minutes for non-urgent reports.
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align: center; margin-top: 20px;">
+    <a href="../index.html" style="color: var(--primary-color);">← Back to Index</a>
+  </div>
+</body>
+</html>

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Siembra NC VMS - Wireframes</title>
+  <link rel="stylesheet" href="css/wireframe.css">
+  <style>
+    .wireframe-index {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    .index-header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .index-header h1 {
+      font-size: 36px;
+      color: var(--primary-color);
+      margin-bottom: 12px;
+    }
+
+    .index-header p {
+      font-size: 18px;
+      color: var(--text-secondary);
+    }
+
+    .wireframe-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 24px;
+      margin-top: 32px;
+    }
+
+    .wireframe-card {
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+      transition: transform 0.2s, box-shadow 0.2s;
+      border-left: 4px solid var(--primary-color);
+    }
+
+    .wireframe-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .wireframe-card h3 {
+      color: var(--text-primary);
+      margin-bottom: 8px;
+      font-size: 20px;
+    }
+
+    .wireframe-card p {
+      color: var(--text-secondary);
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+
+    .wireframe-card a {
+      color: var(--primary-color);
+      text-decoration: none;
+      font-weight: 500;
+      display: inline-block;
+      padding: 8px 16px;
+      border: 1px solid var(--primary-color);
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+
+    .wireframe-card a:hover {
+      background: var(--primary-color);
+      color: white;
+    }
+
+    .category-section {
+      margin-bottom: 48px;
+    }
+
+    .category-title {
+      font-size: 24px;
+      color: var(--text-primary);
+      margin-bottom: 24px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--border-color);
+    }
+
+    .category-icon {
+      font-size: 32px;
+      margin-bottom: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wireframe-index">
+    <div class="index-header">
+      <h1>Siembra NC VMS Wireframes</h1>
+      <p>Interactive wireframes for the Volunteer Management System</p>
+      <p class="text-muted text-small">Click on any wireframe below to view in detail</p>
+    </div>
+
+    <!-- Dashboards Section -->
+    <div class="category-section">
+      <h2 class="category-title">📊 Dashboard Views</h2>
+      <div class="wireframe-grid">
+        <div class="wireframe-card">
+          <div class="category-icon">👤</div>
+          <h3>Volunteer Dashboard</h3>
+          <p>Dashboard for volunteers to view their shifts, training status, and available opportunities.</p>
+          <a href="dashboards/volunteer-dashboard.html">View Wireframe →</a>
+        </div>
+
+        <div class="wireframe-card">
+          <div class="category-icon">👥</div>
+          <h3>Coordinator Dashboard</h3>
+          <p>Shift coordination dashboard for managing volunteers and shift coverage.</p>
+          <a href="dashboards/coordinator-dashboard.html">View Wireframe →</a>
+        </div>
+
+        <div class="wireframe-card">
+          <div class="category-icon">🚨</div>
+          <h3>Dispatcher Dashboard</h3>
+          <p>Incident management dashboard for triaging reports and dispatching teams.</p>
+          <a href="dashboards/dispatcher-dashboard.html">View Wireframe →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Volunteer Management Section -->
+    <div class="category-section">
+      <h2 class="category-title">👥 Volunteer Management</h2>
+      <div class="wireframe-grid">
+        <div class="wireframe-card">
+          <div class="category-icon">📝</div>
+          <h3>Volunteer Registration</h3>
+          <p>Multi-step registration form for new volunteers to sign up.</p>
+          <a href="volunteer/registration.html">View Wireframe →</a>
+        </div>
+
+        <div class="wireframe-card">
+          <div class="category-icon">👤</div>
+          <h3>Volunteer Profile</h3>
+          <p>Detailed volunteer profile showing qualifications, availability, and activity.</p>
+          <a href="volunteer/profile.html">View Wireframe →</a>
+        </div>
+
+        <div class="wireframe-card">
+          <div class="category-icon">📋</div>
+          <h3>Volunteer Directory</h3>
+          <p>Searchable directory of all volunteers for coordinators.</p>
+          <a href="volunteer/directory.html">View Wireframe →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Shift Coordination Section -->
+    <div class="category-section">
+      <h2 class="category-title">📅 Shift Coordination</h2>
+      <div class="wireframe-grid">
+        <div class="wireframe-card">
+          <div class="category-icon">➕</div>
+          <h3>Create Shift</h3>
+          <p>Comprehensive form for coordinators to create and schedule new shifts.</p>
+          <a href="shifts/create-shift.html">View Wireframe →</a>
+        </div>
+
+        <div class="wireframe-card">
+          <div class="category-icon">✅</div>
+          <h3>Browse & RSVP</h3>
+          <p>Volunteer view to browse available shifts and respond to invitations.</p>
+          <a href="shifts/browse-rsvp.html">View Wireframe →</a>
+        </div>
+
+        <div class="wireframe-card">
+          <div class="category-icon">📊</div>
+          <h3>Shift Roster</h3>
+          <p>Manage shift roster with confirmed, pending, and declined volunteers.</p>
+          <a href="shifts/roster.html">View Wireframe →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Incident Management Section -->
+    <div class="category-section">
+      <h2 class="category-title">🚨 Incident Management</h2>
+      <div class="wireframe-grid">
+        <div class="wireframe-card">
+          <div class="category-icon">📝</div>
+          <h3>Sighting Intake</h3>
+          <p>Form for submitting new sighting reports with location and details.</p>
+          <a href="incidents/intake-form.html">View Wireframe →</a>
+        </div>
+
+        <div class="wireframe-card">
+          <div class="category-icon">🎯</div>
+          <h3>Incident Detail (Dispatcher)</h3>
+          <p>Dispatcher view for reviewing incident details and assigning teams.</p>
+          <a href="incidents/dispatcher-view.html">View Wireframe →</a>
+        </div>
+
+        <div class="wireframe-card">
+          <div class="category-icon">📱</div>
+          <h3>Field Response (Mobile)</h3>
+          <p>Mobile-optimized interface for field teams to update incident status.</p>
+          <a href="incidents/field-response.html">View Wireframe →</a>
+        </div>
+
+        <div class="wireframe-card">
+          <div class="category-icon">📢</div>
+          <h3>Ojo Publication</h3>
+          <p>Review and publish verified incidents to the community via Ojo.</p>
+          <a href="incidents/ojo-publication.html">View Wireframe →</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="alert alert-info mt-3">
+      <strong>Note:</strong> These are wireframes for design review. Actual implementation may include additional features and refinements based on stakeholder feedback.
+    </div>
+  </div>
+</body>
+</html>

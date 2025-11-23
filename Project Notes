@@ -1,0 +1,268 @@
+# Siembra NC Volunteer Management System (VMS)
+## Project Proposal & Requirements Document
+
+**Project Name:** Siembra NC Volunteer Management System
+**Date:** November 22, 2025
+**Status:** Planning Phase
+**Document Version:** 1.0
+
+---
+
+## 1. Executive Summary
+
+This document outlines the design and development of a Volunteer Management System (VMS) for Siembra NC, an organization dedicated to supporting immigrant communities. The proposed application will streamline volunteer coordination, sighting reporting, and community safety monitoring processes.
+
+---
+
+## 2. Background & Context
+
+Siembra NC works to protect and support immigrant communities through volunteer-driven monitoring and rapid response efforts. The organization currently manages multiple critical processes that involve volunteer coordination, incident reporting, and community safety alerts.
+
+### 2.1 Organizational Need
+As volunteer activities scale, manual coordination and data management present increasing logistical challenges. A centralized digital platform will improve efficiency, data accuracy, and response times while reducing administrative burden.
+
+---
+
+## 3. Current Processes
+
+Siembra NC currently maintains the following operational processes:
+
+### 3.1 Volunteer Management
+- **Volunteer Mailing List:** Communication channel for volunteer outreach and updates
+- **Vetted Volunteer List:** Roster of volunteers with training completion and role qualifications
+- **Training & Role Qualification:** System for tracking volunteer certifications and capabilities
+
+### 3.2 Shift Coordination
+- **Shift Signup Coordination:** Management of volunteer shift opportunities
+- **Invite Creation:** Generation and distribution of shift invitations
+- **RSVP Management:** Tracking volunteer commitments to shifts
+- **Volunteer Availability:** Recording and managing volunteer availability schedules
+
+### 3.3 Sighting & Incident Management
+- **Database of Sightings:** Record of reported incidents and their disposition status
+- **Intake Process:** Standardized workflow for receiving sighting reports
+- **Dispatch Coordination:** Assignment of response teams to verified incidents
+- **Disposition Recording:** Documentation of incident outcomes (verified, false alarm, etc.)
+- **Publication to Ojo:** Distribution of verified information to the community
+
+---
+
+## 4. Problem Statement
+
+While Siembra NC has established processes, current tools may not provide:
+- **Centralized data management** across all volunteer and incident operations
+- **Real-time coordination** for time-sensitive dispatch and response
+- **Automated workflows** to reduce manual administrative tasks
+- **Data integrity and tracking** for reporting and compliance
+- **Scalable infrastructure** to support organizational growth
+
+---
+
+## 5. Proposed Solution
+
+### 5.1 Solution Overview
+Develop a comprehensive Volunteer Management System that integrates volunteer coordination, shift management, and incident reporting into a unified platform.
+
+### 5.2 Target Users
+- **Volunteers:** Community members providing monitoring and support services
+- **Coordinators:** Staff managing volunteer assignments and scheduling
+- **Dispatchers:** Personnel handling incident intake and response coordination
+- **Administrators:** Leadership overseeing operations and data management
+
+---
+
+## 6. Functional Requirements
+
+### 6.1 Volunteer Management Module
+**Purpose:** Manage volunteer roster, qualifications, and communications
+
+**Key Features:**
+- Volunteer registration and profile management
+- Training and certification tracking
+- Role-based qualification system
+- Mailing list integration and communication tools
+- Volunteer directory with search and filtering
+
+**Data Points:**
+- Contact information
+- Training completion dates
+- Role qualifications and certifications
+- Availability preferences
+- Communication preferences
+
+---
+
+### 6.2 Shift Coordination Module
+**Purpose:** Facilitate volunteer shift scheduling and signup
+
+**Key Features:**
+- Shift creation and management
+- Automated invitation distribution
+- RSVP tracking and confirmation
+- Volunteer availability calendar
+- Shift reminder notifications
+- Capacity management (min/max volunteers per shift)
+
+**Workflows:**
+1. Coordinator creates shift opportunity
+2. System sends invitations to qualified volunteers
+3. Volunteers RSVP based on availability
+4. System confirms assignments and sends reminders
+5. Coordinator can view and manage shift roster
+
+---
+
+### 6.3 Sighting & Incident Management Module
+**Purpose:** Track incident reports from intake through resolution
+
+**Key Features:**
+- Incident intake form with standardized fields
+- Real-time dispatch coordination
+- Status tracking workflow
+- Disposition categorization (verified, false alarm, pending, etc.)
+- Integration with Ojo publication system
+- Incident history and analytics
+
+**Incident Workflow:**
+1. **Intake:** Report received and logged
+2. **Triage:** Initial assessment and priority assignment
+3. **Dispatch:** Team assigned and notified
+4. **Response:** Field verification and action taken
+5. **Disposition:** Outcome recorded (verified/false alarm)
+6. **Publication:** Verified incidents published to Ojo
+7. **Archive:** Incident stored for historical reference
+
+**Data Points:**
+- Date/time of report
+- Location details
+- Incident description
+- Reporter information
+- Assigned team members
+- Response timeline
+- Disposition status
+- Verification details
+- Publication status
+
+---
+
+## 7. Technical Considerations
+
+### 7.1 Platform Requirements
+- **Accessibility:** Web-based and mobile-responsive design
+- **Security:** Role-based access control and data encryption
+- **Reliability:** High availability for time-sensitive operations
+- **Scalability:** Support for growing volunteer base and incident volume
+
+### 7.2 Integration Needs
+- Email/SMS notification systems
+- Ojo publication platform
+- Calendar systems (Google Calendar, iCal, etc.)
+- Potential GIS/mapping services for location tracking
+
+### 7.3 Data Privacy & Security
+- Compliance with data protection regulations
+- Sensitive information handling protocols
+- Audit logging for accountability
+- Backup and disaster recovery
+
+---
+
+## 8. Success Metrics
+
+### 8.1 Operational Efficiency
+- Reduction in administrative time for shift coordination
+- Faster incident response times
+- Improved volunteer utilization rates
+
+### 8.2 Data Quality
+- Complete and accurate volunteer records
+- Comprehensive incident documentation
+- Reduction in data entry errors
+
+### 8.3 User Adoption
+- Volunteer engagement and platform usage
+- Coordinator satisfaction with tools
+- Reduced training time for new users
+
+---
+
+## 9. Project Phases
+
+### Phase 1: Discovery & Design
+- Stakeholder interviews with Siembra NC staff
+- Detailed requirements gathering
+- User experience (UX) design and wireframing
+- Technical architecture planning
+
+### Phase 2: Core Module Development
+- Volunteer management system
+- Authentication and role-based access
+- Basic reporting and data export
+
+### Phase 3: Shift Coordination
+- Shift creation and management
+- RSVP and notification system
+- Availability tracking
+
+### Phase 4: Incident Management
+- Intake form and workflow
+- Dispatch coordination
+- Ojo integration
+- Status tracking and reporting
+
+### Phase 5: Testing & Deployment
+- User acceptance testing
+- Training and documentation
+- Phased rollout
+- Monitoring and iteration
+
+---
+
+## 10. Next Steps
+
+1. **Stakeholder Validation**
+   - Review this document with Siembra NC leadership
+   - Gather feedback on priorities and requirements
+   - Identify any missing processes or needs
+
+2. **Technical Planning**
+   - Define technology stack
+   - Create system architecture diagram
+   - Plan database schema
+
+3. **Design Phase**
+   - Develop user personas
+   - Create wireframes and mockups
+   - Design user workflows
+
+4. **Project Roadmap**
+   - Establish timeline and milestones
+   - Define MVP (Minimum Viable Product) scope
+   - Allocate resources
+
+---
+
+## 11. Appendices
+
+### Appendix A: Glossary
+- **Ojo:** Community alert/publication system
+- **Sighting:** Reported incident requiring verification
+- **Disposition:** Final status of an incident (verified, false alarm, etc.)
+- **Dispatch:** Assignment of response team to incident
+- **Vetted Volunteer:** Volunteer who has completed required training
+
+### Appendix B: Open Questions
+- What is the current volume of volunteers and incidents?
+- What existing tools/platforms are currently in use?
+- What are the specific fields required for Ojo publication?
+- Are there any compliance or legal requirements for data retention?
+- What are the different volunteer roles and their specific qualifications?
+
+---
+
+## Document History
+
+| Version | Date | Author | Changes |
+|---------|------|--------|---------|
+| 1.0 | 2025-11-22 | Initial | Document created |
+

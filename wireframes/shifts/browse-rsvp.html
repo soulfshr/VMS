@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Browse & RSVP - Siembra NC VMS</title>
+  <link rel="stylesheet" href="../css/wireframe.css">
+</head>
+<body>
+  <div class="wireframe-container">
+    <!-- Header -->
+    <div class="app-header">
+      <div class="app-title">Available Shifts</div>
+    </div>
+
+    <!-- Main Content -->
+    <div style="padding: 24px; max-width: 900px; margin: 0 auto;">
+      <!-- Alert -->
+      <div class="alert alert-info mb-3">
+        🔔 You have <strong>3 new shift invitations</strong>
+      </div>
+
+      <!-- Filters -->
+      <div class="card mb-3">
+        <div class="card-content">
+          <div class="flex gap-2">
+            <select class="form-select">
+              <option>All Dates</option>
+              <option>This Week</option>
+              <option>Next Week</option>
+              <option>This Month</option>
+            </select>
+            <select class="form-select">
+              <option>All Zones</option>
+              <option>Downtown</option>
+              <option>North Zone</option>
+              <option>East Zone</option>
+            </select>
+            <select class="form-select">
+              <option>All Roles</option>
+              <option>Monitor</option>
+              <option>Team Lead</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Shift 1 - Needs Volunteers -->
+      <div class="card mb-3" style="border-left: 4px solid var(--warning-color);">
+        <div class="card-content">
+          <h3 class="mb-2">📅 Tuesday, November 25, 2025 | 2:00 PM - 6:00 PM</h3>
+          <h4 class="mb-2">Downtown Zone Monitoring</h4>
+
+          <div class="mb-2">
+            <span class="text-muted">Role:</span> <strong>Monitor</strong><br>
+            <span class="text-muted">Volunteers:</span> 2 confirmed, 4 needed<br>
+            <span class="status-badge status-pending">⚠ Needs Volunteers</span>
+          </div>
+
+          <div class="mb-2">
+            <strong>Description:</strong><br>
+            <p class="text-muted">
+              Community monitoring shift in the downtown area. Will patrol main corridors and provide presence.
+            </p>
+          </div>
+
+          <div class="mb-2">
+            <span class="text-muted">Requirements:</span> None<br>
+            <span class="text-muted">RSVP Deadline:</span> Nov 23, 5:00 PM<br>
+            <span class="text-muted">Confirmed Volunteers:</span> James K., Ana L.
+          </div>
+
+          <div class="alert alert-success mt-2">
+            ✓ This shift matches your availability
+          </div>
+
+          <div class="btn-group mt-2">
+            <button class="btn btn-outline">❌ Decline</button>
+            <button class="btn btn-outline">📋 View Details</button>
+            <button class="btn btn-success">✅ I'm Available!</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Shift 2 - Conflicts with Availability -->
+      <div class="card mb-3">
+        <div class="card-content">
+          <h3 class="mb-2">📅 Wednesday, November 26, 2025 | 6:00 PM - 10:00 PM</h3>
+          <h4 class="mb-2">North Zone Response Team</h4>
+
+          <div class="mb-2">
+            <span class="text-muted">Role:</span> <strong>Team Lead</strong><br>
+            <span class="text-muted">Volunteers:</span> 4 confirmed, 4 needed<br>
+            <span class="status-badge status-completed">✓ Fully Staffed</span>
+          </div>
+
+          <div class="mb-2">
+            <strong>Description:</strong><br>
+            <p class="text-muted">
+              Team lead position for evening monitoring in north zone. Will coordinate 2-person teams.
+            </p>
+          </div>
+
+          <div class="mb-2">
+            <span class="text-muted">Requirements:</span> Team Lead Certification, Vehicle<br>
+            <span class="text-muted">RSVP Deadline:</span> Nov 24, 12:00 PM
+          </div>
+
+          <div class="alert alert-warning mt-2">
+            ⚠ Conflicts with your availability (Wednesday 2pm-8pm)
+          </div>
+
+          <div class="btn-group mt-2">
+            <button class="btn btn-outline">❌ Decline</button>
+            <button class="btn btn-outline">📋 View Details</button>
+            <button class="btn btn-outline">⚠ Available (Override)</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Shift 3 - Fully Staffed -->
+      <div class="card mb-3">
+        <div class="card-content">
+          <h3 class="mb-2">📅 Saturday, November 29, 2025 | 10:00 AM - 2:00 PM</h3>
+          <h4 class="mb-2">Community Event Support</h4>
+
+          <div class="mb-2">
+            <span class="text-muted">Role:</span> <strong>Monitor</strong><br>
+            <span class="text-muted">Volunteers:</span> 6 confirmed, 6 needed<br>
+            <span class="status-badge status-completed">✓ Fully Staffed (Waitlist Available)</span>
+          </div>
+
+          <div class="btn-group mt-2">
+            <button class="btn btn-outline">❌ Decline</button>
+            <button class="btn btn-outline">📋 View Details</button>
+            <button class="btn btn-outline">📝 Join Waitlist</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      <div class="flex justify-between items-center">
+        <span class="text-muted">Page 1 of 2</span>
+        <button class="btn btn-outline">Next &gt;</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align: center; margin-top: 20px;">
+    <a href="../index.html" style="color: var(--primary-color);">← Back to Index</a>
+  </div>
+</body>
+</html>

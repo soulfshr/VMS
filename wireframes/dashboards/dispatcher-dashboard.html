@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dispatcher Dashboard - Siembra NC VMS</title>
+  <link rel="stylesheet" href="../css/wireframe.css">
+</head>
+<body>
+  <div class="wireframe-container">
+    <!-- Header -->
+    <div class="app-header">
+      <div class="app-title">SIEMBRA NC VMS - DISPATCH CENTER</div>
+      <div class="header-actions">
+        <div class="notification-badge">
+          🔔
+          <span class="badge-count">2</span>
+        </div>
+        <div>👤</div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div style="padding: 24px;">
+      <h2 style="margin-bottom: 24px;">Incident Management Dashboard</h2>
+
+      <!-- Active Incidents Section -->
+      <div class="card mb-3">
+        <div class="card-header">
+          ACTIVE INCIDENTS
+          <button class="btn btn-primary">+ New Intake</button>
+        </div>
+        <div class="card-content">
+          <!-- Urgent Section -->
+          <h3 class="priority-high mb-2">🔴 URGENT - NEEDS DISPATCH (2)</h3>
+
+          <div class="list-item mb-2" style="border-left: 4px solid var(--danger-color);">
+            <div class="item-title">#2025-1122-001 | 14:23 | Downtown 5th & Main</div>
+            <div class="item-meta">
+              <span>Type: Suspected Activity</span>
+              <span class="priority-high">Priority: HIGH</span>
+            </div>
+            <div class="text-small text-muted mb-1">
+              Reporter: Maria R. | Status: Pending Dispatch
+            </div>
+            <div class="btn-group">
+              <button class="btn btn-danger">ASSIGN TEAM</button>
+              <button class="btn btn-outline">View Details</button>
+              <button class="btn btn-outline">Mark False Alarm</button>
+            </div>
+          </div>
+
+          <div class="list-item mb-3" style="border-left: 4px solid var(--danger-color);">
+            <div class="item-title">#2025-1122-002 | 15:10 | North Zone Park Area</div>
+            <div class="item-meta">
+              <span>Type: Confirmed Sighting</span>
+              <span class="priority-high">Priority: HIGH</span>
+            </div>
+            <div class="text-small text-muted mb-1">
+              Reporter: James K. | Status: Awaiting Verification
+            </div>
+            <div class="btn-group">
+              <button class="btn btn-danger">ASSIGN TEAM</button>
+              <button class="btn btn-outline">View Details</button>
+              <button class="btn btn-outline">Update Status</button>
+            </div>
+          </div>
+
+          <!-- In Progress Section -->
+          <h3 class="priority-medium mb-2">🟡 IN PROGRESS (3)</h3>
+
+          <div class="list-item mb-2" style="border-left: 4px solid var(--warning-color);">
+            <div class="item-title">#2025-1122-003 | 13:45 | East Side Shopping Center</div>
+            <div class="item-meta">
+              <span>Team: Unit Alpha</span>
+              <span class="status-badge status-in-progress">On Scene</span>
+            </div>
+            <div class="btn-group">
+              <button class="btn btn-outline">View Updates</button>
+              <button class="btn btn-outline">Contact Team</button>
+              <button class="btn btn-outline">View Map</button>
+            </div>
+          </div>
+
+          <button class="btn btn-outline mt-2">Show 2 more in progress...</button>
+
+          <!-- Resolved Section -->
+          <h3 class="priority-low mb-2 mt-3">🟢 RESOLVED TODAY (5)</h3>
+          <button class="btn btn-outline">View Archive</button>
+        </div>
+      </div>
+
+      <!-- Bottom Row -->
+      <div class="dashboard-grid">
+        <!-- Available Teams -->
+        <div class="card">
+          <div class="card-header">AVAILABLE TEAMS</div>
+          <div class="card-content">
+            <div class="mb-2">
+              <span class="status-badge status-active">✓</span>
+              <strong>Unit Alpha (2)</strong><br>
+              <span class="text-small text-muted">Available Now</span>
+            </div>
+            <div class="mb-2">
+              <span class="status-badge status-active">✓</span>
+              <strong>Unit Bravo (2)</strong><br>
+              <span class="text-small text-muted">Available 4pm</span>
+            </div>
+            <div class="mb-2">
+              <span class="status-badge status-pending">⚠</span>
+              <strong>Unit Charlie (2)</strong><br>
+              <span class="text-small text-muted">On Assignment</span>
+            </div>
+            <button class="btn btn-outline mt-2">Manage Teams</button>
+          </div>
+        </div>
+
+        <!-- Pending Publication -->
+        <div class="card">
+          <div class="card-header">PENDING PUBLICATION</div>
+          <div class="card-content">
+            <div class="alert alert-info mb-2">
+              <strong>2 verified incidents</strong> ready for Ojo publication
+            </div>
+            <button class="btn btn-success">Review & Publish to Ojo</button>
+          </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="card">
+          <div class="card-header">QUICK STATS - TODAY</div>
+          <div class="card-content">
+            <div class="mb-1"><strong>Total Reports:</strong> 10</div>
+            <div class="mb-1"><strong>Verified:</strong> 5</div>
+            <div class="mb-1"><strong>False Alarms:</strong> 2</div>
+            <div class="mb-1"><strong>Pending:</strong> 3</div>
+            <div class="mt-2"><strong>Avg Response:</strong> 12 min</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align: center; margin-top: 20px;">
+    <a href="../index.html" style="color: var(--primary-color);">← Back to Index</a>
+  </div>
+</body>
+</html>
