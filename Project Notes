@@ -251,12 +251,69 @@ Develop a comprehensive Volunteer Management System that integrates volunteer co
 - **Dispatch:** Assignment of response team to incident
 - **Vetted Volunteer:** Volunteer who has completed required training
 
-### Appendix B: Open Questions
-- What is the current volume of volunteers and incidents?
-- What existing tools/platforms are currently in use?
-- What are the specific fields required for Ojo publication?
-- Are there any compliance or legal requirements for data retention?
-- What are the different volunteer roles and their specific qualifications?
+### Appendix B: Open Questions & Answers
+
+#### Q1: What is the current volume of volunteers and incidents?
+**Answer:** Approximately 100 field volunteers working across 10 different zones (~10 volunteers per zone average)
+
+**Implications:**
+- Zone-based organization is critical for system design
+- All major interfaces should include zone filtering and assignment
+- Coordinators may be assigned to specific zones
+- Reporting and analytics should support zone-level breakdowns
+- Shift creation should default to zone-based volunteer matching
+
+#### Q2: What existing tools/platforms are currently in use?
+**Answer:** Conversations for each zone currently take place using Signal for encrypted, direct messaging. Signal will continue to play a role in real-time field coordination.
+
+**Implications:**
+- VMS should complement (not replace) Signal
+- VMS handles: formal notifications, shift scheduling, incident logging, official records, Ojo publication
+- Signal handles: real-time encrypted communication, field coordination, urgent updates
+- Integration approach: VMS can reference Signal groups and provide links to zone-specific channels
+- Volunteers need both tools: VMS for structure/records, Signal for real-time communication
+
+**Integration Strategy:**
+- Shift details include reference to zone's Signal group
+- Incident assignments include link to join zone coordination channel
+- Field responders use Signal for real-time updates, VMS for official verification
+- Coordinators can send VMS notifications that point volunteers to Signal for details
+
+#### Q3: What are the specific fields required for Ojo publication?
+**Status:** To be determined with Siembra NC and Ojo platform team
+
+**Key considerations:**
+- Location (with privacy controls - exact vs. general area)
+- Incident type and description
+- Verification status and timestamp
+- Alert duration and priority level
+- Multi-language support (English/Spanish)
+
+#### Q4: Are there any compliance or legal requirements for data retention?
+**Status:** To be determined with Siembra NC legal/compliance team
+
+**Key considerations:**
+- Incident records retention period
+- Volunteer personal information (PII) handling
+- Right to be forgotten (data deletion requests)
+- Audit log retention
+- Backup and recovery requirements
+
+#### Q5: What are the different volunteer roles and their specific qualifications?
+**Status:** To be determined with Siembra NC training team
+
+**Initial identified roles:**
+- Monitor: Basic field observation (requires initial training + safety protocols)
+- Team Lead: Coordinates field teams (requires monitor certification + team lead training)
+- Dispatcher: Handles incident intake and team assignment (requires specialized training)
+- Coordinator: Manages volunteers and shifts (staff role with administrative access)
+
+**Training requirements to be defined:**
+- Initial orientation curriculum
+- Safety protocols certification
+- Communication training details
+- Team lead certification requirements
+- Advanced response training scope
 
 ---
 

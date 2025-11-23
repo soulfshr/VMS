@@ -19,21 +19,35 @@
 
     <!-- Main Content -->
     <div style="padding: 24px;">
-      <h2 style="margin-bottom: 24px;">Shift Coordination Dashboard</h2>
+      <div class="flex justify-between items-center mb-3">
+        <h2>Shift Coordination Dashboard</h2>
+        <div class="flex gap-2 items-center">
+          <label style="font-weight: 600;">Zone:</label>
+          <select class="form-select" style="width: 200px;">
+            <option>All Zones</option>
+            <option>Downtown Zone (12)</option>
+            <option>North Zone (8)</option>
+            <option>East Zone (10)</option>
+            <option>South Zone (9)</option>
+            <option>West Zone (8)</option>
+          </select>
+        </div>
+      </div>
 
       <!-- Quick Stats -->
       <div class="stats-grid mb-3">
         <div class="stat-card">
+          <div class="stat-value">100</div>
+          <div class="stat-label">Total Volunteers</div>
+          <div class="text-small text-muted">across 10 zones</div>
+        </div>
+        <div class="stat-card">
           <div class="stat-value">47</div>
-          <div class="stat-label">Active Volunteers</div>
+          <div class="stat-label">Active This Week</div>
         </div>
         <div class="stat-card">
           <div class="stat-value">12</div>
           <div class="stat-label">Upcoming Shifts</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">8</div>
-          <div class="stat-label">Need Response</div>
         </div>
         <div class="stat-card">
           <div class="stat-value priority-high">3</div>
