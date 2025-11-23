@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Siembra NC VMS - Project Overview</title>
+  <link rel="stylesheet" href="wireframes/css/wireframe.css">
+  <style>
+    .hero-section {
+      background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+      color: white;
+      padding: 80px 20px;
+      text-align: center;
+    }
+
+    .hero-section h1 {
+      font-size: 48px;
+      margin-bottom: 16px;
+      font-weight: 700;
+    }
+
+    .hero-section p {
+      font-size: 20px;
+      margin-bottom: 32px;
+      opacity: 0.95;
+    }
+
+    .hero-button {
+      display: inline-block;
+      background: white;
+      color: var(--primary-color);
+      padding: 16px 40px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 18px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .hero-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .content-section {
+      max-width: 1200px;
+      margin: 60px auto;
+      padding: 0 20px;
+    }
+
+    .section-title {
+      font-size: 32px;
+      margin-bottom: 24px;
+      color: var(--text-primary);
+      text-align: center;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+      margin-top: 40px;
+    }
+
+    .feature-card {
+      background: white;
+      border-radius: 8px;
+      padding: 32px;
+      box-shadow: var(--shadow);
+      border-left: 4px solid var(--primary-color);
+    }
+
+    .feature-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+
+    .feature-card h3 {
+      font-size: 20px;
+      margin-bottom: 12px;
+      color: var(--text-primary);
+    }
+
+    .feature-card p {
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .cta-section {
+      background: var(--bg-light);
+      padding: 60px 20px;
+      text-align: center;
+      margin-top: 60px;
+    }
+
+    .cta-section h2 {
+      font-size: 32px;
+      margin-bottom: 16px;
+      color: var(--text-primary);
+    }
+
+    .cta-section p {
+      font-size: 18px;
+      color: var(--text-secondary);
+      margin-bottom: 32px;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn-large {
+      padding: 16px 32px;
+      font-size: 16px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      display: inline-block;
+      transition: all 0.2s;
+    }
+
+    .btn-primary-large {
+      background: var(--primary-color);
+      color: white;
+    }
+
+    .btn-primary-large:hover {
+      background: #1e40af;
+      transform: translateY(-2px);
+    }
+
+    .btn-secondary-large {
+      background: white;
+      color: var(--primary-color);
+      border: 2px solid var(--primary-color);
+    }
+
+    .btn-secondary-large:hover {
+      background: var(--bg-light);
+      transform: translateY(-2px);
+    }
+
+    .docs-link {
+      display: inline-block;
+      margin: 8px;
+      padding: 8px 16px;
+      background: white;
+      border-radius: 6px;
+      text-decoration: none;
+      color: var(--primary-color);
+      font-weight: 500;
+    }
+
+    .docs-link:hover {
+      background: var(--bg-light);
+    }
+
+    footer {
+      background: var(--text-primary);
+      color: white;
+      text-align: center;
+      padding: 24px;
+      margin-top: 60px;
+    }
+
+    footer a {
+      color: white;
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <!-- Hero Section -->
+  <div class="hero-section">
+    <h1>Siembra NC VMS</h1>
+    <p>Volunteer Management System for Community Safety</p>
+    <a href="wireframes/index.html" class="hero-button">View Interactive Wireframes →</a>
+  </div>
+
+  <!-- Overview Section -->
+  <div class="content-section">
+    <h2 class="section-title">Project Overview</h2>
+    <p style="text-align: center; max-width: 800px; margin: 0 auto; font-size: 18px; color: var(--text-secondary); line-height: 1.8;">
+      A comprehensive digital platform designed to streamline volunteer coordination, shift management,
+      and incident reporting for Siembra NC's community safety initiatives. This system will improve
+      efficiency, data accuracy, and response times while reducing administrative burden.
+    </p>
+
+    <!-- Features Grid -->
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">👥</div>
+        <h3>Volunteer Management</h3>
+        <p>
+          Centralized volunteer roster with training tracking, qualification management, and
+          availability scheduling. Streamlines onboarding and ensures proper skill matching.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">📅</div>
+        <h3>Shift Coordination</h3>
+        <p>
+          Automated shift creation, invitation distribution, and RSVP tracking. Coordinators can
+          easily manage coverage and volunteers can browse opportunities that match their schedule.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🚨</div>
+        <h3>Incident Management</h3>
+        <p>
+          Complete workflow from sighting intake through dispatch, field verification, and community
+          alert publication via Ojo. Real-time status tracking ensures rapid response.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🔐</div>
+        <h3>Role-Based Access</h3>
+        <p>
+          Four distinct user roles (Volunteer, Coordinator, Dispatcher, Administrator) with
+          granular permissions ensure data security and appropriate access levels.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">📱</div>
+        <h3>Mobile-First Design</h3>
+        <p>
+          Optimized interfaces for field responders with mobile-friendly incident updates,
+          GPS integration, and offline capability for critical functions.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <h3>Analytics & Reporting</h3>
+        <p>
+          Comprehensive reporting on volunteer engagement, incident trends, response times,
+          and operational metrics to support data-driven decision making.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Key Documents Section -->
+  <div class="content-section">
+    <h2 class="section-title">Project Documentation</h2>
+    <div style="text-align: center; margin-top: 24px;">
+      <a href="Project Notes" class="docs-link" download>📄 Project Proposal & Requirements</a>
+      <a href="User Roles & Permissions.md" class="docs-link" download>👥 User Roles & Permissions</a>
+      <a href="Wireframes.md" class="docs-link" download>📐 Wireframe Specifications</a>
+    </div>
+  </div>
+
+  <!-- CTA Section -->
+  <div class="cta-section">
+    <h2>Review Interactive Wireframes</h2>
+    <p>Explore detailed wireframes for all major workflows and user interfaces</p>
+    <div class="button-group">
+      <a href="wireframes/index.html" class="btn-large btn-primary-large">
+        View All Wireframes
+      </a>
+      <a href="wireframes/dashboards/volunteer-dashboard.html" class="btn-large btn-secondary-large">
+        Try Volunteer Dashboard
+      </a>
+      <a href="wireframes/dashboards/dispatcher-dashboard.html" class="btn-large btn-secondary-large">
+        Try Dispatcher Dashboard
+      </a>
+    </div>
+  </div>
+
+  <!-- Quick Links Section -->
+  <div class="content-section">
+    <h2 class="section-title">Quick Access</h2>
+    <div class="features-grid">
+      <div class="feature-card">
+        <h3>📊 Dashboard Views</h3>
+        <ul style="list-style: none; padding: 0;">
+          <li><a href="wireframes/dashboards/volunteer-dashboard.html" style="color: var(--primary-color);">Volunteer Dashboard</a></li>
+          <li><a href="wireframes/dashboards/coordinator-dashboard.html" style="color: var(--primary-color);">Coordinator Dashboard</a></li>
+          <li><a href="wireframes/dashboards/dispatcher-dashboard.html" style="color: var(--primary-color);">Dispatcher Dashboard</a></li>
+        </ul>
+      </div>
+
+      <div class="feature-card">
+        <h3>👥 Volunteer Management</h3>
+        <ul style="list-style: none; padding: 0;">
+          <li><a href="wireframes/volunteer/registration.html" style="color: var(--primary-color);">Registration Form</a></li>
+          <li><a href="wireframes/volunteer/profile.html" style="color: var(--primary-color);">Volunteer Profile</a></li>
+          <li><a href="wireframes/volunteer/directory.html" style="color: var(--primary-color);">Volunteer Directory</a></li>
+        </ul>
+      </div>
+
+      <div class="feature-card">
+        <h3>📅 Shift Coordination</h3>
+        <ul style="list-style: none; padding: 0;">
+          <li><a href="wireframes/shifts/create-shift.html" style="color: var(--primary-color);">Create Shift</a></li>
+          <li><a href="wireframes/shifts/browse-rsvp.html" style="color: var(--primary-color);">Browse & RSVP</a></li>
+          <li><a href="wireframes/shifts/roster.html" style="color: var(--primary-color);">Shift Roster</a></li>
+        </ul>
+      </div>
+
+      <div class="feature-card">
+        <h3>🚨 Incident Management</h3>
+        <ul style="list-style: none; padding: 0;">
+          <li><a href="wireframes/incidents/intake-form.html" style="color: var(--primary-color);">Sighting Intake</a></li>
+          <li><a href="wireframes/incidents/dispatcher-view.html" style="color: var(--primary-color);">Dispatcher View</a></li>
+          <li><a href="wireframes/incidents/field-response.html" style="color: var(--primary-color);">Field Response (Mobile)</a></li>
+          <li><a href="wireframes/incidents/ojo-publication.html" style="color: var(--primary-color);">Ojo Publication</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <p>
+      <strong>Siembra NC Volunteer Management System</strong><br>
+      Design & Planning Phase | November 2025<br>
+      <a href="https://github.com/soulfshr/VMS" target="_blank">View on GitHub</a>
+    </p>
+  </footer>
+</body>
+</html>
