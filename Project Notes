@@ -315,6 +315,36 @@ Develop a comprehensive Volunteer Management System that integrates volunteer co
 - Team lead certification requirements
 - Advanced response training scope
 
+### Appendix C: Technology Stack
+
+**Status:** Approved for implementation (November 27, 2025)
+
+**Core Stack:**
+- **Frontend:** Next.js 14+ (App Router) with React and TypeScript
+- **Backend:** Next.js API Routes (serverless functions)
+- **Database:** Neon DB (Serverless Postgres)
+- **ORM:** Prisma
+- **Hosting:** Vercel
+- **Authentication:** Auth.js (Next-Auth)
+  - Providers: Email/Password (with verification) + Google OAuth
+- **Email:** Resend (free tier - 3,000 emails/month)
+- **SMS:** Postponed to Phase 2 (email + Signal sufficient for MVP)
+
+**Cost Estimate:**
+- Development: $0/month (free tiers)
+- Production (100 volunteers): $20-40/month
+- Production (1,000 volunteers): ~$90/month
+
+**Detailed Documentation:**
+See [Technical Architecture.md](Technical%20Architecture.md) for complete technical specifications, database schema, API design, security considerations, and implementation phases.
+
+**Key Decisions:**
+- **Serverless architecture** for cost-effectiveness and auto-scaling
+- **Neon + Vercel** for seamless integration and developer experience
+- **Auth.js** for flexible, open-source authentication
+- **Resend** for professional email delivery with React templates
+- **SMS postponed** to reduce initial complexity (can add later)
+
 ---
 
 ## Document History
@@ -322,4 +352,5 @@ Develop a comprehensive Volunteer Management System that integrates volunteer co
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 1.0 | 2025-11-22 | Initial | Document created |
+| 1.1 | 2025-11-27 | Update | Add tech stack (Appendix C) |
 

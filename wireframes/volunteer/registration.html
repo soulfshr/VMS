@@ -67,12 +67,33 @@
           </div>
 
           <div class="form-group">
-            <label class="form-label required">Preferred Language</label>
+            <label class="form-label required">Primary Language</label>
             <select class="form-select">
+              <option value="">Select primary language</option>
               <option value="en">English</option>
               <option value="es">Spanish</option>
-              <option value="both">Both</option>
             </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Other Languages Spoken</label>
+            <select class="form-select" multiple style="height: 120px;" id="otherLanguages">
+              <option value="en">English</option>
+              <option value="es">Spanish</option>
+              <option value="zh">Chinese</option>
+              <option value="ko">Korean</option>
+              <option value="fr">French</option>
+              <option value="pt">Portuguese</option>
+              <option value="ht">Haitian Creole</option>
+              <option value="other">Other (please specify)</option>
+            </select>
+            <p class="text-small text-muted mt-1">Hold Ctrl (Windows) or Cmd (Mac) to select multiple</p>
+          </div>
+
+          <div class="form-group" id="otherLanguageInput" style="display: none;">
+            <label class="form-label">Please specify other language(s)</label>
+            <input type="text" class="form-input" placeholder="Enter language name(s)">
+            <p class="text-small text-muted mt-1">Note: This field appears when "Other" is selected above</p>
           </div>
 
           <div class="form-group">

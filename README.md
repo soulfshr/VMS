@@ -40,6 +40,33 @@ This repository contains the planning and design documentation for the Siembra N
 - **Dispatcher** - Handle incidents and team assignments
 - **Administrator** - System configuration and oversight
 
+## 🛠️ Technology Stack
+
+**Approved Stack (November 2025):**
+
+### Core Technologies
+- **Frontend:** Next.js 14+ (App Router) with React & TypeScript
+- **Backend:** Next.js API Routes (Serverless)
+- **Database:** Neon DB (Serverless Postgres)
+- **ORM:** Prisma
+- **Hosting:** Vercel
+
+### Authentication & Communications
+- **Auth:** Auth.js (Next-Auth)
+  - Email/Password with verification
+  - Google OAuth
+- **Email:** Resend (3,000/month free tier)
+- **SMS:** Postponed to Phase 2
+
+### Design Decisions
+- ✅ **Serverless architecture** - Cost-effective, auto-scaling
+- ✅ **Modern stack** - TypeScript, React Server Components
+- ✅ **Proven tools** - Widely adopted, well-documented
+- ✅ **Low initial cost** - $0-40/month for production
+
+**Detailed Documentation:**
+See [Technical Architecture.md](Technical%20Architecture.md) for complete specifications, database schema, API design, security considerations, and implementation roadmap.
+
 ## 📁 Repository Structure
 
 ```
@@ -47,6 +74,8 @@ VMS/
 ├── index.html                          # Landing page
 ├── Project Notes                       # Project proposal & requirements
 ├── User Roles & Permissions.md         # RBAC documentation
+├── Technical Architecture.md           # Tech stack & implementation plan
+├── Signal Integration Strategy.md      # Signal/VMS integration guide
 ├── Wireframes.md                       # Wireframe specifications
 ├── wireframes/
 │   ├── index.html                      # Wireframe navigation hub
@@ -124,9 +153,17 @@ To view the wireframes locally:
 
 ## 📖 Documentation
 
+### Planning & Requirements
 - **[Project Notes](Project%20Notes)** - Comprehensive project proposal including background, requirements, and implementation phases
 - **[User Roles & Permissions](User%20Roles%20%26%20Permissions.md)** - Detailed RBAC specification with permission matrices
+
+### Technical Documentation
+- **[Technical Architecture](Technical%20Architecture.md)** - Complete tech stack, database schema, API design, and implementation roadmap
+- **[Signal Integration Strategy](Signal%20Integration%20Strategy.md)** - How VMS complements Signal for real-time coordination
+
+### Design Documentation
 - **[Wireframes](Wireframes.md)** - Text-based wireframe specifications
+- **[Interactive Wireframes](wireframes/index.html)** - HTML mockups for all workflows
 
 ## 🤝 Contributing
 
