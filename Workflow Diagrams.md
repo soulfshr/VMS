@@ -139,11 +139,16 @@ flowchart TD
     Triage --> Actionable{Actionable<br/>Report?}
     Actionable -->|No| FalseAlarm[Mark as False Alarm]
     FalseAlarm --> NotifyReporter[Notify Reporter]
-    Actionable -->|Yes| AssignTeam[Assign Response Team]
-    AssignTeam --> CreateSignal[Create Signal Channel]
-    CreateSignal --> NotifyTeam[Notify Team: VMS + Signal]
-    NotifyTeam --> TeamRespond[Team Receives Assignment]
-    TeamRespond --> EnRoute[Update Status: En Route]
+    Actionable -->|Yes| RequestVolunteers[Request Available Volunteers]
+    RequestVolunteers --> NotifyZone[Notify Zone: VMS + Signal]
+    NotifyZone --> WaitResponses[Wait for Volunteer Responses]
+    WaitResponses --> CheckMin{≥2 Volunteers<br/>Available?}
+    CheckMin -->|No| UnableDispatch[Unable to Dispatch]
+    UnableDispatch --> ContinueSeeking[Continue Seeking or Escalate]
+    CheckMin -->|Yes| AssignResponders[Assign Responding Volunteers]
+    AssignResponders --> PostSignal[Post Details to Zone Signal]
+    PostSignal --> ConfirmTeam[Confirm Team Assignment]
+    ConfirmTeam --> EnRoute[Volunteers En Route]
     EnRoute --> OnScene[Arrive on Scene]
     OnScene --> Document[Document Findings]
     Document --> Verify{Verified?}
@@ -163,10 +168,11 @@ flowchart TD
     NotifyReporter --> Archive
 
     style Start fill:#3b82f6,color:#fff
-    style CreateSignal fill:#2563eb,color:#fff
+    style PostSignal fill:#2563eb,color:#fff
     style MarkVerified fill:#10b981,color:#fff
     style Publish fill:#10b981,color:#fff
     style FalseAlarm fill:#ef4444,color:#fff
+    style UnableDispatch fill:#ef4444,color:#fff
 ```
 
 ### Incident Lifecycle
@@ -174,8 +180,10 @@ flowchart TD
 | Status | Description | Next Steps |
 |--------|-------------|------------|
 | **New** | Just submitted, awaiting triage | Dispatcher reviews within 15 min |
-| **Pending Dispatch** | Triaged, awaiting team assignment | Assign available team in zone |
-| **Dispatched** | Team assigned and notified | Team updates status via VMS |
+| **Requesting Volunteers** | Triaged, seeking available responders | Notify zone volunteers via VMS + Signal |
+| **Awaiting Responses** | Volunteers responding with availability | Check if ≥2 volunteers available |
+| **Unable to Dispatch** | Insufficient volunteers (< 2) | Continue seeking or escalate |
+| **Dispatched** | Team assigned and confirmed (≥2) | Team coordinates via zone Signal channel |
 | **En Route** | Team traveling to location | Real-time coordination via Signal |
 | **On Scene** | Team arrived, investigating | Document findings in VMS mobile |
 | **Verified** | Confirmed by field team | Prepare for Ojo publication |
@@ -185,9 +193,11 @@ flowchart TD
 
 ### Signal + VMS Integration
 
-- **VMS**: Official record, structured data, notifications, Ojo publication
+- **VMS**: Official record, structured data, availability requests, notifications, Ojo publication
 - **Signal**: Real-time encrypted team coordination during active response
-- **Handoff**: Dispatcher creates Signal channel when assigning team
+- **Zone Channels**: Pre-existing Signal channels for each of 10 zones (not created per-incident)
+- **Workflow**: Dispatcher posts incident details to zone's existing Signal channel thread
+- **Safety**: Minimum 2 volunteers required for any field response (never work alone)
 - **Documentation**: All findings logged in VMS, Signal used for live updates
 
 ---

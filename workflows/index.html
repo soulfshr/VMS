@@ -474,27 +474,62 @@
               </div>
             </div>
             <div class="branch">
-              <div class="branch-label yes">✅ Dispatch Team</div>
+              <div class="branch-label yes">✅ Request Response</div>
               <div class="step process">
-                <div class="step-icon">👥</div>
-                <div class="step-title">Assign Team</div>
-                <div class="step-detail">Select available volunteers in zone</div>
+                <div class="step-icon">📢</div>
+                <div class="step-title">Request Available Volunteers</div>
+                <div class="step-detail">Notify zone volunteers (VMS + Signal)</div>
+              </div>
+              <div class="notification">
+                <span class="notification-icon">📬</span>
+                Notification sent to zone volunteers: "Who can respond NOW?"
+              </div>
+              <span class="arrow down">↓</span>
+              <div class="step process">
+                <div class="step-icon">⏱️</div>
+                <div class="step-title">Wait for Responses</div>
+                <div class="step-detail">Volunteers RSVP via VMS or Signal</div>
+              </div>
+              <span class="arrow down">↓</span>
+              <div class="step decision">
+                <div class="step-icon">❓</div>
+                <div class="step-title">≥2 Volunteers<br/>Available?</div>
+                <div class="step-detail">Safety: min 2 required</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="decision-branches">
+            <div class="branch">
+              <div class="branch-label no">❌ Insufficient</div>
+              <div class="step error">
+                <div class="step-icon">⚠</div>
+                <div class="step-title">Unable to Dispatch</div>
+                <div class="step-detail">Continue seeking or escalate</div>
+              </div>
+            </div>
+            <div class="branch">
+              <div class="branch-label yes">✅ Can Dispatch</div>
+              <div class="step success">
+                <div class="step-icon">✓</div>
+                <div class="step-title">Assign Responders</div>
+                <div class="step-detail">Confirm volunteers who responded</div>
               </div>
               <span class="arrow down">↓</span>
               <div class="step signal">
                 <div class="step-icon">🔒</div>
-                <div class="step-title">Create Signal Channel</div>
-                <div class="step-detail">Encrypted coordination for team</div>
+                <div class="step-title">Post to Zone Signal</div>
+                <div class="step-detail">Share details in existing channel</div>
               </div>
               <span class="arrow down">↓</span>
               <div class="step success">
                 <div class="step-icon">📤</div>
                 <div class="step-title">Deploy Team</div>
-                <div class="step-detail">Notifications sent (VMS + Signal)</div>
+                <div class="step-detail">Final confirmation sent</div>
               </div>
               <div class="notification">
                 <span class="notification-icon">📬</span>
-                Team receives: Incident details + Signal channel link + VMS tracking
+                Team receives: Incident details + Signal thread + VMS tracking
               </div>
             </div>
           </div>
@@ -502,26 +537,65 @@
 
         <!-- Field Response Lane -->
         <div class="swimlane volunteer">
-          <div class="swimlane-header">🏃 FIELD TEAM</div>
+          <div class="swimlane-header">🏃 VOLUNTEERS</div>
           <div class="flow-steps">
             <div class="step process">
               <div class="step-icon">📲</div>
-              <div class="step-title">Receive Assignment</div>
-              <div class="step-detail">VMS notification + Signal alert</div>
+              <div class="step-title">Receive Request</div>
+              <div class="step-detail">VMS notification + Signal ping</div>
             </div>
             <span class="arrow">→</span>
-            <div class="step signal">
-              <div class="step-icon">🔒</div>
-              <div class="step-title">Coordinate via Signal</div>
-              <div class="step-detail">Real-time encrypted communication</div>
+            <div class="step decision">
+              <div class="step-icon">❓</div>
+              <div class="step-title">Available<br/>Now?</div>
             </div>
-            <span class="arrow">→</span>
-            <div class="step process">
-              <div class="step-icon">🚗</div>
-              <div class="step-title">Update Status</div>
-              <div class="step-detail">Mark "En Route" in VMS</div>
-              <a href="../wireframes/incidents/field-response.html" class="wireframe-link">View Mobile</a>
+          </div>
+
+          <div class="decision-branches">
+            <div class="branch">
+              <div class="branch-label no">❌ Not Available</div>
+              <div class="step error">
+                <div class="step-icon">✋</div>
+                <div class="step-title">Decline / No Response</div>
+                <div class="step-detail">Cannot respond right now</div>
+              </div>
             </div>
+            <div class="branch">
+              <div class="branch-label yes">✅ Can Respond</div>
+              <div class="step success">
+                <div class="step-icon">✋</div>
+                <div class="step-title">RSVP "Available"</div>
+                <div class="step-detail">Reply via VMS or Signal</div>
+              </div>
+              <span class="arrow down">↓</span>
+              <div class="step process">
+                <div class="step-icon">⏰</div>
+                <div class="step-title">Wait for Confirmation</div>
+                <div class="step-detail">Dispatcher confirms assignment</div>
+              </div>
+              <span class="arrow down">↓</span>
+              <div class="step success">
+                <div class="step-icon">✓</div>
+                <div class="step-title">Assignment Confirmed</div>
+                <div class="step-detail">You + partner(s) assigned</div>
+              </div>
+              <span class="arrow down">↓</span>
+              <div class="step signal">
+                <div class="step-icon">🔒</div>
+                <div class="step-title">Coordinate via Signal</div>
+                <div class="step-detail">Zone channel thread for incident</div>
+              </div>
+              <span class="arrow down">↓</span>
+              <div class="step process">
+                <div class="step-icon">🚗</div>
+                <div class="step-title">Update Status: En Route</div>
+                <div class="step-detail">Mark in VMS mobile app</div>
+                <a href="../wireframes/incidents/field-response.html" class="wireframe-link">View Mobile</a>
+              </div>
+            </div>
+          </div>
+
+          <div class="flow-steps" style="margin-top: 20px;">
             <span class="arrow">→</span>
             <div class="step process">
               <div class="step-icon">👀</div>
