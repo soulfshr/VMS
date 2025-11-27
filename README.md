@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="SiembraNC Logo.webp" alt="Siembra NC Logo" width="300">
+</div>
+
 # Siembra NC Volunteer Management System (VMS)
 
 A comprehensive digital platform designed to streamline volunteer coordination, shift management, and incident reporting for Siembra NC's community safety initiatives.
