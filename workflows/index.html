@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VMS Workflow Diagrams - Siembra NC</title>
+  <link rel="stylesheet" href="css/workflow.css">
+</head>
+<body>
+  <div class="workflow-container">
+    <!-- Header -->
+    <div class="workflow-header">
+      <h1>VMS Workflow Diagrams</h1>
+      <p>Comprehensive process flows for volunteer management and incident response</p>
+    </div>
+
+    <!-- Workflow Tabs -->
+    <div class="workflow-tabs">
+      <button class="tab-btn active" onclick="showWorkflow('volunteer')">Volunteer Journey</button>
+      <button class="tab-btn" onclick="showWorkflow('shift')">Shift Coordination</button>
+      <button class="tab-btn" onclick="showWorkflow('incident')">Incident Management</button>
+      <button class="tab-btn" onclick="showWorkflow('training')">Training Workflow</button>
+    </div>
+
+    <!-- VOLUNTEER JOURNEY WORKFLOW -->
+    <div id="volunteer-workflow" class="workflow-content active">
+      <h2>Volunteer Journey: Registration to Active Field Work</h2>
+      <p style="margin-bottom: 20px; color: #6b7280;">Complete lifecycle of a volunteer from initial signup through ongoing participation</p>
+
+      <div class="swimlanes">
+        <!-- Volunteer Lane -->
+        <div class="swimlane volunteer">
+          <div class="swimlane-header">👤 VOLUNTEER ACTIONS</div>
+          <div class="flow-steps">
+            <div class="step process">
+              <div class="step-icon">📝</div>
+              <div class="step-title">Submit Registration</div>
+              <div class="step-detail">Fill multi-step form with personal info, languages, zone</div>
+              <a href="../wireframes/volunteer/registration.html" class="wireframe-link">View Wireframe</a>
+            </div>
+            <span class="arrow">→</span>
+            <div class="step process">
+              <div class="step-icon">📧</div>
+              <div class="step-title">Verify Email</div>
+              <div class="step-detail">Click link in verification email</div>
+            </div>
+            <span class="arrow">→</span>
+            <div class="step process">
+              <div class="step-icon">👤</div>
+              <div class="step-title">Complete Profile</div>
+              <div class="step-detail">Add availability, emergency contacts, zone assignment</div>
+              <a href="../wireframes/volunteer/profile.html" class="wireframe-link">View Wireframe</a>
+            </div>
+            <span class="arrow">→</span>
+            <div class="step decision">
+              <div class="step-icon">❓</div>
+              <div class="step-title">Training Complete?</div>
+              <div class="step-detail">Check certification status</div>
+            </div>
+          </div>
+
+          <div class="decision-branches">
+            <div class="branch">
+              <div class="branch-label no">❌ NO - Incomplete</div>
+              <div class="step process">
+                <div class="step-icon">📚</div>
+                <div class="step-title">Attend Training</div>
+                <div class="step-detail">Complete required orientation & safety</div>
+              </div>
+            </div>
+            <div class="branch">
+              <div class="branch-label yes">✅ YES - Certified</div>
+              <div class="step success">
+                <div class="step-icon">✓</div>
+                <div class="step-title">Active Status</div>
+                <div class="step-detail">Can browse and accept shifts</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="notification">
+            <span class="notification-icon">📬</span>
+            <strong>System Notification:</strong> Welcome email sent with VMS access + Signal group invitation for zone
+          </div>
+
+          <div class="flow-steps" style="margin-top: 20px;">
+            <div class="step process">
+              <div class="step-icon">📅</div>
+              <div class="step-title">Browse Shifts</div>
+              <div class="step-detail">Filter by zone, date, role</div>
+              <a href="../wireframes/shifts/browse-rsvp.html" class="wireframe-link">View Wireframe</a>
+            </div>
+            <span class="arrow">→</span>
+            <div class="step process">
+              <div class="step-icon">✋</div>
+              <div class="step-title">RSVP to Shift</div>
+              <div class="step-detail">Select "I'll be there"</div>
+            </div>
+            <span class="arrow">→</span>
+            <div class="step decision">
+              <div class="step-icon">❓</div>
+              <div class="step-title">Shift Full?</div>
+            </div>
+          </div>
+
+          <div class="decision-branches">
+            <div class="branch">
+              <div class="branch-label yes">❌ YES - At Capacity</div>
+              <div class="step error">
+                <div class="step-icon">🚫</div>
+                <div class="step-title">Added to Waitlist</div>
+                <div class="step-detail">Notified if spot opens</div>
+              </div>
+            </div>
+            <div class="branch">
+              <div class="branch-label no">✅ NO - Space Available</div>
+              <div class="step success">
+                <div class="step-icon">✓</div>
+                <div class="step-title">Confirmed</div>
+                <div class="step-detail">Shift added to schedule</div>
+              </div>
+              <div class="notification">
+                <span class="notification-icon">📬</span>
+                Email confirmation + calendar invite + Signal channel link
+              </div>
+              <div class="step process">
+                <div class="step-icon">🏃</div>
+                <div class="step-title">Attend Shift</div>
+                <div class="step-detail">Field work in assigned zone</div>
+              </div>
+              <span class="arrow down">↓</span>
+              <div class="step signal">
+                <div class="step-icon">🔒</div>
+                <div class="step-title">Real-Time Coordination</div>
+                <div class="step-detail">Use Signal for team communication</div>
+              </div>
+              <span class="arrow down">↓</span>
+              <div class="step success">
+                <div class="step-icon">📊</div>
+                <div class="step-title">Activity Logged</div>
+                <div class="step-detail">Hours tracked, stats updated</div>
+                <a href="../wireframes/dashboards/volunteer-dashboard.html" class="wireframe-link">View Dashboard</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Coordinator Lane -->
+        <div class="swimlane coordinator">
+          <div class="swimlane-header">⚙️ COORDINATOR ACTIONS</div>
+          <div class="flow-steps">
+            <div class="step process">
+              <div class="step-icon">👀</div>
+              <div class="step-title">Review Registration</div>
+              <div class="step-detail">Verify volunteer info</div>
+              <a href="../wireframes/volunteer/directory.html" class="wireframe-link">View Directory</a>
+            </div>
+            <span class="arrow">→</span>
+            <div class="step decision">
+              <div class="step-icon">❓</div>
+              <div class="step-title">Approve?</div>
+            </div>
+          </div>
+
+          <div class="decision-branches">
+            <div class="branch">
+              <div class="branch-label no">❌ NO - Reject/Hold</div>
+              <div class="step error">
+                <div class="step-icon">✋</div>
+                <div class="step-title">Request Info</div>
+                <div class="step-detail">Email for clarification</div>
+              </div>
+            </div>
+            <div class="branch">
+              <div class="branch-label yes">✅ YES - Approve</div>
+              <div class="step success">
+                <div class="step-icon">✓</div>
+                <div class="step-title">Activate Account</div>
+                <div class="step-detail">Status set to Active</div>
+              </div>
+              <div class="notification">
+                <span class="notification-icon">📬</span>
+                Volunteer receives activation email
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- System Lane -->
+        <div class="swimlane system">
+          <div class="swimlane-header">🤖 AUTOMATED SYSTEM</div>
+          <div class="flow-steps">
+            <div class="step process">
+              <div class="step-icon">💾</div>
+              <div class="step-title">Create Account</div>
+              <div class="step-detail">Generate user ID, hash password</div>
+            </div>
+            <span class="arrow">→</span>
+            <div class="step process">
+              <div class="step-icon">📧</div>
+              <div class="step-title">Send Verification</div>
+              <div class="step-detail">Email with unique token</div>
+            </div>
+            <span class="arrow">→</span>
+            <div class="step process">
+              <div class="step-icon">⏰</div>
+              <div class="step-title">Shift Reminders</div>
+              <div class="step-detail">24 hours + 2 hours before</div>
+            </div>
+            <span class="arrow">→</span>
+            <div class="step process">
+              <div class="step-icon">📊</div>
+              <div class="step-title">Track Metrics</div>
+              <div class="step-detail">Hours, attendance, sightings</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SHIFT COORDINATION WORKFLOW -->
+    <div id="shift-workflow" class="workflow-content">
+      <h2>Shift Coordination: Creation to Completion</h2>
+      <p style="margin-bottom: 20px; color: #6b7280;">Complete process for scheduling and managing volunteer shifts</p>
+
+      <div class="swimlanes">
+        <!-- Coordinator Lane -->
+        <div class="swimlane coordinator">
+          <div class="swimlane-header">⚙️ COORDINATOR</div>
+          <div class="flow-steps">
+            <div class="step process">
+              <div class="step-icon">➕</div>
+              <div class="step-title">Create Shift</div>
+              <div class="step-detail">Set date, time, zone, min/max volunteers, roles needed</div>
+              <a href="../wireframes/shifts/create-shift.html" class="wireframe-link">View Wireframe</a>
+            </div>
+            <span class="arrow">→</span>
+            <div class="step process">
+              <div class="step-icon">🎯</div>
+              <div class="step-title">Select Recipients</div>
+              <div class="step-detail">Filter by zone, qualifications, availability</div>
+            </div>
+            <span class="arrow">→</span>
+            <div class="step decision">
+              <div class="step-icon">❓</div>
+              <div class="step-title">Send Invites?</div>
+            </div>
+          </div>
+
+          <div class="decision-branches">
+            <div class="branch">
+              <div class="branch-label no">❌ Save Draft</div>
+              <div class="step process">
+                <div class="step-icon">💾</div>
+                <div class="step-title">Shift Saved</div>
+                <div class="step-detail">Can edit later</div>
+              </div>
+            </div>
+            <div class="branch">
+              <div class="branch-label yes">✅ Publish Shift</div>
+              <div class="step success">
+                <div class="step-icon">📤</div>
+                <div class="step-title">Invitations Sent</div>
+                <div class="step-detail">Email + in-app notifications</div>
+              </div>
+              <div class="notification">
+                <span class="notification-icon">📬</span>
+                Notifications sent to qualified volunteers in zone
+              </div>
+              <div class="step process" style="margin-top: 15px;">
+                <div class="step-icon">📋</div>
+                <div class="step-title">Monitor RSVPs</div>
+                <div class="step-detail">Track confirmations vs. capacity</div>
+                <a href="../wireframes/shifts/roster.html" class="wireframe-link">View Roster</a>
+              </div>
+              <span class="arrow down">↓</span>
+              <div class="step decision">
+                <div class="step-icon">❓</div>
+                <div class="step-title">Min Met?</div>
+                <div class="step-detail">Enough volunteers?</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="decision-branches">
+            <div class="branch">
+              <div class="branch-label no">❌ Under Minimum</div>
+              <div class="step error">
+                <div class="step-icon">📣</div>
+                <div class="step-title">Send Reminder</div>
+                <div class="step-detail">Or cancel shift</div>
+              </div>
+            </div>
+            <div class="branch">
+              <div class="branch-label yes">✅ Capacity OK</div>
+              <div class="step success">
+                <div class="step-icon">✓</div>
+                <div class="step-title">Confirm Shift</div>
+                <div class="step-detail">Lock roster 24h before</div>
+              </div>
+              <div class="step signal">
+                <div class="step-icon">🔒</div>
+                <div class="step-title">Share Signal Channel</div>
+                <div class="step-detail">Team coordination link sent</div>
+              </div>
+              <span class="arrow down">↓</span>
+              <div class="step process">
+                <div class="step-icon">📊</div>
+                <div class="step-title">Post-Shift Review</div>
+                <div class="step-detail">Log attendance, notes, incidents</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Volunteer Lane -->
+        <div class="swimlane volunteer">
+          <div class="swimlane-header">👤 VOLUNTEER</div>
+          <div class="flow-steps">
+            <div class="step process">
+              <div class="step-icon">📧</div>
+              <div class="step-title">Receive Invitation</div>
+              <div class="step-detail">Email + dashboard notification</div>
+            </div>
+            <span class="arrow">→</span>
+            <div class="step process">
+              <div class="step-icon">📅</div>
+              <div class="step-title">Review Shift Details</div>
+              <div class="step-detail">Check zone, time, requirements</div>
+            </div>
+            <span class="arrow">→</span>
+            <div class="step decision">
+              <div class="step-icon">❓</div>
+              <div class="step-title">Available?</div>
+            </div>
+          </div>
+
+          <div class="decision-branches">
+            <div class="branch">
+              <div class="branch-label no">❌ Decline</div>
+              <div class="step error">
+                <div class="step-icon">✋</div>
+                <div class="step-title">RSVP No</div>
+                <div class="step-detail">Spot reopens</div>
+              </div>
+            </div>
+            <div class="branch">
+              <div class="branch-label yes">✅ Accept</div>
+              <div class="step success">
+                <div class="step-icon">✓</div>
+                <div class="step-title">RSVP Yes</div>
+                <div class="step-detail">Added to roster</div>
+              </div>
+              <div class="notification">
+                <span class="notification-icon">📬</span>
+                Confirmation + calendar invite sent
+              </div>
+              <div class="step process" style="margin-top: 15px;">
+                <div class="step-icon">⏰</div>
+                <div class="step-title">Receive Reminders</div>
+                <div class="step-detail">24h + 2h before shift</div>
+              </div>
+              <span class="arrow down">↓</span>
+              <div class="step signal">
+                <div class="step-icon">🔒</div>
+                <div class="step-title">Join Signal Channel</div>
+                <div class="step-detail">Real-time team coordination</div>
+              </div>
+              <span class="arrow down">↓</span>
+              <div class="step success">
+                <div class="step-icon">🏃</div>
+                <div class="step-title">Complete Shift</div>
+                <div class="step-detail">Activity logged automatically</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- System Lane -->
+        <div class="swimlane system">
+          <div class="swimlane-header">🤖 SYSTEM</div>
+          <div class="flow-steps">
+            <div class="step process">
+              <div class="step-icon">🔍</div>
+              <div class="step-title">Match Volunteers</div>
+              <div class="step-detail">Filter by zone, certs, availability</div>
+            </div>
+            <span class="arrow">→</span>
+            <div class="step process">
+              <div class="step-icon">📊</div>
+              <div class="step-title">Track Capacity</div>
+              <div class="step-detail">Monitor min/max thresholds</div>
+            </div>
+            <span class="arrow">→</span>
+            <div class="step process">
+              <div class="step-icon">📧</div>
+              <div class="step-title">Auto Reminders</div>
+              <div class="step-detail">Scheduled notifications</div>
+            </div>
+            <span class="arrow">→</span>
+            <div class="step process">
+              <div class="step-icon">💾</div>
+              <div class="step-title">Log Attendance</div>
+              <div class="step-detail">Update volunteer stats</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INCIDENT MANAGEMENT WORKFLOW -->
+    <div id="incident-workflow" class="workflow-content">
+      <h2>Incident Management: Report to Publication</h2>
+      <p style="margin-bottom: 20px; color: #6b7280;">Complete flow from sighting report through field verification to community alert</p>
+
+      <div class="swimlanes">
+        <!-- Reporter Lane -->
+        <div class="swimlane volunteer">
+          <div class="swimlane-header">📱 REPORTER (Anyone)</div>
+          <div class="flow-steps">
+            <div class="step process">
+              <div class="step-icon">📝</div>
+              <div class="step-title">Submit Report</div>
+              <div class="step-detail">Location, time, description, photos</div>
+              <a href="../wireframes/incidents/intake-form.html" class="wireframe-link">View Wireframe</a>
+            </div>
+            <span class="arrow">→</span>
+            <div class="step success">
+              <div class="step-icon">✓</div>
+              <div class="step-title">Report Logged</div>
+              <div class="step-detail">Unique incident ID assigned</div>
+            </div>
+          </div>
+          <div class="notification">
+            <span class="notification-icon">📬</span>
+            Confirmation email: "We received your report (#2025-1122-001)"
+          </div>
+        </div>
+
+        <!-- Dispatcher Lane -->
+        <div class="swimlane dispatcher">
+          <div class="swimlane-header">🚨 DISPATCHER</div>
+          <div class="flow-steps">
+            <div class="step process">
+              <div class="step-icon">🔔</div>
+              <div class="step-title">Receive Alert</div>
+              <div class="step-detail">New incident notification</div>
+            </div>
+            <span class="arrow">→</span>
+            <div class="step process">
+              <div class="step-icon">🎯</div>
+              <div class="step-title">Triage Report</div>
+              <div class="step-detail">Review details, assess priority, assign zone</div>
+              <a href="../wireframes/incidents/dispatcher-view.html" class="wireframe-link">View Wireframe</a>
+            </div>
+            <span class="arrow">→</span>
+            <div class="step decision">
+              <div class="step-icon">❓</div>
+              <div class="step-title">Actionable?</div>
+            </div>
+          </div>
+
+          <div class="decision-branches">
+            <div class="branch">
+              <div class="branch-label no">❌ Not Actionable</div>
+              <div class="step error">
+                <div class="step-icon">🚫</div>
+                <div class="step-title">Mark False Alarm</div>
+                <div class="step-detail">Close with notes</div>
+              </div>
+              <div class="notification">
+                <span class="notification-icon">📬</span>
+                Reporter notified of disposition
+              </div>
+            </div>
+            <div class="branch">
+              <div class="branch-label yes">✅ Dispatch Team</div>
+              <div class="step process">
+                <div class="step-icon">👥</div>
+                <div class="step-title">Assign Team</div>
+                <div class="step-detail">Select available volunteers in zone</div>
+              </div>
+              <span class="arrow down">↓</span>
+              <div class="step signal">
+                <div class="step-icon">🔒</div>
+                <div class="step-title">Create Signal Channel</div>
+                <div class="step-detail">Encrypted coordination for team</div>
+              </div>
+              <span class="arrow down">↓</span>
+              <div class="step success">
+                <div class="step-icon">📤</div>
+                <div class="step-title">Deploy Team</div>
+                <div class="step-detail">Notifications sent (VMS + Signal)</div>
+              </div>
+              <div class="notification">
+                <span class="notification-icon">📬</span>
+                Team receives: Incident details + Signal channel link + VMS tracking
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Field Response Lane -->
+        <div class="swimlane volunteer">
+          <div class="swimlane-header">🏃 FIELD TEAM</div>
+          <div class="flow-steps">
+            <div class="step process">
+              <div class="step-icon">📲</div>
+              <div class="step-title">Receive Assignment</div>
+              <div class="step-detail">VMS notification + Signal alert</div>
+            </div>
+            <span class="arrow">→</span>
+            <div class="step signal">
+              <div class="step-icon">🔒</div>
+              <div class="step-title">Coordinate via Signal</div>
+              <div class="step-detail">Real-time encrypted communication</div>
+            </div>
+            <span class="arrow">→</span>
+            <div class="step process">
+              <div class="step-icon">🚗</div>
+              <div class="step-title">Update Status</div>
+              <div class="step-detail">Mark "En Route" in VMS</div>
+              <a href="../wireframes/incidents/field-response.html" class="wireframe-link">View Mobile</a>
+            </div>
+            <span class="arrow">→</span>
+            <div class="step process">
+              <div class="step-icon">👀</div>
+              <div class="step-title">Arrive on Scene</div>
+              <div class="step-detail">Update status, begin observation</div>
+            </div>
+            <span class="arrow">→</span>
+            <div class="step process">
+              <div class="step-icon">📸</div>
+              <div class="step-title">Document Findings</div>
+              <div class="step-detail">Photos, notes, vehicle count, etc.</div>
+            </div>
+            <span class="arrow">→</span>
+            <div class="step decision">
+              <div class="step-icon">❓</div>
+              <div class="step-title">Verified?</div>
+            </div>
+          </div>
+
+          <div class="decision-branches">
+            <div class="branch">
+              <div class="branch-label no">❌ False Alarm</div>
+              <div class="step error">
+                <div class="step-icon">✗</div>
+                <div class="step-title">Mark Unverified</div>
+                <div class="step-detail">Submit field notes</div>
+              </div>
+            </div>
+            <div class="branch">
+              <div class="branch-label yes">✅ Confirmed</div>
+              <div class="step success">
+                <div class="step-icon">✓</div>
+                <div class="step-title">Mark Verified</div>
+                <div class="step-detail">Complete verification form</div>
+              </div>
+              <span class="arrow down">↓</span>
+              <div class="step process">
+                <div class="step-icon">📤</div>
+                <div class="step-title">Submit to VMS</div>
+                <div class="step-detail">Photos, disposition, timestamp</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Publication Lane -->
+        <div class="swimlane coordinator">
+          <div class="swimlane-header">📢 OJO PUBLICATION</div>
+          <div class="flow-steps">
+            <div class="step process">
+              <div class="step-icon">📋</div>
+              <div class="step-title">Review Verification</div>
+              <div class="step-detail">Check field team findings</div>
+            </div>
+            <span class="arrow">→</span>
+            <div class="step decision">
+              <div class="step-icon">❓</div>
+              <div class="step-title">Publish?</div>
+            </div>
+          </div>
+
+          <div class="decision-branches">
+            <div class="branch">
+              <div class="branch-label no">❌ Hold</div>
+              <div class="step error">
+                <div class="step-icon">⏸</div>
+                <div class="step-title">Request More Info</div>
+                <div class="step-detail">Back to field team</div>
+              </div>
+            </div>
+            <div class="branch">
+              <div class="branch-label yes">✅ Approve</div>
+              <div class="step process">
+                <div class="step-icon">✏️</div>
+                <div class="step-title">Draft Alert</div>
+                <div class="step-detail">Location, time, description (EN/ES)</div>
+                <a href="../wireframes/incidents/ojo-publication.html" class="wireframe-link">View Wireframe</a>
+              </div>
+              <span class="arrow down">↓</span>
+              <div class="step success">
+                <div class="step-icon">📢</div>
+                <div class="step-title">Publish to Ojo</div>
+                <div class="step-detail">Community alert distributed</div>
+              </div>
+              <div class="notification">
+                <span class="notification-icon">📬</span>
+                Community receives alert via Ojo platform
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- System Lane -->
+        <div class="swimlane system">
+          <div class="swimlane-header">🤖 SYSTEM</div>
+          <div class="flow-steps">
+            <div class="step process">
+              <div class="step-icon">💾</div>
+              <div class="step-title">Create Incident</div>
+              <div class="step-detail">Generate ID, log timestamp</div>
+            </div>
+            <span class="arrow">→</span>
+            <div class="step process">
+              <div class="step-icon">🔔</div>
+              <div class="step-title">Alert Dispatcher</div>
+              <div class="step-detail">Queue for triage</div>
+            </div>
+            <span class="arrow">→</span>
+            <div class="step process">
+              <div class="step-icon">📊</div>
+              <div class="step-title">Track Status</div>
+              <div class="step-detail">Update incident timeline</div>
+            </div>
+            <span class="arrow">→</span>
+            <div class="step process">
+              <div class="step-icon">📁</div>
+              <div class="step-title">Archive</div>
+              <div class="step-detail">Store for analytics</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRAINING WORKFLOW -->
+    <div id="training-workflow" class="workflow-content">
+      <h2>Training & Certification Workflow</h2>
+      <p style="margin-bottom: 20px; color: #6b7280;">Volunteer qualification and ongoing development process</p>
+
+      <div class="swimlanes">
+        <!-- Volunteer Lane -->
+        <div class="swimlane volunteer">
+          <div class="swimlane-header">👤 VOLUNTEER</div>
+          <div class="flow-steps">
+            <div class="step process">
+              <div class="step-icon">📝</div>
+              <div class="step-title">Register Account</div>
+              <div class="step-detail">Complete VMS signup</div>
+            </div>
+            <span class="arrow">→</span>
+            <div class="step error">
+              <div class="step-icon">🔒</div>
+              <div class="step-title">Status: Pending</div>
+              <div class="step-detail">Cannot accept shifts yet</div>
+            </div>
+            <span class="arrow">→</span>
+            <div class="step process">
+              <div class="step-icon">📚</div>
+              <div class="step-title">Attend Orientation</div>
+              <div class="step-detail">Initial training session</div>
+            </div>
+            <span class="arrow">→</span>
+            <div class="step process">
+              <div class="step-icon">🛡️</div>
+              <div class="step-title">Safety Protocols</div>
+              <div class="step-detail">Complete safety certification</div>
+            </div>
+            <span class="arrow">→</span>
+            <div class="step success">
+              <div class="step-icon">✓</div>
+              <div class="step-title">Status: Active</div>
+              <div class="step-detail">Certified as Monitor</div>
+            </div>
+          </div>
+
+          <div class="notification">
+            <span class="notification-icon">📬</span>
+            Activation email sent + can now accept shifts
+          </div>
+
+          <h3 style="margin: 30px 0 15px 0;">Optional Advanced Training</h3>
+          <div class="flow-steps">
+            <div class="step process">
+              <div class="step-icon">📖</div>
+              <div class="step-title">Team Lead Training</div>
+              <div class="step-detail">Advanced coordination skills</div>
+            </div>
+            <span class="arrow">→</span>
+            <div class="step success">
+              <div class="step-icon">⭐</div>
+              <div class="step-title">Team Lead Certified</div>
+              <div class="step-detail">Can lead field teams</div>
+            </div>
+          </div>
+
+          <div class="flow-steps" style="margin-top: 15px;">
+            <div class="step process">
+              <div class="step-icon">🎓</div>
+              <div class="step-title">Dispatcher Training</div>
+              <div class="step-detail">Incident management & triage</div>
+            </div>
+            <span class="arrow">→</span>
+            <div class="step success">
+              <div class="step-icon">🚨</div>
+              <div class="step-title">Dispatcher Certified</div>
+              <div class="step-detail">Can handle incident intake</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Coordinator Lane -->
+        <div class="swimlane coordinator">
+          <div class="swimlane-header">⚙️ COORDINATOR</div>
+          <div class="flow-steps">
+            <div class="step process">
+              <div class="step-icon">📅</div>
+              <div class="step-title">Schedule Training</div>
+              <div class="step-detail">Set dates, send invites</div>
+            </div>
+            <span class="arrow">→</span>
+            <div class="step process">
+              <div class="step-icon">📝</div>
+              <div class="step-title">Conduct Session</div>
+              <div class="step-detail">Deliver training content</div>
+            </div>
+            <span class="arrow">→</span>
+            <div class="step process">
+              <div class="step-icon">✓</div>
+              <div class="step-title">Mark Complete</div>
+              <div class="step-detail">Update volunteer certifications</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- System Lane -->
+        <div class="swimlane system">
+          <div class="swimlane-header">🤖 SYSTEM</div>
+          <div class="flow-steps">
+            <div class="step process">
+              <div class="step-icon">📊</div>
+              <div class="step-title">Track Certifications</div>
+              <div class="step-detail">Record completion dates</div>
+            </div>
+            <span class="arrow">→</span>
+            <div class="step process">
+              <div class="step-icon">🔄</div>
+              <div class="step-title">Update Status</div>
+              <div class="step-detail">Pending → Active</div>
+            </div>
+            <span class="arrow">→</span>
+            <div class="step process">
+              <div class="step-icon">🎯</div>
+              <div class="step-title">Update Matching</div>
+              <div class="step-detail">Include in shift assignments</div>
+            </div>
+            <span class="arrow">→</span>
+            <div class="step process">
+              <div class="step-icon">⏰</div>
+              <div class="step-title">Renewal Reminders</div>
+              <div class="step-detail">Annual recertification</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="legend">
+      <h3 style="width: 100%; margin-bottom: 15px;">Legend</h3>
+      <div class="legend-item">
+        <div class="legend-box" style="background: #eff6ff; border-color: #3b82f6;"></div>
+        <span>Process Step</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-box" style="background: #fffbeb; border-color: #f59e0b; border-style: dashed;"></div>
+        <span>Decision Point</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-box" style="background: #f0fdf4; border-color: #10b981;"></div>
+        <span>Success / Completion</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-box" style="background: #fef2f2; border-color: #ef4444;"></div>
+        <span>Error / Rejection</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-box" style="background: #eff6ff; border-color: #2563eb;"></div>
+        <span>Signal Integration</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-box" style="background: #fef3c7; border-color: #f59e0b; border-left-width: 4px;"></div>
+        <span>System Notification</span>
+      </div>
+    </div>
+
+    <!-- Back Link -->
+    <div class="back-link">
+      <a href="../index.html">← Back to VMS Home</a> |
+      <a href="../wireframes/index.html">View Wireframes →</a>
+    </div>
+  </div>
+
+  <script>
+    function showWorkflow(workflowId) {
+      // Hide all workflows
+      document.querySelectorAll('.workflow-content').forEach(el => {
+        el.classList.remove('active');
+      });
+
+      // Remove active class from all tabs
+      document.querySelectorAll('.tab-btn').forEach(el => {
+        el.classList.remove('active');
+      });
+
+      // Show selected workflow
+      document.getElementById(workflowId + '-workflow').classList.add('active');
+
+      // Highlight active tab
+      event.target.classList.add('active');
+    }
+  </script>
+</body>
+</html>

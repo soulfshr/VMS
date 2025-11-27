@@ -76,7 +76,12 @@ VMS/
 ├── User Roles & Permissions.md         # RBAC documentation
 ├── Technical Architecture.md           # Tech stack & implementation plan
 ├── Signal Integration Strategy.md      # Signal/VMS integration guide
+├── Workflow Diagrams.md                # Process flows (Mermaid diagrams)
 ├── Wireframes.md                       # Wireframe specifications
+├── workflows/
+│   ├── index.html                      # Interactive workflow diagrams
+│   └── css/
+│       └── workflow.css                # Workflow diagram styling
 ├── wireframes/
 │   ├── index.html                      # Wireframe navigation hub
 │   ├── css/
@@ -162,6 +167,12 @@ To view the wireframes locally:
 - **[Signal Integration Strategy](Signal%20Integration%20Strategy.md)** - How VMS complements Signal for real-time coordination
 
 ### Design Documentation
+- **[Workflow Diagrams](Workflow%20Diagrams.md)** - Complete process flows with Mermaid diagrams
+  - Volunteer Journey (registration → active participation)
+  - Shift Coordination (creation → completion)
+  - Incident Management (report → Ojo publication)
+  - Training & Certification workflows
+- **[Interactive Workflow Diagrams](workflows/index.html)** - Visual process flows with swimlanes
 - **[Wireframes](Wireframes.md)** - Text-based wireframe specifications
 - **[Interactive Wireframes](wireframes/index.html)** - HTML mockups for all workflows
 
