@@ -1,6 +1,7 @@
 {
   "name": "siembra-vms",
-  "version": "0.1.0",
+  "version": "0.1.0-dev",
+  "description": "Volunteer Management System for Siembra NC",
   "private": true,
   "scripts": {
     "dev": "next dev",
