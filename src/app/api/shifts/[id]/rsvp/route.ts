@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
+import {
+  sendShiftSignupEmail,
+  sendShiftConfirmationEmail,
+  sendShiftCancellationEmail,
+} from '@/lib/email';
 
 // POST /api/shifts/[id]/rsvp - RSVP to a shift
 export async function POST(
@@ -75,6 +80,18 @@ export async function POST(
       },
     });
 
+    // Send signup confirmation email (async, don't block response)
+    sendShiftSignupEmail({
+      to: rsvp.user.email,
+      volunteerName: rsvp.user.name,
+      shiftTitle: rsvp.shift.title,
+      shiftType: rsvp.shift.type,
+      shiftDate: rsvp.shift.date,
+      startTime: rsvp.shift.startTime,
+      endTime: rsvp.shift.endTime,
+      zoneName: rsvp.shift.zone.name,
+    }).catch(err => console.error('Email send error:', err));
+
     return NextResponse.json(rsvp, { status: 201 });
   } catch (error) {
     console.error('Error creating RSVP:', error);
@@ -95,12 +112,26 @@ export async function DELETE(
 
     const { id: shiftId } = await params;
 
-    // Find user's RSVP for this shift
+    // Find user's RSVP for this shift with shift details for email
     const rsvp = await prisma.shiftVolunteer.findUnique({
       where: {
         shiftId_userId: {
           shiftId,
           userId: user.id,
+        },
+      },
+      include: {
+        shift: {
+          include: {
+            zone: true,
+          },
+        },
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
         },
       },
     });
@@ -116,6 +147,18 @@ export async function DELETE(
     await prisma.shiftVolunteer.delete({
       where: { id: rsvp.id },
     });
+
+    // Send cancellation email (async, don't block response)
+    sendShiftCancellationEmail({
+      to: rsvp.user.email,
+      volunteerName: rsvp.user.name,
+      shiftTitle: rsvp.shift.title,
+      shiftType: rsvp.shift.type,
+      shiftDate: rsvp.shift.date,
+      startTime: rsvp.shift.startTime,
+      endTime: rsvp.shift.endTime,
+      zoneName: rsvp.shift.zone.name,
+    }).catch(err => console.error('Email send error:', err));
 
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -164,6 +207,11 @@ export async function PATCH(
         confirmedAt: status === 'CONFIRMED' ? new Date() : null,
       },
       include: {
+        shift: {
+          include: {
+            zone: true,
+          },
+        },
         user: {
           select: {
             id: true,
@@ -173,6 +221,21 @@ export async function PATCH(
         },
       },
     });
+
+    // Send confirmation email with calendar invite when status is CONFIRMED
+    if (status === 'CONFIRMED') {
+      sendShiftConfirmationEmail({
+        to: rsvp.user.email,
+        volunteerName: rsvp.user.name,
+        shiftTitle: rsvp.shift.title,
+        shiftType: rsvp.shift.type,
+        shiftDate: rsvp.shift.date,
+        startTime: rsvp.shift.startTime,
+        endTime: rsvp.shift.endTime,
+        zoneName: rsvp.shift.zone.name,
+        description: rsvp.shift.description || undefined,
+      }).catch(err => console.error('Email send error:', err));
+    }
 
     return NextResponse.json(rsvp);
   } catch (error) {
