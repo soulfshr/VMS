@@ -17,7 +17,11 @@ export const metadata: Metadata = {
   title: "Siembra NC VMS",
   description: "Volunteer Management System for Siembra NC - Coordinating community volunteers for immigrant rights monitoring",
   icons: {
-    icon: "/siembra-logo.webp",
+    icon: [
+      { url: "/siembra-logo.webp", type: "image/webp" },
+    ],
+    apple: "/siembra-logo.webp",
+    shortcut: "/siembra-logo.webp",
   },
 };
 
