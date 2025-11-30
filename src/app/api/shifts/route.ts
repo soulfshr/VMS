@@ -31,10 +31,12 @@ export async function GET(request: NextRequest) {
       where.status = status;
     }
 
-    // Only show future shifts by default
-    where.date = {
-      gte: new Date(),
-    };
+    // Only show future shifts by default (unless showing all for calendar)
+    if (status !== 'all') {
+      where.date = {
+        gte: new Date(),
+      };
+    }
 
     const shifts = await prisma.shift.findMany({
       where,
@@ -94,6 +96,56 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// Helper: Calculate all shift dates based on repeat pattern
+function calculateRepeatDates(
+  startDate: Date,
+  repeat: {
+    frequency: 'daily' | 'weekly' | 'custom';
+    days?: number[];
+    endType: 'count' | 'date';
+    count?: number;
+    endDate?: string;
+  }
+): Date[] {
+  const dates: Date[] = [new Date(startDate)];
+  const endDate = repeat.endType === 'date' && repeat.endDate
+    ? new Date(repeat.endDate)
+    : null;
+  const maxCount = repeat.endType === 'count' ? (repeat.count || 4) : 52; // Max 52 weeks
+
+  let current = new Date(startDate);
+
+  while (dates.length < maxCount) {
+    if (repeat.frequency === 'daily') {
+      current = new Date(current);
+      current.setDate(current.getDate() + 1);
+    } else if (repeat.frequency === 'weekly') {
+      current = new Date(current);
+      current.setDate(current.getDate() + 7);
+    } else if (repeat.frequency === 'custom' && repeat.days && repeat.days.length > 0) {
+      // Find next matching day of week
+      current = new Date(current);
+      let found = false;
+      for (let i = 1; i <= 7 && !found; i++) {
+        current.setDate(current.getDate() + 1);
+        if (repeat.days.includes(current.getDay())) {
+          found = true;
+        }
+      }
+      if (!found) break;
+    } else {
+      break;
+    }
+
+    // Check end date
+    if (endDate && current > endDate) break;
+
+    dates.push(new Date(current));
+  }
+
+  return dates;
+}
+
 // POST /api/shifts - Create a new shift (Coordinator/Admin only)
 export async function POST(request: NextRequest) {
   try {
@@ -121,6 +173,7 @@ export async function POST(request: NextRequest) {
       idealVolunteers = 4,
       maxVolunteers = 6,
       status = 'DRAFT',
+      repeat,
     } = body;
 
     // Validate required fields
@@ -131,14 +184,64 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const baseDate = new Date(date);
+    const baseStartTime = new Date(startTime);
+    const baseEndTime = new Date(endTime);
+
+    // Calculate time offsets from base date
+    const startHour = baseStartTime.getHours();
+    const startMinute = baseStartTime.getMinutes();
+    const endHour = baseEndTime.getHours();
+    const endMinute = baseEndTime.getMinutes();
+
+    // If repeat is enabled, create multiple shifts
+    if (repeat && repeat.frequency) {
+      const shiftDates = calculateRepeatDates(baseDate, repeat);
+
+      const shiftsData = shiftDates.map(shiftDate => {
+        const shiftStartTime = new Date(shiftDate);
+        shiftStartTime.setHours(startHour, startMinute, 0, 0);
+
+        const shiftEndTime = new Date(shiftDate);
+        shiftEndTime.setHours(endHour, endMinute, 0, 0);
+
+        return {
+          type,
+          title,
+          description,
+          date: shiftDate,
+          startTime: shiftStartTime,
+          endTime: shiftEndTime,
+          zoneId,
+          meetingLocation,
+          minVolunteers,
+          idealVolunteers,
+          maxVolunteers,
+          status,
+          createdById: user.id,
+        };
+      });
+
+      // Create all shifts
+      const result = await prisma.shift.createMany({
+        data: shiftsData,
+      });
+
+      return NextResponse.json(
+        { message: `Created ${result.count} shifts`, count: result.count },
+        { status: 201 }
+      );
+    }
+
+    // Single shift creation
     const shift = await prisma.shift.create({
       data: {
         type,
         title,
         description,
-        date: new Date(date),
-        startTime: new Date(startTime),
-        endTime: new Date(endTime),
+        date: baseDate,
+        startTime: baseStartTime,
+        endTime: baseEndTime,
         zoneId,
         meetingLocation,
         minVolunteers,

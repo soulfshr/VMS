@@ -30,6 +30,67 @@ interface Shift {
   userRsvpStatus: string | null;
 }
 
+// Cancel Modal Component
+function CancelModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  selectedCount,
+  isSubmitting,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: (reason: string) => void;
+  selectedCount: number;
+  isSubmitting: boolean;
+}) {
+  const [reason, setReason] = useState('');
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
+        <h2 className="text-xl font-bold text-gray-900 mb-2">Cancel Shifts</h2>
+        <p className="text-gray-600 mb-4">
+          Are you sure you want to cancel {selectedCount} shift{selectedCount > 1 ? 's' : ''}?
+          All signed-up volunteers will be notified by email.
+        </p>
+
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Reason (optional)
+          </label>
+          <textarea
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="e.g., Weather conditions, scheduling conflict..."
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+            rows={3}
+          />
+        </div>
+
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="flex-1 py-2 px-4 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium disabled:opacity-50"
+          >
+            Keep Shifts
+          </button>
+          <button
+            onClick={() => onConfirm(reason)}
+            disabled={isSubmitting}
+            className="flex-1 py-2 px-4 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium disabled:opacity-50"
+          >
+            {isSubmitting ? 'Cancelling...' : 'Cancel Shifts'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const typeColors: Record<string, { bg: string; text: string }> = {
   PATROL: { bg: 'bg-blue-100', text: 'text-blue-700' },
   COLLECTION: { bg: 'bg-purple-100', text: 'text-purple-700' },
@@ -52,6 +113,11 @@ export default function ShiftsPage() {
   const [filterType, setFilterType] = useState<string>('all');
   const [filterZone, setFilterZone] = useState<string>('all');
   const [rsvpingShiftId, setRsvpingShiftId] = useState<string | null>(null);
+
+  // Selection state for coordinators
+  const [selectedShifts, setSelectedShifts] = useState<Set<string>>(new Set());
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   const fetchShifts = useCallback(async () => {
     try {
@@ -160,6 +226,52 @@ export default function ShiftsPage() {
     return `${start.toLocaleTimeString('en-US', formatOpts)} - ${end.toLocaleTimeString('en-US', formatOpts)}`;
   };
 
+  const toggleShiftSelection = (shiftId: string) => {
+    setSelectedShifts(prev => {
+      const next = new Set(prev);
+      if (next.has(shiftId)) {
+        next.delete(shiftId);
+      } else {
+        next.add(shiftId);
+      }
+      return next;
+    });
+  };
+
+  const clearSelection = () => {
+    setSelectedShifts(new Set());
+  };
+
+  const handleCancelShifts = async (reason: string) => {
+    setIsCancelling(true);
+    setError(null);
+
+    try {
+      const res = await fetch('/api/shifts/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          shiftIds: Array.from(selectedShifts),
+          reason: reason || undefined,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to cancel shifts');
+      }
+
+      // Refresh shifts and clear selection
+      await fetchShifts();
+      setSelectedShifts(new Set());
+      setShowCancelModal(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to cancel shifts');
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-[calc(100vh-200px)] flex items-center justify-center">
@@ -181,15 +293,46 @@ export default function ShiftsPage() {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Browse Shifts</h1>
             <p className="text-gray-600">Find and sign up for available volunteer shifts</p>
           </div>
-          {canCreateShift && (
+          <div className="flex items-center gap-3">
             <Link
-              href="/shifts/create"
-              className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium"
+              href="/shifts/calendar"
+              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
             >
-              + Create Shift
+              Calendar View
             </Link>
-          )}
+            {canCreateShift && (
+                <Link
+                  href="/shifts/create"
+                  className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium"
+                >
+                  + Create Shift
+                </Link>
+            )}
+          </div>
         </div>
+
+        {/* Selection Toolbar (Coordinator only) */}
+        {canCreateShift && selectedShifts.size > 0 && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <span className="font-medium text-red-700">
+                {selectedShifts.size} shift{selectedShifts.size > 1 ? 's' : ''} selected
+              </span>
+              <button
+                onClick={clearSelection}
+                className="text-sm text-red-600 hover:text-red-800 underline"
+              >
+                Clear selection
+              </button>
+            </div>
+            <button
+              onClick={() => setShowCancelModal(true)}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+            >
+              Cancel Selected
+            </button>
+          </div>
+        )}
 
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-red-700">
@@ -237,18 +380,43 @@ export default function ShiftsPage() {
             {shifts.map((shift) => (
               <div
                 key={shift.id}
-                className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow"
+                className={`bg-white rounded-xl border p-5 hover:shadow-md transition-shadow ${
+                  shift.status === 'CANCELLED'
+                    ? 'border-red-300 bg-red-50 opacity-75'
+                    : selectedShifts.has(shift.id)
+                    ? 'border-red-400 ring-2 ring-red-200'
+                    : 'border-gray-200'
+                }`}
               >
                 <div className="flex justify-between items-start mb-3">
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${typeColors[shift.type].bg} ${typeColors[shift.type].text}`}>
-                    {typeLabels[shift.type]}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {/* Checkbox for coordinators (non-cancelled shifts only) */}
+                    {canCreateShift && shift.status !== 'CANCELLED' && (
+                      <input
+                        type="checkbox"
+                        checked={selectedShifts.has(shift.id)}
+                        onChange={() => toggleShiftSelection(shift.id)}
+                        className="w-4 h-4 text-red-600 rounded focus:ring-red-500 cursor-pointer"
+                      />
+                    )}
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                      shift.status === 'CANCELLED'
+                        ? 'bg-red-100 text-red-700'
+                        : `${typeColors[shift.type].bg} ${typeColors[shift.type].text}`
+                    }`}>
+                      {shift.status === 'CANCELLED' ? 'Cancelled' : typeLabels[shift.type]}
+                    </span>
+                  </div>
                   <span className={`text-sm ${shift.spotsLeft <= 1 ? 'text-orange-600 font-medium' : 'text-gray-500'}`}>
                     {shift.spotsLeft}/{shift.maxVolunteers} spots
                   </span>
                 </div>
 
-                <h3 className="font-semibold text-gray-900 mb-1">{shift.title}</h3>
+                <Link href={`/shifts/${shift.id}`} className="block group">
+                  <h3 className="font-semibold text-gray-900 mb-1 group-hover:text-teal-600 transition-colors">
+                    {shift.title}
+                  </h3>
+                </Link>
                 <p className="text-sm text-gray-500 mb-3">{shift.zone.name}</p>
 
                 <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
@@ -265,7 +433,12 @@ export default function ShiftsPage() {
                   <span>{formatTime(shift.startTime, shift.endTime)}</span>
                 </div>
 
-                {shift.userRsvpStatus ? (
+                {/* Show different UI based on shift status */}
+                {shift.status === 'CANCELLED' ? (
+                  <div className="text-center py-2 px-4 bg-red-100 text-red-700 rounded-lg text-sm font-medium">
+                    This shift has been cancelled
+                  </div>
+                ) : shift.userRsvpStatus ? (
                   <div className="space-y-2">
                     <div className={`text-center py-2 px-4 rounded-lg text-sm font-medium ${
                       shift.userRsvpStatus === 'CONFIRMED'
@@ -295,6 +468,16 @@ export default function ShiftsPage() {
                     Shift Full
                   </div>
                 )}
+
+                {/* Coordinator: Manage link (not for cancelled shifts) */}
+                {canCreateShift && shift.status !== 'CANCELLED' && (
+                  <Link
+                    href={`/shifts/${shift.id}/roster`}
+                    className="block text-center text-sm text-teal-600 hover:text-teal-700 mt-2"
+                  >
+                    Manage Roster {shift.pendingCount > 0 && `(${shift.pendingCount} pending)`}
+                  </Link>
+                )}
               </div>
             ))}
           </div>
@@ -312,6 +495,15 @@ export default function ShiftsPage() {
           </div>
         )}
       </div>
+
+      {/* Cancel Modal */}
+      <CancelModal
+        isOpen={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        onConfirm={handleCancelShifts}
+        selectedCount={selectedShifts.size}
+        isSubmitting={isCancelling}
+      />
     </div>
   );
 }

@@ -207,3 +207,70 @@ export async function sendShiftCancellationEmail(params: Omit<ShiftEmailParams, 
     console.error('[Email] Failed to send cancellation email:', error);
   }
 }
+
+interface ShiftCancelledParams {
+  to: string;
+  volunteerName: string;
+  shiftTitle: string;
+  shiftType: string;
+  shiftDate: Date;
+  startTime: Date;
+  endTime: Date;
+  zoneName: string;
+  reason?: string;
+}
+
+/**
+ * Send email when coordinator cancels a shift (affects all signed-up volunteers)
+ */
+export async function sendShiftCancelledByCoordinatorEmail(params: ShiftCancelledParams): Promise<void> {
+  if (!isEmailConfigured()) {
+    console.log('[Email] SMTP not configured, skipping shift cancelled email');
+    return;
+  }
+
+  const { to, volunteerName, shiftTitle, shiftType, shiftDate, startTime, endTime, zoneName, reason } = params;
+
+  const dateStr = shiftDate.toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+  const startStr = startTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  const endStr = endTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+  try {
+    await transporter.sendMail({
+      from: `"Siembra NC VMS" <${process.env.SMTP_USER}>`,
+      to,
+      subject: `Shift Cancelled: ${shiftTitle} on ${dateStr}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #dc2626;">Shift Has Been Cancelled</h2>
+          <p>Hi ${volunteerName},</p>
+          <p>We're sorry to inform you that a shift you were signed up for has been cancelled by a coordinator.</p>
+
+          <div style="background: #fef2f2; padding: 16px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #dc2626;">
+            <h3 style="margin-top: 0; color: #991b1b;">Cancelled Shift</h3>
+            <p style="margin: 8px 0;"><strong>Shift:</strong> ${shiftTitle}</p>
+            <p style="margin: 8px 0;"><strong>Type:</strong> ${shiftType}</p>
+            <p style="margin: 8px 0;"><strong>Zone:</strong> ${zoneName}</p>
+            <p style="margin: 8px 0;"><strong>Date:</strong> ${dateStr}</p>
+            <p style="margin: 8px 0;"><strong>Time:</strong> ${startStr} - ${endStr}</p>
+            ${reason ? `<p style="margin: 8px 0;"><strong>Reason:</strong> ${reason}</p>` : ''}
+          </div>
+
+          <p>Please check the VMS for other available shifts you can sign up for.</p>
+
+          <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+            We apologize for any inconvenience. Thank you for your understanding!
+          </p>
+        </div>
+      `,
+    });
+    console.log(`[Email] Shift cancelled notification sent to ${to}`);
+  } catch (error) {
+    console.error('[Email] Failed to send shift cancelled email:', error);
+  }
+}

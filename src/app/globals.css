@@ -203,3 +203,49 @@ body {
 .role-volunteer {
   color: #16a34a;
 }
+
+/* React Big Calendar Customizations */
+.rbc-calendar {
+  font-family: inherit;
+}
+
+.rbc-header {
+  padding: 8px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.rbc-today {
+  background-color: #f0fdfa !important;
+}
+
+.rbc-off-range-bg {
+  background-color: #f9fafb;
+}
+
+.rbc-event {
+  border: none !important;
+}
+
+.rbc-event:focus {
+  outline: 2px solid #0d9488;
+}
+
+.rbc-toolbar button {
+  color: #374151;
+  border-color: #d1d5db;
+}
+
+.rbc-toolbar button:hover {
+  background-color: #f3f4f6;
+}
+
+.rbc-toolbar button.rbc-active {
+  background-color: #0d9488;
+  color: white;
+  border-color: #0d9488;
+}
+
+.rbc-toolbar button.rbc-active:hover {
+  background-color: #0f766e;
+}

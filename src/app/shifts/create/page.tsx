@@ -33,6 +33,13 @@ export default function CreateShiftPage() {
     idealVolunteers: 4,
     maxVolunteers: 6,
     status: 'PUBLISHED',
+    // Repeat options
+    repeatEnabled: false,
+    repeatFrequency: 'weekly' as 'daily' | 'weekly' | 'custom',
+    repeatDays: [] as number[], // 0-6 for Sun-Sat
+    repeatEndType: 'count' as 'count' | 'date',
+    repeatCount: 4,
+    repeatEndDate: '',
   });
 
   useEffect(() => {
@@ -81,15 +88,37 @@ export default function CreateShiftPage() {
       const endTime = new Date(dateObj);
       endTime.setHours(endHour, endMin, 0, 0);
 
+      // Build request body
+      const body: Record<string, unknown> = {
+        type: formData.type,
+        title: formData.title,
+        description: formData.description,
+        zoneId: formData.zoneId,
+        meetingLocation: formData.meetingLocation,
+        minVolunteers: formData.minVolunteers,
+        idealVolunteers: formData.idealVolunteers,
+        maxVolunteers: formData.maxVolunteers,
+        status: formData.status,
+        date: dateObj.toISOString(),
+        startTime: startTime.toISOString(),
+        endTime: endTime.toISOString(),
+      };
+
+      // Add repeat parameters if enabled
+      if (formData.repeatEnabled) {
+        body.repeat = {
+          frequency: formData.repeatFrequency,
+          days: formData.repeatFrequency === 'custom' ? formData.repeatDays : undefined,
+          endType: formData.repeatEndType,
+          count: formData.repeatEndType === 'count' ? formData.repeatCount : undefined,
+          endDate: formData.repeatEndType === 'date' ? formData.repeatEndDate : undefined,
+        };
+      }
+
       const res = await fetch('/api/shifts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          date: dateObj.toISOString(),
-          startTime: startTime.toISOString(),
-          endTime: endTime.toISOString(),
-        }),
+        body: JSON.stringify(body),
       });
 
       if (!res.ok) {
@@ -106,11 +135,31 @@ export default function CreateShiftPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
+    const target = e.target as HTMLInputElement;
+
+    if (type === 'checkbox') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: target.checked,
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: type === 'number' ? parseInt(value, 10) : value,
+      }));
+    }
+  };
+
+  const handleDayToggle = (day: number) => {
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'number' ? parseInt(value, 10) : value,
+      repeatDays: prev.repeatDays.includes(day)
+        ? prev.repeatDays.filter(d => d !== day)
+        : [...prev.repeatDays, day].sort(),
     }));
   };
+
+  const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   if (isLoading) {
     return (
@@ -220,6 +269,122 @@ export default function CreateShiftPage() {
                 required
               />
             </div>
+          </div>
+
+          {/* Repeat Options */}
+          <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                name="repeatEnabled"
+                checked={formData.repeatEnabled}
+                onChange={handleChange}
+                className="w-4 h-4 text-teal-600 rounded focus:ring-teal-500"
+              />
+              <span className="font-medium text-gray-700">Repeat this shift</span>
+            </label>
+
+            {formData.repeatEnabled && (
+              <div className="mt-4 space-y-4 pl-6">
+                {/* Frequency */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Frequency</label>
+                  <select
+                    name="repeatFrequency"
+                    value={formData.repeatFrequency}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  >
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly (same day each week)</option>
+                    <option value="custom">Custom days</option>
+                  </select>
+                </div>
+
+                {/* Custom days selection */}
+                {formData.repeatFrequency === 'custom' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Select Days</label>
+                    <div className="flex gap-2">
+                      {dayLabels.map((label, index) => (
+                        <button
+                          key={index}
+                          type="button"
+                          onClick={() => handleDayToggle(index)}
+                          className={`w-10 h-10 rounded-full text-sm font-medium transition-colors ${
+                            formData.repeatDays.includes(index)
+                              ? 'bg-teal-600 text-white'
+                              : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* End options */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">End After</label>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="repeatEndType"
+                        value="count"
+                        checked={formData.repeatEndType === 'count'}
+                        onChange={handleChange}
+                        className="w-4 h-4 text-teal-600 focus:ring-teal-500"
+                      />
+                      <span className="text-gray-700">Number of occurrences</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="repeatEndType"
+                        value="date"
+                        checked={formData.repeatEndType === 'date'}
+                        onChange={handleChange}
+                        className="w-4 h-4 text-teal-600 focus:ring-teal-500"
+                      />
+                      <span className="text-gray-700">End date</span>
+                    </label>
+                  </div>
+                </div>
+
+                {formData.repeatEndType === 'count' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Create {formData.repeatCount} shifts
+                    </label>
+                    <input
+                      type="number"
+                      name="repeatCount"
+                      value={formData.repeatCount}
+                      onChange={handleChange}
+                      min={2}
+                      max={52}
+                      className="w-32 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    />
+                  </div>
+                )}
+
+                {formData.repeatEndType === 'date' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+                    <input
+                      type="date"
+                      name="repeatEndDate"
+                      value={formData.repeatEndDate}
+                      onChange={handleChange}
+                      min={formData.date || new Date().toISOString().split('T')[0]}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Zone */}
