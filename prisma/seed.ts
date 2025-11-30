@@ -290,95 +290,85 @@ async function main() {
   console.log('✓ Recorded training completions');
 
   // ============================================
-  // SAMPLE SHIFTS
+  // SAMPLE SHIFTS (next 7 days across all zones)
   // ============================================
   console.log('Creating sample shifts...');
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  tomorrow.setHours(9, 0, 0, 0);
 
-  const dayAfter = new Date();
-  dayAfter.setDate(dayAfter.getDate() + 2);
-  dayAfter.setHours(13, 0, 0, 0);
+  // Helper to create a date at a specific hour
+  const makeDate = (daysFromNow: number, hour: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() + daysFromNow);
+    d.setHours(hour, 0, 0, 0);
+    return d;
+  };
 
-  const weekend = new Date();
-  weekend.setDate(weekend.getDate() + (6 - weekend.getDay() + 7) % 7 + 1);
-  weekend.setHours(8, 0, 0, 0);
+  const shiftsData = [
+    // Day 1 - Tomorrow
+    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Durham 1', day: 1, start: 6, end: 10, desc: 'Early morning patrol - high activity hours' },
+    { type: ShiftType.PATROL, title: 'Midday Patrol', zone: 'Durham 1', day: 1, start: 10, end: 14, desc: 'Midday patrol of downtown area' },
+    { type: ShiftType.COLLECTION, title: 'Evening Intel', zone: 'Durham 1', day: 1, start: 18, end: 22, desc: 'Monitor social media and community channels' },
 
-  await Promise.all([
-    prisma.shift.create({
-      data: {
-        type: ShiftType.PATROL,
-        title: 'Morning Patrol - Durham 1',
-        description: 'Regular morning patrol of downtown Durham area',
-        date: tomorrow,
-        startTime: tomorrow,
-        endTime: new Date(tomorrow.getTime() + 4 * 60 * 60 * 1000),
-        zoneId: zoneMap['Durham 1'].id,
-        minVolunteers: 2,
-        idealVolunteers: 4,
-        maxVolunteers: 6,
-        status: 'PUBLISHED',
-        createdById: 'coord-1',
-      },
-    }),
-    prisma.shift.create({
-      data: {
-        type: ShiftType.PATROL,
-        title: 'Afternoon Patrol - Durham 2',
-        description: 'Regular afternoon patrol of North Durham',
-        date: dayAfter,
-        startTime: dayAfter,
-        endTime: new Date(dayAfter.getTime() + 4 * 60 * 60 * 1000),
-        zoneId: zoneMap['Durham 2'].id,
-        minVolunteers: 2,
-        idealVolunteers: 3,
-        maxVolunteers: 4,
-        status: 'PUBLISHED',
-        createdById: 'coord-1',
-      },
-    }),
-    prisma.shift.create({
-      data: {
-        type: ShiftType.COLLECTION,
-        title: 'Evening Intel Collection',
-        description: 'Monitor social media channels and community networks for Triangle area',
-        date: tomorrow,
-        startTime: new Date(tomorrow.getTime() + 9 * 60 * 60 * 1000),
-        endTime: new Date(tomorrow.getTime() + 13 * 60 * 60 * 1000),
-        zoneId: zoneMap['Durham 1'].id,
-        minVolunteers: 1,
-        idealVolunteers: 2,
-        maxVolunteers: 3,
-        status: 'PUBLISHED',
-        createdById: 'coord-1',
-      },
-    }),
-    prisma.shift.create({
-      data: {
-        type: ShiftType.ON_CALL_FIELD_SUPPORT,
-        title: 'Weekend On-Call - Wake County',
-        description: 'On-call for rapid response in Wake County area',
-        date: weekend,
-        startTime: weekend,
-        endTime: new Date(weekend.getTime() + 4 * 60 * 60 * 1000),
-        zoneId: zoneMap['Wake 3'].id,
-        minVolunteers: 2,
-        idealVolunteers: 4,
-        maxVolunteers: 6,
-        status: 'PUBLISHED',
-        createdById: 'coord-1',
-      },
-    }),
-  ]);
-  console.log('✓ Created sample shifts');
+    // Day 2
+    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Durham 2', day: 2, start: 6, end: 10, desc: 'North Durham early patrol' },
+    { type: ShiftType.PATROL, title: 'Afternoon Patrol', zone: 'Durham 3', day: 2, start: 14, end: 18, desc: 'East Durham and RTP area' },
+    { type: ShiftType.ON_CALL_FIELD_SUPPORT, title: 'On-Call Support', zone: 'Durham 1', day: 2, start: 8, end: 12, desc: 'Available for rapid dispatch' },
+
+    // Day 3
+    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Orange 1', day: 3, start: 6, end: 10, desc: 'Chapel Hill and UNC area patrol' },
+    { type: ShiftType.PATROL, title: 'Midday Patrol', zone: 'Orange 2', day: 3, start: 10, end: 14, desc: 'Hillsborough area patrol' },
+    { type: ShiftType.COLLECTION, title: 'Afternoon Intel', zone: 'Orange 1', day: 3, start: 14, end: 18, desc: 'Orange County intel monitoring' },
+
+    // Day 4
+    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Wake 1', day: 4, start: 6, end: 10, desc: 'Downtown Raleigh patrol' },
+    { type: ShiftType.PATROL, title: 'Midday Patrol', zone: 'Wake 2', day: 4, start: 10, end: 14, desc: 'North Raleigh patrol' },
+    { type: ShiftType.PATROL, title: 'Afternoon Patrol', zone: 'Wake 3', day: 4, start: 14, end: 18, desc: 'Cary/Morrisville area' },
+
+    // Day 5
+    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Wake 4', day: 5, start: 6, end: 10, desc: 'Apex and Holly Springs' },
+    { type: ShiftType.ON_CALL_FIELD_SUPPORT, title: 'On-Call Support', zone: 'Wake 1', day: 5, start: 10, end: 14, desc: 'Wake County rapid response' },
+    { type: ShiftType.COLLECTION, title: 'Evening Intel', zone: 'Wake 1', day: 5, start: 18, end: 22, desc: 'Wake County intel monitoring' },
+
+    // Day 6 (Weekend)
+    { type: ShiftType.PATROL, title: 'Weekend Morning Patrol', zone: 'Durham 1', day: 6, start: 6, end: 10, desc: 'Weekend patrol - critical hours' },
+    { type: ShiftType.PATROL, title: 'Weekend Morning Patrol', zone: 'Wake 3', day: 6, start: 6, end: 10, desc: 'Weekend Cary/Morrisville patrol' },
+    { type: ShiftType.ON_CALL_FIELD_SUPPORT, title: 'Weekend On-Call', zone: 'Durham 1', day: 6, start: 8, end: 16, desc: 'Extended weekend on-call coverage' },
+
+    // Day 7
+    { type: ShiftType.PATROL, title: 'Weekend Afternoon', zone: 'Durham 4', day: 7, start: 14, end: 18, desc: 'South Durham weekend patrol' },
+    { type: ShiftType.PATROL, title: 'Weekend Afternoon', zone: 'Wake 5', day: 7, start: 14, end: 18, desc: 'Garner/SE Raleigh weekend patrol' },
+    { type: ShiftType.COLLECTION, title: 'Weekend Intel', zone: 'Durham 1', day: 7, start: 10, end: 14, desc: 'Weekend intel monitoring shift' },
+  ];
+
+  const createdShifts = await Promise.all(
+    shiftsData.map(s => {
+      const startDate = makeDate(s.day, s.start);
+      const endDate = makeDate(s.day, s.end);
+      return prisma.shift.create({
+        data: {
+          type: s.type,
+          title: s.title,
+          description: s.desc,
+          date: startDate,
+          startTime: startDate,
+          endTime: endDate,
+          zoneId: zoneMap[s.zone].id,
+          minVolunteers: s.type === ShiftType.COLLECTION ? 1 : 2,
+          idealVolunteers: s.type === ShiftType.COLLECTION ? 2 : 4,
+          maxVolunteers: s.type === ShiftType.COLLECTION ? 3 : 6,
+          status: 'PUBLISHED',
+          createdById: 'coord-1',
+        },
+      });
+    })
+  );
+  console.log(`✓ Created ${createdShifts.length} sample shifts`);
 
   console.log('\n✅ Seed completed successfully!');
   console.log('\nSummary:');
   console.log(`  - ${zones.length} zones`);
   console.log(`  - ${trainings.length} training modules`);
   console.log(`  - ${users.length} users`);
-  console.log('  - 4 sample shifts');
+  console.log(`  - ${createdShifts.length} sample shifts (next 7 days)`);
 
   await prisma.$disconnect();
   await pool.end();
