@@ -16,13 +16,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Siembra NC VMS",
   description: "Volunteer Management System for Siembra NC - Coordinating community volunteers for immigrant rights monitoring",
-  icons: {
-    icon: [
-      { url: "/siembra-logo.webp", type: "image/webp" },
-    ],
-    apple: "/siembra-logo.webp",
-    shortcut: "/siembra-logo.webp",
-  },
+  // Next.js auto-detects icon.png and apple-icon.png in the app directory
 };
 
 export default function RootLayout({

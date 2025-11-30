@@ -31,16 +31,15 @@ export default function Footer() {
           </nav>
 
           {/* Right side - Powered by Ripple */}
-          <div className="flex items-center gap-2 text-sm text-gray-400">
-            <span>Powered by Ripple, a</span>
+          <div className="flex items-center gap-1.5 text-xs text-gray-500">
             <Image
               src="/honeybadger-logo.png"
               alt="Honey Badger Apps"
-              width={24}
-              height={24}
-              className="inline-block"
+              width={16}
+              height={16}
+              className="inline-block opacity-70"
             />
-            <span>Honey Badger App</span>
+            <span>A Honey Badger App</span>
           </div>
         </div>
 
