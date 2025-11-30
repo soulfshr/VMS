@@ -1,0 +1,249 @@
+// Siembra NC VMS - Prisma Schema
+// Phase 1: Volunteer onboarding, training, availability, and shift management
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum Role {
+  VOLUNTEER
+  COORDINATOR
+  DISPATCHER
+  ADMINISTRATOR
+}
+
+enum ShiftType {
+  PATROL
+  COLLECTION
+  ON_CALL_FIELD_SUPPORT
+}
+
+enum ShiftStatus {
+  DRAFT
+  PUBLISHED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum RSVPStatus {
+  PENDING
+  CONFIRMED
+  DECLINED
+  NO_SHOW
+}
+
+enum TrainingStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  EXPIRED
+}
+
+// ============================================
+// USER & AUTHENTICATION
+// ============================================
+
+model User {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  name              String
+  phone             String?
+  role              Role      @default(VOLUNTEER)
+  profileImageUrl   String?
+
+  // Volunteer-specific fields
+  primaryLanguage   String    @default("English")
+  otherLanguages    String[]
+  emergencyContact  String?
+  emergencyPhone    String?
+  backgroundCheckDate DateTime?
+  backgroundCheckStatus String?
+
+  // Status
+  isActive          Boolean   @default(true)
+  isVerified        Boolean   @default(false)
+
+  // Relationships
+  zones             UserZone[]
+  trainings         UserTraining[]
+  availability      Availability[]
+  shiftVolunteers   ShiftVolunteer[]
+  createdShifts     Shift[]   @relation("CreatedBy")
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+// ============================================
+// ZONES
+// ============================================
+
+model Zone {
+  id          String     @id @default(cuid())
+  name        String     @unique  // e.g., "Durham 1", "Wake 3"
+  county      String?    // Durham, Orange, Wake
+  description String?
+  signalGroup String?    // Signal group invite link
+  isActive    Boolean    @default(true)
+
+  // Relationships
+  users       UserZone[]
+  shifts      Shift[]
+
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+// Many-to-many: Users can belong to multiple zones
+model UserZone {
+  id        String   @id @default(cuid())
+  userId    String
+  zoneId    String
+  isPrimary Boolean  @default(false)
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  zone      Zone     @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, zoneId])
+}
+
+// ============================================
+// TRAINING
+// ============================================
+
+model Training {
+  id                String           @id @default(cuid())
+  name              String
+  description       String?
+  duration          Int?             // Duration in minutes
+  expiresAfterDays  Int?             // Number of days until training expires
+  isRequired        Boolean          @default(false)
+  requiredForRoles  Role[]
+  requiredForShiftTypes ShiftType[]
+
+  // Relationships
+  completions       UserTraining[]
+
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+}
+
+model UserTraining {
+  id              String         @id @default(cuid())
+  userId          String
+  trainingId      String
+  status          TrainingStatus @default(NOT_STARTED)
+  completedAt     DateTime?
+  expiresAt       DateTime?
+  certificateUrl  String?
+
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  training        Training       @relation(fields: [trainingId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@unique([userId, trainingId])
+}
+
+// ============================================
+// AVAILABILITY
+// ============================================
+
+model Availability {
+  id            String    @id @default(cuid())
+  userId        String
+
+  // Weekly recurring availability
+  dayOfWeek     Int?      // 0-6 (Sunday-Saturday), null for specific dates
+  startTime     String    // "09:00" format
+  endTime       String    // "17:00" format
+
+  // Specific date availability/exceptions
+  specificDate  DateTime? // For one-off availability or exceptions
+  isException   Boolean   @default(false) // True if this is a "not available" exception
+
+  // Preferences
+  preferredShiftTypes ShiftType[]
+  notes         String?
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// ============================================
+// SHIFTS
+// ============================================
+
+model Shift {
+  id              String      @id @default(cuid())
+  type            ShiftType
+  title           String
+  description     String?
+
+  // Timing
+  date            DateTime
+  startTime       DateTime
+  endTime         DateTime
+
+  // Location
+  zoneId          String
+  zone            Zone        @relation(fields: [zoneId], references: [id])
+  meetingLocation String?
+
+  // Capacity
+  minVolunteers   Int         @default(2)
+  idealVolunteers Int         @default(4)
+  maxVolunteers   Int         @default(6)
+
+  // Requirements
+  requirements    String[]    // Training/qualification IDs required
+
+  // Status
+  status          ShiftStatus @default(DRAFT)
+
+  // Relationships
+  createdById     String
+  createdBy       User        @relation("CreatedBy", fields: [createdById], references: [id])
+  volunteers      ShiftVolunteer[]
+
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model ShiftVolunteer {
+  id              String     @id @default(cuid())
+  shiftId         String
+  userId          String
+  status          RSVPStatus @default(PENDING)
+
+  // Confirmation
+  confirmedAt     DateTime?
+  checkedInAt     DateTime?
+  checkedOutAt    DateTime?
+
+  // Notes
+  notes           String?
+
+  shift           Shift      @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  user            User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  @@unique([shiftId, userId])
+}
