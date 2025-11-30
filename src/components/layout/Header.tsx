@@ -54,7 +54,7 @@ export default function Header() {
                   href="/dashboard"
                   className={`text-sm font-medium transition-colors ${
                     isActive('/dashboard')
-                      ? 'text-green-700'
+                      ? 'text-teal-700'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
@@ -64,7 +64,7 @@ export default function Header() {
                   href="/shifts"
                   className={`text-sm font-medium transition-colors ${
                     pathname.startsWith('/shifts')
-                      ? 'text-green-700'
+                      ? 'text-teal-700'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
@@ -74,7 +74,7 @@ export default function Header() {
                   href="/profile"
                   className={`text-sm font-medium transition-colors ${
                     isActive('/profile')
-                      ? 'text-green-700'
+                      ? 'text-teal-700'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
@@ -87,7 +87,7 @@ export default function Header() {
                     onClick={() => setIsMenuOpen(!isMenuOpen)}
                     className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
                   >
-                    <div className="w-8 h-8 rounded-full bg-green-600 text-white flex items-center justify-center text-sm font-medium">
+                    <div className="w-8 h-8 rounded-full bg-teal-600 text-white flex items-center justify-center text-sm font-medium">
                       {user.name.charAt(0)}
                     </div>
                     <span className="text-sm font-medium text-gray-700">{user.name}</span>
@@ -133,7 +133,7 @@ export default function Header() {
                   href="/about"
                   className={`text-sm font-medium transition-colors ${
                     isActive('/about')
-                      ? 'text-green-700'
+                      ? 'text-teal-700'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
@@ -141,7 +141,7 @@ export default function Header() {
                 </Link>
                 <Link
                   href="/login"
-                  className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
+                  className="px-4 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 transition-colors"
                 >
                   Login
                 </Link>
@@ -219,7 +219,7 @@ export default function Header() {
                 </Link>
                 <Link
                   href="/login"
-                  className="block px-2 py-2 bg-green-600 text-white text-center rounded-lg hover:bg-green-700"
+                  className="block px-2 py-2 bg-teal-600 text-white text-center rounded-lg hover:bg-teal-700"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Login

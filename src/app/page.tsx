@@ -5,7 +5,7 @@ export default function Home() {
   return (
     <div className="min-h-[calc(100vh-200px)]">
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-green-600 to-green-800 text-white py-20">
+      <section className="bg-gradient-to-br from-teal-600 to-teal-800 text-white py-20">
         <div className="container mx-auto px-4 text-center">
           <div className="flex justify-center mb-6">
             <Image
@@ -19,22 +19,22 @@ export default function Home() {
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
             Siembra NC
           </h1>
-          <p className="text-xl md:text-2xl text-green-100 mb-8 max-w-2xl mx-auto">
+          <p className="text-xl md:text-2xl text-teal-100 mb-8 max-w-2xl mx-auto">
             Volunteer Management System
           </p>
-          <p className="text-lg text-green-200 mb-10 max-w-3xl mx-auto">
+          <p className="text-lg text-teal-200 mb-10 max-w-3xl mx-auto">
             Coordinating community volunteers to monitor, document, and respond to immigration enforcement activities in North Carolina&apos;s Triangle region.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="/login"
-              className="px-8 py-4 bg-white text-green-700 font-semibold rounded-lg hover:bg-green-50 transition-colors shadow-lg"
+              className="px-8 py-4 bg-white text-teal-700 font-semibold rounded-lg hover:bg-teal-50 transition-colors shadow-lg"
             >
               Login
             </Link>
             <Link
               href="/about"
-              className="px-8 py-4 bg-green-700 text-white font-semibold rounded-lg hover:bg-green-900 transition-colors border border-green-500"
+              className="px-8 py-4 bg-teal-700 text-white font-semibold rounded-lg hover:bg-teal-900 transition-colors border border-teal-500"
             >
               Learn More
             </Link>
@@ -51,7 +51,7 @@ export default function Home() {
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {/* Step 1 */}
             <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200">
-              <div className="w-12 h-12 bg-green-100 text-green-700 rounded-full flex items-center justify-center text-xl font-bold mb-4">
+              <div className="w-12 h-12 bg-teal-100 text-teal-700 rounded-full flex items-center justify-center text-xl font-bold mb-4">
                 1
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-3">
@@ -64,7 +64,7 @@ export default function Home() {
 
             {/* Step 2 */}
             <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200">
-              <div className="w-12 h-12 bg-green-100 text-green-700 rounded-full flex items-center justify-center text-xl font-bold mb-4">
+              <div className="w-12 h-12 bg-teal-100 text-teal-700 rounded-full flex items-center justify-center text-xl font-bold mb-4">
                 2
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-3">
@@ -77,7 +77,7 @@ export default function Home() {
 
             {/* Step 3 */}
             <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200">
-              <div className="w-12 h-12 bg-green-100 text-green-700 rounded-full flex items-center justify-center text-xl font-bold mb-4">
+              <div className="w-12 h-12 bg-teal-100 text-teal-700 rounded-full flex items-center justify-center text-xl font-bold mb-4">
                 3
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-3">
@@ -226,17 +226,17 @@ export default function Home() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 bg-green-700 text-white">
+      <section className="py-16 bg-teal-700 text-white">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold mb-4">
             Ready to Make a Difference?
           </h2>
-          <p className="text-green-100 mb-8 max-w-2xl mx-auto">
+          <p className="text-teal-100 mb-8 max-w-2xl mx-auto">
             Join our network of dedicated volunteers protecting immigrant communities in the Triangle.
           </p>
           <Link
             href="/login"
-            className="inline-block px-8 py-4 bg-white text-green-700 font-semibold rounded-lg hover:bg-green-50 transition-colors shadow-lg"
+            className="inline-block px-8 py-4 bg-white text-teal-700 font-semibold rounded-lg hover:bg-teal-50 transition-colors shadow-lg"
           >
             Get Started Today
           </Link>
