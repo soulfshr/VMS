@@ -9,7 +9,7 @@ const roleColors: Record<UserRole, { bg: string; text: string; border: string }>
   ADMINISTRATOR: { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200 hover:border-purple-400' },
   COORDINATOR: { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200 hover:border-blue-400' },
   DISPATCHER: { bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200 hover:border-orange-400' },
-  VOLUNTEER: { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200 hover:border-green-400' },
+  VOLUNTEER: { bg: 'bg-teal-50', text: 'text-teal-700', border: 'border-teal-200 hover:border-teal-400' },
 };
 
 const roleDescriptions: Record<UserRole, string> = {
@@ -121,7 +121,7 @@ export default function LoginPage() {
                         role === 'ADMINISTRATOR' ? 'bg-purple-600' :
                         role === 'COORDINATOR' ? 'bg-blue-600' :
                         role === 'DISPATCHER' ? 'bg-orange-600' :
-                        'bg-green-600'
+                        'bg-teal-600'
                       }`}>
                         {user.name.charAt(0)}
                       </div>
@@ -170,7 +170,7 @@ export default function LoginPage() {
               <span className="text-gray-600"> Receive reports, dispatch field teams, manage incidents</span>
             </div>
             <div>
-              <span className="font-medium text-green-700">Volunteer:</span>
+              <span className="font-medium text-teal-700">Volunteer:</span>
               <span className="text-gray-600"> View/RSVP shifts, update availability, submit sighting reports</span>
             </div>
           </div>

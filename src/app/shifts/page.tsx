@@ -95,7 +95,7 @@ export default function ShiftsPage() {
   if (isLoading) {
     return (
       <div className="min-h-[calc(100vh-200px)] flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-green-600 border-t-transparent rounded-full" />
+        <div className="animate-spin w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -125,7 +125,7 @@ export default function ShiftsPage() {
               <select
                 value={filterType}
                 onChange={(e) => setFilterType(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
               >
                 <option value="all">All Types</option>
                 <option value="PATROL">Patrol</option>
@@ -138,7 +138,7 @@ export default function ShiftsPage() {
               <select
                 value={filterZone}
                 onChange={(e) => setFilterZone(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
               >
                 <option value="all">All Zones</option>
                 <option value="Durham 1">Durham 1</option>
@@ -184,7 +184,7 @@ export default function ShiftsPage() {
                 <span>{shift.time}</span>
               </div>
 
-              <button className="w-full py-2 px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium">
+              <button className="w-full py-2 px-4 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium">
                 Sign Up
               </button>
             </div>

@@ -5,7 +5,7 @@ export default function AboutPage() {
   return (
     <div className="min-h-[calc(100vh-200px)]">
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-green-600 to-green-800 text-white py-16">
+      <section className="bg-gradient-to-br from-teal-600 to-teal-800 text-white py-16">
         <div className="container mx-auto px-4 text-center">
           <Image
             src="/siembra-logo.webp"
@@ -15,7 +15,7 @@ export default function AboutPage() {
             className="mx-auto rounded-xl shadow-lg mb-6"
           />
           <h1 className="text-4xl font-bold mb-4">About Siembra NC</h1>
-          <p className="text-xl text-green-100 max-w-2xl mx-auto">
+          <p className="text-xl text-teal-100 max-w-2xl mx-auto">
             Protecting immigrant communities through organized volunteer monitoring and rapid response
           </p>
         </div>
@@ -70,19 +70,19 @@ export default function AboutPage() {
               <h3 className="text-xl font-semibold text-gray-900 mb-4">Incident Response Process</h3>
               <ol className="space-y-3">
                 <li className="flex items-start gap-3">
-                  <span className="w-6 h-6 bg-green-600 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">1</span>
+                  <span className="w-6 h-6 bg-teal-600 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">1</span>
                   <span className="text-gray-600">Community members or volunteers report sightings through multiple channels</span>
                 </li>
                 <li className="flex items-start gap-3">
-                  <span className="w-6 h-6 bg-green-600 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">2</span>
+                  <span className="w-6 h-6 bg-teal-600 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">2</span>
                   <span className="text-gray-600">Dispatcher verifies the report and coordinates with zone leads via Signal</span>
                 </li>
                 <li className="flex items-start gap-3">
-                  <span className="w-6 h-6 bg-green-600 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">3</span>
+                  <span className="w-6 h-6 bg-teal-600 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">3</span>
                   <span className="text-gray-600">Field team is dispatched to confirm and document the activity</span>
                 </li>
                 <li className="flex items-start gap-3">
-                  <span className="w-6 h-6 bg-green-600 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">4</span>
+                  <span className="w-6 h-6 bg-teal-600 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">4</span>
                   <span className="text-gray-600">Verified reports are published to Ojo and social media to alert the community</span>
                 </li>
               </ol>
@@ -180,7 +180,7 @@ export default function AboutPage() {
           </p>
           <Link
             href="/login"
-            className="inline-block px-8 py-4 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors shadow-lg"
+            className="inline-block px-8 py-4 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 transition-colors shadow-lg"
           >
             Get Started
           </Link>

@@ -28,7 +28,7 @@ export default function ProfilePage() {
   if (isLoading) {
     return (
       <div className="min-h-[calc(100vh-200px)] flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-green-600 border-t-transparent rounded-full" />
+        <div className="animate-spin w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -39,7 +39,7 @@ export default function ProfilePage() {
     ADMINISTRATOR: 'bg-purple-100 text-purple-700',
     COORDINATOR: 'bg-blue-100 text-blue-700',
     DISPATCHER: 'bg-orange-100 text-orange-700',
-    VOLUNTEER: 'bg-green-100 text-green-700',
+    VOLUNTEER: 'bg-teal-100 text-teal-700',
   };
 
   return (
@@ -55,7 +55,7 @@ export default function ProfilePage() {
           {/* Profile Card */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-xl border border-gray-200 p-6 text-center">
-              <div className="w-24 h-24 bg-green-600 text-white rounded-full flex items-center justify-center text-3xl font-bold mx-auto mb-4">
+              <div className="w-24 h-24 bg-teal-600 text-white rounded-full flex items-center justify-center text-3xl font-bold mx-auto mb-4">
                 {user.name.charAt(0)}
               </div>
               <h2 className="text-xl font-semibold text-gray-900">{user.name}</h2>
@@ -90,14 +90,14 @@ export default function ProfilePage() {
                   <input
                     type="tel"
                     defaultValue={user.phone || '(919) 555-0000'}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Primary Language</label>
                   <select
                     defaultValue={user.primaryLanguage || 'English'}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                   >
                     <option>English</option>
                     <option>Spanish</option>
@@ -123,7 +123,7 @@ export default function ProfilePage() {
                       <button
                         className={`w-full py-2 rounded transition-colors ${
                           i === 1 || i === 3 || i === 5
-                            ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                            ? 'bg-teal-100 text-teal-700 hover:bg-teal-200'
                             : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
                         }`}
                       >
@@ -153,9 +153,9 @@ export default function ProfilePage() {
                       key={zone}
                       className={`px-3 py-1 rounded-full text-sm transition-colors ${
                         zone === user.zone
-                          ? 'bg-green-600 text-white'
+                          ? 'bg-teal-600 text-white'
                           : zone.includes('Durham')
-                          ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                          ? 'bg-teal-100 text-teal-700 hover:bg-teal-200'
                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                       }`}
                     >
@@ -168,7 +168,7 @@ export default function ProfilePage() {
 
             {/* Save Button */}
             <div className="flex justify-end">
-              <button className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium">
+              <button className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium">
                 Save Changes
               </button>
             </div>

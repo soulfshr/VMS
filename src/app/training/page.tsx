@@ -71,7 +71,7 @@ export default function TrainingPage() {
   if (isLoading) {
     return (
       <div className="min-h-[calc(100vh-200px)] flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-green-600 border-t-transparent rounded-full" />
+        <div className="animate-spin w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -94,13 +94,13 @@ export default function TrainingPage() {
         <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold text-gray-900">Your Progress</h2>
-            <span className="text-2xl font-bold text-green-600">
+            <span className="text-2xl font-bold text-teal-600">
               {completedCount}/{requiredCount}
             </span>
           </div>
           <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
             <div
-              className="h-full bg-green-600 rounded-full transition-all duration-500"
+              className="h-full bg-teal-600 rounded-full transition-all duration-500"
               style={{ width: `${(completedCount / requiredCount) * 100}%` }}
             />
           </div>
@@ -118,7 +118,7 @@ export default function TrainingPage() {
               key={training.id}
               className={`bg-white rounded-xl border p-5 ${
                 training.status === 'COMPLETED'
-                  ? 'border-green-200'
+                  ? 'border-teal-200'
                   : 'border-gray-200'
               }`}
             >
@@ -127,7 +127,7 @@ export default function TrainingPage() {
                   {/* Status Icon */}
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
                     training.status === 'COMPLETED'
-                      ? 'bg-green-100 text-green-600'
+                      ? 'bg-teal-100 text-teal-600'
                       : 'bg-gray-100 text-gray-400'
                   }`}>
                     {training.status === 'COMPLETED' ? (
@@ -164,9 +164,9 @@ export default function TrainingPage() {
                 {/* Action */}
                 <div className="flex-shrink-0">
                   {training.status === 'COMPLETED' ? (
-                    <span className="text-green-600 text-sm font-medium">Completed</span>
+                    <span className="text-teal-600 text-sm font-medium">Completed</span>
                   ) : (
-                    <button className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors">
+                    <button className="px-4 py-2 bg-teal-600 text-white text-sm rounded-lg hover:bg-teal-700 transition-colors">
                       Start
                     </button>
                   )}

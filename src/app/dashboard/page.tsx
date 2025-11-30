@@ -29,7 +29,7 @@ export default function DashboardPage() {
   if (isLoading) {
     return (
       <div className="min-h-[calc(100vh-200px)] flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-green-600 border-t-transparent rounded-full" />
+        <div className="animate-spin w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -40,7 +40,7 @@ export default function DashboardPage() {
     ADMINISTRATOR: 'bg-purple-100 text-purple-700',
     COORDINATOR: 'bg-blue-100 text-blue-700',
     DISPATCHER: 'bg-orange-100 text-orange-700',
-    VOLUNTEER: 'bg-green-100 text-green-700',
+    VOLUNTEER: 'bg-teal-100 text-teal-700',
   };
 
   return (
@@ -66,7 +66,7 @@ export default function DashboardPage() {
           <div className="bg-white rounded-xl p-6 border border-gray-200">
             <p className="text-sm text-gray-500 mb-1">Upcoming Shifts</p>
             <p className="text-3xl font-bold text-gray-900">3</p>
-            <p className="text-xs text-green-600 mt-1">Next: Tomorrow 9AM</p>
+            <p className="text-xs text-teal-600 mt-1">Next: Tomorrow 9AM</p>
           </div>
           <div className="bg-white rounded-xl p-6 border border-gray-200">
             <p className="text-sm text-gray-500 mb-1">Hours This Month</p>
@@ -75,7 +75,7 @@ export default function DashboardPage() {
           </div>
           <div className="bg-white rounded-xl p-6 border border-gray-200">
             <p className="text-sm text-gray-500 mb-1">Training Status</p>
-            <p className="text-3xl font-bold text-green-600">100%</p>
+            <p className="text-3xl font-bold text-teal-600">100%</p>
             <p className="text-xs text-gray-500 mt-1">All required complete</p>
           </div>
           <div className="bg-white rounded-xl p-6 border border-gray-200">
@@ -91,7 +91,7 @@ export default function DashboardPage() {
           <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200">
             <div className="p-4 border-b border-gray-200 flex justify-between items-center">
               <h2 className="font-semibold text-gray-900">My Upcoming Shifts</h2>
-              <Link href="/shifts" className="text-sm text-green-600 hover:text-green-700">
+              <Link href="/shifts" className="text-sm text-teal-600 hover:text-teal-700">
                 View All →
               </Link>
             </div>
@@ -145,10 +145,10 @@ export default function DashboardPage() {
               <div className="space-y-2">
                 <Link
                   href="/shifts"
-                  className="block p-3 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 transition-colors"
+                  className="block p-3 rounded-lg bg-teal-50 text-teal-700 hover:bg-teal-100 transition-colors"
                 >
                   <span className="font-medium">Browse Available Shifts</span>
-                  <p className="text-xs text-green-600 mt-0.5">12 shifts open this week</p>
+                  <p className="text-xs text-teal-600 mt-0.5">12 shifts open this week</p>
                 </Link>
                 <Link
                   href="/profile"
@@ -190,7 +190,7 @@ export default function DashboardPage() {
                   <p>• 3 shifts this week</p>
                   <p>• Signal group active</p>
                 </div>
-                <button className="mt-4 w-full py-2 px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium">
+                <button className="mt-4 w-full py-2 px-4 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium">
                   Open Zone Signal Group
                 </button>
               </div>
