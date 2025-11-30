@@ -5,19 +5,82 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import type { DevUser } from '@/types/auth';
 
+interface Zone {
+  id: string;
+  name: string;
+  signalGroup: string | null;
+}
+
+interface UserZone {
+  isPrimary: boolean;
+  zone: Zone;
+}
+
+interface Shift {
+  id: string;
+  type: 'PATROL' | 'COLLECTION' | 'ON_CALL_FIELD_SUPPORT';
+  title: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  zone: Zone;
+  userRsvpStatus: string | null;
+}
+
+interface DashboardData {
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    zones: UserZone[];
+  };
+  upcomingShifts: Shift[];
+  stats: {
+    upcomingShiftCount: number;
+    availableShiftCount: number;
+    hoursThisMonth: number;
+    completedShiftCount: number;
+    trainingProgress: number;
+  };
+  zoneStats: {
+    zone: Zone;
+    volunteerCount: number;
+    shiftsThisWeek: number;
+  } | null;
+}
+
+const typeColors: Record<string, { bg: string; text: string }> = {
+  PATROL: { bg: 'bg-blue-100', text: 'text-blue-700' },
+  COLLECTION: { bg: 'bg-purple-100', text: 'text-purple-700' },
+  ON_CALL_FIELD_SUPPORT: { bg: 'bg-orange-100', text: 'text-orange-700' },
+};
+
+const typeLabels: Record<string, string> = {
+  PATROL: 'PATROL',
+  COLLECTION: 'COLLECTION',
+  ON_CALL_FIELD_SUPPORT: 'ON-CALL',
+};
+
 export default function DashboardPage() {
   const router = useRouter();
-  const [user, setUser] = useState<DevUser | null>(null);
+  const [sessionUser, setSessionUser] = useState<DevUser | null>(null);
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/auth/session')
-      .then(res => res.json())
-      .then(data => {
-        if (!data.user) {
+    Promise.all([
+      fetch('/api/auth/session').then(res => res.json()),
+      fetch('/api/dashboard').then(res => res.json()),
+    ])
+      .then(([sessionData, dashboard]) => {
+        if (!sessionData.user) {
           router.push('/login');
-        } else {
-          setUser(data.user);
+          return;
+        }
+        setSessionUser(sessionData.user);
+        if (!dashboard.error) {
+          setDashboardData(dashboard);
         }
         setIsLoading(false);
       })
@@ -25,6 +88,38 @@ export default function DashboardPage() {
         router.push('/login');
       });
   }, [router]);
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
+  const formatTime = (startStr: string, endStr: string) => {
+    const start = new Date(startStr);
+    const end = new Date(endStr);
+    const opts: Intl.DateTimeFormatOptions = {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    };
+    return `${start.toLocaleTimeString('en-US', opts)} - ${end.toLocaleTimeString('en-US', opts)}`;
+  };
+
+  const getNextShiftText = () => {
+    if (!dashboardData?.upcomingShifts.length) return 'None scheduled';
+    const next = dashboardData.upcomingShifts[0];
+    const date = new Date(next.date);
+    const now = new Date();
+    const diffDays = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Tomorrow';
+    return formatDate(next.date);
+  };
 
   if (isLoading) {
     return (
@@ -34,7 +129,7 @@ export default function DashboardPage() {
     );
   }
 
-  if (!user) return null;
+  if (!sessionUser) return null;
 
   const roleColors: Record<string, string> = {
     ADMINISTRATOR: 'bg-purple-100 text-purple-700',
@@ -43,20 +138,24 @@ export default function DashboardPage() {
     VOLUNTEER: 'bg-teal-100 text-teal-700',
   };
 
+  const stats = dashboardData?.stats;
+  const zoneStats = dashboardData?.zoneStats;
+  const primaryZone = dashboardData?.user.zones.find(uz => uz.isPrimary)?.zone;
+
   return (
     <div className="min-h-[calc(100vh-200px)] bg-gray-50 py-8">
       <div className="container mx-auto px-4 max-w-6xl">
         {/* Welcome Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Welcome back, {user.name}!
+            Welcome back, {sessionUser.name}!
           </h1>
           <div className="flex items-center gap-3">
-            <span className={`px-3 py-1 rounded-full text-sm font-medium ${roleColors[user.role]}`}>
-              {user.role}
+            <span className={`px-3 py-1 rounded-full text-sm font-medium ${roleColors[sessionUser.role]}`}>
+              {sessionUser.role}
             </span>
-            {user.zone && (
-              <span className="text-gray-500">• {user.zone}</span>
+            {primaryZone && (
+              <span className="text-gray-500">• {primaryZone.name}</span>
             )}
           </div>
         </div>
@@ -65,23 +164,27 @@ export default function DashboardPage() {
         <div className="grid md:grid-cols-4 gap-4 mb-8">
           <div className="bg-white rounded-xl p-6 border border-gray-200">
             <p className="text-sm text-gray-500 mb-1">Upcoming Shifts</p>
-            <p className="text-3xl font-bold text-gray-900">3</p>
-            <p className="text-xs text-teal-600 mt-1">Next: Tomorrow 9AM</p>
+            <p className="text-3xl font-bold text-gray-900">{stats?.upcomingShiftCount || 0}</p>
+            <p className="text-xs text-teal-600 mt-1">Next: {getNextShiftText()}</p>
           </div>
           <div className="bg-white rounded-xl p-6 border border-gray-200">
             <p className="text-sm text-gray-500 mb-1">Hours This Month</p>
-            <p className="text-3xl font-bold text-gray-900">24</p>
-            <p className="text-xs text-gray-500 mt-1">6 shifts completed</p>
+            <p className="text-3xl font-bold text-gray-900">{stats?.hoursThisMonth || 0}</p>
+            <p className="text-xs text-gray-500 mt-1">{stats?.completedShiftCount || 0} shifts completed</p>
           </div>
           <div className="bg-white rounded-xl p-6 border border-gray-200">
             <p className="text-sm text-gray-500 mb-1">Training Status</p>
-            <p className="text-3xl font-bold text-teal-600">100%</p>
-            <p className="text-xs text-gray-500 mt-1">All required complete</p>
+            <p className={`text-3xl font-bold ${stats?.trainingProgress === 100 ? 'text-teal-600' : 'text-orange-600'}`}>
+              {stats?.trainingProgress || 0}%
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              {stats?.trainingProgress === 100 ? 'All required complete' : 'In progress'}
+            </p>
           </div>
           <div className="bg-white rounded-xl p-6 border border-gray-200">
-            <p className="text-sm text-gray-500 mb-1">Active Alerts</p>
-            <p className="text-3xl font-bold text-orange-600">1</p>
-            <p className="text-xs text-orange-600 mt-1">Durham area</p>
+            <p className="text-sm text-gray-500 mb-1">Available Shifts</p>
+            <p className="text-3xl font-bold text-teal-600">{stats?.availableShiftCount || 0}</p>
+            <p className="text-xs text-teal-600 mt-1">Open for signup</p>
           </div>
         </div>
 
@@ -96,44 +199,36 @@ export default function DashboardPage() {
               </Link>
             </div>
             <div className="divide-y divide-gray-100">
-              {/* Sample Shift 1 */}
-              <div className="p-4 hover:bg-gray-50 transition-colors">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="font-medium text-gray-900">Patrol - Durham 1</p>
-                    <p className="text-sm text-gray-500">Tomorrow, Dec 1 • 9:00 AM - 1:00 PM</p>
+              {dashboardData?.upcomingShifts.length ? (
+                dashboardData.upcomingShifts.map(shift => (
+                  <div key={shift.id} className="p-4 hover:bg-gray-50 transition-colors">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-medium text-gray-900">{shift.title} - {shift.zone.name}</p>
+                        <p className="text-sm text-gray-500">
+                          {formatDate(shift.date)} • {formatTime(shift.startTime, shift.endTime)}
+                        </p>
+                        {shift.userRsvpStatus === 'PENDING' && (
+                          <p className="text-xs text-yellow-600 mt-1">Pending confirmation</p>
+                        )}
+                      </div>
+                      <span className={`px-2 py-1 text-xs font-medium rounded ${typeColors[shift.type].bg} ${typeColors[shift.type].text}`}>
+                        {typeLabels[shift.type]}
+                      </span>
+                    </div>
                   </div>
-                  <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded">
-                    PATROL
-                  </span>
+                ))
+              ) : (
+                <div className="p-8 text-center">
+                  <p className="text-gray-500 mb-4">No upcoming shifts scheduled</p>
+                  <Link
+                    href="/shifts"
+                    className="inline-block px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium"
+                  >
+                    Browse Available Shifts
+                  </Link>
                 </div>
-              </div>
-
-              {/* Sample Shift 2 */}
-              <div className="p-4 hover:bg-gray-50 transition-colors">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="font-medium text-gray-900">Collection - Remote</p>
-                    <p className="text-sm text-gray-500">Saturday, Dec 3 • 6:00 PM - 10:00 PM</p>
-                  </div>
-                  <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded">
-                    COLLECTION
-                  </span>
-                </div>
-              </div>
-
-              {/* Sample Shift 3 */}
-              <div className="p-4 hover:bg-gray-50 transition-colors">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="font-medium text-gray-900">On-Call Support - Wake 3</p>
-                    <p className="text-sm text-gray-500">Sunday, Dec 4 • 8:00 AM - 12:00 PM</p>
-                  </div>
-                  <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs font-medium rounded">
-                    ON-CALL
-                  </span>
-                </div>
-              </div>
+              )}
             </div>
           </div>
 
@@ -148,7 +243,9 @@ export default function DashboardPage() {
                   className="block p-3 rounded-lg bg-teal-50 text-teal-700 hover:bg-teal-100 transition-colors"
                 >
                   <span className="font-medium">Browse Available Shifts</span>
-                  <p className="text-xs text-teal-600 mt-0.5">12 shifts open this week</p>
+                  <p className="text-xs text-teal-600 mt-0.5">
+                    {stats?.availableShiftCount || 0} shifts open
+                  </p>
                 </Link>
                 <Link
                   href="/profile"
@@ -162,53 +259,49 @@ export default function DashboardPage() {
                   className="block p-3 rounded-lg bg-gray-50 text-gray-700 hover:bg-gray-100 transition-colors"
                 >
                   <span className="font-medium">View Training</span>
-                  <p className="text-xs text-gray-500 mt-0.5">All modules completed</p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {stats?.trainingProgress === 100 ? 'All modules completed' : 'Continue training'}
+                  </p>
                 </Link>
               </div>
             </div>
 
-            {/* Active Alert */}
-            <div className="bg-orange-50 rounded-xl border border-orange-200 p-4">
-              <div className="flex items-start gap-3">
-                <span className="text-2xl">⚠️</span>
-                <div>
-                  <h3 className="font-semibold text-orange-800">Active Alert</h3>
-                  <p className="text-sm text-orange-700 mt-1">
-                    Increased activity reported in Durham area. Stay alert if in zone.
-                  </p>
-                  <p className="text-xs text-orange-600 mt-2">Posted 2 hours ago</p>
-                </div>
-              </div>
-            </div>
-
             {/* Zone Info */}
-            {user.zone && (
+            {zoneStats && (
               <div className="bg-white rounded-xl border border-gray-200 p-4">
-                <h2 className="font-semibold text-gray-900 mb-3">Your Zone: {user.zone}</h2>
+                <h2 className="font-semibold text-gray-900 mb-3">Your Zone: {zoneStats.zone.name}</h2>
                 <div className="text-sm text-gray-600 space-y-2">
-                  <p>• 8 volunteers assigned</p>
-                  <p>• 3 shifts this week</p>
-                  <p>• Signal group active</p>
+                  <p>• {zoneStats.volunteerCount} volunteers assigned</p>
+                  <p>• {zoneStats.shiftsThisWeek} shifts this week</p>
+                  {zoneStats.zone.signalGroup && <p>• Signal group active</p>}
                 </div>
-                <button className="mt-4 w-full py-2 px-4 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium">
-                  Open Zone Signal Group
-                </button>
+                {zoneStats.zone.signalGroup && (
+                  <a
+                    href={zoneStats.zone.signalGroup}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-4 w-full py-2 px-4 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium inline-block text-center"
+                  >
+                    Open Zone Signal Group
+                  </a>
+                )}
               </div>
             )}
-          </div>
-        </div>
 
-        {/* Development Mode Notice */}
-        <div className="mt-8 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <div className="flex items-start gap-3">
-            <span className="text-yellow-600">ℹ️</span>
-            <div>
-              <h3 className="font-semibold text-yellow-800">Development Preview</h3>
-              <p className="text-sm text-yellow-700">
-                This dashboard displays sample data. Full functionality will be available once connected to the database.
-                You are logged in as <strong>{user.name}</strong> ({user.role}).
-              </p>
-            </div>
+            {/* Role-specific quick links */}
+            {(sessionUser.role === 'COORDINATOR' || sessionUser.role === 'ADMINISTRATOR') && (
+              <div className="bg-blue-50 rounded-xl border border-blue-200 p-4">
+                <h3 className="font-semibold text-blue-800 mb-3">Coordinator Tools</h3>
+                <div className="space-y-2">
+                  <Link
+                    href="/shifts/create"
+                    className="block p-2 rounded bg-blue-100 text-blue-700 hover:bg-blue-200 text-sm font-medium"
+                  >
+                    + Create New Shift
+                  </Link>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

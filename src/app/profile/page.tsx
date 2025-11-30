@@ -4,26 +4,181 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import type { DevUser } from '@/types/auth';
 
+interface Zone {
+  id: string;
+  name: string;
+  county: string | null;
+}
+
+interface UserZone {
+  id: string;
+  zoneId: string;
+  isPrimary: boolean;
+  zone: Zone;
+}
+
+interface AvailabilitySlot {
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+}
+
+const TIME_SLOTS = [
+  { label: 'Morning (6am-10am)', startTime: '06:00', endTime: '10:00' },
+  { label: 'Midday (10am-2pm)', startTime: '10:00', endTime: '14:00' },
+  { label: 'Afternoon (2pm-6pm)', startTime: '14:00', endTime: '18:00' },
+];
+
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
 export default function ProfilePage() {
   const router = useRouter();
   const [user, setUser] = useState<DevUser | null>(null);
+  const [allZones, setAllZones] = useState<Zone[]>([]);
+  const [userZones, setUserZones] = useState<UserZone[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Form state
+  const [phone, setPhone] = useState('');
+  const [primaryLanguage, setPrimaryLanguage] = useState('English');
+  const [selectedZoneIds, setSelectedZoneIds] = useState<string[]>([]);
+  const [primaryZoneId, setPrimaryZoneId] = useState<string>('');
+  const [availability, setAvailability] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    fetch('/api/auth/session')
-      .then(res => res.json())
-      .then(data => {
-        if (!data.user) {
+    Promise.all([
+      fetch('/api/auth/session').then(res => res.json()),
+      fetch('/api/profile').then(res => res.json()),
+    ])
+      .then(([sessionData, profileData]) => {
+        if (!sessionData.user) {
           router.push('/login');
-        } else {
-          setUser(data.user);
+          return;
         }
+        setUser(sessionData.user);
+
+        if (profileData.user) {
+          setPhone(profileData.user.phone || '');
+          setPrimaryLanguage(profileData.user.primaryLanguage || 'English');
+        }
+
+        if (profileData.allZones) {
+          setAllZones(profileData.allZones);
+        }
+
+        if (profileData.user?.zones) {
+          setUserZones(profileData.user.zones);
+          const zoneIds = profileData.user.zones.map((uz: UserZone) => uz.zoneId);
+          setSelectedZoneIds(zoneIds);
+          const primary = profileData.user.zones.find((uz: UserZone) => uz.isPrimary);
+          if (primary) setPrimaryZoneId(primary.zoneId);
+        }
+
+        if (profileData.availability) {
+          const avail: Record<string, boolean> = {};
+          profileData.availability.forEach((slot: AvailabilitySlot) => {
+            const key = `${slot.dayOfWeek}-${slot.startTime}`;
+            avail[key] = true;
+          });
+          setAvailability(avail);
+        }
+
         setIsLoading(false);
       })
       .catch(() => {
         router.push('/login');
       });
   }, [router]);
+
+  const toggleAvailability = (dayIndex: number, startTime: string) => {
+    const key = `${dayIndex}-${startTime}`;
+    setAvailability(prev => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  };
+
+  const toggleZone = (zoneId: string) => {
+    setSelectedZoneIds(prev => {
+      if (prev.includes(zoneId)) {
+        // If removing the primary zone, clear primary
+        if (zoneId === primaryZoneId) {
+          setPrimaryZoneId('');
+        }
+        return prev.filter(id => id !== zoneId);
+      } else {
+        // If first zone, make it primary
+        if (prev.length === 0) {
+          setPrimaryZoneId(zoneId);
+        }
+        return [...prev, zoneId];
+      }
+    });
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    setSaveMessage(null);
+
+    try {
+      // Save profile
+      const profileRes = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone,
+          primaryLanguage,
+        }),
+      });
+      if (!profileRes.ok) throw new Error('Failed to save profile');
+
+      // Save zones
+      const zonesRes = await fetch('/api/profile/zones', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          zoneIds: selectedZoneIds,
+          primaryZoneId,
+        }),
+      });
+      if (!zonesRes.ok) throw new Error('Failed to save zones');
+
+      // Convert availability to slots
+      const slots: AvailabilitySlot[] = [];
+      Object.entries(availability).forEach(([key, isAvailable]) => {
+        if (isAvailable) {
+          const [dayOfWeek, startTime] = key.split('-');
+          const slot = TIME_SLOTS.find(s => s.startTime === startTime);
+          if (slot) {
+            slots.push({
+              dayOfWeek: parseInt(dayOfWeek, 10),
+              startTime: slot.startTime,
+              endTime: slot.endTime,
+            });
+          }
+        }
+      });
+
+      // Save availability
+      const availRes = await fetch('/api/profile/availability', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ availability: slots }),
+      });
+      if (!availRes.ok) throw new Error('Failed to save availability');
+
+      setSaveMessage({ type: 'success', text: 'Profile saved successfully!' });
+    } catch (err) {
+      setSaveMessage({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'Failed to save',
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -51,6 +206,16 @@ export default function ProfilePage() {
           <p className="text-gray-600">Manage your account information and preferences</p>
         </div>
 
+        {saveMessage && (
+          <div className={`mb-6 p-4 rounded-lg ${
+            saveMessage.type === 'success'
+              ? 'bg-teal-50 border border-teal-200 text-teal-700'
+              : 'bg-red-50 border border-red-200 text-red-700'
+          }`}>
+            {saveMessage.text}
+          </div>
+        )}
+
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Profile Card */}
           <div className="lg:col-span-1">
@@ -62,8 +227,10 @@ export default function ProfilePage() {
               <span className={`inline-block mt-2 px-3 py-1 rounded-full text-sm font-medium ${roleColors[user.role]}`}>
                 {user.role}
               </span>
-              {user.zone && (
-                <p className="text-gray-500 mt-2">Zone: {user.zone}</p>
+              {userZones.find(uz => uz.isPrimary) && (
+                <p className="text-gray-500 mt-2">
+                  Zone: {userZones.find(uz => uz.isPrimary)?.zone.name}
+                </p>
               )}
             </div>
           </div>
@@ -89,52 +256,75 @@ export default function ProfilePage() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
                   <input
                     type="tel"
-                    defaultValue={user.phone || '(919) 555-0000'}
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="(919) 555-0000"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Primary Language</label>
                   <select
-                    defaultValue={user.primaryLanguage || 'English'}
+                    value={primaryLanguage}
+                    onChange={(e) => setPrimaryLanguage(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                   >
-                    <option>English</option>
-                    <option>Spanish</option>
-                    <option>Other</option>
+                    <option value="English">English</option>
+                    <option value="Spanish">Spanish</option>
+                    <option value="Other">Other</option>
                   </select>
                 </div>
               </div>
             </div>
 
-            {/* Availability */}
+            {/* Weekly Availability */}
             <div className="bg-white rounded-xl border border-gray-200">
               <div className="p-4 border-b border-gray-200">
                 <h3 className="font-semibold text-gray-900">Weekly Availability</h3>
               </div>
               <div className="p-4">
                 <p className="text-sm text-gray-600 mb-4">
-                  Set your recurring availability to help coordinators schedule shifts that fit your schedule.
+                  Select your recurring availability to help coordinators schedule shifts.
                 </p>
-                <div className="grid grid-cols-7 gap-2 text-center text-sm">
-                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, i) => (
-                    <div key={day}>
-                      <p className="font-medium text-gray-700 mb-2">{day}</p>
-                      <button
-                        className={`w-full py-2 rounded transition-colors ${
-                          i === 1 || i === 3 || i === 5
-                            ? 'bg-teal-100 text-teal-700 hover:bg-teal-200'
-                            : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
-                        }`}
-                      >
-                        {i === 1 || i === 3 || i === 5 ? 'AM' : '—'}
-                      </button>
-                    </div>
-                  ))}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr>
+                        <th className="text-left py-2 pr-2"></th>
+                        {DAYS.map(day => (
+                          <th key={day} className="text-center py-2 px-1 font-medium text-gray-700">
+                            {day}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {TIME_SLOTS.map(slot => (
+                        <tr key={slot.startTime}>
+                          <td className="py-2 pr-2 text-gray-600 whitespace-nowrap">{slot.label}</td>
+                          {DAYS.map((_, dayIndex) => {
+                            const key = `${dayIndex}-${slot.startTime}`;
+                            const isSelected = availability[key];
+                            return (
+                              <td key={dayIndex} className="text-center py-2 px-1">
+                                <button
+                                  onClick={() => toggleAvailability(dayIndex, slot.startTime)}
+                                  className={`w-8 h-8 rounded transition-colors ${
+                                    isSelected
+                                      ? 'bg-teal-600 text-white'
+                                      : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                                  }`}
+                                >
+                                  {isSelected ? '✓' : '—'}
+                                </button>
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-                <p className="text-xs text-gray-500 mt-3">
-                  Click to toggle availability for each day
-                </p>
               </div>
             </div>
 
@@ -145,41 +335,53 @@ export default function ProfilePage() {
               </div>
               <div className="p-4">
                 <p className="text-sm text-gray-600 mb-4">
-                  Select zones you are willing to volunteer in:
+                  Select zones you are willing to volunteer in. Click a selected zone again to make it your primary.
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {['Durham 1', 'Durham 2', 'Durham 3', 'Orange 1', 'Wake 1', 'Wake 2'].map((zone) => (
-                    <button
-                      key={zone}
-                      className={`px-3 py-1 rounded-full text-sm transition-colors ${
-                        zone === user.zone
-                          ? 'bg-teal-600 text-white'
-                          : zone.includes('Durham')
-                          ? 'bg-teal-100 text-teal-700 hover:bg-teal-200'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      }`}
-                    >
-                      {zone}
-                    </button>
-                  ))}
+                  {allZones.map((zone) => {
+                    const isSelected = selectedZoneIds.includes(zone.id);
+                    const isPrimary = zone.id === primaryZoneId;
+                    return (
+                      <button
+                        key={zone.id}
+                        onClick={() => {
+                          if (isSelected && !isPrimary) {
+                            setPrimaryZoneId(zone.id);
+                          } else {
+                            toggleZone(zone.id);
+                          }
+                        }}
+                        className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                          isPrimary
+                            ? 'bg-teal-600 text-white ring-2 ring-teal-300'
+                            : isSelected
+                            ? 'bg-teal-100 text-teal-700 hover:bg-teal-200'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        {zone.name}
+                        {isPrimary && ' ★'}
+                      </button>
+                    );
+                  })}
                 </div>
+                <p className="text-xs text-gray-500 mt-3">
+                  ★ indicates your primary zone
+                </p>
               </div>
             </div>
 
             {/* Save Button */}
             <div className="flex justify-end">
-              <button className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium">
-                Save Changes
+              <button
+                onClick={handleSave}
+                disabled={isSaving}
+                className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium disabled:opacity-50"
+              >
+                {isSaving ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>
-        </div>
-
-        {/* Development Notice */}
-        <div className="mt-8 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <p className="text-sm text-yellow-700">
-            <strong>Development Preview:</strong> Profile editing is not yet connected to the database. Changes will not persist.
-          </p>
         </div>
       </div>
     </div>
