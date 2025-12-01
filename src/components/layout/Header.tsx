@@ -90,6 +90,18 @@ export default function Header() {
                 >
                   Schedule
                 </Link>
+                {['COORDINATOR', 'ADMINISTRATOR'].includes(user.role) && (
+                  <Link
+                    href="/volunteers"
+                    className={`text-sm font-medium transition-colors ${
+                      pathname.startsWith('/volunteers')
+                        ? 'text-teal-700'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Volunteers
+                  </Link>
+                )}
                 <Link
                   href="/profile"
                   className={`text-sm font-medium transition-colors ${
@@ -233,6 +245,15 @@ export default function Header() {
                 >
                   Schedule
                 </Link>
+                {['COORDINATOR', 'ADMINISTRATOR'].includes(user.role) && (
+                  <Link
+                    href="/volunteers"
+                    className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Volunteers
+                  </Link>
+                )}
                 <Link
                   href="/profile"
                   className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
