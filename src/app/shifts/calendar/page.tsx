@@ -91,11 +91,6 @@ export default function ShiftCalendarPage() {
           router.push('/login');
           return;
         }
-        // Only coordinators and admins can see calendar
-        if (!['COORDINATOR', 'ADMINISTRATOR'].includes(sessionData.user.role)) {
-          router.push('/shifts');
-          return;
-        }
         setUser(sessionData.user);
         if (Array.isArray(zonesData)) {
           setZones(zonesData);
@@ -138,8 +133,11 @@ export default function ShiftCalendarPage() {
     router.push(`/shifts/${event.id}`);
   };
 
-  // Handle slot selection (create new shift)
+  // Handle slot selection (create new shift) - only for coordinators/admins
+  const canCreateShift = user && ['COORDINATOR', 'ADMINISTRATOR'].includes(user.role);
+
   const handleSelectSlot = ({ start }: { start: Date }) => {
+    if (!canCreateShift) return;
     const dateStr = start.toISOString().split('T')[0];
     router.push(`/shifts/create?date=${dateStr}`);
   };
@@ -170,12 +168,14 @@ export default function ShiftCalendarPage() {
             >
               Grid View
             </Link>
-            <Link
-              href="/shifts/create"
-              className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium"
-            >
-              + Create Shift
-            </Link>
+            {['COORDINATOR', 'ADMINISTRATOR'].includes(user.role) && (
+              <Link
+                href="/shifts/create"
+                className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium"
+              >
+                + Create Shift
+              </Link>
+            )}
           </div>
         </div>
 
@@ -261,7 +261,9 @@ export default function ShiftCalendarPage() {
 
         {/* Summary */}
         <div className="mt-4 text-sm text-gray-500">
-          Showing {events.length} shift{events.length !== 1 ? 's' : ''}. Click on a date to create a new shift.
+          Showing {events.length} shift{events.length !== 1 ? 's' : ''}.
+          {canCreateShift && ' Click on a date to create a new shift.'}
+          {' '}Click on a shift to view details.
         </div>
       </div>
     </div>
