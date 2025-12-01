@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -36,6 +36,13 @@ interface Shift {
   isCoordinator: boolean;
 }
 
+interface SearchableUser {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+}
+
 export default function RosterPage() {
   const params = useParams();
   const router = useRouter();
@@ -43,6 +50,14 @@ export default function RosterPage() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>('all');
+
+  // Add Volunteer Modal state
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<SearchableUser[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [addingVolunteer, setAddingVolunteer] = useState<string | null>(null);
+  const [addError, setAddError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchShift();
@@ -107,6 +122,75 @@ export default function RosterPage() {
     } finally {
       setUpdating(null);
     }
+  };
+
+  // Search for volunteers to add
+  const searchVolunteers = useCallback(async (query: string) => {
+    if (query.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+
+    setSearching(true);
+    try {
+      const res = await fetch(`/api/users?search=${encodeURIComponent(query)}&limit=10`);
+      if (res.ok) {
+        const data = await res.json();
+        // Filter out users already on this shift
+        const existingIds = shift?.volunteers.map(v => v.user.id) || [];
+        const filtered = data.users.filter((u: SearchableUser) => !existingIds.includes(u.id));
+        setSearchResults(filtered);
+      }
+    } catch (error) {
+      console.error('Error searching volunteers:', error);
+    } finally {
+      setSearching(false);
+    }
+  }, [shift?.volunteers]);
+
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchQuery) {
+        searchVolunteers(searchQuery);
+      } else {
+        setSearchResults([]);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery, searchVolunteers]);
+
+  const handleAddVolunteer = async (volunteerId: string) => {
+    setAddingVolunteer(volunteerId);
+    setAddError(null);
+    try {
+      const res = await fetch(`/api/shifts/${params.id}/add-volunteer`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ volunteerId }),
+      });
+      if (res.ok) {
+        // Remove from search results
+        setSearchResults(prev => prev.filter(u => u.id !== volunteerId));
+        setSearchQuery('');
+        fetchShift();
+      } else {
+        const data = await res.json();
+        setAddError(data.error || 'Failed to add volunteer');
+      }
+    } catch (error) {
+      console.error('Error adding volunteer:', error);
+      setAddError('Failed to add volunteer');
+    } finally {
+      setAddingVolunteer(null);
+    }
+  };
+
+  const closeAddModal = () => {
+    setShowAddModal(false);
+    setSearchQuery('');
+    setSearchResults([]);
+    setAddError(null);
   };
 
   if (loading) {
@@ -194,7 +278,7 @@ export default function RosterPage() {
 
       {/* Actions Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <button
             onClick={() => setFilter('all')}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -220,14 +304,25 @@ export default function RosterPage() {
             Confirmed ({statusCounts.CONFIRMED})
           </button>
         </div>
-        {statusCounts.PENDING > 0 && (
+        <div className="flex gap-2">
           <button
-            onClick={handleBulkConfirm}
-            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+            onClick={() => setShowAddModal(true)}
+            className="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition-colors flex items-center gap-2"
           >
-            Confirm All Pending ({statusCounts.PENDING})
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Add Volunteer
           </button>
-        )}
+          {statusCounts.PENDING > 0 && (
+            <button
+              onClick={handleBulkConfirm}
+              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+            >
+              Confirm All Pending ({statusCounts.PENDING})
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Roster Table */}
@@ -349,6 +444,107 @@ export default function RosterPage() {
           </div>
         )}
       </div>
+
+      {/* Add Volunteer Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[80vh] overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">Add Volunteer to Shift</h2>
+              <button
+                onClick={closeAddModal}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="px-6 py-4">
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Search Volunteers
+                </label>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Type name or email to search..."
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  autoFocus
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Volunteer will be auto-confirmed and receive an invite email with calendar invite.
+                </p>
+              </div>
+
+              {addError && (
+                <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm">
+                  {addError}
+                </div>
+              )}
+
+              <div className="max-h-64 overflow-y-auto">
+                {searching && (
+                  <div className="text-center py-4 text-gray-500">
+                    Searching...
+                  </div>
+                )}
+
+                {!searching && searchQuery.length > 0 && searchQuery.length < 2 && (
+                  <div className="text-center py-4 text-gray-500 text-sm">
+                    Type at least 2 characters to search
+                  </div>
+                )}
+
+                {!searching && searchQuery.length >= 2 && searchResults.length === 0 && (
+                  <div className="text-center py-4 text-gray-500">
+                    No volunteers found
+                  </div>
+                )}
+
+                {searchResults.map((user) => (
+                  <div
+                    key={user.id}
+                    className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg border-b last:border-b-0"
+                  >
+                    <div>
+                      <p className="font-medium text-gray-900">{user.name}</p>
+                      <p className="text-sm text-gray-500">{user.email}</p>
+                    </div>
+                    <button
+                      onClick={() => handleAddVolunteer(user.id)}
+                      disabled={addingVolunteer === user.id}
+                      className="px-3 py-1.5 bg-teal-600 text-white text-sm rounded hover:bg-teal-700 disabled:opacity-50 flex items-center gap-1"
+                    >
+                      {addingVolunteer === user.id ? (
+                        'Adding...'
+                      ) : (
+                        <>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                          </svg>
+                          Add
+                        </>
+                      )}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-end">
+              <button
+                onClick={closeAddModal}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

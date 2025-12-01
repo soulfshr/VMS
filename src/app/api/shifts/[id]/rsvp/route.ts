@@ -218,8 +218,10 @@ export async function PATCH(
 
     // Build update data based on what was provided
     const updateData: { status?: RSVPStatus; confirmedAt?: Date | null; isZoneLead?: boolean } = {};
+    let statusUpdated: RSVPStatus | undefined;
     if (status !== undefined) {
-      updateData.status = status as RSVPStatus;
+      statusUpdated = status as RSVPStatus;
+      updateData.status = statusUpdated;
       updateData.confirmedAt = status === 'CONFIRMED' ? new Date() : null;
     }
     if (isZoneLead !== undefined) {
@@ -234,7 +236,10 @@ export async function PATCH(
           userId: volunteerId,
         },
       },
-      data: updateData,
+      data: {
+        ...(statusUpdated && { status: statusUpdated, confirmedAt: updateData.confirmedAt }),
+        ...(isZoneLead !== undefined && { isZoneLead }),
+      },
       include: {
         shift: {
           include: {
@@ -252,7 +257,7 @@ export async function PATCH(
     });
 
     // Send confirmation email with calendar invite when status is changed to CONFIRMED
-    if (status === 'CONFIRMED' && updateData.status === 'CONFIRMED') {
+    if (statusUpdated === 'CONFIRMED') {
       sendShiftConfirmationEmail({
         to: rsvp.user.email,
         volunteerName: rsvp.user.name,

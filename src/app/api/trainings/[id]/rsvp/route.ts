@@ -175,22 +175,22 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
             id: true,
             name: true,
             email: true,
-            qualifiedRoles: true,
+            qualifications: true,
           },
         },
       },
     });
 
-    // If training is marked as completed and grants a role, update user's qualifiedRoles
-    if (completedAt && attendee.session.trainingType.grantsRole) {
-      const grantedRole = attendee.session.trainingType.grantsRole;
-      const currentRoles = attendee.user.qualifiedRoles || [];
+    // If training is marked as completed and grants a qualification, update user's qualifications
+    if (completedAt && attendee.session.trainingType.grantsQualification) {
+      const grantedQualification = attendee.session.trainingType.grantsQualification;
+      const currentQualifications = attendee.user.qualifications || [];
 
-      if (!currentRoles.includes(grantedRole)) {
+      if (!currentQualifications.includes(grantedQualification)) {
         await prisma.user.update({
           where: { id: attendee.userId },
           data: {
-            qualifiedRoles: [...currentRoles, grantedRole],
+            qualifications: [...currentQualifications, grantedQualification],
           },
         });
       }

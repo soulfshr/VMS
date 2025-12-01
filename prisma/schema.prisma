@@ -49,6 +49,14 @@ enum TrainingStatus {
   EXPIRED
 }
 
+// Shift qualifications - what positions a user can fill during shifts
+// Earned through training completion or manually assigned by admins
+enum Qualification {
+  VERIFIER      // Can verify people at patrols
+  ZONE_LEAD     // Can lead a zone during a shift
+  DISPATCHER    // Can handle dispatch calls
+}
+
 // ============================================
 // ORGANIZATION SETTINGS
 // ============================================
@@ -116,9 +124,13 @@ model User {
   role              Role      @default(VOLUNTEER)
   profileImageUrl   String?
 
-  // Role qualifications - roles this user is qualified to fill
-  // e.g., a user might be qualified as both VOLUNTEER and DISPATCHER
+  // DEPRECATED: Use qualifications instead (kept for migration)
   qualifiedRoles    Role[]
+
+  // Shift qualifications - positions this user can fill during shifts
+  // Earned through training completion or manually assigned by admins
+  // New users start with empty array (cannot sign up for shifts until trained)
+  qualifications    Qualification[]
 
   // Volunteer-specific fields
   primaryLanguage   String    @default("English")
@@ -237,8 +249,11 @@ model TrainingType {
   defaultCapacity     Int      @default(20)
   expiresAfterDays    Int?     // Certification expiration (null = never)
 
-  // Role granted upon completion
-  grantsRole          Role?    // If set, completing this training qualifies user for this role
+  // DEPRECATED: Use grantsQualification instead
+  grantsRole          Role?
+
+  // Qualification granted upon completion
+  grantsQualification Qualification?  // If set, completing this training grants this qualification
 
   isActive        Boolean  @default(true)
   sortOrder       Int      @default(0)

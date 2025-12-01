@@ -1,6 +1,30 @@
 import nodemailer from 'nodemailer';
 import icalGenerator from 'ical-generator';
 
+// Organization timezone - used for formatting dates in emails
+// This ensures consistent display regardless of server timezone (UTC on Vercel)
+const ORG_TIMEZONE = 'America/New_York';
+
+// Helper to format date in organization timezone
+function formatDateInOrgTimezone(date: Date): string {
+  return date.toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    timeZone: ORG_TIMEZONE,
+  });
+}
+
+// Helper to format time in organization timezone
+function formatTimeInOrgTimezone(date: Date): string {
+  return date.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZone: ORG_TIMEZONE,
+  });
+}
+
 // Create reusable transporter
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'smtp.gmail.com',
@@ -40,14 +64,9 @@ export async function sendShiftSignupEmail(params: ShiftEmailParams): Promise<vo
 
   const { to, volunteerName, shiftTitle, shiftType, shiftDate, startTime, endTime, zoneName } = params;
 
-  const dateStr = shiftDate.toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-  const startStr = startTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-  const endStr = endTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  const dateStr = formatDateInOrgTimezone(shiftDate);
+  const startStr = formatTimeInOrgTimezone(startTime);
+  const endStr = formatTimeInOrgTimezone(endTime);
 
   try {
     await transporter.sendMail({
@@ -96,20 +115,16 @@ export async function sendShiftConfirmationEmail(params: ShiftEmailParams): Prom
 
   const { to, volunteerName, shiftTitle, shiftType, shiftDate, startTime, endTime, zoneName, description } = params;
 
-  const dateStr = shiftDate.toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-  const startStr = startTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-  const endStr = endTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  const dateStr = formatDateInOrgTimezone(shiftDate);
+  const startStr = formatTimeInOrgTimezone(startTime);
+  const endStr = formatTimeInOrgTimezone(endTime);
 
-  // Generate ICS calendar invite
+  // Generate ICS calendar invite with explicit timezone
   const calendar = icalGenerator({ name: 'Siembra NC VMS' });
   calendar.createEvent({
     start: startTime,
     end: endTime,
+    timezone: ORG_TIMEZONE,
     summary: `${shiftType}: ${shiftTitle} - ${zoneName}`,
     description: description || `Siembra NC volunteer shift\n\nType: ${shiftType}\nZone: ${zoneName}`,
     organizer: { name: 'Siembra NC', email: process.env.SMTP_USER! },
@@ -165,14 +180,9 @@ export async function sendShiftCancellationEmail(params: Omit<ShiftEmailParams, 
 
   const { to, volunteerName, shiftTitle, shiftType, shiftDate, startTime, endTime, zoneName } = params;
 
-  const dateStr = shiftDate.toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-  const startStr = startTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-  const endStr = endTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  const dateStr = formatDateInOrgTimezone(shiftDate);
+  const startStr = formatTimeInOrgTimezone(startTime);
+  const endStr = formatTimeInOrgTimezone(endTime);
 
   try {
     await transporter.sendMail({
@@ -231,14 +241,9 @@ export async function sendShiftCancelledByCoordinatorEmail(params: ShiftCancelle
 
   const { to, volunteerName, shiftTitle, shiftType, shiftDate, startTime, endTime, zoneName, reason } = params;
 
-  const dateStr = shiftDate.toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-  const startStr = startTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-  const endStr = endTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  const dateStr = formatDateInOrgTimezone(shiftDate);
+  const startStr = formatTimeInOrgTimezone(startTime);
+  const endStr = formatTimeInOrgTimezone(endTime);
 
   try {
     await transporter.sendMail({
@@ -272,5 +277,85 @@ export async function sendShiftCancelledByCoordinatorEmail(params: ShiftCancelle
     console.log(`[Email] Shift cancelled notification sent to ${to}`);
   } catch (error) {
     console.error('[Email] Failed to send shift cancelled email:', error);
+  }
+}
+
+interface ShiftInviteParams {
+  to: string;
+  volunteerName: string;
+  shiftTitle: string;
+  shiftType: string;
+  shiftDate: Date;
+  startTime: Date;
+  endTime: Date;
+  zoneName: string;
+  description?: string;
+  coordinatorName: string;
+}
+
+/**
+ * Send email when coordinator manually adds a volunteer to a shift
+ * Includes ICS calendar invite attachment
+ */
+export async function sendShiftInviteEmail(params: ShiftInviteParams): Promise<void> {
+  if (!isEmailConfigured()) {
+    console.log('[Email] SMTP not configured, skipping invite email');
+    return;
+  }
+
+  const { to, volunteerName, shiftTitle, shiftType, shiftDate, startTime, endTime, zoneName, description, coordinatorName } = params;
+
+  const dateStr = formatDateInOrgTimezone(shiftDate);
+  const startStr = formatTimeInOrgTimezone(startTime);
+  const endStr = formatTimeInOrgTimezone(endTime);
+
+  // Generate ICS calendar invite with explicit timezone
+  const calendar = icalGenerator({ name: 'Siembra NC VMS' });
+  calendar.createEvent({
+    start: startTime,
+    end: endTime,
+    timezone: ORG_TIMEZONE,
+    summary: `${shiftType}: ${shiftTitle} - ${zoneName}`,
+    description: description || `Siembra NC volunteer shift\n\nType: ${shiftType}\nZone: ${zoneName}`,
+    organizer: { name: 'Siembra NC', email: process.env.SMTP_USER! },
+  });
+
+  try {
+    await transporter.sendMail({
+      from: `"Siembra NC VMS" <${process.env.SMTP_USER}>`,
+      to,
+      subject: `You've Been Added to a Shift: ${shiftTitle} on ${dateStr}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #0d9488;">You've Been Added to a Shift!</h2>
+          <p>Hi ${volunteerName},</p>
+          <p>${coordinatorName} has added you to a volunteer shift. You are confirmed and ready to go!</p>
+
+          <div style="background: #d1fae5; padding: 16px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #0d9488;">
+            <h3 style="margin-top: 0; color: #065f46;">Your Shift</h3>
+            <p style="margin: 8px 0;"><strong>Shift:</strong> ${shiftTitle}</p>
+            <p style="margin: 8px 0;"><strong>Type:</strong> ${shiftType}</p>
+            <p style="margin: 8px 0;"><strong>Zone:</strong> ${zoneName}</p>
+            <p style="margin: 8px 0;"><strong>Date:</strong> ${dateStr}</p>
+            <p style="margin: 8px 0;"><strong>Time:</strong> ${startStr} - ${endStr}</p>
+          </div>
+
+          <p><strong>A calendar invite is attached to this email.</strong> Add it to your calendar so you don't forget!</p>
+
+          <p>If you cannot attend this shift, please log into the VMS and cancel your signup, or contact your coordinator.</p>
+
+          <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+            Thank you for volunteering with Siembra NC!
+          </p>
+        </div>
+      `,
+      icalEvent: {
+        method: 'REQUEST',
+        content: calendar.toString(),
+      },
+    });
+    console.log(`[Email] Shift invite email with calendar invite sent to ${to}`);
+  } catch (error) {
+    console.error('[Email] Failed to send invite email:', error);
   }
 }

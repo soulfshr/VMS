@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
-import { Role } from '@/generated/prisma/enums';
+import { Role, Qualification } from '@/generated/prisma/enums';
 
 // PATCH /api/volunteers/[id] - Update a volunteer (Admin only)
 export async function PATCH(
@@ -48,6 +48,7 @@ export async function PATCH(
       phone?: string | null;
       primaryLanguage?: string;
       otherLanguages?: string[];
+      qualifications?: Qualification[];
     } = {};
 
     if (body.role !== undefined) {
@@ -82,6 +83,18 @@ export async function PATCH(
       updateData.otherLanguages = body.otherLanguages;
     }
 
+    if (body.qualifications !== undefined) {
+      const validQualifications = ['VERIFIER', 'ZONE_LEAD', 'DISPATCHER'];
+      if (!Array.isArray(body.qualifications)) {
+        return NextResponse.json({ error: 'Qualifications must be an array' }, { status: 400 });
+      }
+      const invalidQuals = body.qualifications.filter((q: string) => !validQualifications.includes(q));
+      if (invalidQuals.length > 0) {
+        return NextResponse.json({ error: `Invalid qualifications: ${invalidQuals.join(', ')}` }, { status: 400 });
+      }
+      updateData.qualifications = body.qualifications as Qualification[];
+    }
+
     // Update the volunteer
     const updated = await prisma.user.update({
       where: { id },
@@ -94,6 +107,7 @@ export async function PATCH(
         role: true,
         primaryLanguage: true,
         otherLanguages: true,
+        qualifications: true,
         isActive: true,
         isVerified: true,
       },

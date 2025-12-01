@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
+import { Qualification } from '@/generated/prisma/enums';
 
 // GET /api/users/qualified - Get users qualified for a specific role
-// Based on completed training sessions
+// Based on qualifications array OR completed training sessions
 export async function GET(request: NextRequest) {
   try {
     const user = await getDbUser();
@@ -19,23 +20,35 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'role parameter is required' }, { status: 400 });
     }
 
-    // Map role to training type slug
+    // Map role to qualification and training type slug
+    const qualification = role as Qualification; // DISPATCHER or ZONE_LEAD
     const trainingTypeSlug = role === 'DISPATCHER' ? 'DISPATCHER' : 'ZONE_LEAD';
 
-    // Find users who have completed the required training
+    // Find users who have the qualification (either in qualifications array OR via training)
     const qualifiedUsers = await prisma.user.findMany({
       where: {
         isActive: true,
-        trainingAttendances: {
-          some: {
-            status: 'CONFIRMED', // CONFIRMED attendance means they attended
-            session: {
-              trainingType: {
-                slug: trainingTypeSlug,
+        OR: [
+          // Method 1: Has qualification in qualifications array (manually assigned or earned)
+          {
+            qualifications: {
+              has: qualification,
+            },
+          },
+          // Method 2: Has completed the required training (legacy support)
+          {
+            trainingAttendances: {
+              some: {
+                status: 'CONFIRMED',
+                session: {
+                  trainingType: {
+                    slug: trainingTypeSlug,
+                  },
+                },
               },
             },
           },
-        },
+        ],
         // Optionally filter by county (users who have zones in this county)
         ...(county
           ? {
@@ -55,6 +68,7 @@ export async function GET(request: NextRequest) {
         email: true,
         phone: true,
         role: true,
+        qualifications: true,
         zones: {
           include: {
             zone: {
@@ -100,6 +114,7 @@ export async function GET(request: NextRequest) {
       email: u.email,
       phone: u.phone,
       role: u.role,
+      qualifications: u.qualifications,
       zones: u.zones.map(uz => ({
         id: uz.zone.id,
         name: uz.zone.name,

@@ -97,6 +97,7 @@ export async function GET(request: NextRequest) {
 }
 
 // Helper: Calculate all shift dates based on repeat pattern
+// Uses UTC methods consistently to ensure same behavior on local dev and Vercel
 function calculateRepeatDates(
   startDate: Date,
   repeat: {
@@ -118,17 +119,17 @@ function calculateRepeatDates(
   while (dates.length < maxCount) {
     if (repeat.frequency === 'daily') {
       current = new Date(current);
-      current.setDate(current.getDate() + 1);
+      current.setUTCDate(current.getUTCDate() + 1);
     } else if (repeat.frequency === 'weekly') {
       current = new Date(current);
-      current.setDate(current.getDate() + 7);
+      current.setUTCDate(current.getUTCDate() + 7);
     } else if (repeat.frequency === 'custom' && repeat.days && repeat.days.length > 0) {
-      // Find next matching day of week
+      // Find next matching day of week (using UTC day to match client's day selection)
       current = new Date(current);
       let found = false;
       for (let i = 1; i <= 7 && !found; i++) {
-        current.setDate(current.getDate() + 1);
-        if (repeat.days.includes(current.getDay())) {
+        current.setUTCDate(current.getUTCDate() + 1);
+        if (repeat.days.includes(current.getUTCDay())) {
           found = true;
         }
       }
@@ -188,11 +189,11 @@ export async function POST(request: NextRequest) {
     const baseStartTime = new Date(startTime);
     const baseEndTime = new Date(endTime);
 
-    // Calculate time offsets from base date
-    const startHour = baseStartTime.getHours();
-    const startMinute = baseStartTime.getMinutes();
-    const endHour = baseEndTime.getHours();
-    const endMinute = baseEndTime.getMinutes();
+    // Calculate time offsets from base date using UTC methods for consistent behavior
+    const startHour = baseStartTime.getUTCHours();
+    const startMinute = baseStartTime.getUTCMinutes();
+    const endHour = baseEndTime.getUTCHours();
+    const endMinute = baseEndTime.getUTCMinutes();
 
     // If repeat is enabled, create multiple shifts
     if (repeat && repeat.frequency) {
@@ -200,10 +201,10 @@ export async function POST(request: NextRequest) {
 
       const shiftsData = shiftDates.map(shiftDate => {
         const shiftStartTime = new Date(shiftDate);
-        shiftStartTime.setHours(startHour, startMinute, 0, 0);
+        shiftStartTime.setUTCHours(startHour, startMinute, 0, 0);
 
         const shiftEndTime = new Date(shiftDate);
-        shiftEndTime.setHours(endHour, endMinute, 0, 0);
+        shiftEndTime.setUTCHours(endHour, endMinute, 0, 0);
 
         return {
           type,

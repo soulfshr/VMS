@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
-import { Role } from '@/generated/prisma/enums';
+import { Role, Qualification } from '@/generated/prisma/enums';
 
 // GET /api/volunteers - Get all volunteers (Coordinator/Admin only)
 export async function GET(request: NextRequest) {
@@ -139,6 +139,7 @@ export async function GET(request: NextRequest) {
       isActive: v.isActive,
       isVerified: v.isVerified,
       createdAt: v.createdAt,
+      qualifications: v.qualifications || [],  // New qualifications field
       zones: v.zones.map(uz => ({
         id: uz.zone.id,
         name: uz.zone.name,
@@ -228,6 +229,21 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
+      // Validate qualifications if provided
+      const validQualifications = ['VERIFIER', 'ZONE_LEAD', 'DISPATCHER'];
+      let parsedQualifications: Qualification[] = [];
+      if (vol.qualifications) {
+        const quals = Array.isArray(vol.qualifications)
+          ? vol.qualifications
+          : vol.qualifications.split(';').map((q: string) => q.trim().toUpperCase()).filter(Boolean);
+        const invalidQuals = quals.filter((q: string) => !validQualifications.includes(q));
+        if (invalidQuals.length > 0) {
+          results.errors.push({ row: rowNum, email: vol.email, error: `Invalid qualifications: ${invalidQuals.join(', ')}` });
+          continue;
+        }
+        parsedQualifications = quals as Qualification[];
+      }
+
       try {
         // Check if user exists
         const existingUser = await prisma.user.findUnique({
@@ -241,6 +257,7 @@ export async function POST(request: NextRequest) {
           role: (vol.role?.toUpperCase() || 'VOLUNTEER') as Role,
           primaryLanguage: vol.primaryLanguage || 'English',
           otherLanguages: vol.otherLanguages || [],
+          qualifications: parsedQualifications,  // New qualifications field
           isActive: vol.isActive !== false,
           isVerified: vol.isVerified !== false,
         };

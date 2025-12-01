@@ -129,11 +129,11 @@ export async function GET(request: NextRequest) {
       orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
     });
 
-    // Derive time blocks from shifts
+    // Derive time blocks from shifts (use UTC hours consistently)
     const timeBlocksMap = new Map<string, TimeBlock>();
     shifts.forEach(shift => {
-      const startHour = shift.startTime.getHours();
-      const endHour = shift.endTime.getHours();
+      const startHour = shift.startTime.getUTCHours();
+      const endHour = shift.endTime.getUTCHours();
       const key = `${startHour}-${endHour}`;
       if (!timeBlocksMap.has(key)) {
         timeBlocksMap.set(key, {
@@ -144,10 +144,10 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    // Also include dispatcher assignment time blocks
+    // Also include dispatcher assignment time blocks (use UTC hours consistently)
     dispatcherAssignments.forEach(assignment => {
-      const startHour = assignment.startTime.getHours();
-      const endHour = assignment.endTime.getHours();
+      const startHour = assignment.startTime.getUTCHours();
+      const endHour = assignment.endTime.getUTCHours();
       const key = `${startHour}-${endHour}`;
       if (!timeBlocksMap.has(key)) {
         timeBlocksMap.set(key, {
@@ -181,11 +181,11 @@ export async function GET(request: NextRequest) {
           const startHour = parseInt(timeBlock.startTime);
           const endHour = parseInt(timeBlock.endTime);
 
-          // Find dispatcher for this county/date/time
+          // Find dispatcher for this county/date/time (use UTC hours)
           const dispatchers = dispatcherAssignments.filter(a => {
             const assignmentDate = a.date.toISOString().split('T')[0];
-            const assignmentStartHour = a.startTime.getHours();
-            const assignmentEndHour = a.endTime.getHours();
+            const assignmentStartHour = a.startTime.getUTCHours();
+            const assignmentEndHour = a.endTime.getUTCHours();
             return (
               a.county === countyName &&
               assignmentDate === date &&
@@ -201,11 +201,11 @@ export async function GET(request: NextRequest) {
           const zoneDataList: ZoneData[] = [];
 
           for (const zone of countyZones) {
-            // Find shifts for this zone/date/time
+            // Find shifts for this zone/date/time (use UTC hours)
             const zoneShifts = shifts.filter(s => {
               const shiftDate = s.date.toISOString().split('T')[0];
-              const shiftStartHour = s.startTime.getHours();
-              const shiftEndHour = s.endTime.getHours();
+              const shiftStartHour = s.startTime.getUTCHours();
+              const shiftEndHour = s.endTime.getUTCHours();
               return (
                 s.zoneId === zone.id &&
                 shiftDate === date &&

@@ -37,6 +37,7 @@ interface Volunteer {
   isActive: boolean;
   isVerified: boolean;
   createdAt: string;
+  qualifications: string[];  // VERIFIER, ZONE_LEAD, DISPATCHER
   zones: Zone[];
   completedTrainings: Training[];
   upcomingShifts: UpcomingShift[];
@@ -68,6 +69,8 @@ export default function VolunteersPage() {
   const [statusFilter, setStatusFilter] = useState('active');
   const [expandedVolunteer, setExpandedVolunteer] = useState<string | null>(null);
   const [updatingRole, setUpdatingRole] = useState<string | null>(null);
+  const [editingQualifications, setEditingQualifications] = useState<string | null>(null);
+  const [updatingQualifications, setUpdatingQualifications] = useState<string | null>(null);
 
   // Import modal state
   const [showImportModal, setShowImportModal] = useState(false);
@@ -156,6 +159,34 @@ export default function VolunteersPage() {
     }
   };
 
+  const getQualificationBadgeColor = (qualification: string) => {
+    switch (qualification) {
+      case 'DISPATCHER':
+        return 'bg-blue-100 text-blue-800';
+      case 'ZONE_LEAD':
+        return 'bg-purple-100 text-purple-800';
+      case 'VERIFIER':
+        return 'bg-green-100 text-green-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getQualificationLabel = (qualification: string) => {
+    switch (qualification) {
+      case 'DISPATCHER':
+        return 'Dispatcher';
+      case 'ZONE_LEAD':
+        return 'Zone Lead';
+      case 'VERIFIER':
+        return 'Verifier';
+      default:
+        return qualification;
+    }
+  };
+
+  const AVAILABLE_QUALIFICATIONS = ['VERIFIER', 'ZONE_LEAD', 'DISPATCHER'];
+
   // Handle role change
   const handleRoleChange = async (volunteerId: string, newRole: string) => {
     if (!user || user.role !== 'ADMINISTRATOR') return;
@@ -218,6 +249,44 @@ export default function VolunteersPage() {
     }
   };
 
+  // Handle qualification toggle
+  const handleQualificationToggle = async (volunteerId: string, qualification: string, currentQualifications: string[]) => {
+    if (!user || user.role !== 'ADMINISTRATOR') return;
+
+    setUpdatingQualifications(volunteerId);
+    const newQualifications = currentQualifications.includes(qualification)
+      ? currentQualifications.filter(q => q !== qualification)
+      : [...currentQualifications, qualification];
+
+    try {
+      const res = await fetch(`/api/volunteers/${volunteerId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ qualifications: newQualifications }),
+      });
+
+      if (res.ok) {
+        setData(prev => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            volunteers: prev.volunteers.map(v =>
+              v.id === volunteerId ? { ...v, qualifications: newQualifications } : v
+            ),
+          };
+        });
+      } else {
+        const error = await res.json();
+        alert(error.error || 'Failed to update qualifications');
+      }
+    } catch (error) {
+      console.error('Error updating qualifications:', error);
+      alert('Failed to update qualifications');
+    } finally {
+      setUpdatingQualifications(null);
+    }
+  };
+
   // Parse CSV data
   const parseCSV = (csvText: string) => {
     const lines = csvText.trim().split('\n');
@@ -245,6 +314,9 @@ export default function VolunteersPage() {
           volunteer.primaryLanguage = value;
         } else if (header === 'zones' || header === 'zone') {
           volunteer.zones = value.split(';').map(z => z.trim()).filter(Boolean);
+        } else if (header === 'qualifications' || header === 'qualification') {
+          // Parse qualifications - semicolon separated, e.g., "VERIFIER;ZONE_LEAD"
+          volunteer.qualifications = value.split(';').map(q => q.trim().toUpperCase()).filter(Boolean);
         }
       });
 
@@ -544,21 +616,57 @@ export default function VolunteersPage() {
                             )}
                           </div>
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="flex flex-wrap gap-1">
-                            {volunteer.completedTrainings.length > 0 ? (
-                              volunteer.completedTrainings.map(training => (
-                                <span
-                                  key={training.id}
-                                  className={`px-2 py-0.5 rounded text-xs ${getTrainingBadgeColor(training.slug)}`}
+                        <td className="px-6 py-4" onClick={e => e.stopPropagation()}>
+                          {isAdmin && editingQualifications === volunteer.id ? (
+                            <div className="space-y-2">
+                              {AVAILABLE_QUALIFICATIONS.map(qual => (
+                                <label key={qual} className="flex items-center gap-2 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={(volunteer.qualifications || []).includes(qual)}
+                                    onChange={() => handleQualificationToggle(volunteer.id, qual, volunteer.qualifications || [])}
+                                    disabled={updatingQualifications === volunteer.id}
+                                    className="w-4 h-4 text-teal-600 rounded focus:ring-teal-500"
+                                  />
+                                  <span className={`px-2 py-0.5 rounded text-xs ${getQualificationBadgeColor(qual)}`}>
+                                    {getQualificationLabel(qual)}
+                                  </span>
+                                </label>
+                              ))}
+                              <button
+                                onClick={() => setEditingQualifications(null)}
+                                className="text-xs text-gray-500 hover:text-gray-700"
+                              >
+                                Done
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex flex-wrap gap-1">
+                              {(volunteer.qualifications || []).length > 0 ? (
+                                (volunteer.qualifications || []).map(qual => (
+                                  <span
+                                    key={qual}
+                                    className={`px-2 py-0.5 rounded text-xs ${getQualificationBadgeColor(qual)}`}
+                                  >
+                                    {getQualificationLabel(qual)}
+                                  </span>
+                                ))
+                              ) : (
+                                <span className="text-gray-400 text-sm">None</span>
+                              )}
+                              {isAdmin && (
+                                <button
+                                  onClick={() => setEditingQualifications(volunteer.id)}
+                                  className="ml-1 text-gray-400 hover:text-teal-600"
+                                  title="Edit qualifications"
                                 >
-                                  {training.name}
-                                </span>
-                              ))
-                            ) : (
-                              <span className="text-gray-400 text-sm">None</span>
-                            )}
-                          </div>
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                  </svg>
+                                </button>
+                              )}
+                            </div>
+                          )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center">
                           <div className="text-sm font-medium text-gray-900">
@@ -706,7 +814,7 @@ export default function VolunteersPage() {
                       Upload a CSV file or paste CSV data. Required columns: <strong>name</strong>, <strong>email</strong>
                     </p>
                     <p className="text-sm text-gray-500">
-                      Optional columns: phone, role (VOLUNTEER/COORDINATOR/DISPATCHER/ADMINISTRATOR), primaryLanguage, zones (semicolon-separated)
+                      Optional columns: phone, role (VOLUNTEER/COORDINATOR/DISPATCHER/ADMINISTRATOR), primaryLanguage, zones (semicolon-separated), qualifications (VERIFIER/ZONE_LEAD/DISPATCHER, semicolon-separated)
                     </p>
                   </div>
 
@@ -718,12 +826,12 @@ export default function VolunteersPage() {
                     </div>
                     <button
                       onClick={() => {
-                        const template = `name,email,phone,role,primaryLanguage,zones
-John Doe,john.doe@example.com,919-555-1234,VOLUNTEER,English,Durham Zone 1;Durham Zone 2
-Maria Garcia,maria.garcia@example.com,919-555-5678,COORDINATOR,Spanish,Wake Zone 1
-James Wilson,james.wilson@example.com,919-555-9012,VOLUNTEER,English,Orange Zone 1
-Ana Martinez,ana.martinez@example.com,919-555-3456,DISPATCHER,Spanish,Durham Zone 3
-Michael Chen,michael.chen@example.com,919-555-7890,VOLUNTEER,Mandarin,Wake Zone 2`;
+                        const template = `name,email,phone,role,primaryLanguage,zones,qualifications
+John Doe,john.doe@example.com,919-555-1234,VOLUNTEER,English,Durham Zone 1;Durham Zone 2,VERIFIER
+Maria Garcia,maria.garcia@example.com,919-555-5678,COORDINATOR,Spanish,Wake Zone 1,VERIFIER;ZONE_LEAD
+James Wilson,james.wilson@example.com,919-555-9012,VOLUNTEER,English,Orange Zone 1,
+Ana Martinez,ana.martinez@example.com,919-555-3456,DISPATCHER,Spanish,Durham Zone 3,DISPATCHER;VERIFIER
+Michael Chen,michael.chen@example.com,919-555-7890,VOLUNTEER,Mandarin,Wake Zone 2,VERIFIER`;
                         const blob = new Blob([template], { type: 'text/csv' });
                         const url = URL.createObjectURL(blob);
                         const a = document.createElement('a');

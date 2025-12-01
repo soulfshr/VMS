@@ -4,7 +4,7 @@
 import * as dotenv from 'dotenv';
 import pg from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient, Role, ShiftType, TrainingStatus } from '../src/generated/prisma/client';
+import { PrismaClient, Role, ShiftType, TrainingStatus, Qualification, RSVPStatus } from '../src/generated/prisma/client';
 
 // Load environment variables
 dotenv.config();
@@ -134,6 +134,7 @@ async function main() {
         color: '#10b981',  // Green
         defaultDuration: 90,
         defaultCapacity: 15,
+        grantsQualification: Qualification.VERIFIER,
         sortOrder: 1,
       },
     }),
@@ -146,7 +147,7 @@ async function main() {
         color: '#f59e0b',  // Amber
         defaultDuration: 120,
         defaultCapacity: 10,
-        grantsRole: Role.COORDINATOR,
+        grantsQualification: Qualification.ZONE_LEAD,
         sortOrder: 2,
       },
     }),
@@ -159,7 +160,7 @@ async function main() {
         color: '#6366f1',  // Indigo
         defaultDuration: 150,
         defaultCapacity: 8,
-        grantsRole: Role.DISPATCHER,
+        grantsQualification: Qualification.DISPATCHER,
         sortOrder: 3,
       },
     }),
@@ -351,7 +352,7 @@ async function main() {
         email: 'admin@test.com',
         name: 'Admin User',
         role: Role.ADMINISTRATOR,
-        qualifiedRoles: [Role.ADMINISTRATOR],
+        qualifications: [],  // Admin is an app role, not a shift qualification
         phone: '(919) 555-0100',
         isVerified: true,
       },
@@ -362,7 +363,7 @@ async function main() {
         email: 'coord@test.com',
         name: 'Coordinator User',
         role: Role.COORDINATOR,
-        qualifiedRoles: [Role.COORDINATOR, Role.VOLUNTEER],  // Coordinators can also fill volunteer slots
+        qualifications: [Qualification.ZONE_LEAD, Qualification.VERIFIER],  // Completed Zone Lead and Verifier training
         phone: '(919) 555-0101',
         isVerified: true,
       },
@@ -373,7 +374,7 @@ async function main() {
         email: 'disp@test.com',
         name: 'Dispatcher User',
         role: Role.DISPATCHER,
-        qualifiedRoles: [Role.DISPATCHER, Role.VOLUNTEER],  // Dispatchers can also fill volunteer slots
+        qualifications: [Qualification.DISPATCHER, Qualification.VERIFIER],  // Completed Dispatcher and Verifier training
         phone: '(919) 555-0102',
         isVerified: true,
       },
@@ -384,7 +385,7 @@ async function main() {
         email: 'maria@test.com',
         name: 'Maria Rodriguez',
         role: Role.VOLUNTEER,
-        qualifiedRoles: [Role.VOLUNTEER],
+        qualifications: [Qualification.VERIFIER],  // Completed Verifier training
         phone: '(919) 555-0123',
         primaryLanguage: 'Spanish',
         otherLanguages: ['English'],
@@ -397,7 +398,7 @@ async function main() {
         email: 'james@test.com',
         name: 'James Kim',
         role: Role.VOLUNTEER,
-        qualifiedRoles: [Role.VOLUNTEER, Role.DISPATCHER],  // James is also qualified as dispatcher
+        qualifications: [Qualification.VERIFIER, Qualification.DISPATCHER],  // James also completed Dispatcher training
         phone: '(919) 555-0124',
         primaryLanguage: 'English',
         otherLanguages: ['Korean'],
@@ -410,7 +411,7 @@ async function main() {
         email: 'ana@test.com',
         name: 'Ana Lopez',
         role: Role.VOLUNTEER,
-        qualifiedRoles: [Role.VOLUNTEER],
+        qualifications: [Qualification.VERIFIER],  // Completed Verifier training
         phone: '(919) 555-0125',
         primaryLanguage: 'Spanish',
         otherLanguages: ['English'],
@@ -423,7 +424,7 @@ async function main() {
         email: 'david@test.com',
         name: 'David Chen',
         role: Role.VOLUNTEER,
-        qualifiedRoles: [Role.VOLUNTEER],
+        qualifications: [],  // New volunteer - no qualifications yet
         phone: '(919) 555-0126',
         primaryLanguage: 'English',
         otherLanguages: ['Mandarin'],
@@ -436,9 +437,124 @@ async function main() {
         email: 'patricia@test.com',
         name: 'Patricia Williams',
         role: Role.VOLUNTEER,
-        qualifiedRoles: [Role.VOLUNTEER],
+        qualifications: [Qualification.VERIFIER],  // Completed Verifier training
         phone: '(919) 555-0127',
         primaryLanguage: 'English',
+        isVerified: true,
+      },
+    }),
+    // Additional volunteers with qualifications for realistic shift coverage
+    prisma.user.create({
+      data: {
+        id: 'vol-6',
+        email: 'carlos@test.com',
+        name: 'Carlos Mendez',
+        role: Role.VOLUNTEER,
+        qualifications: [Qualification.VERIFIER, Qualification.ZONE_LEAD],
+        phone: '(919) 555-0128',
+        primaryLanguage: 'Spanish',
+        otherLanguages: ['English'],
+        isVerified: true,
+      },
+    }),
+    prisma.user.create({
+      data: {
+        id: 'vol-7',
+        email: 'sarah@test.com',
+        name: 'Sarah Johnson',
+        role: Role.VOLUNTEER,
+        qualifications: [Qualification.VERIFIER],
+        phone: '(919) 555-0129',
+        primaryLanguage: 'English',
+        isVerified: true,
+      },
+    }),
+    prisma.user.create({
+      data: {
+        id: 'vol-8',
+        email: 'michael@test.com',
+        name: 'Michael Brown',
+        role: Role.VOLUNTEER,
+        qualifications: [Qualification.VERIFIER, Qualification.ZONE_LEAD],
+        phone: '(919) 555-0130',
+        primaryLanguage: 'English',
+        isVerified: true,
+      },
+    }),
+    prisma.user.create({
+      data: {
+        id: 'vol-9',
+        email: 'lisa@test.com',
+        name: 'Lisa Park',
+        role: Role.VOLUNTEER,
+        qualifications: [Qualification.VERIFIER],
+        phone: '(919) 555-0131',
+        primaryLanguage: 'English',
+        otherLanguages: ['Korean'],
+        isVerified: true,
+      },
+    }),
+    prisma.user.create({
+      data: {
+        id: 'vol-10',
+        email: 'roberto@test.com',
+        name: 'Roberto Garcia',
+        role: Role.VOLUNTEER,
+        qualifications: [Qualification.VERIFIER],
+        phone: '(919) 555-0132',
+        primaryLanguage: 'Spanish',
+        otherLanguages: ['English'],
+        isVerified: true,
+      },
+    }),
+    prisma.user.create({
+      data: {
+        id: 'vol-11',
+        email: 'jennifer@test.com',
+        name: 'Jennifer Lee',
+        role: Role.VOLUNTEER,
+        qualifications: [Qualification.VERIFIER, Qualification.DISPATCHER],
+        phone: '(919) 555-0133',
+        primaryLanguage: 'English',
+        otherLanguages: ['Mandarin'],
+        isVerified: true,
+      },
+    }),
+    prisma.user.create({
+      data: {
+        id: 'vol-12',
+        email: 'kevin@test.com',
+        name: 'Kevin Nguyen',
+        role: Role.VOLUNTEER,
+        qualifications: [Qualification.VERIFIER],
+        phone: '(919) 555-0134',
+        primaryLanguage: 'English',
+        otherLanguages: ['Vietnamese'],
+        isVerified: true,
+      },
+    }),
+    prisma.user.create({
+      data: {
+        id: 'vol-13',
+        email: 'michelle@test.com',
+        name: 'Michelle Thompson',
+        role: Role.VOLUNTEER,
+        qualifications: [],  // New volunteer - no qualifications yet
+        phone: '(919) 555-0135',
+        primaryLanguage: 'English',
+        isVerified: true,
+      },
+    }),
+    prisma.user.create({
+      data: {
+        id: 'vol-14',
+        email: 'daniel@test.com',
+        name: 'Daniel Martinez',
+        role: Role.VOLUNTEER,
+        qualifications: [Qualification.VERIFIER],
+        phone: '(919) 555-0136',
+        primaryLanguage: 'Spanish',
+        otherLanguages: ['English'],
         isVerified: true,
       },
     }),
@@ -450,14 +566,32 @@ async function main() {
   // ============================================
   console.log('Assigning users to zones...');
   await Promise.all([
+    // Durham volunteers
     prisma.userZone.create({ data: { userId: 'vol-1', zoneId: zoneMap['Durham 1'].id, isPrimary: true } }),
     prisma.userZone.create({ data: { userId: 'vol-1', zoneId: zoneMap['Durham 2'].id } }),
     prisma.userZone.create({ data: { userId: 'vol-2', zoneId: zoneMap['Durham 2'].id, isPrimary: true } }),
+    prisma.userZone.create({ data: { userId: 'vol-6', zoneId: zoneMap['Durham 1'].id, isPrimary: true } }),
+    prisma.userZone.create({ data: { userId: 'vol-6', zoneId: zoneMap['Durham 3'].id } }),
+    prisma.userZone.create({ data: { userId: 'vol-7', zoneId: zoneMap['Durham 2'].id, isPrimary: true } }),
+    prisma.userZone.create({ data: { userId: 'vol-10', zoneId: zoneMap['Durham 3'].id, isPrimary: true } }),
+    prisma.userZone.create({ data: { userId: 'vol-10', zoneId: zoneMap['Durham 4'].id } }),
+    prisma.userZone.create({ data: { userId: 'vol-14', zoneId: zoneMap['Durham 4'].id, isPrimary: true } }),
+    prisma.userZone.create({ data: { userId: 'vol-14', zoneId: zoneMap['Durham 5'].id } }),
+    // Orange volunteers
     prisma.userZone.create({ data: { userId: 'vol-3', zoneId: zoneMap['Orange 1'].id, isPrimary: true } }),
     prisma.userZone.create({ data: { userId: 'vol-3', zoneId: zoneMap['Orange 2'].id } }),
+    prisma.userZone.create({ data: { userId: 'vol-9', zoneId: zoneMap['Orange 1'].id, isPrimary: true } }),
+    prisma.userZone.create({ data: { userId: 'vol-12', zoneId: zoneMap['Orange 2'].id, isPrimary: true } }),
+    // Wake volunteers
     prisma.userZone.create({ data: { userId: 'vol-4', zoneId: zoneMap['Wake 1'].id, isPrimary: true } }),
     prisma.userZone.create({ data: { userId: 'vol-4', zoneId: zoneMap['Wake 3'].id } }),
     prisma.userZone.create({ data: { userId: 'vol-5', zoneId: zoneMap['Wake 3'].id, isPrimary: true } }),
+    prisma.userZone.create({ data: { userId: 'vol-8', zoneId: zoneMap['Wake 1'].id, isPrimary: true } }),
+    prisma.userZone.create({ data: { userId: 'vol-8', zoneId: zoneMap['Wake 2'].id } }),
+    prisma.userZone.create({ data: { userId: 'vol-11', zoneId: zoneMap['Wake 2'].id, isPrimary: true } }),
+    prisma.userZone.create({ data: { userId: 'vol-11', zoneId: zoneMap['Wake 4'].id } }),
+    prisma.userZone.create({ data: { userId: 'vol-13', zoneId: zoneMap['Wake 5'].id, isPrimary: true } }),
+    // Coordinators
     prisma.userZone.create({ data: { userId: 'coord-1', zoneId: zoneMap['Durham 1'].id, isPrimary: true } }),
     prisma.userZone.create({ data: { userId: 'coord-1', zoneId: zoneMap['Durham 2'].id } }),
     prisma.userZone.create({ data: { userId: 'coord-1', zoneId: zoneMap['Durham 3'].id } }),
@@ -628,6 +762,208 @@ async function main() {
     })
   );
   console.log(`✓ Created ${createdShifts.length} sample shifts for week of Dec 1-7, 2025`);
+
+  // ============================================
+  // SHIFT VOLUNTEER ASSIGNMENTS (mix of filled/unfilled)
+  // ============================================
+  console.log('Creating shift volunteer assignments...');
+
+  // Helper to get shift by title pattern and date
+  const getShiftsByDate = (dateStr: string) => createdShifts.filter(s =>
+    s.date.toISOString().startsWith(dateStr)
+  );
+
+  const shiftVolunteerAssignments: { shiftId: string; userId: string; status: RSVPStatus; isZoneLead: boolean }[] = [];
+
+  // Monday Dec 1 - Well staffed day
+  const mondayShifts = getShiftsByDate('2025-12-01');
+  mondayShifts.forEach((shift) => {
+    if (shift.zoneId === zoneMap['Durham 1'].id) {
+      // Fully staffed - 4 volunteers confirmed
+      shiftVolunteerAssignments.push(
+        { shiftId: shift.id, userId: 'vol-1', status: 'CONFIRMED', isZoneLead: false },
+        { shiftId: shift.id, userId: 'vol-6', status: 'CONFIRMED', isZoneLead: true },
+        { shiftId: shift.id, userId: 'vol-7', status: 'CONFIRMED', isZoneLead: false },
+        { shiftId: shift.id, userId: 'coord-1', status: 'CONFIRMED', isZoneLead: false },
+      );
+    } else if (shift.zoneId === zoneMap['Durham 2'].id) {
+      // Partially staffed - 2 confirmed, 1 pending
+      shiftVolunteerAssignments.push(
+        { shiftId: shift.id, userId: 'vol-2', status: 'CONFIRMED', isZoneLead: true },
+        { shiftId: shift.id, userId: 'vol-7', status: 'CONFIRMED', isZoneLead: false },
+        { shiftId: shift.id, userId: 'vol-1', status: 'PENDING', isZoneLead: false },
+      );
+    } else if (shift.zoneId === zoneMap['Wake 1'].id) {
+      // Fully staffed
+      shiftVolunteerAssignments.push(
+        { shiftId: shift.id, userId: 'vol-4', status: 'CONFIRMED', isZoneLead: false },
+        { shiftId: shift.id, userId: 'vol-8', status: 'CONFIRMED', isZoneLead: true },
+        { shiftId: shift.id, userId: 'vol-5', status: 'CONFIRMED', isZoneLead: false },
+      );
+    } else if (shift.zoneId === zoneMap['Orange 1'].id) {
+      // Partially staffed
+      shiftVolunteerAssignments.push(
+        { shiftId: shift.id, userId: 'vol-3', status: 'CONFIRMED', isZoneLead: true },
+        { shiftId: shift.id, userId: 'vol-9', status: 'PENDING', isZoneLead: false },
+      );
+    }
+    // Durham 3, 4, 5 and Wake 2 left unfilled
+  });
+
+  // Tuesday Dec 2 - Mixed coverage
+  const tuesdayShifts = getShiftsByDate('2025-12-02');
+  tuesdayShifts.forEach((shift) => {
+    if (shift.zoneId === zoneMap['Durham 1'].id) {
+      shiftVolunteerAssignments.push(
+        { shiftId: shift.id, userId: 'vol-6', status: 'CONFIRMED', isZoneLead: true },
+        { shiftId: shift.id, userId: 'vol-1', status: 'CONFIRMED', isZoneLead: false },
+      );
+    } else if (shift.zoneId === zoneMap['Durham 2'].id) {
+      shiftVolunteerAssignments.push(
+        { shiftId: shift.id, userId: 'vol-2', status: 'CONFIRMED', isZoneLead: false },
+        { shiftId: shift.id, userId: 'vol-7', status: 'CONFIRMED', isZoneLead: true },
+        { shiftId: shift.id, userId: 'vol-10', status: 'PENDING', isZoneLead: false },
+      );
+    } else if (shift.zoneId === zoneMap['Wake 1'].id) {
+      shiftVolunteerAssignments.push(
+        { shiftId: shift.id, userId: 'vol-8', status: 'CONFIRMED', isZoneLead: true },
+      );
+    } else if (shift.zoneId === zoneMap['Wake 3'].id) {
+      shiftVolunteerAssignments.push(
+        { shiftId: shift.id, userId: 'vol-5', status: 'CONFIRMED', isZoneLead: false },
+        { shiftId: shift.id, userId: 'vol-4', status: 'PENDING', isZoneLead: false },
+      );
+    }
+    // Durham 3, 4, 5 left understaffed
+  });
+
+  // Wednesday Dec 3 - Lighter coverage
+  const wednesdayShifts = getShiftsByDate('2025-12-03');
+  wednesdayShifts.forEach((shift) => {
+    if (shift.zoneId === zoneMap['Durham 1'].id && shift.type === ShiftType.PATROL) {
+      shiftVolunteerAssignments.push(
+        { shiftId: shift.id, userId: 'vol-1', status: 'CONFIRMED', isZoneLead: false },
+        { shiftId: shift.id, userId: 'vol-6', status: 'CONFIRMED', isZoneLead: true },
+      );
+    } else if (shift.zoneId === zoneMap['Orange 1'].id) {
+      shiftVolunteerAssignments.push(
+        { shiftId: shift.id, userId: 'vol-3', status: 'CONFIRMED', isZoneLead: true },
+        { shiftId: shift.id, userId: 'vol-9', status: 'CONFIRMED', isZoneLead: false },
+        { shiftId: shift.id, userId: 'vol-12', status: 'PENDING', isZoneLead: false },
+      );
+    } else if (shift.zoneId === zoneMap['Wake 4'].id) {
+      shiftVolunteerAssignments.push(
+        { shiftId: shift.id, userId: 'vol-11', status: 'CONFIRMED', isZoneLead: false },
+      );
+    }
+  });
+
+  // Thursday Dec 4 - Some gaps
+  const thursdayShifts = getShiftsByDate('2025-12-04');
+  thursdayShifts.forEach((shift) => {
+    if (shift.zoneId === zoneMap['Durham 1'].id) {
+      shiftVolunteerAssignments.push(
+        { shiftId: shift.id, userId: 'vol-6', status: 'CONFIRMED', isZoneLead: true },
+        { shiftId: shift.id, userId: 'vol-7', status: 'PENDING', isZoneLead: false },
+      );
+    } else if (shift.zoneId === zoneMap['Wake 2'].id) {
+      shiftVolunteerAssignments.push(
+        { shiftId: shift.id, userId: 'vol-11', status: 'CONFIRMED', isZoneLead: false },
+        { shiftId: shift.id, userId: 'vol-8', status: 'CONFIRMED', isZoneLead: true },
+      );
+    }
+    // Durham 3, 5 and Wake 1 on-call left unfilled
+  });
+
+  // Friday Dec 5 - Moderate coverage
+  const fridayShifts = getShiftsByDate('2025-12-05');
+  fridayShifts.forEach((shift) => {
+    if (shift.zoneId === zoneMap['Durham 1'].id && shift.type === ShiftType.PATROL) {
+      shiftVolunteerAssignments.push(
+        { shiftId: shift.id, userId: 'vol-1', status: 'CONFIRMED', isZoneLead: false },
+        { shiftId: shift.id, userId: 'vol-6', status: 'CONFIRMED', isZoneLead: true },
+        { shiftId: shift.id, userId: 'vol-10', status: 'CONFIRMED', isZoneLead: false },
+      );
+    } else if (shift.zoneId === zoneMap['Durham 2'].id) {
+      shiftVolunteerAssignments.push(
+        { shiftId: shift.id, userId: 'vol-2', status: 'CONFIRMED', isZoneLead: true },
+        { shiftId: shift.id, userId: 'vol-7', status: 'CONFIRMED', isZoneLead: false },
+      );
+    } else if (shift.zoneId === zoneMap['Orange 1'].id) {
+      shiftVolunteerAssignments.push(
+        { shiftId: shift.id, userId: 'vol-3', status: 'CONFIRMED', isZoneLead: true },
+      );
+    }
+  });
+
+  // Saturday Dec 6 - Heavy weekend coverage
+  const saturdayShifts = getShiftsByDate('2025-12-06');
+  saturdayShifts.forEach((shift) => {
+    if (shift.zoneId === zoneMap['Durham 1'].id && shift.title === 'Morning Patrol') {
+      shiftVolunteerAssignments.push(
+        { shiftId: shift.id, userId: 'vol-1', status: 'CONFIRMED', isZoneLead: false },
+        { shiftId: shift.id, userId: 'vol-6', status: 'CONFIRMED', isZoneLead: true },
+        { shiftId: shift.id, userId: 'vol-7', status: 'CONFIRMED', isZoneLead: false },
+        { shiftId: shift.id, userId: 'vol-10', status: 'CONFIRMED', isZoneLead: false },
+      );
+    } else if (shift.zoneId === zoneMap['Durham 2'].id) {
+      shiftVolunteerAssignments.push(
+        { shiftId: shift.id, userId: 'vol-2', status: 'CONFIRMED', isZoneLead: true },
+        { shiftId: shift.id, userId: 'vol-14', status: 'CONFIRMED', isZoneLead: false },
+      );
+    } else if (shift.zoneId === zoneMap['Durham 3'].id) {
+      shiftVolunteerAssignments.push(
+        { shiftId: shift.id, userId: 'vol-10', status: 'CONFIRMED', isZoneLead: false },
+      );
+    } else if (shift.zoneId === zoneMap['Wake 1'].id) {
+      shiftVolunteerAssignments.push(
+        { shiftId: shift.id, userId: 'vol-4', status: 'CONFIRMED', isZoneLead: false },
+        { shiftId: shift.id, userId: 'vol-8', status: 'CONFIRMED', isZoneLead: true },
+        { shiftId: shift.id, userId: 'vol-5', status: 'CONFIRMED', isZoneLead: false },
+      );
+    } else if (shift.zoneId === zoneMap['Wake 5'].id) {
+      shiftVolunteerAssignments.push(
+        { shiftId: shift.id, userId: 'vol-11', status: 'CONFIRMED', isZoneLead: false },
+      );
+    } else if (shift.zoneId === zoneMap['Orange 1'].id) {
+      shiftVolunteerAssignments.push(
+        { shiftId: shift.id, userId: 'vol-3', status: 'CONFIRMED', isZoneLead: true },
+        { shiftId: shift.id, userId: 'vol-9', status: 'CONFIRMED', isZoneLead: false },
+      );
+    }
+  });
+
+  // Sunday Dec 7 - Light coverage, some gaps
+  const sundayShifts = getShiftsByDate('2025-12-07');
+  sundayShifts.forEach((shift) => {
+    if (shift.zoneId === zoneMap['Durham 1'].id && shift.type === ShiftType.PATROL) {
+      shiftVolunteerAssignments.push(
+        { shiftId: shift.id, userId: 'vol-6', status: 'CONFIRMED', isZoneLead: true },
+        { shiftId: shift.id, userId: 'vol-1', status: 'PENDING', isZoneLead: false },
+      );
+    } else if (shift.zoneId === zoneMap['Wake 2'].id) {
+      shiftVolunteerAssignments.push(
+        { shiftId: shift.id, userId: 'vol-8', status: 'CONFIRMED', isZoneLead: true },
+      );
+    }
+    // Durham 2, Wake 4 left unfilled
+  });
+
+  // Create all shift volunteer records
+  await Promise.all(
+    shiftVolunteerAssignments.map(sv =>
+      prisma.shiftVolunteer.create({
+        data: {
+          shiftId: sv.shiftId,
+          userId: sv.userId,
+          status: sv.status,
+          isZoneLead: sv.isZoneLead,
+          confirmedAt: sv.status === 'CONFIRMED' ? new Date() : null,
+        },
+      })
+    )
+  );
+  console.log(`✓ Created ${shiftVolunteerAssignments.length} shift volunteer assignments`);
 
   // ============================================
   // SAMPLE TRAINING SESSIONS (next 14 days)
