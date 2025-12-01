@@ -138,6 +138,8 @@ model User {
   availability      Availability[]
   shiftVolunteers   ShiftVolunteer[]
   createdShifts     Shift[]   @relation("CreatedBy")
+  trainingAttendances     TrainingSessionAttendee[]
+  createdTrainingSessions TrainingSession[] @relation("TrainingCreatedBy")
 
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
@@ -158,6 +160,7 @@ model Zone {
   // Relationships
   users       UserZone[]
   shifts      Shift[]
+  trainingSessions TrainingSession[]
 
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
@@ -215,6 +218,90 @@ model UserTraining {
   updatedAt       DateTime       @updatedAt
 
   @@unique([userId, trainingId])
+}
+
+// ============================================
+// TRAINING TYPES & SESSIONS (Schedulable)
+// ============================================
+
+model TrainingType {
+  id              String   @id @default(cuid())
+  name            String   @unique  // "Verifier", "Zone Lead", "Dispatcher"
+  slug            String   @unique  // "VERIFIER", "ZONE_LEAD", "DISPATCHER"
+  description     String?
+  color           String   @default("#8b5cf6")  // Purple by default
+
+  // Training settings
+  defaultDuration     Int      @default(120)  // Minutes
+  defaultCapacity     Int      @default(20)
+  expiresAfterDays    Int?     // Certification expiration (null = never)
+
+  // Role granted upon completion
+  grantsRole          Role?    // If set, completing this training qualifies user for this role
+
+  isActive        Boolean  @default(true)
+  sortOrder       Int      @default(0)
+
+  // Relationships
+  sessions        TrainingSession[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model TrainingSession {
+  id              String       @id @default(cuid())
+  trainingTypeId  String
+  trainingType    TrainingType @relation(fields: [trainingTypeId], references: [id])
+
+  title           String
+  description     String?
+
+  // Timing
+  date            DateTime
+  startTime       DateTime
+  endTime         DateTime
+
+  // Location
+  location        String?      // Physical address or "Virtual"
+  meetingLink     String?      // For virtual trainings (Zoom, etc.)
+  zoneId          String?      // Optional - training can be zone-specific
+  zone            Zone?        @relation(fields: [zoneId], references: [id])
+
+  // Capacity
+  minAttendees    Int          @default(1)
+  maxAttendees    Int          @default(20)
+
+  // Status (reuse ShiftStatus enum)
+  status          ShiftStatus  @default(DRAFT)
+
+  // Relationships
+  createdById     String
+  createdBy       User         @relation("TrainingCreatedBy", fields: [createdById], references: [id])
+  attendees       TrainingSessionAttendee[]
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+}
+
+model TrainingSessionAttendee {
+  id              String     @id @default(cuid())
+  sessionId       String
+  userId          String
+  status          RSVPStatus @default(PENDING)
+
+  // Tracking
+  confirmedAt     DateTime?
+  attendedAt      DateTime?  // Check-in time
+  completedAt     DateTime?  // Marked as completed training
+
+  session         TrainingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  @@unique([sessionId, userId])
 }
 
 // ============================================

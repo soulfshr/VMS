@@ -36,6 +36,9 @@ async function main() {
   await prisma.zone.deleteMany();
   await prisma.shiftTypeRoleRequirement.deleteMany();
   await prisma.shiftTypeConfig.deleteMany();
+  await prisma.trainingSessionAttendee.deleteMany();
+  await prisma.trainingSession.deleteMany();
+  await prisma.trainingType.deleteMany();
   await prisma.organizationSettings.deleteMany();
 
   // ============================================
@@ -117,26 +120,137 @@ async function main() {
   const shiftTypeMap = Object.fromEntries(shiftTypeConfigs.map(st => [st.slug, st]));
 
   // ============================================
+  // TRAINING TYPES (for schedulable training sessions)
+  // ============================================
+  console.log('Creating training types...');
+  const trainingTypes = await Promise.all([
+    prisma.trainingType.create({
+      data: {
+        id: 'training-type-verifier',
+        name: 'Verifier',
+        slug: 'VERIFIER',
+        description: 'Learn to verify and document incidents accurately. Verifiers ensure all field reports are complete and properly documented.',
+        color: '#10b981',  // Green
+        defaultDuration: 90,
+        defaultCapacity: 15,
+        sortOrder: 1,
+      },
+    }),
+    prisma.trainingType.create({
+      data: {
+        id: 'training-type-zone-lead',
+        name: 'Zone Lead',
+        slug: 'ZONE_LEAD',
+        description: 'Leadership training for coordinating zone activities. Zone leads manage volunteer teams and coordinate field operations.',
+        color: '#f59e0b',  // Amber
+        defaultDuration: 120,
+        defaultCapacity: 10,
+        grantsRole: Role.COORDINATOR,
+        sortOrder: 2,
+      },
+    }),
+    prisma.trainingType.create({
+      data: {
+        id: 'training-type-dispatcher',
+        name: 'Dispatcher',
+        slug: 'DISPATCHER',
+        description: 'Training for dispatch operations and communication. Dispatchers coordinate real-time response and manage incoming reports.',
+        color: '#6366f1',  // Indigo
+        defaultDuration: 150,
+        defaultCapacity: 8,
+        grantsRole: Role.DISPATCHER,
+        sortOrder: 3,
+      },
+    }),
+  ]);
+  console.log(`✓ Created ${trainingTypes.length} training types`);
+
+  // ============================================
   // ZONES (13 zones across 3 counties)
   // ============================================
   console.log('Creating zones...');
   const zones = await Promise.all([
     // Durham County (5 zones)
-    prisma.zone.create({ data: { name: 'Durham 1', county: 'Durham', description: 'Downtown Durham and Duke University area' } }),
-    prisma.zone.create({ data: { name: 'Durham 2', county: 'Durham', description: 'North Durham and Northgate area' } }),
-    prisma.zone.create({ data: { name: 'Durham 3', county: 'Durham', description: 'East Durham and Research Triangle Park' } }),
-    prisma.zone.create({ data: { name: 'Durham 4', county: 'Durham', description: 'South Durham and Southpoint area' } }),
-    prisma.zone.create({ data: { name: 'Durham 5', county: 'Durham', description: 'West Durham and Hope Valley area' } }),
-    // Orange County (2 zones)
-    prisma.zone.create({ data: { name: 'Orange 1', county: 'Orange', description: 'Chapel Hill and UNC area' } }),
-    prisma.zone.create({ data: { name: 'Orange 2', county: 'Orange', description: 'Hillsborough and northern Orange County' } }),
+    prisma.zone.create({ data: {
+      name: 'Durham 1',
+      county: 'Durham',
+      description: 'Hillside High School area',
+      signalGroup: 'https://signal.group/#CjQKIL6Qi3T-IJ_MzLkNHrq6jBvCYg-zh6IfNXjGLsP_ohckEhC16Jxu5FMRe0kGJtJkV9_E',
+    } }),
+    prisma.zone.create({ data: {
+      name: 'Durham 2',
+      county: 'Durham',
+      description: 'Jordan High School area',
+      signalGroup: 'https://signal.group/#CjQKIPsm6G8KkCmTtoaX-AgiL391N9mzX6v6MDr_lAlycErGEhD_v2jOKjrtjvYjhmaaDV1D',
+    } }),
+    prisma.zone.create({ data: {
+      name: 'Durham 3',
+      county: 'Durham',
+      description: 'Northern High School area',
+      signalGroup: 'https://signal.group/#CjQKIDsTQ_XQQQ-UpFtaPehSw-yxaOhPrtAmKnUsrTwx6JedEhBqjh-8tB9CpRDPgPEbh_6H',
+    } }),
+    prisma.zone.create({ data: {
+      name: 'Durham 4',
+      county: 'Durham',
+      description: 'Riverside High School area',
+      signalGroup: 'https://signal.group/#CjQKIO7OocZMmleFxtHC-Xb_Gm2oK6R7HdeZrYrA6ACwYUxYEhCjLJZuNv4FE80cfmcx8U1b',
+    } }),
+    prisma.zone.create({ data: {
+      name: 'Durham 5',
+      county: 'Durham',
+      description: 'Southern High School area',
+      signalGroup: 'https://signal.group/#CjQKIAroMWnMelx2Q_D6Gth76Ip-h_zuFRuqghX7-X0SFGoqEhDPoxBiph2G179Cz5GcZh_o',
+    } }),
     // Wake County (6 zones)
-    prisma.zone.create({ data: { name: 'Wake 1', county: 'Wake', description: 'Downtown Raleigh' } }),
-    prisma.zone.create({ data: { name: 'Wake 2', county: 'Wake', description: 'North Raleigh' } }),
-    prisma.zone.create({ data: { name: 'Wake 3', county: 'Wake', description: 'Cary and Morrisville' } }),
-    prisma.zone.create({ data: { name: 'Wake 4', county: 'Wake', description: 'Apex and Holly Springs' } }),
-    prisma.zone.create({ data: { name: 'Wake 5', county: 'Wake', description: 'Garner and Southeast Raleigh' } }),
-    prisma.zone.create({ data: { name: 'Wake 6', county: 'Wake', description: 'Wake Forest and Northeast Wake' } }),
+    prisma.zone.create({ data: {
+      name: 'Wake 1',
+      county: 'Wake',
+      description: 'West Raleigh - Broughton, Athens Drive',
+      signalGroup: 'https://signal.group/#CjQKICWRKySj9eXJk5G4M34uKFaLMHAxjAtVznyLDixjnSqZEhApBC6k0YRy40CkodWqnVfi',
+    } }),
+    prisma.zone.create({ data: {
+      name: 'Wake 2',
+      county: 'Wake',
+      description: 'East Raleigh - Enloe, Southeast Raleigh',
+      signalGroup: 'https://signal.group/#CjQKIG-4pNSOjdliF8VZhJfmfwBuXUWtw0yB4vDfrxbpu5YsEhAAWHHtYE03KTMdl_jYsZZt',
+    } }),
+    prisma.zone.create({ data: {
+      name: 'Wake 3',
+      county: 'Wake',
+      description: 'Garner, South Garner',
+      signalGroup: 'https://signal.group/#CjQKIFrPdEzMJMeVNnA-bGJXiEF273ASWMMhhqi8UTx2YI3CEhAO_4IAl_atkfV00H5s0Tb5',
+    } }),
+    prisma.zone.create({ data: {
+      name: 'Wake 4',
+      county: 'Wake',
+      description: 'North East - Sanderson, Millbrook, Leesville',
+      signalGroup: 'https://signal.group/#CjQKIBjxHa1Zx1FNMYP0V9WG9M4qDzGR8j0Q890uVKLlAsF2EhCe74UJXKDRVAzSVzwc192e',
+    } }),
+    prisma.zone.create({ data: {
+      name: 'Wake 5',
+      county: 'Wake',
+      description: 'Cary - Green Hope, Green Level, Panther Creek',
+      signalGroup: 'https://signal.group/#CjQKIKfyY2Ev5KRMsuL-xYjfpPZfiSewLQ2J2nvwI5hqHnUGEhAj-p34oiXyoIQn1mbEeyN_',
+    } }),
+    prisma.zone.create({ data: {
+      name: 'Wake 6',
+      county: 'Wake',
+      description: 'South Wake - Holly Springs, Fuquay Varina',
+      signalGroup: 'https://signal.group/#CjQKIO3SuiiaBu8wpe3l81xxU88PjlYB4w5tora6paVS3gKBEhDaQc23YJa2tZNTBqlto5zn',
+    } }),
+    // Orange County (2 zones)
+    prisma.zone.create({ data: {
+      name: 'Orange 1',
+      county: 'Orange',
+      description: 'Chapel Hill/Carrboro',
+      signalGroup: 'https://signal.group/#CjQKINw_8ao7_hTI0MxDlqVLUCI0-rsZEiKbYgFMtXTC8IfiEhDElrpKqJdbjt4P6vbI3D6E',
+    } }),
+    prisma.zone.create({ data: {
+      name: 'Orange 2',
+      county: 'Orange',
+      description: 'Hillsborough and surrounding areas',
+      signalGroup: 'https://signal.group/#CjQKIEUWYGlBd_kcAdYp-lFnjF1farLZC5A8-NisFiGzoDQ-EhCm9CUpQvnRWQPy8rbdleBk',
+    } }),
   ]);
   console.log(`✓ Created ${zones.length} zones`);
 
@@ -393,38 +507,38 @@ async function main() {
 
   const shiftsData = [
     // Day 1 - Tomorrow
-    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Durham 1', day: 1, start: 6, end: 10, desc: 'Early morning patrol - high activity hours' },
-    { type: ShiftType.PATROL, title: 'Midday Patrol', zone: 'Durham 1', day: 1, start: 10, end: 14, desc: 'Midday patrol of downtown area' },
+    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Durham 1', day: 1, start: 6, end: 10, desc: 'Hillside HS area - early morning patrol' },
+    { type: ShiftType.PATROL, title: 'Midday Patrol', zone: 'Durham 1', day: 1, start: 10, end: 14, desc: 'Hillside HS area - midday patrol' },
     { type: ShiftType.COLLECTION, title: 'Evening Intel', zone: 'Durham 1', day: 1, start: 18, end: 22, desc: 'Monitor social media and community channels' },
 
     // Day 2
-    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Durham 2', day: 2, start: 6, end: 10, desc: 'North Durham early patrol' },
-    { type: ShiftType.PATROL, title: 'Afternoon Patrol', zone: 'Durham 3', day: 2, start: 14, end: 18, desc: 'East Durham and RTP area' },
+    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Durham 2', day: 2, start: 6, end: 10, desc: 'Jordan HS area - early patrol' },
+    { type: ShiftType.PATROL, title: 'Afternoon Patrol', zone: 'Durham 3', day: 2, start: 14, end: 18, desc: 'Northern HS area patrol' },
     { type: ShiftType.ON_CALL_FIELD_SUPPORT, title: 'On-Call Support', zone: 'Durham 1', day: 2, start: 8, end: 12, desc: 'Available for rapid dispatch' },
 
     // Day 3
-    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Orange 1', day: 3, start: 6, end: 10, desc: 'Chapel Hill and UNC area patrol' },
+    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Orange 1', day: 3, start: 6, end: 10, desc: 'Chapel Hill/Carrboro patrol' },
     { type: ShiftType.PATROL, title: 'Midday Patrol', zone: 'Orange 2', day: 3, start: 10, end: 14, desc: 'Hillsborough area patrol' },
     { type: ShiftType.COLLECTION, title: 'Afternoon Intel', zone: 'Orange 1', day: 3, start: 14, end: 18, desc: 'Orange County intel monitoring' },
 
     // Day 4
-    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Wake 1', day: 4, start: 6, end: 10, desc: 'Downtown Raleigh patrol' },
-    { type: ShiftType.PATROL, title: 'Midday Patrol', zone: 'Wake 2', day: 4, start: 10, end: 14, desc: 'North Raleigh patrol' },
-    { type: ShiftType.PATROL, title: 'Afternoon Patrol', zone: 'Wake 3', day: 4, start: 14, end: 18, desc: 'Cary/Morrisville area' },
+    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Wake 1', day: 4, start: 6, end: 10, desc: 'West Raleigh - Broughton/Athens area' },
+    { type: ShiftType.PATROL, title: 'Midday Patrol', zone: 'Wake 2', day: 4, start: 10, end: 14, desc: 'East Raleigh - Enloe area patrol' },
+    { type: ShiftType.PATROL, title: 'Afternoon Patrol', zone: 'Wake 3', day: 4, start: 14, end: 18, desc: 'Garner area patrol' },
 
     // Day 5
-    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Wake 4', day: 5, start: 6, end: 10, desc: 'Apex and Holly Springs' },
+    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Wake 4', day: 5, start: 6, end: 10, desc: 'North East Wake - Sanderson/Millbrook area' },
     { type: ShiftType.ON_CALL_FIELD_SUPPORT, title: 'On-Call Support', zone: 'Wake 1', day: 5, start: 10, end: 14, desc: 'Wake County rapid response' },
     { type: ShiftType.COLLECTION, title: 'Evening Intel', zone: 'Wake 1', day: 5, start: 18, end: 22, desc: 'Wake County intel monitoring' },
 
     // Day 6 (Weekend)
     { type: ShiftType.PATROL, title: 'Weekend Morning Patrol', zone: 'Durham 1', day: 6, start: 6, end: 10, desc: 'Weekend patrol - critical hours' },
-    { type: ShiftType.PATROL, title: 'Weekend Morning Patrol', zone: 'Wake 3', day: 6, start: 6, end: 10, desc: 'Weekend Cary/Morrisville patrol' },
+    { type: ShiftType.PATROL, title: 'Weekend Morning Patrol', zone: 'Wake 5', day: 6, start: 6, end: 10, desc: 'Weekend Cary area patrol' },
     { type: ShiftType.ON_CALL_FIELD_SUPPORT, title: 'Weekend On-Call', zone: 'Durham 1', day: 6, start: 8, end: 16, desc: 'Extended weekend on-call coverage' },
 
     // Day 7
-    { type: ShiftType.PATROL, title: 'Weekend Afternoon', zone: 'Durham 4', day: 7, start: 14, end: 18, desc: 'South Durham weekend patrol' },
-    { type: ShiftType.PATROL, title: 'Weekend Afternoon', zone: 'Wake 5', day: 7, start: 14, end: 18, desc: 'Garner/SE Raleigh weekend patrol' },
+    { type: ShiftType.PATROL, title: 'Weekend Afternoon', zone: 'Durham 4', day: 7, start: 14, end: 18, desc: 'Riverside HS area weekend patrol' },
+    { type: ShiftType.PATROL, title: 'Weekend Afternoon', zone: 'Wake 6', day: 7, start: 14, end: 18, desc: 'South Wake - Holly Springs area' },
     { type: ShiftType.COLLECTION, title: 'Weekend Intel', zone: 'Durham 1', day: 7, start: 10, end: 14, desc: 'Weekend intel monitoring shift' },
   ];
 
@@ -455,14 +569,64 @@ async function main() {
   );
   console.log(`✓ Created ${createdShifts.length} sample shifts`);
 
+  // ============================================
+  // SAMPLE TRAINING SESSIONS (next 14 days)
+  // ============================================
+  console.log('Creating sample training sessions...');
+
+  const trainingTypeMap = Object.fromEntries(trainingTypes.map(tt => [tt.slug, tt]));
+
+  const trainingSessionsData = [
+    // Verifier trainings
+    { typeSlug: 'VERIFIER', title: 'Verifier Training - December Session', day: 3, start: 10, duration: 90, location: 'Durham Community Center', zone: 'Durham 1' },
+    { typeSlug: 'VERIFIER', title: 'Verifier Training - Chapel Hill', day: 7, start: 14, duration: 90, location: 'Chapel Hill Library', zone: 'Orange 1' },
+    { typeSlug: 'VERIFIER', title: 'Verifier Training - Raleigh', day: 10, start: 18, duration: 90, meetingLink: 'https://zoom.us/j/example1', zone: null },
+
+    // Zone Lead trainings
+    { typeSlug: 'ZONE_LEAD', title: 'Zone Lead Training - December', day: 5, start: 9, duration: 120, location: 'Siembra NC Office', zone: null },
+    { typeSlug: 'ZONE_LEAD', title: 'Zone Lead Training - Wake County', day: 12, start: 10, duration: 120, location: 'Raleigh Community Center', zone: 'Wake 1' },
+
+    // Dispatcher trainings
+    { typeSlug: 'DISPATCHER', title: 'Dispatcher Training - December Cohort', day: 8, start: 9, duration: 150, meetingLink: 'https://zoom.us/j/example2', zone: null },
+    { typeSlug: 'DISPATCHER', title: 'Dispatcher Training - January Prep', day: 14, start: 13, duration: 150, location: 'Durham Training Center', zone: 'Durham 1' },
+  ];
+
+  const createdTrainingSessions = await Promise.all(
+    trainingSessionsData.map(ts => {
+      const startDate = makeDate(ts.day, ts.start);
+      const endDate = new Date(startDate);
+      endDate.setMinutes(endDate.getMinutes() + ts.duration);
+
+      return prisma.trainingSession.create({
+        data: {
+          trainingTypeId: trainingTypeMap[ts.typeSlug].id,
+          title: ts.title,
+          date: startDate,
+          startTime: startDate,
+          endTime: endDate,
+          location: ts.location || null,
+          meetingLink: ts.meetingLink || null,
+          zoneId: ts.zone ? zoneMap[ts.zone].id : null,
+          minAttendees: 1,
+          maxAttendees: trainingTypeMap[ts.typeSlug].defaultCapacity,
+          status: 'PUBLISHED',
+          createdById: 'coord-1',
+        },
+      });
+    })
+  );
+  console.log(`✓ Created ${createdTrainingSessions.length} sample training sessions`);
+
   console.log('\n✅ Seed completed successfully!');
   console.log('\nSummary:');
   console.log(`  - 1 organization settings`);
   console.log(`  - ${shiftTypeConfigs.length} shift type configurations`);
+  console.log(`  - ${trainingTypes.length} training types`);
   console.log(`  - ${zones.length} zones`);
   console.log(`  - ${trainings.length} training modules`);
   console.log(`  - ${users.length} users`);
   console.log(`  - ${createdShifts.length} sample shifts (next 7 days)`);
+  console.log(`  - ${createdTrainingSessions.length} sample training sessions (next 14 days)`);
 
   await prisma.$disconnect();
   await pool.end();

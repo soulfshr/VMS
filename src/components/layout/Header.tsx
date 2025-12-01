@@ -71,6 +71,16 @@ export default function Header() {
                   Shifts
                 </Link>
                 <Link
+                  href="/trainings"
+                  className={`text-sm font-medium transition-colors ${
+                    pathname.startsWith('/trainings')
+                      ? 'text-teal-700'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Trainings
+                </Link>
+                <Link
                   href="/profile"
                   className={`text-sm font-medium transition-colors ${
                     isActive('/profile')
@@ -198,6 +208,13 @@ export default function Header() {
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Shifts
+                </Link>
+                <Link
+                  href="/trainings"
+                  className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Trainings
                 </Link>
                 <Link
                   href="/profile"

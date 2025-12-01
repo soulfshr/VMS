@@ -9,6 +9,7 @@ const adminNavItems = [
   { href: '/admin', label: 'Dashboard', icon: '📊' },
   { href: '/admin/settings', label: 'General Settings', icon: '⚙️' },
   { href: '/admin/shift-types', label: 'Shift Types', icon: '📋' },
+  { href: '/admin/training-types', label: 'Training Types', icon: '🎓' },
   { href: '/admin/zones', label: 'Zones', icon: '📍' },
 ];
 
