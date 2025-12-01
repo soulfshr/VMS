@@ -119,6 +119,9 @@ export default function ShiftsPage() {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
 
+  // View mode: 'cards' or 'list'
+  const [viewMode, setViewMode] = useState<'cards' | 'list'>('list');
+
   const fetchShifts = useCallback(async () => {
     try {
       const params = new URLSearchParams();
@@ -342,145 +345,294 @@ export default function ShiftsPage() {
 
         {/* Filters */}
         <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6">
-          <div className="flex flex-wrap gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Shift Type</label>
-              <select
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-              >
-                <option value="all">All Types</option>
-                <option value="PATROL">Patrol</option>
-                <option value="COLLECTION">Collection</option>
-                <option value="ON_CALL_FIELD_SUPPORT">On-Call Support</option>
-              </select>
+          <div className="flex flex-wrap gap-4 items-end justify-between">
+            <div className="flex flex-wrap gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Shift Type</label>
+                <select
+                  value={filterType}
+                  onChange={(e) => setFilterType(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                >
+                  <option value="all">All Types</option>
+                  <option value="PATROL">Patrol</option>
+                  <option value="COLLECTION">Collection</option>
+                  <option value="ON_CALL_FIELD_SUPPORT">On-Call Support</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Zone</label>
+                <select
+                  value={filterZone}
+                  onChange={(e) => setFilterZone(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                >
+                  <option value="all">All Zones</option>
+                  {zones.map((zone) => (
+                    <option key={zone.id} value={zone.id}>
+                      {zone.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Zone</label>
-              <select
-                value={filterZone}
-                onChange={(e) => setFilterZone(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+            {/* View Toggle */}
+            <div className="flex border border-gray-300 rounded-lg overflow-hidden">
+              <button
+                onClick={() => setViewMode('list')}
+                className={`px-3 py-2 text-sm font-medium transition-colors ${
+                  viewMode === 'list'
+                    ? 'bg-teal-600 text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                }`}
+                title="List View"
               >
-                <option value="all">All Zones</option>
-                {zones.map((zone) => (
-                  <option key={zone.id} value={zone.id}>
-                    {zone.name}
-                  </option>
-                ))}
-              </select>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                </svg>
+              </button>
+              <button
+                onClick={() => setViewMode('cards')}
+                className={`px-3 py-2 text-sm font-medium transition-colors ${
+                  viewMode === 'cards'
+                    ? 'bg-teal-600 text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                }`}
+                title="Card View"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                </svg>
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Shifts Grid */}
+        {/* Shifts Display */}
         {shifts.length > 0 ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {shifts.map((shift) => (
-              <div
-                key={shift.id}
-                className={`bg-white rounded-xl border p-5 hover:shadow-md transition-shadow ${
-                  shift.status === 'CANCELLED'
-                    ? 'border-red-300 bg-red-50 opacity-75'
-                    : selectedShifts.has(shift.id)
-                    ? 'border-red-400 ring-2 ring-red-200'
-                    : 'border-gray-200'
-                }`}
-              >
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex items-center gap-2">
-                    {/* Checkbox for coordinators (non-cancelled shifts only) */}
-                    {canCreateShift && shift.status !== 'CANCELLED' && (
-                      <input
-                        type="checkbox"
-                        checked={selectedShifts.has(shift.id)}
-                        onChange={() => toggleShiftSelection(shift.id)}
-                        className="w-4 h-4 text-red-600 rounded focus:ring-red-500 cursor-pointer"
-                      />
-                    )}
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      shift.status === 'CANCELLED'
-                        ? 'bg-red-100 text-red-700'
-                        : `${typeColors[shift.type].bg} ${typeColors[shift.type].text}`
-                    }`}>
-                      {shift.status === 'CANCELLED' ? 'Cancelled' : typeLabels[shift.type]}
+          viewMode === 'list' ? (
+            /* List View */
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    {canCreateShift && <th className="w-10 px-3 py-3"></th>}
+                    <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Shift</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Zone</th>
+                    <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                    <th className="text-center px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Spots</th>
+                    <th className="text-center px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="w-32 px-4 py-3"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {shifts.map((shift) => (
+                    <tr
+                      key={shift.id}
+                      className={`hover:bg-gray-50 transition-colors ${
+                        shift.status === 'CANCELLED' ? 'bg-red-50/50 text-gray-500' : ''
+                      } ${selectedShifts.has(shift.id) ? 'bg-red-50' : ''}`}
+                    >
+                      {canCreateShift && (
+                        <td className="px-3 py-3">
+                          {shift.status !== 'CANCELLED' && (
+                            <input
+                              type="checkbox"
+                              checked={selectedShifts.has(shift.id)}
+                              onChange={() => toggleShiftSelection(shift.id)}
+                              className="w-4 h-4 text-red-600 rounded focus:ring-red-500 cursor-pointer"
+                            />
+                          )}
+                        </td>
+                      )}
+                      <td className="px-4 py-3 text-sm font-medium text-gray-900 whitespace-nowrap">
+                        {formatDate(shift.date)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
+                        {formatTime(shift.startTime, shift.endTime)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <Link
+                          href={`/shifts/${shift.id}`}
+                          className="text-sm font-medium text-gray-900 hover:text-teal-600 transition-colors"
+                        >
+                          {shift.title}
+                        </Link>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{shift.zone.name}</td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
+                          shift.status === 'CANCELLED'
+                            ? 'bg-red-100 text-red-700'
+                            : `${typeColors[shift.type].bg} ${typeColors[shift.type].text}`
+                        }`}>
+                          {shift.status === 'CANCELLED' ? 'Cancelled' : typeLabels[shift.type]}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className={`text-sm ${shift.spotsLeft <= 1 && shift.status !== 'CANCELLED' ? 'text-orange-600 font-medium' : 'text-gray-600'}`}>
+                          {shift.confirmedCount}/{shift.maxVolunteers}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        {shift.status === 'CANCELLED' ? (
+                          <span className="text-xs text-red-600">Cancelled</span>
+                        ) : shift.userRsvpStatus ? (
+                          <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
+                            shift.userRsvpStatus === 'CONFIRMED'
+                              ? 'bg-teal-100 text-teal-700'
+                              : 'bg-yellow-100 text-yellow-700'
+                          }`}>
+                            {shift.userRsvpStatus === 'CONFIRMED' ? 'Confirmed' : 'Pending'}
+                          </span>
+                        ) : shift.spotsLeft > 0 ? (
+                          <span className="text-xs text-gray-500">Open</span>
+                        ) : (
+                          <span className="text-xs text-gray-400">Full</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {shift.status === 'CANCELLED' ? null : shift.userRsvpStatus ? (
+                          <button
+                            onClick={() => handleCancelRsvp(shift.id)}
+                            disabled={rsvpingShiftId === shift.id}
+                            className="text-xs text-gray-600 hover:text-red-600 transition-colors disabled:opacity-50"
+                          >
+                            {rsvpingShiftId === shift.id ? '...' : 'Cancel'}
+                          </button>
+                        ) : shift.spotsLeft > 0 ? (
+                          <button
+                            onClick={() => handleRsvp(shift.id)}
+                            disabled={rsvpingShiftId === shift.id}
+                            className="text-xs px-3 py-1 bg-teal-600 text-white rounded hover:bg-teal-700 transition-colors disabled:opacity-50"
+                          >
+                            {rsvpingShiftId === shift.id ? '...' : 'Sign Up'}
+                          </button>
+                        ) : null}
+                        {canCreateShift && shift.status !== 'CANCELLED' && (
+                          <Link
+                            href={`/shifts/${shift.id}/roster`}
+                            className="ml-2 text-xs text-teal-600 hover:text-teal-700"
+                          >
+                            Roster{shift.pendingCount > 0 && ` (${shift.pendingCount})`}
+                          </Link>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            /* Card View */
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {shifts.map((shift) => (
+                <div
+                  key={shift.id}
+                  className={`bg-white rounded-xl border p-5 hover:shadow-md transition-shadow ${
+                    shift.status === 'CANCELLED'
+                      ? 'border-red-300 bg-red-50 opacity-75'
+                      : selectedShifts.has(shift.id)
+                      ? 'border-red-400 ring-2 ring-red-200'
+                      : 'border-gray-200'
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex items-center gap-2">
+                      {/* Checkbox for coordinators (non-cancelled shifts only) */}
+                      {canCreateShift && shift.status !== 'CANCELLED' && (
+                        <input
+                          type="checkbox"
+                          checked={selectedShifts.has(shift.id)}
+                          onChange={() => toggleShiftSelection(shift.id)}
+                          className="w-4 h-4 text-red-600 rounded focus:ring-red-500 cursor-pointer"
+                        />
+                      )}
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        shift.status === 'CANCELLED'
+                          ? 'bg-red-100 text-red-700'
+                          : `${typeColors[shift.type].bg} ${typeColors[shift.type].text}`
+                      }`}>
+                        {shift.status === 'CANCELLED' ? 'Cancelled' : typeLabels[shift.type]}
+                      </span>
+                    </div>
+                    <span className={`text-sm ${shift.spotsLeft <= 1 ? 'text-orange-600 font-medium' : 'text-gray-500'}`}>
+                      {shift.spotsLeft}/{shift.maxVolunteers} spots
                     </span>
                   </div>
-                  <span className={`text-sm ${shift.spotsLeft <= 1 ? 'text-orange-600 font-medium' : 'text-gray-500'}`}>
-                    {shift.spotsLeft}/{shift.maxVolunteers} spots
-                  </span>
-                </div>
 
-                <Link href={`/shifts/${shift.id}`} className="block group">
-                  <h3 className="font-semibold text-gray-900 mb-1 group-hover:text-teal-600 transition-colors">
-                    {shift.title}
-                  </h3>
-                </Link>
-                <p className="text-sm text-gray-500 mb-3">{shift.zone.name}</p>
-
-                <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  <span>{formatDate(shift.date)}</span>
-                </div>
-
-                <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span>{formatTime(shift.startTime, shift.endTime)}</span>
-                </div>
-
-                {/* Show different UI based on shift status */}
-                {shift.status === 'CANCELLED' ? (
-                  <div className="text-center py-2 px-4 bg-red-100 text-red-700 rounded-lg text-sm font-medium">
-                    This shift has been cancelled
-                  </div>
-                ) : shift.userRsvpStatus ? (
-                  <div className="space-y-2">
-                    <div className={`text-center py-2 px-4 rounded-lg text-sm font-medium ${
-                      shift.userRsvpStatus === 'CONFIRMED'
-                        ? 'bg-teal-100 text-teal-700'
-                        : 'bg-yellow-100 text-yellow-700'
-                    }`}>
-                      {shift.userRsvpStatus === 'CONFIRMED' ? 'Confirmed' : 'Pending Confirmation'}
-                    </div>
-                    <button
-                      onClick={() => handleCancelRsvp(shift.id)}
-                      disabled={rsvpingShiftId === shift.id}
-                      className="w-full py-2 px-4 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium disabled:opacity-50"
-                    >
-                      {rsvpingShiftId === shift.id ? 'Canceling...' : 'Cancel RSVP'}
-                    </button>
-                  </div>
-                ) : shift.spotsLeft > 0 ? (
-                  <button
-                    onClick={() => handleRsvp(shift.id)}
-                    disabled={rsvpingShiftId === shift.id}
-                    className="w-full py-2 px-4 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium disabled:opacity-50"
-                  >
-                    {rsvpingShiftId === shift.id ? 'Signing up...' : 'Sign Up'}
-                  </button>
-                ) : (
-                  <div className="text-center py-2 px-4 bg-gray-100 text-gray-500 rounded-lg text-sm font-medium">
-                    Shift Full
-                  </div>
-                )}
-
-                {/* Coordinator: Manage link (not for cancelled shifts) */}
-                {canCreateShift && shift.status !== 'CANCELLED' && (
-                  <Link
-                    href={`/shifts/${shift.id}/roster`}
-                    className="block text-center text-sm text-teal-600 hover:text-teal-700 mt-2"
-                  >
-                    Manage Roster {shift.pendingCount > 0 && `(${shift.pendingCount} pending)`}
+                  <Link href={`/shifts/${shift.id}`} className="block group">
+                    <h3 className="font-semibold text-gray-900 mb-1 group-hover:text-teal-600 transition-colors">
+                      {shift.title}
+                    </h3>
                   </Link>
-                )}
-              </div>
-            ))}
-          </div>
+                  <p className="text-sm text-gray-500 mb-3">{shift.zone.name}</p>
+
+                  <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span>{formatDate(shift.date)}</span>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>{formatTime(shift.startTime, shift.endTime)}</span>
+                  </div>
+
+                  {/* Show different UI based on shift status */}
+                  {shift.status === 'CANCELLED' ? (
+                    <div className="text-center py-2 px-4 bg-red-100 text-red-700 rounded-lg text-sm font-medium">
+                      This shift has been cancelled
+                    </div>
+                  ) : shift.userRsvpStatus ? (
+                    <div className="space-y-2">
+                      <div className={`text-center py-2 px-4 rounded-lg text-sm font-medium ${
+                        shift.userRsvpStatus === 'CONFIRMED'
+                          ? 'bg-teal-100 text-teal-700'
+                          : 'bg-yellow-100 text-yellow-700'
+                      }`}>
+                        {shift.userRsvpStatus === 'CONFIRMED' ? 'Confirmed' : 'Pending Confirmation'}
+                      </div>
+                      <button
+                        onClick={() => handleCancelRsvp(shift.id)}
+                        disabled={rsvpingShiftId === shift.id}
+                        className="w-full py-2 px-4 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium disabled:opacity-50"
+                      >
+                        {rsvpingShiftId === shift.id ? 'Canceling...' : 'Cancel RSVP'}
+                      </button>
+                    </div>
+                  ) : shift.spotsLeft > 0 ? (
+                    <button
+                      onClick={() => handleRsvp(shift.id)}
+                      disabled={rsvpingShiftId === shift.id}
+                      className="w-full py-2 px-4 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium disabled:opacity-50"
+                    >
+                      {rsvpingShiftId === shift.id ? 'Signing up...' : 'Sign Up'}
+                    </button>
+                  ) : (
+                    <div className="text-center py-2 px-4 bg-gray-100 text-gray-500 rounded-lg text-sm font-medium">
+                      Shift Full
+                    </div>
+                  )}
+
+                  {/* Coordinator: Manage link (not for cancelled shifts) */}
+                  {canCreateShift && shift.status !== 'CANCELLED' && (
+                    <Link
+                      href={`/shifts/${shift.id}/roster`}
+                      className="block text-center text-sm text-teal-600 hover:text-teal-700 mt-2"
+                    >
+                      Manage Roster {shift.pendingCount > 0 && `(${shift.pendingCount} pending)`}
+                    </Link>
+                  )}
+                </div>
+              ))}
+            </div>
+          )
         ) : (
           <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
             <p className="text-gray-500 mb-4">No shifts available matching your filters.</p>
