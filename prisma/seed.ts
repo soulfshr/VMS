@@ -27,17 +27,18 @@ async function main() {
   // Clear existing data (in reverse dependency order)
   console.log('Clearing existing data...');
   await prisma.shiftVolunteer.deleteMany();
+  await prisma.dispatcherAssignment.deleteMany();
   await prisma.shift.deleteMany();
   await prisma.userTraining.deleteMany();
   await prisma.training.deleteMany();
   await prisma.availability.deleteMany();
   await prisma.userZone.deleteMany();
+  await prisma.trainingSessionAttendee.deleteMany();
+  await prisma.trainingSession.deleteMany();  // Must be before user (createdById FK)
   await prisma.user.deleteMany();
   await prisma.zone.deleteMany();
   await prisma.shiftTypeRoleRequirement.deleteMany();
   await prisma.shiftTypeConfig.deleteMany();
-  await prisma.trainingSessionAttendee.deleteMany();
-  await prisma.trainingSession.deleteMany();
   await prisma.trainingType.deleteMany();
   await prisma.organizationSettings.deleteMany();
 
@@ -493,11 +494,17 @@ async function main() {
   console.log('✓ Recorded training completions');
 
   // ============================================
-  // SAMPLE SHIFTS (next 7 days across all zones)
+  // SAMPLE SHIFTS (current week Dec 1-7, 2025 + next week)
   // ============================================
   console.log('Creating sample shifts...');
 
-  // Helper to create a date at a specific hour
+  // Helper to create a specific date at a specific hour (EST)
+  const makeSpecificDate = (year: number, month: number, day: number, hour: number) => {
+    const d = new Date(year, month - 1, day, hour, 0, 0, 0);
+    return d;
+  };
+
+  // Helper for relative dates (for future-proof shifts)
   const makeDate = (daysFromNow: number, hour: number) => {
     const d = new Date();
     d.setDate(d.getDate() + daysFromNow);
@@ -505,47 +512,100 @@ async function main() {
     return d;
   };
 
-  const shiftsData = [
-    // Day 1 - Tomorrow
-    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Durham 1', day: 1, start: 6, end: 10, desc: 'Hillside HS area - early morning patrol' },
-    { type: ShiftType.PATROL, title: 'Midday Patrol', zone: 'Durham 1', day: 1, start: 10, end: 14, desc: 'Hillside HS area - midday patrol' },
-    { type: ShiftType.COLLECTION, title: 'Evening Intel', zone: 'Durham 1', day: 1, start: 18, end: 22, desc: 'Monitor social media and community channels' },
+  // Current week: Dec 1-7, 2025 (Mon-Sun)
+  const currentWeekShifts = [
+    // Monday Dec 1 - Durham
+    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Durham 1', date: [2025, 12, 1], start: 11, end: 15, desc: 'Hillside HS area - midday patrol' },
+    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Durham 2', date: [2025, 12, 1], start: 11, end: 15, desc: 'Jordan HS area patrol' },
+    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Durham 3', date: [2025, 12, 1], start: 11, end: 15, desc: 'Northern HS area patrol' },
+    { type: ShiftType.PATROL, title: 'Afternoon Patrol', zone: 'Durham 4', date: [2025, 12, 1], start: 11, end: 15, desc: 'Riverside HS area patrol' },
+    { type: ShiftType.PATROL, title: 'Afternoon Patrol', zone: 'Durham 5', date: [2025, 12, 1], start: 11, end: 15, desc: 'Southern HS area patrol' },
+    { type: ShiftType.COLLECTION, title: 'Intel Collection', zone: 'Durham 1', date: [2025, 12, 1], start: 13, end: 17, desc: 'Durham County intel monitoring' },
+    // Monday Dec 1 - Wake
+    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Wake 1', date: [2025, 12, 1], start: 11, end: 15, desc: 'West Raleigh patrol' },
+    { type: ShiftType.PATROL, title: 'Afternoon Patrol', zone: 'Wake 2', date: [2025, 12, 1], start: 13, end: 17, desc: 'East Raleigh patrol' },
+    // Monday Dec 1 - Orange
+    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Orange 1', date: [2025, 12, 1], start: 11, end: 15, desc: 'Chapel Hill patrol' },
 
-    // Day 2
-    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Durham 2', day: 2, start: 6, end: 10, desc: 'Jordan HS area - early patrol' },
-    { type: ShiftType.PATROL, title: 'Afternoon Patrol', zone: 'Durham 3', day: 2, start: 14, end: 18, desc: 'Northern HS area patrol' },
-    { type: ShiftType.ON_CALL_FIELD_SUPPORT, title: 'On-Call Support', zone: 'Durham 1', day: 2, start: 8, end: 12, desc: 'Available for rapid dispatch' },
+    // Tuesday Dec 2 - Durham
+    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Durham 1', date: [2025, 12, 2], start: 11, end: 15, desc: 'Hillside HS area patrol' },
+    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Durham 2', date: [2025, 12, 2], start: 11, end: 15, desc: 'Jordan HS area patrol' },
+    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Durham 3', date: [2025, 12, 2], start: 11, end: 15, desc: 'Northern HS area patrol' },
+    { type: ShiftType.PATROL, title: 'Afternoon Patrol', zone: 'Durham 4', date: [2025, 12, 2], start: 11, end: 15, desc: 'Riverside HS area patrol' },
+    { type: ShiftType.PATROL, title: 'Afternoon Patrol', zone: 'Durham 5', date: [2025, 12, 2], start: 11, end: 15, desc: 'Southern HS area patrol' },
+    { type: ShiftType.ON_CALL_FIELD_SUPPORT, title: 'On-Call Support', zone: 'Durham 1', date: [2025, 12, 2], start: 13, end: 17, desc: 'Durham rapid response' },
+    // Tuesday Dec 2 - Wake
+    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Wake 1', date: [2025, 12, 2], start: 11, end: 15, desc: 'West Raleigh patrol' },
+    { type: ShiftType.PATROL, title: 'Afternoon Patrol', zone: 'Wake 3', date: [2025, 12, 2], start: 13, end: 17, desc: 'Garner area patrol' },
 
-    // Day 3
-    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Orange 1', day: 3, start: 6, end: 10, desc: 'Chapel Hill/Carrboro patrol' },
-    { type: ShiftType.PATROL, title: 'Midday Patrol', zone: 'Orange 2', day: 3, start: 10, end: 14, desc: 'Hillsborough area patrol' },
-    { type: ShiftType.COLLECTION, title: 'Afternoon Intel', zone: 'Orange 1', day: 3, start: 14, end: 18, desc: 'Orange County intel monitoring' },
+    // Wednesday Dec 3 - Durham
+    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Durham 1', date: [2025, 12, 3], start: 11, end: 15, desc: 'Hillside HS area patrol' },
+    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Durham 2', date: [2025, 12, 3], start: 11, end: 15, desc: 'Jordan HS area patrol' },
+    { type: ShiftType.COLLECTION, title: 'Intel Collection', zone: 'Durham 1', date: [2025, 12, 3], start: 13, end: 17, desc: 'Midweek intel monitoring' },
+    // Wednesday Dec 3 - Wake
+    { type: ShiftType.PATROL, title: 'Afternoon Patrol', zone: 'Wake 4', date: [2025, 12, 3], start: 13, end: 17, desc: 'North Wake patrol' },
+    { type: ShiftType.PATROL, title: 'Afternoon Patrol', zone: 'Wake 5', date: [2025, 12, 3], start: 13, end: 17, desc: 'Cary area patrol' },
+    // Wednesday Dec 3 - Orange
+    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Orange 1', date: [2025, 12, 3], start: 11, end: 15, desc: 'Chapel Hill patrol' },
+    { type: ShiftType.PATROL, title: 'Afternoon Patrol', zone: 'Orange 2', date: [2025, 12, 3], start: 13, end: 17, desc: 'Hillsborough patrol' },
 
-    // Day 4
-    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Wake 1', day: 4, start: 6, end: 10, desc: 'West Raleigh - Broughton/Athens area' },
-    { type: ShiftType.PATROL, title: 'Midday Patrol', zone: 'Wake 2', day: 4, start: 10, end: 14, desc: 'East Raleigh - Enloe area patrol' },
-    { type: ShiftType.PATROL, title: 'Afternoon Patrol', zone: 'Wake 3', day: 4, start: 14, end: 18, desc: 'Garner area patrol' },
+    // Thursday Dec 4 - Durham
+    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Durham 1', date: [2025, 12, 4], start: 11, end: 15, desc: 'Hillside HS area patrol' },
+    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Durham 3', date: [2025, 12, 4], start: 11, end: 15, desc: 'Northern HS area patrol' },
+    { type: ShiftType.PATROL, title: 'Afternoon Patrol', zone: 'Durham 5', date: [2025, 12, 4], start: 13, end: 17, desc: 'Southern HS area patrol' },
+    // Thursday Dec 4 - Wake
+    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Wake 2', date: [2025, 12, 4], start: 11, end: 15, desc: 'East Raleigh patrol' },
+    { type: ShiftType.ON_CALL_FIELD_SUPPORT, title: 'On-Call Support', zone: 'Wake 1', date: [2025, 12, 4], start: 13, end: 17, desc: 'Wake rapid response' },
 
-    // Day 5
-    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Wake 4', day: 5, start: 6, end: 10, desc: 'North East Wake - Sanderson/Millbrook area' },
-    { type: ShiftType.ON_CALL_FIELD_SUPPORT, title: 'On-Call Support', zone: 'Wake 1', day: 5, start: 10, end: 14, desc: 'Wake County rapid response' },
-    { type: ShiftType.COLLECTION, title: 'Evening Intel', zone: 'Wake 1', day: 5, start: 18, end: 22, desc: 'Wake County intel monitoring' },
+    // Friday Dec 5 - Durham
+    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Durham 1', date: [2025, 12, 5], start: 11, end: 15, desc: 'Hillside HS area patrol' },
+    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Durham 2', date: [2025, 12, 5], start: 11, end: 15, desc: 'Jordan HS area patrol' },
+    { type: ShiftType.PATROL, title: 'Afternoon Patrol', zone: 'Durham 4', date: [2025, 12, 5], start: 13, end: 17, desc: 'Riverside HS area patrol' },
+    { type: ShiftType.ON_CALL_FIELD_SUPPORT, title: 'On-Call Support', zone: 'Durham 1', date: [2025, 12, 5], start: 13, end: 21, desc: 'Extended Friday on-call' },
+    // Friday Dec 5 - Wake
+    { type: ShiftType.PATROL, title: 'Afternoon Patrol', zone: 'Wake 6', date: [2025, 12, 5], start: 13, end: 17, desc: 'South Wake patrol' },
+    // Friday Dec 5 - Orange
+    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Orange 1', date: [2025, 12, 5], start: 11, end: 15, desc: 'Chapel Hill patrol' },
 
-    // Day 6 (Weekend)
-    { type: ShiftType.PATROL, title: 'Weekend Morning Patrol', zone: 'Durham 1', day: 6, start: 6, end: 10, desc: 'Weekend patrol - critical hours' },
-    { type: ShiftType.PATROL, title: 'Weekend Morning Patrol', zone: 'Wake 5', day: 6, start: 6, end: 10, desc: 'Weekend Cary area patrol' },
-    { type: ShiftType.ON_CALL_FIELD_SUPPORT, title: 'Weekend On-Call', zone: 'Durham 1', day: 6, start: 8, end: 16, desc: 'Extended weekend on-call coverage' },
+    // Saturday Dec 6 - Durham (heavier coverage)
+    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Durham 1', date: [2025, 12, 6], start: 11, end: 15, desc: 'Weekend Hillside patrol' },
+    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Durham 2', date: [2025, 12, 6], start: 11, end: 15, desc: 'Weekend Jordan patrol' },
+    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Durham 3', date: [2025, 12, 6], start: 11, end: 15, desc: 'Weekend Northern patrol' },
+    { type: ShiftType.PATROL, title: 'Afternoon Patrol', zone: 'Durham 1', date: [2025, 12, 6], start: 13, end: 17, desc: 'Weekend afternoon patrol' },
+    { type: ShiftType.PATROL, title: 'Evening Patrol', zone: 'Durham 1', date: [2025, 12, 6], start: 13, end: 21, desc: 'Weekend extended patrol' },
+    { type: ShiftType.ON_CALL_FIELD_SUPPORT, title: 'Weekend On-Call', zone: 'Durham 1', date: [2025, 12, 6], start: 11, end: 21, desc: 'Full day weekend on-call' },
+    // Saturday Dec 6 - Wake
+    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Wake 1', date: [2025, 12, 6], start: 11, end: 15, desc: 'Weekend Raleigh patrol' },
+    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Wake 5', date: [2025, 12, 6], start: 11, end: 15, desc: 'Weekend Cary patrol' },
+    { type: ShiftType.PATROL, title: 'Afternoon Patrol', zone: 'Wake 3', date: [2025, 12, 6], start: 13, end: 17, desc: 'Weekend Garner patrol' },
+    // Saturday Dec 6 - Orange
+    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Orange 1', date: [2025, 12, 6], start: 11, end: 15, desc: 'Weekend Chapel Hill patrol' },
 
-    // Day 7
-    { type: ShiftType.PATROL, title: 'Weekend Afternoon', zone: 'Durham 4', day: 7, start: 14, end: 18, desc: 'Riverside HS area weekend patrol' },
-    { type: ShiftType.PATROL, title: 'Weekend Afternoon', zone: 'Wake 6', day: 7, start: 14, end: 18, desc: 'South Wake - Holly Springs area' },
-    { type: ShiftType.COLLECTION, title: 'Weekend Intel', zone: 'Durham 1', day: 7, start: 10, end: 14, desc: 'Weekend intel monitoring shift' },
+    // Sunday Dec 7 - Durham
+    { type: ShiftType.PATROL, title: 'Morning Patrol', zone: 'Durham 1', date: [2025, 12, 7], start: 11, end: 15, desc: 'Sunday Hillside patrol' },
+    { type: ShiftType.PATROL, title: 'Afternoon Patrol', zone: 'Durham 2', date: [2025, 12, 7], start: 13, end: 17, desc: 'Sunday Jordan patrol' },
+    { type: ShiftType.COLLECTION, title: 'Weekend Intel', zone: 'Durham 1', date: [2025, 12, 7], start: 13, end: 17, desc: 'Weekend intel wrap-up' },
+    // Sunday Dec 7 - Wake
+    { type: ShiftType.PATROL, title: 'Afternoon Patrol', zone: 'Wake 2', date: [2025, 12, 7], start: 13, end: 17, desc: 'Sunday East Raleigh patrol' },
+    { type: ShiftType.PATROL, title: 'Afternoon Patrol', zone: 'Wake 4', date: [2025, 12, 7], start: 13, end: 17, desc: 'Sunday North Wake patrol' },
   ];
+
+  // Convert current week shifts to standard format
+  const shiftsData = currentWeekShifts.map(s => ({
+    type: s.type,
+    title: s.title,
+    zone: s.zone,
+    date: s.date as [number, number, number],
+    start: s.start,
+    end: s.end,
+    desc: s.desc,
+  }));
 
   const createdShifts = await Promise.all(
     shiftsData.map(s => {
-      const startDate = makeDate(s.day, s.start);
-      const endDate = makeDate(s.day, s.end);
+      const [year, month, day] = s.date;
+      const startDate = makeSpecificDate(year, month, day, s.start);
+      const endDate = makeSpecificDate(year, month, day, s.end);
       // Map enum to slug for typeConfigId lookup
       const typeSlug = s.type as string;  // PATROL, COLLECTION, ON_CALL_FIELD_SUPPORT
       return prisma.shift.create({
@@ -567,7 +627,7 @@ async function main() {
       });
     })
   );
-  console.log(`✓ Created ${createdShifts.length} sample shifts`);
+  console.log(`✓ Created ${createdShifts.length} sample shifts for week of Dec 1-7, 2025`);
 
   // ============================================
   // SAMPLE TRAINING SESSIONS (next 14 days)

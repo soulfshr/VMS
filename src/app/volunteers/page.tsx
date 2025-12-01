@@ -710,6 +710,39 @@ export default function VolunteersPage() {
                     </p>
                   </div>
 
+                  {/* Download Template */}
+                  <div className="mb-4 p-3 bg-teal-50 rounded-lg flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-teal-800">Need a template?</p>
+                      <p className="text-xs text-teal-600">Download a CSV template with example data</p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        const template = `name,email,phone,role,primaryLanguage,zones
+John Doe,john.doe@example.com,919-555-1234,VOLUNTEER,English,Durham Zone 1;Durham Zone 2
+Maria Garcia,maria.garcia@example.com,919-555-5678,COORDINATOR,Spanish,Wake Zone 1
+James Wilson,james.wilson@example.com,919-555-9012,VOLUNTEER,English,Orange Zone 1
+Ana Martinez,ana.martinez@example.com,919-555-3456,DISPATCHER,Spanish,Durham Zone 3
+Michael Chen,michael.chen@example.com,919-555-7890,VOLUNTEER,Mandarin,Wake Zone 2`;
+                        const blob = new Blob([template], { type: 'text/csv' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'volunteer_import_template.csv';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                      }}
+                      className="px-3 py-1.5 bg-teal-600 text-white text-sm rounded-lg hover:bg-teal-700 flex items-center gap-1"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                      Download Template
+                    </button>
+                  </div>
+
                   {/* File Upload */}
                   <div className="mb-4">
                     <label className="block text-sm font-medium text-gray-700 mb-1">Upload CSV File</label>
