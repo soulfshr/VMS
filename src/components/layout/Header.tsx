@@ -81,6 +81,16 @@ export default function Header() {
                   Trainings
                 </Link>
                 <Link
+                  href="/schedule"
+                  className={`text-sm font-medium transition-colors ${
+                    pathname.startsWith('/schedule')
+                      ? 'text-teal-700'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Schedule
+                </Link>
+                <Link
                   href="/profile"
                   className={`text-sm font-medium transition-colors ${
                     isActive('/profile')
@@ -215,6 +225,13 @@ export default function Header() {
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Trainings
+                </Link>
+                <Link
+                  href="/schedule"
+                  className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Schedule
                 </Link>
                 <Link
                   href="/profile"

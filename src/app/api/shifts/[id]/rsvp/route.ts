@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
+import { RSVPStatus } from '@/generated/prisma/enums';
 import {
   sendShiftSignupEmail,
   sendShiftConfirmationEmail,
@@ -206,16 +207,26 @@ export async function PATCH(
 
     const { id: shiftId } = await params;
     const body = await request.json();
-    const { volunteerId, status } = body;
+    const { volunteerId, status, isZoneLead } = body;
 
-    if (!volunteerId || !status) {
+    if (!volunteerId) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Missing volunteerId' },
         { status: 400 }
       );
     }
 
-    // Update RSVP status
+    // Build update data based on what was provided
+    const updateData: { status?: RSVPStatus; confirmedAt?: Date | null; isZoneLead?: boolean } = {};
+    if (status !== undefined) {
+      updateData.status = status as RSVPStatus;
+      updateData.confirmedAt = status === 'CONFIRMED' ? new Date() : null;
+    }
+    if (isZoneLead !== undefined) {
+      updateData.isZoneLead = isZoneLead;
+    }
+
+    // Update RSVP
     const rsvp = await prisma.shiftVolunteer.update({
       where: {
         shiftId_userId: {
@@ -223,10 +234,7 @@ export async function PATCH(
           userId: volunteerId,
         },
       },
-      data: {
-        status,
-        confirmedAt: status === 'CONFIRMED' ? new Date() : null,
-      },
+      data: updateData,
       include: {
         shift: {
           include: {
@@ -243,8 +251,8 @@ export async function PATCH(
       },
     });
 
-    // Send confirmation email with calendar invite when status is CONFIRMED
-    if (status === 'CONFIRMED') {
+    // Send confirmation email with calendar invite when status is changed to CONFIRMED
+    if (status === 'CONFIRMED' && updateData.status === 'CONFIRMED') {
       sendShiftConfirmationEmail({
         to: rsvp.user.email,
         volunteerName: rsvp.user.name,

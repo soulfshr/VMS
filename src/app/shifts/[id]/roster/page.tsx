@@ -7,6 +7,7 @@ import Link from 'next/link';
 interface Volunteer {
   id: string;
   status: 'PENDING' | 'CONFIRMED' | 'DECLINED' | 'NO_SHOW';
+  isZoneLead: boolean;
   createdAt: string;
   confirmedAt: string | null;
   user: {
@@ -87,6 +88,24 @@ export default function RosterPage() {
     const pending = shift?.volunteers.filter(v => v.status === 'PENDING') || [];
     for (const volunteer of pending) {
       await handleUpdateStatus(volunteer.user.id, 'CONFIRMED');
+    }
+  };
+
+  const handleToggleZoneLead = async (volunteerId: string, isZoneLead: boolean) => {
+    setUpdating(volunteerId);
+    try {
+      const res = await fetch(`/api/shifts/${params.id}/rsvp`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ volunteerId, isZoneLead }),
+      });
+      if (res.ok) {
+        fetchShift();
+      }
+    } catch (error) {
+      console.error('Error updating zone lead status:', error);
+    } finally {
+      setUpdating(null);
     }
   };
 
@@ -225,6 +244,9 @@ export default function RosterPage() {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Language
               </th>
+              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Zone Lead
+              </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Status
               </th>
@@ -254,6 +276,20 @@ export default function RosterPage() {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {volunteer.user.primaryLanguage}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-center">
+                  <button
+                    onClick={() => handleToggleZoneLead(volunteer.user.id, !volunteer.isZoneLead)}
+                    disabled={updating === volunteer.user.id || volunteer.status === 'DECLINED'}
+                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors disabled:opacity-50 ${
+                      volunteer.isZoneLead
+                        ? 'bg-purple-100 text-purple-800 hover:bg-purple-200'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                    title={volunteer.isZoneLead ? 'Remove zone lead designation' : 'Designate as zone lead'}
+                  >
+                    {volunteer.isZoneLead ? 'Zone Lead' : 'Volunteer'}
+                  </button>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`px-3 py-1 rounded-full text-xs font-medium ${

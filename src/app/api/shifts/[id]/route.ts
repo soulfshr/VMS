@@ -31,9 +31,10 @@ export async function GET(
               },
             },
           },
-          orderBy: {
-            createdAt: 'asc',
-          },
+          orderBy: [
+            { isZoneLead: 'desc' }, // Zone leads first
+            { createdAt: 'asc' },
+          ],
         },
         createdBy: {
           select: {

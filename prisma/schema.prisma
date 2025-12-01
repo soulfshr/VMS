@@ -140,6 +140,7 @@ model User {
   createdShifts     Shift[]   @relation("CreatedBy")
   trainingAttendances     TrainingSessionAttendee[]
   createdTrainingSessions TrainingSession[] @relation("TrainingCreatedBy")
+  dispatcherAssignments   DispatcherAssignment[]
 
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
@@ -381,6 +382,9 @@ model ShiftVolunteer {
   userId          String
   status          RSVPStatus @default(PENDING)
 
+  // Leadership designation
+  isZoneLead      Boolean    @default(false)  // Designate this volunteer as zone lead for this shift
+
   // Confirmation
   confirmedAt     DateTime?
   checkedInAt     DateTime?
@@ -396,4 +400,34 @@ model ShiftVolunteer {
   updatedAt       DateTime   @updatedAt
 
   @@unique([shiftId, userId])
+}
+
+// ============================================
+// DISPATCHER ASSIGNMENTS
+// ============================================
+
+model DispatcherAssignment {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // County-wide coverage (Wake, Durham, Orange)
+  county        String
+
+  // Time block
+  date          DateTime  // The specific date
+  startTime     DateTime
+  endTime       DateTime
+
+  // Assignment details
+  isBackup      Boolean   @default(false)  // Primary vs backup dispatcher
+  notes         String?   // e.g., "only available until 8am"
+
+  // Tracking
+  createdById   String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([userId, county, date, startTime])  // One assignment per user/county/time
+  @@index([county, date])
 }
