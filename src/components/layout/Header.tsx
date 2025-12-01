@@ -80,6 +80,18 @@ export default function Header() {
                 >
                   Profile
                 </Link>
+                {user.role === 'ADMINISTRATOR' && (
+                  <Link
+                    href="/admin"
+                    className={`text-sm font-medium transition-colors ${
+                      pathname.startsWith('/admin')
+                        ? 'text-teal-700'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Admin
+                  </Link>
+                )}
 
                 {/* User Menu */}
                 <div className="relative">
@@ -194,6 +206,15 @@ export default function Header() {
                 >
                   Profile
                 </Link>
+                {user.role === 'ADMINISTRATOR' && (
+                  <Link
+                    href="/admin"
+                    className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Admin
+                  </Link>
+                )}
                 <Link
                   href="/login"
                   className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"

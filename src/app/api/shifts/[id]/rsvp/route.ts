@@ -57,12 +57,17 @@ export async function POST(
       );
     }
 
-    // Create RSVP
+    // Check organization settings for auto-confirm
+    const orgSettings = await prisma.organizationSettings.findFirst();
+    const autoConfirm = orgSettings?.autoConfirmRsvp ?? false;
+
+    // Create RSVP with status based on auto-confirm setting
     const rsvp = await prisma.shiftVolunteer.create({
       data: {
         shiftId,
         userId: user.id,
-        status: 'PENDING',
+        status: autoConfirm ? 'CONFIRMED' : 'PENDING',
+        confirmedAt: autoConfirm ? new Date() : null,
       },
       include: {
         shift: {
@@ -80,17 +85,33 @@ export async function POST(
       },
     });
 
-    // Send signup confirmation email (async, don't block response)
-    sendShiftSignupEmail({
-      to: rsvp.user.email,
-      volunteerName: rsvp.user.name,
-      shiftTitle: rsvp.shift.title,
-      shiftType: rsvp.shift.type,
-      shiftDate: rsvp.shift.date,
-      startTime: rsvp.shift.startTime,
-      endTime: rsvp.shift.endTime,
-      zoneName: rsvp.shift.zone.name,
-    }).catch(err => console.error('Email send error:', err));
+    // Send appropriate email based on auto-confirm setting
+    if (autoConfirm) {
+      // Send confirmation email with calendar invite
+      sendShiftConfirmationEmail({
+        to: rsvp.user.email,
+        volunteerName: rsvp.user.name,
+        shiftTitle: rsvp.shift.title,
+        shiftType: rsvp.shift.type,
+        shiftDate: rsvp.shift.date,
+        startTime: rsvp.shift.startTime,
+        endTime: rsvp.shift.endTime,
+        zoneName: rsvp.shift.zone.name,
+        description: rsvp.shift.description || undefined,
+      }).catch(err => console.error('Email send error:', err));
+    } else {
+      // Send signup confirmation email (pending status)
+      sendShiftSignupEmail({
+        to: rsvp.user.email,
+        volunteerName: rsvp.user.name,
+        shiftTitle: rsvp.shift.title,
+        shiftType: rsvp.shift.type,
+        shiftDate: rsvp.shift.date,
+        startTime: rsvp.shift.startTime,
+        endTime: rsvp.shift.endTime,
+        zoneName: rsvp.shift.zone.name,
+      }).catch(err => console.error('Email send error:', err));
+    }
 
     return NextResponse.json(rsvp, { status: 201 });
   } catch (error) {

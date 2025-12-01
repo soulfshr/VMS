@@ -50,6 +50,61 @@ enum TrainingStatus {
 }
 
 // ============================================
+// ORGANIZATION SETTINGS
+// ============================================
+
+model OrganizationSettings {
+  id              String   @id @default(cuid())
+
+  // RSVP Settings
+  autoConfirmRsvp Boolean  @default(false)  // If true, RSVPs are immediately confirmed
+
+  // Future settings
+  timezone        String   @default("America/New_York")
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// ============================================
+// SHIFT TYPE CONFIGURATION
+// ============================================
+
+model ShiftTypeConfig {
+  id              String   @id @default(cuid())
+  name            String   @unique  // "Patrol", "Collection", "Court Watch"
+  slug            String   @unique  // "PATROL", "COLLECTION" - for compatibility/API use
+  description     String?
+  color           String   @default("#3b82f6")  // Hex color for UI display
+
+  // Default volunteer requirements
+  defaultMinVolunteers   Int @default(2)
+  defaultIdealVolunteers Int @default(4)
+  defaultMaxVolunteers   Int @default(6)
+
+  isActive        Boolean  @default(true)
+  sortOrder       Int      @default(0)
+
+  // Relationships
+  roleRequirements ShiftTypeRoleRequirement[]
+  shifts          Shift[]  @relation("ShiftTypeConfig")
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model ShiftTypeRoleRequirement {
+  id              String          @id @default(cuid())
+  shiftTypeId     String
+  shiftType       ShiftTypeConfig @relation(fields: [shiftTypeId], references: [id], onDelete: Cascade)
+  role            Role            // VOLUNTEER, COORDINATOR, DISPATCHER, ADMINISTRATOR
+  minRequired     Int             @default(0)
+  maxAllowed      Int?            // null = unlimited
+
+  @@unique([shiftTypeId, role])
+}
+
+// ============================================
 // USER & AUTHENTICATION
 // ============================================
 
@@ -60,6 +115,10 @@ model User {
   phone             String?
   role              Role      @default(VOLUNTEER)
   profileImageUrl   String?
+
+  // Role qualifications - roles this user is qualified to fill
+  // e.g., a user might be qualified as both VOLUNTEER and DISPATCHER
+  qualifiedRoles    Role[]
 
   // Volunteer-specific fields
   primaryLanguage   String    @default("English")
@@ -191,9 +250,13 @@ model Availability {
 
 model Shift {
   id              String      @id @default(cuid())
-  type            ShiftType
+  type            ShiftType   // Keep for backward compatibility
   title           String
   description     String?
+
+  // Dynamic shift type configuration (nullable for migration)
+  typeConfigId    String?
+  typeConfig      ShiftTypeConfig? @relation("ShiftTypeConfig", fields: [typeConfigId], references: [id])
 
   // Timing
   date            DateTime

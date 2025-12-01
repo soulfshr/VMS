@@ -34,6 +34,87 @@ async function main() {
   await prisma.userZone.deleteMany();
   await prisma.user.deleteMany();
   await prisma.zone.deleteMany();
+  await prisma.shiftTypeRoleRequirement.deleteMany();
+  await prisma.shiftTypeConfig.deleteMany();
+  await prisma.organizationSettings.deleteMany();
+
+  // ============================================
+  // ORGANIZATION SETTINGS (singleton)
+  // ============================================
+  console.log('Creating organization settings...');
+  await prisma.organizationSettings.create({
+    data: {
+      id: 'org-settings-1',
+      autoConfirmRsvp: false,  // Require manual confirmation by default
+      timezone: 'America/New_York',
+    },
+  });
+  console.log('✓ Created organization settings');
+
+  // ============================================
+  // SHIFT TYPE CONFIGURATIONS
+  // ============================================
+  console.log('Creating shift type configurations...');
+  const shiftTypeConfigs = await Promise.all([
+    prisma.shiftTypeConfig.create({
+      data: {
+        id: 'shift-type-patrol',
+        name: 'Patrol',
+        slug: 'PATROL',
+        description: 'Community patrol shifts for area monitoring and presence',
+        color: '#3b82f6',  // Blue
+        defaultMinVolunteers: 2,
+        defaultIdealVolunteers: 4,
+        defaultMaxVolunteers: 6,
+        sortOrder: 1,
+        roleRequirements: {
+          create: [
+            { role: Role.VOLUNTEER, minRequired: 2, maxAllowed: 6 },
+          ],
+        },
+      },
+    }),
+    prisma.shiftTypeConfig.create({
+      data: {
+        id: 'shift-type-collection',
+        name: 'Collection',
+        slug: 'COLLECTION',
+        description: 'Intelligence collection and monitoring shifts',
+        color: '#a855f7',  // Purple
+        defaultMinVolunteers: 1,
+        defaultIdealVolunteers: 2,
+        defaultMaxVolunteers: 3,
+        sortOrder: 2,
+        roleRequirements: {
+          create: [
+            { role: Role.VOLUNTEER, minRequired: 1, maxAllowed: 3 },
+          ],
+        },
+      },
+    }),
+    prisma.shiftTypeConfig.create({
+      data: {
+        id: 'shift-type-on-call',
+        name: 'On-Call Field Support',
+        slug: 'ON_CALL_FIELD_SUPPORT',
+        description: 'On-call shifts for rapid response and field support',
+        color: '#f97316',  // Orange
+        defaultMinVolunteers: 2,
+        defaultIdealVolunteers: 3,
+        defaultMaxVolunteers: 4,
+        sortOrder: 3,
+        roleRequirements: {
+          create: [
+            { role: Role.DISPATCHER, minRequired: 1, maxAllowed: 1 },
+            { role: Role.VOLUNTEER, minRequired: 1, maxAllowed: 3 },
+          ],
+        },
+      },
+    }),
+  ]);
+  console.log(`✓ Created ${shiftTypeConfigs.length} shift type configurations`);
+
+  const shiftTypeMap = Object.fromEntries(shiftTypeConfigs.map(st => [st.slug, st]));
 
   // ============================================
   // ZONES (13 zones across 3 counties)
@@ -155,6 +236,7 @@ async function main() {
         email: 'admin@test.com',
         name: 'Admin User',
         role: Role.ADMINISTRATOR,
+        qualifiedRoles: [Role.ADMINISTRATOR],
         phone: '(919) 555-0100',
         isVerified: true,
       },
@@ -165,6 +247,7 @@ async function main() {
         email: 'coord@test.com',
         name: 'Coordinator User',
         role: Role.COORDINATOR,
+        qualifiedRoles: [Role.COORDINATOR, Role.VOLUNTEER],  // Coordinators can also fill volunteer slots
         phone: '(919) 555-0101',
         isVerified: true,
       },
@@ -175,6 +258,7 @@ async function main() {
         email: 'disp@test.com',
         name: 'Dispatcher User',
         role: Role.DISPATCHER,
+        qualifiedRoles: [Role.DISPATCHER, Role.VOLUNTEER],  // Dispatchers can also fill volunteer slots
         phone: '(919) 555-0102',
         isVerified: true,
       },
@@ -185,6 +269,7 @@ async function main() {
         email: 'maria@test.com',
         name: 'Maria Rodriguez',
         role: Role.VOLUNTEER,
+        qualifiedRoles: [Role.VOLUNTEER],
         phone: '(919) 555-0123',
         primaryLanguage: 'Spanish',
         otherLanguages: ['English'],
@@ -197,6 +282,7 @@ async function main() {
         email: 'james@test.com',
         name: 'James Kim',
         role: Role.VOLUNTEER,
+        qualifiedRoles: [Role.VOLUNTEER, Role.DISPATCHER],  // James is also qualified as dispatcher
         phone: '(919) 555-0124',
         primaryLanguage: 'English',
         otherLanguages: ['Korean'],
@@ -209,6 +295,7 @@ async function main() {
         email: 'ana@test.com',
         name: 'Ana Lopez',
         role: Role.VOLUNTEER,
+        qualifiedRoles: [Role.VOLUNTEER],
         phone: '(919) 555-0125',
         primaryLanguage: 'Spanish',
         otherLanguages: ['English'],
@@ -221,6 +308,7 @@ async function main() {
         email: 'david@test.com',
         name: 'David Chen',
         role: Role.VOLUNTEER,
+        qualifiedRoles: [Role.VOLUNTEER],
         phone: '(919) 555-0126',
         primaryLanguage: 'English',
         otherLanguages: ['Mandarin'],
@@ -233,6 +321,7 @@ async function main() {
         email: 'patricia@test.com',
         name: 'Patricia Williams',
         role: Role.VOLUNTEER,
+        qualifiedRoles: [Role.VOLUNTEER],
         phone: '(919) 555-0127',
         primaryLanguage: 'English',
         isVerified: true,
@@ -343,9 +432,12 @@ async function main() {
     shiftsData.map(s => {
       const startDate = makeDate(s.day, s.start);
       const endDate = makeDate(s.day, s.end);
+      // Map enum to slug for typeConfigId lookup
+      const typeSlug = s.type as string;  // PATROL, COLLECTION, ON_CALL_FIELD_SUPPORT
       return prisma.shift.create({
         data: {
           type: s.type,
+          typeConfigId: shiftTypeMap[typeSlug]?.id,  // Link to dynamic config
           title: s.title,
           description: s.desc,
           date: startDate,
@@ -365,6 +457,8 @@ async function main() {
 
   console.log('\n✅ Seed completed successfully!');
   console.log('\nSummary:');
+  console.log(`  - 1 organization settings`);
+  console.log(`  - ${shiftTypeConfigs.length} shift type configurations`);
   console.log(`  - ${zones.length} zones`);
   console.log(`  - ${trainings.length} training modules`);
   console.log(`  - ${users.length} users`);
