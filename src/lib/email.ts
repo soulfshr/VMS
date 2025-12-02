@@ -359,3 +359,95 @@ export async function sendShiftInviteEmail(params: ShiftInviteParams): Promise<v
     console.error('[Email] Failed to send invite email:', error);
   }
 }
+
+// ============================================
+// ICE SIGHTING NOTIFICATIONS
+// ============================================
+
+interface SightingNotificationParams {
+  sightingId: string;
+  size: string;
+  activity: string;
+  location: string;
+  uniform: string;
+  observedAt: Date;
+  equipment: string;
+  hasMedia: boolean;
+  reporterName?: string | null;
+}
+
+/**
+ * Send email notification to all dispatchers when a new ICE sighting is reported
+ */
+export async function sendSightingNotificationToDispatchers(
+  params: SightingNotificationParams,
+  dispatchers: { email: string; name: string }[]
+): Promise<void> {
+  if (!isEmailConfigured()) {
+    console.log('[Email] SMTP not configured, skipping sighting notification');
+    return;
+  }
+
+  const {
+    sightingId,
+    size,
+    activity,
+    location,
+    uniform,
+    observedAt,
+    equipment,
+    hasMedia,
+    reporterName,
+  } = params;
+
+  const dateStr = formatDateInOrgTimezone(observedAt);
+  const timeStr = formatTimeInOrgTimezone(observedAt);
+  const vmsUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://vms.siembranc.org';
+
+  for (const dispatcher of dispatchers) {
+    try {
+      await transporter.sendMail({
+        from: `"Siembra NC VMS" <${process.env.SMTP_USER}>`,
+        to: dispatcher.email,
+        subject: `🚨 NEW ICE Sighting Reported - ${location}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: #dc2626; color: white; padding: 16px 24px; border-radius: 8px 8px 0 0;">
+              <h2 style="margin: 0;">🚨 New ICE Sighting Report</h2>
+            </div>
+
+            <div style="border: 1px solid #e5e7eb; border-top: none; padding: 24px; border-radius: 0 0 8px 8px;">
+              <p>Hi ${dispatcher.name},</p>
+              <p>A new ICE sighting has been reported and needs your attention.</p>
+
+              <div style="background: #fef2f2; padding: 16px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #dc2626;">
+                <h3 style="margin-top: 0; color: #991b1b;">S.A.L.U.T.E. Report</h3>
+                <p style="margin: 8px 0;"><strong style="color: #dc2626;">S</strong> Size/Strength: ${size}</p>
+                <p style="margin: 8px 0;"><strong style="color: #dc2626;">A</strong> Activity: ${activity}</p>
+                <p style="margin: 8px 0;"><strong style="color: #dc2626;">L</strong> Location: ${location}</p>
+                <p style="margin: 8px 0;"><strong style="color: #dc2626;">U</strong> Uniform: ${uniform}</p>
+                <p style="margin: 8px 0;"><strong style="color: #dc2626;">T</strong> Time: ${dateStr} at ${timeStr}</p>
+                <p style="margin: 8px 0;"><strong style="color: #dc2626;">E</strong> Equipment: ${equipment}</p>
+                ${hasMedia ? '<p style="margin: 8px 0; color: #0d9488;">📷 Photos/videos attached to this report</p>' : ''}
+                ${reporterName ? `<p style="margin: 8px 0; color: #6b7280;">Reporter: ${reporterName}</p>` : ''}
+              </div>
+
+              <a href="${vmsUrl}/sightings/${sightingId}"
+                 style="display: inline-block; background: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; margin-top: 16px;">
+                View Full Report
+              </a>
+
+              <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+                This is an automated notification from Siembra NC VMS.<br>
+                Please review and update the status as you respond to this sighting.
+              </p>
+            </div>
+          </div>
+        `,
+      });
+      console.log(`[Email] Sighting notification sent to ${dispatcher.email}`);
+    } catch (error) {
+      console.error(`[Email] Failed to send sighting notification to ${dispatcher.email}:`, error);
+    }
+  }
+}

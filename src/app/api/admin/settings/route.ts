@@ -43,7 +43,15 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json();
-    const { autoConfirmRsvp, timezone } = body;
+    const { autoConfirmRsvp, timezone, maxUploadSizeMb, maxUploadsPerReport } = body;
+
+    // Validate upload settings
+    if (maxUploadSizeMb !== undefined && (maxUploadSizeMb < 1 || maxUploadSizeMb > 100)) {
+      return NextResponse.json({ error: 'Max upload size must be between 1 and 100 MB' }, { status: 400 });
+    }
+    if (maxUploadsPerReport !== undefined && (maxUploadsPerReport < 1 || maxUploadsPerReport > 20)) {
+      return NextResponse.json({ error: 'Max uploads per report must be between 1 and 20' }, { status: 400 });
+    }
 
     // Get or create settings singleton
     let settings = await prisma.organizationSettings.findFirst();
@@ -52,6 +60,8 @@ export async function PUT(request: Request) {
         data: {
           autoConfirmRsvp: autoConfirmRsvp ?? false,
           timezone: timezone ?? 'America/New_York',
+          maxUploadSizeMb: maxUploadSizeMb ?? 50,
+          maxUploadsPerReport: maxUploadsPerReport ?? 5,
         },
       });
     } else {
@@ -60,6 +70,8 @@ export async function PUT(request: Request) {
         data: {
           ...(autoConfirmRsvp !== undefined && { autoConfirmRsvp }),
           ...(timezone !== undefined && { timezone }),
+          ...(maxUploadSizeMb !== undefined && { maxUploadSizeMb }),
+          ...(maxUploadsPerReport !== undefined && { maxUploadsPerReport }),
         },
       });
     }

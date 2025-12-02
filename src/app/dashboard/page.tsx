@@ -89,6 +89,7 @@ export default function DashboardPage() {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showWelcome, setShowWelcome] = useState(false);
+  const [sightingCounts, setSightingCounts] = useState<Record<string, number>>({});
 
   // Check if user should see welcome screen
   useEffect(() => {
@@ -112,6 +113,19 @@ export default function DashboardPage() {
           setDashboardData(dashboard);
         }
         setIsLoading(false);
+
+        // Fetch sightings for dispatchers/coordinators/admins
+        const allowedRoles = ['DISPATCHER', 'COORDINATOR', 'ADMINISTRATOR'];
+        if (allowedRoles.includes(sessionData.user?.role)) {
+          fetch('/api/sightings?limit=5')
+            .then(res => res.json())
+            .then(data => {
+              if (data.counts) {
+                setSightingCounts(data.counts);
+              }
+            })
+            .catch(() => {});
+        }
       })
       .catch(() => {
         router.push('/login');
@@ -443,6 +457,44 @@ export default function DashboardPage() {
                     </Link>
                   )}
                 </div>
+              </div>
+            )}
+
+            {/* ICE Sightings - for dispatchers/coordinators/admins */}
+            {['DISPATCHER', 'COORDINATOR', 'ADMINISTRATOR'].includes(sessionUser?.role || '') && (
+              <div className="bg-white rounded-xl border border-gray-200 p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-semibold text-gray-900">ICE Sightings</h2>
+                  {(sightingCounts.NEW || 0) > 0 && (
+                    <span className="px-2 py-1 bg-red-500 text-white text-xs font-bold rounded-full">
+                      {sightingCounts.NEW} new
+                    </span>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  <div className="p-2 bg-red-50 rounded-lg text-center">
+                    <p className="text-xl font-bold text-red-700">{sightingCounts.NEW || 0}</p>
+                    <p className="text-xs text-red-600">New</p>
+                  </div>
+                  <div className="p-2 bg-yellow-50 rounded-lg text-center">
+                    <p className="text-xl font-bold text-yellow-700">{sightingCounts.REVIEWING || 0}</p>
+                    <p className="text-xs text-yellow-600">Reviewing</p>
+                  </div>
+                  <div className="p-2 bg-blue-50 rounded-lg text-center">
+                    <p className="text-xl font-bold text-blue-700">{sightingCounts.VERIFIED || 0}</p>
+                    <p className="text-xs text-blue-600">Verified</p>
+                  </div>
+                  <div className="p-2 bg-green-50 rounded-lg text-center">
+                    <p className="text-xl font-bold text-green-700">{sightingCounts.RESPONDED || 0}</p>
+                    <p className="text-xs text-green-600">Responded</p>
+                  </div>
+                </div>
+                <Link
+                  href="/sightings"
+                  className="block w-full py-2 px-4 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium text-center"
+                >
+                  View All Sightings
+                </Link>
               </div>
             )}
           </div>

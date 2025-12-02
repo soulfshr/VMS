@@ -6,6 +6,8 @@ interface Settings {
   id: string;
   autoConfirmRsvp: boolean;
   timezone: string;
+  maxUploadSizeMb: number;
+  maxUploadsPerReport: number;
 }
 
 export default function AdminSettingsPage() {
@@ -50,6 +52,37 @@ export default function AdminSettingsPage() {
     } catch (err) {
       console.error('Error updating settings:', err);
       setMessage({ type: 'error', text: 'Failed to update settings' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleUpdateUploadSettings = async (field: 'maxUploadSizeMb' | 'maxUploadsPerReport', value: number) => {
+    if (!settings) return;
+
+    setIsSaving(true);
+    setMessage(null);
+
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          [field]: value,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to update settings');
+      }
+
+      const updated = await res.json();
+      setSettings(updated);
+      setMessage({ type: 'success', text: 'Upload settings updated successfully' });
+    } catch (err) {
+      console.error('Error updating settings:', err);
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to update settings' });
     } finally {
       setIsSaving(false);
     }
@@ -154,6 +187,74 @@ export default function AdminSettingsPage() {
             <span className="text-xs text-gray-400">
               Timezone configuration coming soon
             </span>
+          </div>
+        </div>
+      </div>
+
+      {/* ICE Sighting Upload Settings */}
+      <div className="mt-8">
+        <h2 className="text-xl font-bold text-gray-900 mb-4">ICE Sighting Report Settings</h2>
+        <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-200">
+          {/* Max Upload Size */}
+          <div className="p-6">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Maximum File Upload Size
+                </h3>
+                <p className="text-sm text-gray-500 mt-1 max-w-xl">
+                  The maximum file size (in MB) allowed for photo and video uploads
+                  in ICE sighting reports. Applies to each individual file.
+                </p>
+              </div>
+              <div className="ml-6 flex items-center gap-2">
+                <select
+                  value={settings?.maxUploadSizeMb || 50}
+                  onChange={(e) => handleUpdateUploadSettings('maxUploadSizeMb', parseInt(e.target.value))}
+                  disabled={isSaving}
+                  className={`px-3 py-2 border border-gray-300 rounded-lg text-sm ${
+                    isSaving ? 'bg-gray-50 text-gray-500 cursor-not-allowed' : 'bg-white'
+                  }`}
+                >
+                  <option value={10}>10 MB</option>
+                  <option value={25}>25 MB</option>
+                  <option value={50}>50 MB</option>
+                  <option value={75}>75 MB</option>
+                  <option value={100}>100 MB</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Max Uploads Per Report */}
+          <div className="p-6">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Maximum Files Per Report
+                </h3>
+                <p className="text-sm text-gray-500 mt-1 max-w-xl">
+                  The maximum number of photos and videos that can be uploaded
+                  with a single ICE sighting report.
+                </p>
+              </div>
+              <div className="ml-6 flex items-center gap-2">
+                <select
+                  value={settings?.maxUploadsPerReport || 5}
+                  onChange={(e) => handleUpdateUploadSettings('maxUploadsPerReport', parseInt(e.target.value))}
+                  disabled={isSaving}
+                  className={`px-3 py-2 border border-gray-300 rounded-lg text-sm ${
+                    isSaving ? 'bg-gray-50 text-gray-500 cursor-not-allowed' : 'bg-white'
+                  }`}
+                >
+                  <option value={3}>3 files</option>
+                  <option value={5}>5 files</option>
+                  <option value={10}>10 files</option>
+                  <option value={15}>15 files</option>
+                  <option value={20}>20 files</option>
+                </select>
+              </div>
+            </div>
           </div>
         </div>
       </div>

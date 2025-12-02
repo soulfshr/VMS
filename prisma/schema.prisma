@@ -57,6 +57,21 @@ enum Qualification {
   DISPATCHER    // Can handle dispatch calls
 }
 
+// ICE Sighting report statuses
+enum SightingStatus {
+  NEW
+  REVIEWING
+  VERIFIED
+  RESPONDED
+  CLOSED
+}
+
+// Media types for sighting uploads
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
 // ============================================
 // ORGANIZATION SETTINGS
 // ============================================
@@ -69,6 +84,10 @@ model OrganizationSettings {
 
   // Future settings
   timezone        String   @default("America/New_York")
+
+  // Upload settings for ICE sighting reports
+  maxUploadSizeMb     Int  @default(50)   // Max file size in MB
+  maxUploadsPerReport Int  @default(5)    // Max number of files per report
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -445,4 +464,56 @@ model DispatcherAssignment {
 
   @@unique([userId, county, date, startTime])  // One assignment per user/county/time
   @@index([county, date])
+}
+
+// ============================================
+// ICE SIGHTING REPORTS
+// ============================================
+
+model IceSighting {
+  id          String   @id @default(cuid())
+
+  // SALUTE Fields
+  size        String   // S - Size/strength (e.g., "5-6 officers, 2 white SUVs")
+  activity    String   // A - Actions/Activity (e.g., "trying to force a man into their SUV")
+  location    String   // L - Location/Direction (free text description)
+  latitude    Float?   // L - Map coordinates (optional)
+  longitude   Float?   // L - Map coordinates (optional)
+  uniform     String   // U - Uniform/Clothes (e.g., "blue vests with ICE on the back")
+  observedAt  DateTime // T - Time & Date of sighting
+  equipment   String   // E - Equipment & Weapons (e.g., "helmets, vests, and guns")
+
+  // Reporter Info (optional - for follow-up)
+  reporterName    String?
+  reporterPhone   String?
+  reporterEmail   String?
+
+  // Workflow & Tracking
+  status      SightingStatus @default(NEW)
+  notes       String?        // Dispatcher notes
+  assignedToId String?       // Dispatcher ID handling this
+
+  // Relations
+  media       SightingMedia[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status])
+  @@index([observedAt])
+}
+
+model SightingMedia {
+  id          String   @id @default(cuid())
+  sightingId  String
+  sighting    IceSighting @relation(fields: [sightingId], references: [id], onDelete: Cascade)
+
+  url         String      // Vercel Blob URL
+  type        MediaType   // IMAGE or VIDEO
+  filename    String      // Original filename
+  size        Int         // File size in bytes
+
+  createdAt   DateTime @default(now())
+
+  @@index([sightingId])
 }
