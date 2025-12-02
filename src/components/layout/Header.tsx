@@ -191,6 +191,14 @@ export default function Header() {
                 >
                   About
                 </Link>
+                <a
+                  href="/guide.html"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+                >
+                  User Guide
+                </a>
                 <Link
                   href="/login"
                   className="px-4 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 transition-colors"
@@ -301,6 +309,15 @@ export default function Header() {
                 >
                   About
                 </Link>
+                <a
+                  href="/guide.html"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  User Guide
+                </a>
                 <Link
                   href="/login"
                   className="block px-2 py-2 bg-teal-600 text-white text-center rounded-lg hover:bg-teal-700"
