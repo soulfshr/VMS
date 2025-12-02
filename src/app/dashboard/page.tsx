@@ -90,6 +90,7 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [showWelcome, setShowWelcome] = useState(false);
   const [sightingCounts, setSightingCounts] = useState<Record<string, number>>({});
+  const [sightingsExpanded, setSightingsExpanded] = useState(false);
 
   // Check if user should see welcome screen
   useEffect(() => {
@@ -214,6 +215,61 @@ export default function DashboardPage() {
             )}
           </div>
         </div>
+
+        {/* ICE Sightings - Collapsible at top for dispatchers/coordinators/admins */}
+        {['DISPATCHER', 'COORDINATOR', 'ADMINISTRATOR'].includes(sessionUser?.role || '') && (
+          <div className="mb-6 bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <button
+              onClick={() => setSightingsExpanded(!sightingsExpanded)}
+              className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <h2 className="font-semibold text-gray-900">ICE Sightings</h2>
+                {(sightingCounts.NEW || 0) > 0 && (
+                  <span className="px-2 py-1 bg-red-500 text-white text-xs font-bold rounded-full">
+                    {sightingCounts.NEW} new
+                  </span>
+                )}
+              </div>
+              <svg
+                className={`w-5 h-5 text-gray-500 transition-transform ${sightingsExpanded ? 'rotate-180' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {sightingsExpanded && (
+              <div className="px-4 pb-4 border-t border-gray-100">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+                  <div className="p-3 bg-red-50 rounded-lg text-center">
+                    <p className="text-2xl font-bold text-red-700">{sightingCounts.NEW || 0}</p>
+                    <p className="text-xs text-red-600">New</p>
+                  </div>
+                  <div className="p-3 bg-yellow-50 rounded-lg text-center">
+                    <p className="text-2xl font-bold text-yellow-700">{sightingCounts.REVIEWING || 0}</p>
+                    <p className="text-xs text-yellow-600">Reviewing</p>
+                  </div>
+                  <div className="p-3 bg-blue-50 rounded-lg text-center">
+                    <p className="text-2xl font-bold text-blue-700">{sightingCounts.VERIFIED || 0}</p>
+                    <p className="text-xs text-blue-600">Verified</p>
+                  </div>
+                  <div className="p-3 bg-green-50 rounded-lg text-center">
+                    <p className="text-2xl font-bold text-green-700">{sightingCounts.RESPONDED || 0}</p>
+                    <p className="text-xs text-green-600">Responded</p>
+                  </div>
+                </div>
+                <Link
+                  href="/sightings"
+                  className="block w-full mt-4 py-2 px-4 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium text-center"
+                >
+                  View All Sightings
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Coordinator Staffing Overview - HERO SECTION */}
         {isCoordinator && coordinatorStats && (
@@ -460,43 +516,6 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* ICE Sightings - for dispatchers/coordinators/admins */}
-            {['DISPATCHER', 'COORDINATOR', 'ADMINISTRATOR'].includes(sessionUser?.role || '') && (
-              <div className="bg-white rounded-xl border border-gray-200 p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-semibold text-gray-900">ICE Sightings</h2>
-                  {(sightingCounts.NEW || 0) > 0 && (
-                    <span className="px-2 py-1 bg-red-500 text-white text-xs font-bold rounded-full">
-                      {sightingCounts.NEW} new
-                    </span>
-                  )}
-                </div>
-                <div className="grid grid-cols-2 gap-2 mb-4">
-                  <div className="p-2 bg-red-50 rounded-lg text-center">
-                    <p className="text-xl font-bold text-red-700">{sightingCounts.NEW || 0}</p>
-                    <p className="text-xs text-red-600">New</p>
-                  </div>
-                  <div className="p-2 bg-yellow-50 rounded-lg text-center">
-                    <p className="text-xl font-bold text-yellow-700">{sightingCounts.REVIEWING || 0}</p>
-                    <p className="text-xs text-yellow-600">Reviewing</p>
-                  </div>
-                  <div className="p-2 bg-blue-50 rounded-lg text-center">
-                    <p className="text-xl font-bold text-blue-700">{sightingCounts.VERIFIED || 0}</p>
-                    <p className="text-xs text-blue-600">Verified</p>
-                  </div>
-                  <div className="p-2 bg-green-50 rounded-lg text-center">
-                    <p className="text-xl font-bold text-green-700">{sightingCounts.RESPONDED || 0}</p>
-                    <p className="text-xs text-green-600">Responded</p>
-                  </div>
-                </div>
-                <Link
-                  href="/sightings"
-                  className="block w-full py-2 px-4 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium text-center"
-                >
-                  View All Sightings
-                </Link>
-              </div>
-            )}
           </div>
         </div>
       </div>
