@@ -85,6 +85,20 @@ export const DEV_USERS: DevUser[] = [
     phone: '(919) 555-0127',
     primaryLanguage: 'English',
   },
+  {
+    id: 'vol-rachel',
+    name: 'Rachel Kau',
+    role: 'VOLUNTEER',
+    email: 'rachelkaufman26@gmail.com',
+    primaryLanguage: 'English',
+  },
+  {
+    id: 'vol-josh',
+    name: 'Josh Cottrell',
+    role: 'VOLUNTEER',
+    email: 'joshcottrell@gmail.com',
+    primaryLanguage: 'English',
+  },
 ];
 
 // Helper to get user by ID
