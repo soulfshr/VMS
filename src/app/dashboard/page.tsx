@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import type { DevUser } from '@/types/auth';
+import { WelcomeScreen } from '@/components/onboarding';
+import { hasSeenWelcome } from '@/lib/onboarding';
 
 interface Zone {
   id: string;
@@ -86,6 +88,14 @@ export default function DashboardPage() {
   const [sessionUser, setSessionUser] = useState<DevUser | null>(null);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showWelcome, setShowWelcome] = useState(false);
+
+  // Check if user should see welcome screen
+  useEffect(() => {
+    if (!isLoading && sessionUser && !hasSeenWelcome()) {
+      setShowWelcome(true);
+    }
+  }, [isLoading, sessionUser]);
 
   useEffect(() => {
     Promise.all([
@@ -164,6 +174,16 @@ export default function DashboardPage() {
   const isCoordinator = sessionUser.role === 'COORDINATOR' || sessionUser.role === 'ADMINISTRATOR';
 
   return (
+    <>
+      {/* Welcome Screen for first-time users */}
+      {showWelcome && sessionUser && (
+        <WelcomeScreen
+          userName={sessionUser.name}
+          userRole={sessionUser.role as 'VOLUNTEER' | 'COORDINATOR' | 'DISPATCHER' | 'ADMINISTRATOR'}
+          onComplete={() => setShowWelcome(false)}
+        />
+      )}
+
     <div className="min-h-[calc(100vh-200px)] bg-gray-50 py-8">
       <div className="container mx-auto px-4 max-w-6xl">
         {/* Welcome Header */}
@@ -429,5 +449,6 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

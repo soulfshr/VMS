@@ -5,12 +5,14 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import type { DevUser } from '@/types/auth';
+import { HelpButton } from '@/components/onboarding';
 
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const [user, setUser] = useState<DevUser | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(false);
 
   useEffect(() => {
     // Fetch current session
@@ -124,6 +126,12 @@ export default function Header() {
                     Admin
                   </Link>
                 )}
+
+                {/* Help Button */}
+                <HelpButton
+                  userRole={user.role}
+                  onRestartWelcome={() => setShowWelcome(true)}
+                />
 
                 {/* User Menu */}
                 <div className="relative">
