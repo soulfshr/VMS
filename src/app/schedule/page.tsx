@@ -51,6 +51,10 @@ interface CellData {
   }>;
   zones: ZoneData[];
   coverage: 'full' | 'partial' | 'none';
+  gaps: {
+    needsDispatcher: boolean;
+    zonesNeedingLeads: string[];
+  };
 }
 
 interface Zone {
@@ -324,7 +328,6 @@ export default function SchedulePage() {
                                 s.timeBlock.label === timeBlock.label
                             );
                             const isExpanded = expandedCells.has(cellKey);
-                            const countyZones = scheduleData.zones.filter(z => z.county === county);
 
                             return (
                               <td
@@ -339,6 +342,7 @@ export default function SchedulePage() {
                                       backupDispatchers: [],
                                       zones: [],
                                       coverage: 'none',
+                                      gaps: { needsDispatcher: false, zonesNeedingLeads: [] },
                                     }
                                   )
                                 }
@@ -355,16 +359,13 @@ export default function SchedulePage() {
                                         {cell.dispatcher?.name || '—'}
                                       </span>
                                     </div>
-                                    {/* Zone Leads */}
-                                    {countyZones.slice(0, isExpanded ? undefined : 3).map(zone => {
-                                      const zoneData = cell.zones.find(z => z.zoneId === zone.id);
-                                      const zoneLead = zoneData?.zoneLeads[0];
-                                      const volunteerCount = zoneData
-                                        ? zoneData.zoneLeads.length + zoneData.volunteers.length
-                                        : 0;
+                                    {/* Zone Leads - only show zones with actual shifts */}
+                                    {cell.zones.slice(0, isExpanded ? undefined : 3).map(zoneData => {
+                                      const zoneLead = zoneData.zoneLeads[0];
+                                      const volunteerCount = zoneData.zoneLeads.length + zoneData.volunteers.length;
                                       return (
-                                        <div key={zone.id} className="text-xs text-gray-600 flex items-center gap-1">
-                                          <span className="font-medium">{zone.name.split(' ')[1]}:</span>
+                                        <div key={zoneData.zoneId} className="text-xs text-gray-600 flex items-center gap-1">
+                                          <span className="font-medium">{zoneData.zoneName.split(' ')[1]}:</span>
                                           {zoneLead ? (
                                             <span className="text-gray-800">{zoneLead.name.split(' ')[0]}</span>
                                           ) : (
@@ -377,13 +378,30 @@ export default function SchedulePage() {
                                       );
                                     })}
                                     {/* Expand/collapse */}
-                                    {countyZones.length > 3 && (
+                                    {cell.zones.length > 3 && (
                                       <button
                                         onClick={e => toggleCellExpanded(cellKey, e)}
                                         className="text-xs text-teal-600 hover:text-teal-800"
                                       >
-                                        {isExpanded ? 'Show less' : `+${countyZones.length - 3} more`}
+                                        {isExpanded ? 'Show less' : `+${cell.zones.length - 3} more`}
                                       </button>
+                                    )}
+                                    {/* Gap indicators - show what's missing */}
+                                    {(cell.gaps?.needsDispatcher || (cell.gaps?.zonesNeedingLeads?.length ?? 0) > 0) && (
+                                      <div className="mt-1 space-y-0.5">
+                                        {cell.gaps?.needsDispatcher && (
+                                          <div className="text-[10px] text-amber-600 font-medium">
+                                            Need dispatcher
+                                          </div>
+                                        )}
+                                        {(cell.gaps?.zonesNeedingLeads?.length ?? 0) > 0 && (
+                                          <div className="text-[10px] text-amber-600 font-medium">
+                                            {cell.gaps.zonesNeedingLeads.length <= 2
+                                              ? `${cell.gaps.zonesNeedingLeads.map(z => z.split(' ')[1]).join(', ')} need leads`
+                                              : `${cell.gaps.zonesNeedingLeads.length} zones need leads`}
+                                          </div>
+                                        )}
+                                      </div>
                                     )}
                                     {/* Coverage indicator */}
                                     <div className="text-[10px] text-gray-500 mt-1">
@@ -420,15 +438,19 @@ export default function SchedulePage() {
             </div>
             <div className="flex items-center gap-2">
               <span>🟢</span>
-              <span className="text-gray-600">Full coverage (dispatcher + zone leads)</span>
+              <span className="text-gray-600">Full coverage (dispatcher + all zones have leads)</span>
             </div>
             <div className="flex items-center gap-2">
               <span>🟡</span>
-              <span className="text-gray-600">Partial coverage</span>
+              <span className="text-gray-600">Partial coverage (needs dispatcher or zone leads)</span>
             </div>
             <div className="flex items-center gap-2">
               <span>🔴</span>
               <span className="text-gray-600">No coverage</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-amber-600 font-medium text-xs">Need X</span>
+              <span className="text-gray-600">Gap indicator - what&apos;s missing</span>
             </div>
           </div>
         </div>

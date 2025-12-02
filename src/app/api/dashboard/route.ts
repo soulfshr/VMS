@@ -119,6 +119,130 @@ export async function GET() {
       };
     }
 
+    // Coordinator/Admin stats
+    let coordinatorStats = null;
+    if (['COORDINATOR', 'ADMINISTRATOR'].includes(user.role)) {
+      // Get pending RSVPs count
+      const pendingRsvps = await prisma.shiftVolunteer.count({
+        where: {
+          status: 'PENDING',
+          shift: {
+            date: { gte: now },
+          },
+        },
+      });
+
+      // Get this week's shifts with coverage info
+      const weekEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+      const thisWeekShifts = await prisma.shift.findMany({
+        where: {
+          status: 'PUBLISHED',
+          date: { gte: now, lt: weekEnd },
+        },
+        include: {
+          zone: true,
+          volunteers: {
+            where: { status: 'CONFIRMED', isZoneLead: true },
+          },
+        },
+      });
+
+      // Get dispatcher assignments for this week
+      const dispatcherAssignments = await prisma.dispatcherAssignment.findMany({
+        where: {
+          date: { gte: now, lt: weekEnd },
+          isBackup: false,
+        },
+      });
+
+      // Group shifts by date/time to count slots needing coverage
+      const slotsByKey = new Map<string, { hasDispatcher: boolean; zones: Set<string>; zonesWithLeads: Set<string> }>();
+
+      thisWeekShifts.forEach(shift => {
+        const dateStr = shift.date.toISOString().split('T')[0];
+        const startHour = shift.startTime.getUTCHours();
+        const endHour = shift.endTime.getUTCHours();
+        const county = shift.zone?.county || 'Unknown';
+        const key = `${county}-${dateStr}-${startHour}-${endHour}`;
+
+        if (!slotsByKey.has(key)) {
+          slotsByKey.set(key, { hasDispatcher: false, zones: new Set(), zonesWithLeads: new Set() });
+        }
+        const slot = slotsByKey.get(key)!;
+        slot.zones.add(shift.zone?.name || 'Unknown');
+        if (shift.volunteers.length > 0) {
+          slot.zonesWithLeads.add(shift.zone?.name || 'Unknown');
+        }
+      });
+
+      // Mark slots with dispatchers
+      dispatcherAssignments.forEach(assignment => {
+        const dateStr = assignment.date.toISOString().split('T')[0];
+        const startHour = assignment.startTime.getUTCHours();
+        const endHour = assignment.endTime.getUTCHours();
+        const key = `${assignment.county}-${dateStr}-${startHour}-${endHour}`;
+
+        if (slotsByKey.has(key)) {
+          slotsByKey.get(key)!.hasDispatcher = true;
+        }
+      });
+
+      // Calculate coverage stats
+      let fullCoverage = 0;
+      let partialCoverage = 0;
+      let noCoverage = 0;
+      let slotsNeedingDispatcher = 0;
+      let zonesNeedingLeads = 0;
+      const topGaps: Array<{ slot: string; needs: string[] }> = [];
+
+      slotsByKey.forEach((slot, key) => {
+        const allZonesHaveLeads = slot.zones.size > 0 && slot.zones.size === slot.zonesWithLeads.size;
+
+        if (slot.hasDispatcher && allZonesHaveLeads) {
+          fullCoverage++;
+        } else if (slot.hasDispatcher || slot.zones.size > 0) {
+          partialCoverage++;
+
+          const needs: string[] = [];
+          if (!slot.hasDispatcher) {
+            slotsNeedingDispatcher++;
+            needs.push('dispatcher');
+          }
+          const missingLeads = slot.zones.size - slot.zonesWithLeads.size;
+          if (missingLeads > 0) {
+            zonesNeedingLeads += missingLeads;
+            needs.push(`${missingLeads} zone lead${missingLeads > 1 ? 's' : ''}`);
+          }
+
+          if (needs.length > 0 && topGaps.length < 5) {
+            const [county, date, startH] = key.split('-');
+            const dateObj = new Date(date);
+            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+            const hour = parseInt(startH);
+            const timeStr = hour === 0 ? '12am' : hour < 12 ? `${hour}am` : hour === 12 ? '12pm' : `${hour - 12}pm`;
+            topGaps.push({ slot: `${dayName} ${timeStr} - ${county}`, needs });
+          }
+        } else {
+          noCoverage++;
+        }
+      });
+
+      coordinatorStats = {
+        pendingRsvps,
+        coverage: {
+          full: fullCoverage,
+          partial: partialCoverage,
+          none: noCoverage,
+          total: fullCoverage + partialCoverage,
+        },
+        gaps: {
+          slotsNeedingDispatcher,
+          zonesNeedingLeads,
+        },
+        topGaps,
+      };
+    }
+
     return NextResponse.json({
       user: {
         id: user.id,
@@ -139,6 +263,7 @@ export async function GET() {
         trainingProgress,
       },
       zoneStats,
+      coordinatorStats,
     });
   } catch (error) {
     console.error('Error fetching dashboard:', error);

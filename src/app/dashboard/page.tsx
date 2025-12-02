@@ -27,6 +27,24 @@ interface Shift {
   userRsvpStatus: string | null;
 }
 
+interface CoordinatorStats {
+  pendingRsvps: number;
+  coverage: {
+    full: number;
+    partial: number;
+    none: number;
+    total: number;
+  };
+  gaps: {
+    slotsNeedingDispatcher: number;
+    zonesNeedingLeads: number;
+  };
+  topGaps: Array<{
+    slot: string;
+    needs: string[];
+  }>;
+}
+
 interface DashboardData {
   user: {
     id: string;
@@ -48,6 +66,7 @@ interface DashboardData {
     volunteerCount: number;
     shiftsThisWeek: number;
   } | null;
+  coordinatorStats: CoordinatorStats | null;
 }
 
 const typeColors: Record<string, { bg: string; text: string }> = {
@@ -140,13 +159,15 @@ export default function DashboardPage() {
 
   const stats = dashboardData?.stats;
   const zoneStats = dashboardData?.zoneStats;
+  const coordinatorStats = dashboardData?.coordinatorStats;
   const primaryZone = dashboardData?.user.zones.find(uz => uz.isPrimary)?.zone;
+  const isCoordinator = sessionUser.role === 'COORDINATOR' || sessionUser.role === 'ADMINISTRATOR';
 
   return (
     <div className="min-h-[calc(100vh-200px)] bg-gray-50 py-8">
       <div className="container mx-auto px-4 max-w-6xl">
         {/* Welcome Header */}
-        <div className="mb-8">
+        <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Welcome back, {sessionUser.name}!
           </h1>
@@ -159,6 +180,91 @@ export default function DashboardPage() {
             )}
           </div>
         </div>
+
+        {/* Coordinator Staffing Overview - HERO SECTION */}
+        {isCoordinator && coordinatorStats && (
+          <div className="mb-8 bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+              {/* Left: Title and Summary */}
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  <h2 className="text-2xl font-bold text-gray-900">This Week&apos;s Coverage</h2>
+                  {coordinatorStats.pendingRsvps > 0 && (
+                    <Link
+                      href="/shifts?pending=true"
+                      className="px-3 py-1 bg-orange-500 text-white text-sm font-medium rounded-full hover:bg-orange-600 transition-colors"
+                    >
+                      {coordinatorStats.pendingRsvps} pending RSVP{coordinatorStats.pendingRsvps > 1 ? 's' : ''}
+                    </Link>
+                  )}
+                </div>
+                <p className="text-gray-500 text-sm">
+                  {coordinatorStats.coverage.total} time slots scheduled •
+                  {coordinatorStats.gaps.slotsNeedingDispatcher + coordinatorStats.gaps.zonesNeedingLeads > 0
+                    ? ` ${coordinatorStats.gaps.slotsNeedingDispatcher + coordinatorStats.gaps.zonesNeedingLeads} gaps to fill`
+                    : ' All positions filled!'}
+                </p>
+              </div>
+
+              {/* Center: Coverage Stats */}
+              <div className="flex gap-4">
+                <div className="text-center px-4 py-2 bg-green-50 rounded-xl border border-green-200">
+                  <p className="text-3xl font-bold text-green-600">{coordinatorStats.coverage.full}</p>
+                  <p className="text-xs text-gray-500">Full</p>
+                </div>
+                <div className="text-center px-4 py-2 bg-yellow-50 rounded-xl border border-yellow-200">
+                  <p className="text-3xl font-bold text-yellow-600">{coordinatorStats.coverage.partial}</p>
+                  <p className="text-xs text-gray-500">Partial</p>
+                </div>
+                <div className="text-center px-4 py-2 bg-red-50 rounded-xl border border-red-200">
+                  <p className="text-3xl font-bold text-red-600">{coordinatorStats.coverage.none}</p>
+                  <p className="text-xs text-gray-500">None</p>
+                </div>
+              </div>
+
+              {/* Right: Quick Action */}
+              <Link
+                href="/schedule"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-teal-600 text-white font-semibold rounded-xl hover:bg-teal-700 transition-colors shadow-md"
+              >
+                View Schedule
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+            </div>
+
+            {/* Gap Alerts Row */}
+            {(coordinatorStats.gaps.slotsNeedingDispatcher > 0 || coordinatorStats.gaps.zonesNeedingLeads > 0 || coordinatorStats.topGaps.length > 0) && (
+              <div className="mt-5 pt-5 border-t border-gray-200">
+                <div className="flex flex-wrap gap-3">
+                  {coordinatorStats.gaps.slotsNeedingDispatcher > 0 && (
+                    <div className="px-3 py-2 bg-amber-50 rounded-lg border border-amber-200">
+                      <span className="text-amber-700 text-sm font-medium">
+                        {coordinatorStats.gaps.slotsNeedingDispatcher} shift{coordinatorStats.gaps.slotsNeedingDispatcher > 1 ? 's' : ''} need dispatcher
+                      </span>
+                    </div>
+                  )}
+                  {coordinatorStats.gaps.zonesNeedingLeads > 0 && (
+                    <div className="px-3 py-2 bg-amber-50 rounded-lg border border-amber-200">
+                      <span className="text-amber-700 text-sm font-medium">
+                        {coordinatorStats.gaps.zonesNeedingLeads} shift{coordinatorStats.gaps.zonesNeedingLeads > 1 ? 's' : ''} need zone leads
+                      </span>
+                    </div>
+                  )}
+                  {coordinatorStats.topGaps.slice(0, 3).map((gap, i) => (
+                    <div key={i} className="px-3 py-2 bg-gray-50 rounded-lg border border-gray-200">
+                      <span className="text-gray-700 text-sm">
+                        <span className="font-medium">{gap.slot}</span>
+                        <span className="text-gray-500"> – {gap.needs.join(', ')}</span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Quick Stats */}
         <div className="grid md:grid-cols-4 gap-4 mb-8">
@@ -288,17 +394,34 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* Role-specific quick links */}
-            {(sessionUser.role === 'COORDINATOR' || sessionUser.role === 'ADMINISTRATOR') && (
-              <div className="bg-blue-50 rounded-xl border border-blue-200 p-4">
-                <h3 className="font-semibold text-blue-800 mb-3">Coordinator Tools</h3>
+            {/* Coordinator Quick Actions */}
+            {isCoordinator && (
+              <div className="bg-white rounded-xl border border-gray-200 p-4">
+                <h2 className="font-semibold text-gray-900 mb-4">Coordinator Actions</h2>
                 <div className="space-y-2">
                   <Link
                     href="/shifts/create"
-                    className="block p-2 rounded bg-blue-100 text-blue-700 hover:bg-blue-200 text-sm font-medium"
+                    className="block p-3 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
                   >
-                    + Create New Shift
+                    <span className="font-medium">+ Create New Shift</span>
+                    <p className="text-xs text-blue-600 mt-0.5">Schedule volunteer shifts</p>
                   </Link>
+                  <Link
+                    href="/volunteers"
+                    className="block p-3 rounded-lg bg-gray-50 text-gray-700 hover:bg-gray-100 transition-colors"
+                  >
+                    <span className="font-medium">Manage Volunteers</span>
+                    <p className="text-xs text-gray-500 mt-0.5">View and edit volunteer info</p>
+                  </Link>
+                  {coordinatorStats && coordinatorStats.pendingRsvps > 0 && (
+                    <Link
+                      href="/shifts"
+                      className="block p-3 rounded-lg bg-orange-50 text-orange-700 hover:bg-orange-100 transition-colors"
+                    >
+                      <span className="font-medium">Review Pending RSVPs</span>
+                      <p className="text-xs text-orange-600 mt-0.5">{coordinatorStats.pendingRsvps} awaiting review</p>
+                    </Link>
+                  )}
                 </div>
               </div>
             )}

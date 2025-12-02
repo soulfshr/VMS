@@ -48,6 +48,10 @@ interface CellData {
   }>;
   zones: ZoneData[];
   coverage: 'full' | 'partial' | 'none';
+  gaps: {
+    needsDispatcher: boolean;
+    zonesNeedingLeads: string[];  // Zone names that have shifts but no zone lead
+  };
 }
 
 // GET /api/schedule - Get aggregated schedule data for dashboard
@@ -254,20 +258,32 @@ export async function GET(request: NextRequest) {
             }
           }
 
-          // Calculate coverage
+          // Calculate coverage with stricter rules:
+          // - "full" = dispatcher + ALL zones with shifts have zone leads
+          // - "partial" = has dispatcher OR any zones with shifts
+          // - "none" = nothing scheduled
           let coverage: 'full' | 'partial' | 'none' = 'none';
           const hasDispatcher = !!primaryDispatcher;
-          const hasAnyZoneLeads = zoneDataList.some(z => z.zoneLeads.length > 0);
-          const hasAnyVolunteers = zoneDataList.some(z => z.volunteers.length > 0 || z.zoneLeads.length > 0);
+          const zonesWithShifts = zoneDataList.filter(z => z.shifts.length > 0);
+          const zonesNeedingLeads = zonesWithShifts
+            .filter(z => z.zoneLeads.length === 0)
+            .map(z => z.zoneName);
+          const allZonesHaveLeads = zonesWithShifts.length > 0 && zonesNeedingLeads.length === 0;
 
-          if (hasDispatcher && hasAnyZoneLeads) {
+          if (hasDispatcher && allZonesHaveLeads) {
             coverage = 'full';
-          } else if (hasDispatcher || hasAnyVolunteers) {
+          } else if (hasDispatcher || zonesWithShifts.length > 0) {
             coverage = 'partial';
           }
 
+          // Track gaps for display
+          const gaps = {
+            needsDispatcher: !hasDispatcher && zonesWithShifts.length > 0,
+            zonesNeedingLeads,
+          };
+
           // Only add cell if there's any data
-          if (hasDispatcher || hasAnyVolunteers || zoneDataList.length > 0) {
+          if (hasDispatcher || zonesWithShifts.length > 0 || zoneDataList.length > 0) {
             schedule.push({
               county: countyName,
               date,
@@ -289,6 +305,7 @@ export async function GET(request: NextRequest) {
               })),
               zones: zoneDataList,
               coverage,
+              gaps,
             });
           }
         }

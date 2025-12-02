@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState, useCallback, Suspense } from 'react';
 import type { DevUser } from '@/types/auth';
 
 interface Zone {
@@ -91,6 +91,62 @@ function CancelModal({
   );
 }
 
+// Confirm RSVPs Modal Component
+function ConfirmRsvpsModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  selectedCount,
+  pendingRsvpCount,
+  isSubmitting,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  selectedCount: number;
+  pendingRsvpCount: number;
+  isSubmitting: boolean;
+}) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
+        <h2 className="text-xl font-bold text-gray-900 mb-2">Confirm Pending RSVPs</h2>
+        <p className="text-gray-600 mb-4">
+          This will confirm all pending RSVPs across {selectedCount} selected shift{selectedCount > 1 ? 's' : ''}.
+          {pendingRsvpCount > 0 && (
+            <span className="block mt-2 font-medium text-teal-700">
+              {pendingRsvpCount} pending RSVP{pendingRsvpCount > 1 ? 's' : ''} will be confirmed.
+            </span>
+          )}
+        </p>
+
+        <p className="text-sm text-gray-500 mb-4">
+          Each volunteer will receive a confirmation email with a calendar invite.
+        </p>
+
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="flex-1 py-2 px-4 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={isSubmitting || pendingRsvpCount === 0}
+            className="flex-1 py-2 px-4 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium disabled:opacity-50"
+          >
+            {isSubmitting ? 'Confirming...' : 'Confirm All'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const typeColors: Record<string, { bg: string; text: string }> = {
   PATROL: { bg: 'bg-blue-100', text: 'text-blue-700' },
   COLLECTION: { bg: 'bg-purple-100', text: 'text-purple-700' },
@@ -103,8 +159,9 @@ const typeLabels: Record<string, string> = {
   ON_CALL_FIELD_SUPPORT: 'On-Call',
 };
 
-export default function ShiftsPage() {
+function ShiftsPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [user, setUser] = useState<DevUser | null>(null);
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [zones, setZones] = useState<Zone[]>([]);
@@ -112,15 +169,25 @@ export default function ShiftsPage() {
   const [error, setError] = useState<string | null>(null);
   const [filterType, setFilterType] = useState<string>('all');
   const [filterZone, setFilterZone] = useState<string>('all');
+  const [filterPendingOnly, setFilterPendingOnly] = useState<boolean>(false);
   const [rsvpingShiftId, setRsvpingShiftId] = useState<string | null>(null);
 
   // Selection state for coordinators
   const [selectedShifts, setSelectedShifts] = useState<Set<string>>(new Set());
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false);
 
   // View mode: 'cards' or 'list'
   const [viewMode, setViewMode] = useState<'cards' | 'list'>('list');
+
+  // Initialize filter from URL params
+  useEffect(() => {
+    if (searchParams.get('pending') === 'true') {
+      setFilterPendingOnly(true);
+    }
+  }, [searchParams]);
 
   const fetchShifts = useCallback(async () => {
     try {
@@ -275,6 +342,35 @@ export default function ShiftsPage() {
     }
   };
 
+  const handleConfirmRsvps = async () => {
+    setIsConfirming(true);
+    setError(null);
+
+    try {
+      const res = await fetch('/api/shifts/confirm-rsvps', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          shiftIds: Array.from(selectedShifts),
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to confirm RSVPs');
+      }
+
+      // Refresh shifts and clear selection
+      await fetchShifts();
+      setSelectedShifts(new Set());
+      setShowConfirmModal(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to confirm RSVPs');
+    } finally {
+      setIsConfirming(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-[calc(100vh-200px)] flex items-center justify-center">
@@ -286,6 +382,11 @@ export default function ShiftsPage() {
   if (!user) return null;
 
   const canCreateShift = user.role === 'COORDINATOR' || user.role === 'ADMINISTRATOR';
+
+  // Filter shifts by pending RSVPs if enabled
+  const filteredShifts = filterPendingOnly
+    ? shifts.filter(shift => shift.pendingCount > 0)
+    : shifts;
 
   return (
     <div className="min-h-[calc(100vh-200px)] bg-gray-50 py-8">
@@ -316,24 +417,40 @@ export default function ShiftsPage() {
 
         {/* Selection Toolbar (Coordinator only) */}
         {canCreateShift && selectedShifts.size > 0 && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-center justify-between">
+          <div className="bg-gray-50 border border-gray-300 rounded-lg p-4 mb-6 flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <span className="font-medium text-red-700">
+              <span className="font-medium text-gray-700">
                 {selectedShifts.size} shift{selectedShifts.size > 1 ? 's' : ''} selected
               </span>
               <button
                 onClick={clearSelection}
-                className="text-sm text-red-600 hover:text-red-800 underline"
+                className="text-sm text-gray-600 hover:text-gray-800 underline"
               >
                 Clear selection
               </button>
             </div>
-            <button
-              onClick={() => setShowCancelModal(true)}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
-            >
-              Cancel Selected
-            </button>
+            <div className="flex items-center gap-3">
+              {/* Show pending count for selected shifts */}
+              {(() => {
+                const pendingCount = shifts
+                  .filter(s => selectedShifts.has(s.id))
+                  .reduce((sum, s) => sum + s.pendingCount, 0);
+                return pendingCount > 0 ? (
+                  <button
+                    onClick={() => setShowConfirmModal(true)}
+                    className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium"
+                  >
+                    Confirm {pendingCount} Pending
+                  </button>
+                ) : null;
+              })()}
+              <button
+                onClick={() => setShowCancelModal(true)}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+              >
+                Cancel Selected
+              </button>
+            </div>
           </div>
         )}
 
@@ -375,6 +492,21 @@ export default function ShiftsPage() {
                   ))}
                 </select>
               </div>
+              {canCreateShift && (
+                <div className="flex items-center">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={filterPendingOnly}
+                      onChange={(e) => setFilterPendingOnly(e.target.checked)}
+                      className="w-4 h-4 text-orange-600 rounded focus:ring-orange-500"
+                    />
+                    <span className={`text-sm font-medium ${filterPendingOnly ? 'text-orange-600' : 'text-gray-700'}`}>
+                      Pending RSVPs only
+                    </span>
+                  </label>
+                </div>
+              )}
             </div>
             {/* View Toggle */}
             <div className="flex border border-gray-300 rounded-lg overflow-hidden">
@@ -409,7 +541,7 @@ export default function ShiftsPage() {
         </div>
 
         {/* Shifts Display */}
-        {shifts.length > 0 ? (
+        {filteredShifts.length > 0 ? (
           viewMode === 'list' ? (
             /* List View */
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -428,7 +560,7 @@ export default function ShiftsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {shifts.map((shift) => (
+                  {filteredShifts.map((shift) => (
                     <tr
                       key={shift.id}
                       className={`hover:bg-gray-50 transition-colors ${
@@ -528,7 +660,7 @@ export default function ShiftsPage() {
           ) : (
             /* Card View */
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {shifts.map((shift) => (
+              {filteredShifts.map((shift) => (
                 <div
                   key={shift.id}
                   className={`bg-white rounded-xl border p-5 hover:shadow-md transition-shadow ${
@@ -656,6 +788,30 @@ export default function ShiftsPage() {
         selectedCount={selectedShifts.size}
         isSubmitting={isCancelling}
       />
+
+      {/* Confirm RSVPs Modal */}
+      <ConfirmRsvpsModal
+        isOpen={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        onConfirm={handleConfirmRsvps}
+        selectedCount={selectedShifts.size}
+        pendingRsvpCount={shifts
+          .filter(s => selectedShifts.has(s.id))
+          .reduce((sum, s) => sum + s.pendingCount, 0)}
+        isSubmitting={isConfirming}
+      />
     </div>
+  );
+}
+
+export default function ShiftsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-[calc(100vh-200px)] flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full" />
+      </div>
+    }>
+      <ShiftsPageContent />
+    </Suspense>
   );
 }
