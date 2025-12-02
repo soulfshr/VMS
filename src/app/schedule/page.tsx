@@ -187,16 +187,6 @@ export default function SchedulePage() {
     }
   };
 
-  const getCoverageIcon = (coverage: string) => {
-    switch (coverage) {
-      case 'full':
-        return '🟢';
-      case 'partial':
-        return '🟡';
-      default:
-        return '🔴';
-    }
-  };
 
   // Generate dates for the week
   const weekDates: Date[] = [];
@@ -269,6 +259,32 @@ export default function SchedulePage() {
                   </option>
                 ))}
               </select>
+            </div>
+          </div>
+
+          {/* Legend */}
+          <div className="flex flex-wrap items-center gap-4 mt-4 pt-4 border-t border-gray-200 text-sm">
+            <span className="text-gray-500 font-medium">Coverage:</span>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded bg-green-100 border border-green-300"></div>
+              <span className="text-gray-600">Full</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded bg-yellow-100 border border-yellow-300"></div>
+              <span className="text-gray-600">Partial</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded bg-gray-100 border border-gray-300"></div>
+              <span className="text-gray-600">None</span>
+            </div>
+            <span className="text-gray-300">|</span>
+            <div className="flex items-center gap-2">
+              <span>🎧</span>
+              <span className="text-gray-600">Dispatcher</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-amber-600 font-medium text-xs">Need X</span>
+              <span className="text-gray-600">Gap</span>
             </div>
           </div>
         </div>
@@ -403,10 +419,6 @@ export default function SchedulePage() {
                                         )}
                                       </div>
                                     )}
-                                    {/* Coverage indicator */}
-                                    <div className="text-[10px] text-gray-500 mt-1">
-                                      {getCoverageIcon(cell.coverage)} {cell.coverage}
-                                    </div>
                                   </div>
                                 ) : (
                                   <div className="text-gray-400 text-xs">No shifts</div>
@@ -428,32 +440,6 @@ export default function SchedulePage() {
           </div>
         )}
 
-        {/* Legend */}
-        <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <h3 className="text-sm font-medium text-gray-700 mb-2">Legend</h3>
-          <div className="flex flex-wrap gap-4 text-sm">
-            <div className="flex items-center gap-2">
-              <span>🎧</span>
-              <span className="text-gray-600">Dispatcher</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span>🟢</span>
-              <span className="text-gray-600">Full coverage (dispatcher + all zones have leads)</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span>🟡</span>
-              <span className="text-gray-600">Partial coverage (needs dispatcher or zone leads)</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span>🔴</span>
-              <span className="text-gray-600">No coverage</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-amber-600 font-medium text-xs">Need X</span>
-              <span className="text-gray-600">Gap indicator - what&apos;s missing</span>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Assignment Modal */}
