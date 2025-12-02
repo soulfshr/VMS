@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Guide - Siembra NC VMS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html { scroll-behavior: smooth; }
+    .toc-link { transition: all 0.2s; }
+    .toc-link:hover { transform: translateX(4px); }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #e5e7eb; padding: 12px; text-align: left; }
+    th { background-color: #f9fafb; font-weight: 600; }
+    code { background-color: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-size: 0.875em; }
+    pre { background-color: #1f2937; color: #e5e7eb; padding: 16px; border-radius: 8px; overflow-x: auto; }
+    pre code { background: none; padding: 0; }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <!-- Header -->
+  <header class="bg-gradient-to-r from-teal-600 to-teal-700 text-white py-8 sticky top-0 z-50 shadow-lg">
+    <div class="container mx-auto px-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <img src="/siembra-logo.webp" alt="Siembra NC" class="w-12 h-12 rounded-lg shadow">
+          <div>
+            <h1 class="text-2xl font-bold">Siembra NC VMS</h1>
+            <p class="text-teal-100 text-sm">User Guide</p>
+          </div>
+        </div>
+        <a href="/dashboard" class="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition">
+          Back to App
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <div class="container mx-auto px-4 py-8">
+    <div class="flex flex-col lg:flex-row gap-8">
+      <!-- Sidebar Navigation -->
+      <aside class="lg:w-64 flex-shrink-0">
+        <nav class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sticky top-28">
+          <h2 class="font-semibold text-gray-900 mb-4">Contents</h2>
+          <ul class="space-y-2 text-sm">
+            <li><a href="#overview" class="toc-link block text-gray-600 hover:text-teal-600">Overview</a></li>
+            <li><a href="#roles" class="toc-link block text-gray-600 hover:text-teal-600">User Roles</a></li>
+            <li><a href="#getting-started" class="toc-link block text-gray-600 hover:text-teal-600">Getting Started</a></li>
+            <li><a href="#dashboard" class="toc-link block text-gray-600 hover:text-teal-600">Dashboard</a></li>
+            <li><a href="#shifts" class="toc-link block text-gray-600 hover:text-teal-600">Shifts</a></li>
+            <li><a href="#trainings" class="toc-link block text-gray-600 hover:text-teal-600">Trainings</a></li>
+            <li><a href="#schedule" class="toc-link block text-gray-600 hover:text-teal-600">Schedule</a></li>
+            <li><a href="#volunteers" class="toc-link block text-gray-600 hover:text-teal-600">Volunteers</a></li>
+            <li><a href="#profile" class="toc-link block text-gray-600 hover:text-teal-600">Profile</a></li>
+            <li><a href="#admin" class="toc-link block text-gray-600 hover:text-teal-600">Admin Panel</a></li>
+            <li><a href="#workflows" class="toc-link block text-gray-600 hover:text-teal-600">Common Workflows</a></li>
+            <li><a href="#tips" class="toc-link block text-gray-600 hover:text-teal-600">Tips & Best Practices</a></li>
+          </ul>
+        </nav>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="flex-1 min-w-0">
+        <!-- Overview -->
+        <section id="overview" class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
+          <h2 class="text-2xl font-bold text-gray-900 mb-4">Overview</h2>
+          <p class="text-gray-600 mb-4">
+            The Siembra NC Volunteer Management System (VMS) coordinates community volunteers who monitor, document, and respond to immigration enforcement activities in North Carolina's Triangle region.
+          </p>
+          <div class="grid sm:grid-cols-2 gap-4">
+            <div class="flex items-start gap-3 p-4 bg-teal-50 rounded-lg">
+              <div class="w-10 h-10 bg-teal-100 text-teal-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="font-semibold text-gray-900">Shift Scheduling</h3>
+                <p class="text-sm text-gray-600">Manage shifts across 13 zones in Durham, Orange, and Wake counties</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-3 p-4 bg-blue-50 rounded-lg">
+              <div class="w-10 h-10 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="font-semibold text-gray-900">Training Coordination</h3>
+                <p class="text-sm text-gray-600">Ensure volunteer preparedness through organized training sessions</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-3 p-4 bg-purple-50 rounded-lg">
+              <div class="w-10 h-10 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="font-semibold text-gray-900">Volunteer Management</h3>
+                <p class="text-sm text-gray-600">Role-based access control for coordinators and volunteers</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-3 p-4 bg-orange-50 rounded-lg">
+              <div class="w-10 h-10 bg-orange-100 text-orange-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="font-semibold text-gray-900">Schedule Coordination</h3>
+                <p class="text-sm text-gray-600">Weekly views for dispatchers and zone leads</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- User Roles -->
+        <section id="roles" class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
+          <h2 class="text-2xl font-bold text-gray-900 mb-6">User Roles</h2>
+          <p class="text-gray-600 mb-6">The VMS has four user roles, each with different capabilities:</p>
+
+          <div class="space-y-6">
+            <!-- Volunteer -->
+            <div class="border border-teal-200 rounded-lg p-6 bg-teal-50/50">
+              <div class="flex items-center gap-3 mb-3">
+                <span class="px-3 py-1 bg-teal-600 text-white text-sm font-medium rounded-full">Volunteer</span>
+              </div>
+              <p class="text-gray-600 mb-3">The base role for all community members participating in monitoring activities.</p>
+              <ul class="text-sm text-gray-600 space-y-1">
+                <li class="flex items-center gap-2"><span class="text-teal-500">&#10003;</span> View and RSVP to available shifts</li>
+                <li class="flex items-center gap-2"><span class="text-teal-500">&#10003;</span> View and sign up for training sessions</li>
+                <li class="flex items-center gap-2"><span class="text-teal-500">&#10003;</span> Update personal profile and availability</li>
+                <li class="flex items-center gap-2"><span class="text-teal-500">&#10003;</span> View their own schedule and upcoming shifts</li>
+              </ul>
+            </div>
+
+            <!-- Coordinator -->
+            <div class="border border-blue-200 rounded-lg p-6 bg-blue-50/50">
+              <div class="flex items-center gap-3 mb-3">
+                <span class="px-3 py-1 bg-blue-600 text-white text-sm font-medium rounded-full">Coordinator</span>
+              </div>
+              <p class="text-gray-600 mb-3">Zone and shift coordinators who manage volunteer activities.</p>
+              <ul class="text-sm text-gray-600 space-y-1">
+                <li class="flex items-center gap-2"><span class="text-blue-500">&#10003;</span> Everything Volunteers can do, plus:</li>
+                <li class="flex items-center gap-2"><span class="text-blue-500">&#10003;</span> Create and manage shifts</li>
+                <li class="flex items-center gap-2"><span class="text-blue-500">&#10003;</span> View and manage shift rosters</li>
+                <li class="flex items-center gap-2"><span class="text-blue-500">&#10003;</span> Confirm or reject volunteer RSVPs</li>
+                <li class="flex items-center gap-2"><span class="text-blue-500">&#10003;</span> Access volunteer directory</li>
+                <li class="flex items-center gap-2"><span class="text-blue-500">&#10003;</span> Assign zone leads to shifts</li>
+              </ul>
+            </div>
+
+            <!-- Dispatcher -->
+            <div class="border border-orange-200 rounded-lg p-6 bg-orange-50/50">
+              <div class="flex items-center gap-3 mb-3">
+                <span class="px-3 py-1 bg-orange-600 text-white text-sm font-medium rounded-full">Dispatcher</span>
+              </div>
+              <p class="text-gray-600 mb-3">Handles real-time coordination during active monitoring.</p>
+              <ul class="text-sm text-gray-600 space-y-1">
+                <li class="flex items-center gap-2"><span class="text-orange-500">&#10003;</span> Everything Volunteers can do, plus:</li>
+                <li class="flex items-center gap-2"><span class="text-orange-500">&#10003;</span> View schedule dashboard with dispatcher assignments</li>
+                <li class="flex items-center gap-2"><span class="text-orange-500">&#10003;</span> See all active shifts across zones</li>
+                <li class="flex items-center gap-2"><span class="text-orange-500">&#10003;</span> Coordinate field responses</li>
+              </ul>
+            </div>
+
+            <!-- Administrator -->
+            <div class="border border-purple-200 rounded-lg p-6 bg-purple-50/50">
+              <div class="flex items-center gap-3 mb-3">
+                <span class="px-3 py-1 bg-purple-600 text-white text-sm font-medium rounded-full">Administrator</span>
+              </div>
+              <p class="text-gray-600 mb-3">Full system access for organizational leadership.</p>
+              <ul class="text-sm text-gray-600 space-y-1">
+                <li class="flex items-center gap-2"><span class="text-purple-500">&#10003;</span> Everything all other roles can do, plus:</li>
+                <li class="flex items-center gap-2"><span class="text-purple-500">&#10003;</span> Manage all users and their roles</li>
+                <li class="flex items-center gap-2"><span class="text-purple-500">&#10003;</span> Configure zones, shift types, and training types</li>
+                <li class="flex items-center gap-2"><span class="text-purple-500">&#10003;</span> Bulk import volunteers</li>
+                <li class="flex items-center gap-2"><span class="text-purple-500">&#10003;</span> Access system settings</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <!-- Getting Started -->
+        <section id="getting-started" class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
+          <h2 class="text-2xl font-bold text-gray-900 mb-6">Getting Started</h2>
+
+          <h3 class="text-lg font-semibold text-gray-900 mb-3">First Login</h3>
+          <ol class="list-decimal list-inside text-gray-600 mb-6 space-y-2">
+            <li>Navigate to the login page</li>
+            <li>Select your user account from the available options</li>
+            <li>You'll be redirected to your dashboard</li>
+          </ol>
+
+          <h3 class="text-lg font-semibold text-gray-900 mb-3">Welcome Tour</h3>
+          <p class="text-gray-600 mb-4">On your first visit to each major page, you may see a guided tour highlighting key features. You can:</p>
+          <ul class="list-disc list-inside text-gray-600 mb-6 space-y-1">
+            <li>Follow along by clicking "Next"</li>
+            <li>Skip the tour by clicking "Close"</li>
+            <li>Restart tours anytime via the <strong>?</strong> help button in the header</li>
+          </ul>
+
+          <h3 class="text-lg font-semibold text-gray-900 mb-3">Navigation</h3>
+          <p class="text-gray-600 mb-4">The main navigation bar includes:</p>
+          <div class="grid sm:grid-cols-2 gap-3">
+            <div class="flex items-center gap-2 text-sm">
+              <span class="w-2 h-2 bg-teal-500 rounded-full"></span>
+              <strong>Dashboard</strong> - Your home base with personalized overview
+            </div>
+            <div class="flex items-center gap-2 text-sm">
+              <span class="w-2 h-2 bg-teal-500 rounded-full"></span>
+              <strong>Shifts</strong> - Browse and manage shifts
+            </div>
+            <div class="flex items-center gap-2 text-sm">
+              <span class="w-2 h-2 bg-teal-500 rounded-full"></span>
+              <strong>Trainings</strong> - View training sessions
+            </div>
+            <div class="flex items-center gap-2 text-sm">
+              <span class="w-2 h-2 bg-teal-500 rounded-full"></span>
+              <strong>Schedule</strong> - Weekly schedule view
+            </div>
+            <div class="flex items-center gap-2 text-sm">
+              <span class="w-2 h-2 bg-blue-500 rounded-full"></span>
+              <strong>Volunteers</strong> - Directory (Coordinators/Admins)
+            </div>
+            <div class="flex items-center gap-2 text-sm">
+              <span class="w-2 h-2 bg-teal-500 rounded-full"></span>
+              <strong>Profile</strong> - Your personal settings
+            </div>
+            <div class="flex items-center gap-2 text-sm">
+              <span class="w-2 h-2 bg-purple-500 rounded-full"></span>
+              <strong>Admin</strong> - System administration (Admins only)
+            </div>
+          </div>
+        </section>
+
+        <!-- Dashboard -->
+        <section id="dashboard" class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
+          <h2 class="text-2xl font-bold text-gray-900 mb-6">Dashboard</h2>
+          <p class="text-gray-600 mb-6">Your dashboard provides a personalized overview based on your role.</p>
+
+          <div class="space-y-4">
+            <div class="p-4 bg-gray-50 rounded-lg">
+              <h3 class="font-semibold text-gray-900 mb-2">All Users See:</h3>
+              <ul class="text-sm text-gray-600 space-y-1">
+                <li><strong>Upcoming Shifts</strong> - Your next confirmed shifts</li>
+                <li><strong>Available Shifts</strong> - Shifts you can RSVP to</li>
+                <li><strong>Required Trainings</strong> - Any outstanding training requirements</li>
+              </ul>
+            </div>
+            <div class="p-4 bg-blue-50 rounded-lg">
+              <h3 class="font-semibold text-blue-900 mb-2">Coordinators Also See:</h3>
+              <ul class="text-sm text-gray-600 space-y-1">
+                <li><strong>Pending RSVPs</strong> - Volunteer RSVPs awaiting confirmation</li>
+                <li><strong>Zone Statistics</strong> - Volunteer counts and coverage</li>
+              </ul>
+            </div>
+            <div class="p-4 bg-orange-50 rounded-lg">
+              <h3 class="font-semibold text-orange-900 mb-2">Dispatchers Also See:</h3>
+              <ul class="text-sm text-gray-600 space-y-1">
+                <li><strong>Active Shifts</strong> - Currently running shifts across all zones</li>
+                <li><strong>On-Call Volunteers</strong> - Available responders</li>
+              </ul>
+            </div>
+            <div class="p-4 bg-purple-50 rounded-lg">
+              <h3 class="font-semibold text-purple-900 mb-2">Administrators Also See:</h3>
+              <ul class="text-sm text-gray-600 space-y-1">
+                <li><strong>System Statistics</strong> - Overall volunteer and shift metrics</li>
+                <li><strong>Quick Admin Actions</strong> - Links to common admin tasks</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <!-- Shifts -->
+        <section id="shifts" class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
+          <h2 class="text-2xl font-bold text-gray-900 mb-6">Shifts</h2>
+
+          <h3 class="text-lg font-semibold text-gray-900 mb-3">Viewing Shifts</h3>
+          <p class="text-gray-600 mb-4">The Shifts page shows all available and upcoming shifts. You can:</p>
+          <ul class="list-disc list-inside text-gray-600 mb-6 space-y-1">
+            <li><strong>Filter by zone</strong> - Focus on specific geographic areas</li>
+            <li><strong>Filter by shift type</strong> - Zone Patrol, On-Call, Intel Collection, etc.</li>
+            <li><strong>Filter by date range</strong> - Find shifts for specific days</li>
+            <li><strong>Search</strong> - Find shifts by title or description</li>
+          </ul>
+
+          <h3 class="text-lg font-semibold text-gray-900 mb-3">Shift Types</h3>
+          <div class="overflow-x-auto mb-6">
+            <table class="w-full text-sm">
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Zone Patrol</strong></td>
+                  <td>Active monitoring of assigned zones</td>
+                </tr>
+                <tr>
+                  <td><strong>On-Call</strong></td>
+                  <td>Available for rapid dispatch to verify sightings</td>
+                </tr>
+                <tr>
+                  <td><strong>Intel Collection</strong></td>
+                  <td>Monitor social media and community networks</td>
+                </tr>
+                <tr>
+                  <td><strong>Training</strong></td>
+                  <td>Attend training sessions</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3 class="text-lg font-semibold text-gray-900 mb-3">RSVPing to a Shift</h3>
+          <ol class="list-decimal list-inside text-gray-600 mb-6 space-y-2">
+            <li>Browse available shifts on the Shifts page</li>
+            <li>Click on a shift to view details</li>
+            <li>Click <strong>"RSVP to this Shift"</strong></li>
+            <li>Your RSVP status will show as "Pending" until a coordinator confirms</li>
+          </ol>
+
+          <h3 class="text-lg font-semibold text-gray-900 mb-3">RSVP Statuses</h3>
+          <div class="overflow-x-auto mb-6">
+            <table class="w-full text-sm">
+              <thead>
+                <tr>
+                  <th>Status</th>
+                  <th>Meaning</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-medium">Pending</span></td>
+                  <td>Your RSVP is awaiting coordinator approval</td>
+                </tr>
+                <tr>
+                  <td><span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">Confirmed</span></td>
+                  <td>You're confirmed for this shift</td>
+                </tr>
+                <tr>
+                  <td><span class="px-2 py-1 bg-red-100 text-red-800 rounded text-xs font-medium">Declined</span></td>
+                  <td>Your RSVP was not accepted (capacity/requirements)</td>
+                </tr>
+                <tr>
+                  <td><span class="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs font-medium">Cancelled</span></td>
+                  <td>You or a coordinator cancelled your participation</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg mb-6">
+            <h4 class="font-semibold text-blue-900 mb-2">Creating Shifts (Coordinators/Admins)</h4>
+            <ol class="list-decimal list-inside text-sm text-gray-600 space-y-1">
+              <li>Navigate to <strong>Shifts</strong></li>
+              <li>Click <strong>"Create Shift"</strong></li>
+              <li>Fill in: Title, Shift Type, Zone, Date & Time, Capacity, Description</li>
+              <li>Click <strong>"Create Shift"</strong></li>
+            </ol>
+          </div>
+
+          <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h4 class="font-semibold text-blue-900 mb-2">Managing Shift Rosters (Coordinators/Admins)</h4>
+            <ol class="list-decimal list-inside text-sm text-gray-600 space-y-1">
+              <li>Click on any shift to view details</li>
+              <li>Click <strong>"View Roster"</strong> or the roster icon</li>
+              <li>From the roster page you can:
+                <ul class="list-disc list-inside ml-4 mt-1">
+                  <li>Confirm RSVPs - Approve pending volunteers</li>
+                  <li>Decline RSVPs - Reject volunteers (with reason)</li>
+                  <li>Assign Zone Lead - Designate shift leadership</li>
+                  <li>Remove volunteers - Cancel confirmed participants</li>
+                </ul>
+              </li>
+            </ol>
+            <div class="mt-3 p-3 bg-white rounded border border-blue-100">
+              <strong class="text-blue-900">Bulk RSVP Confirmation:</strong>
+              <p class="text-sm text-gray-600 mt-1">Check boxes next to pending volunteers, then click "Confirm Selected" to approve multiple at once.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Trainings -->
+        <section id="trainings" class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
+          <h2 class="text-2xl font-bold text-gray-900 mb-6">Trainings</h2>
+
+          <h3 class="text-lg font-semibold text-gray-900 mb-3">Viewing Training Sessions</h3>
+          <p class="text-gray-600 mb-4">The Trainings page lists all available training sessions. Filter by:</p>
+          <ul class="list-disc list-inside text-gray-600 mb-6 space-y-1">
+            <li><strong>Training type</strong> - Basic Training, Field Protocol, Legal Rights, etc.</li>
+            <li><strong>Date range</strong> - Upcoming sessions</li>
+            <li><strong>Status</strong> - Sessions you've completed vs. available</li>
+          </ul>
+
+          <h3 class="text-lg font-semibold text-gray-900 mb-3">Training Types</h3>
+          <div class="overflow-x-auto mb-6">
+            <table class="w-full text-sm">
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Basic Training</strong></td>
+                  <td>Required orientation for all new volunteers</td>
+                </tr>
+                <tr>
+                  <td><strong>Field Protocol</strong></td>
+                  <td>Procedures for monitoring activities</td>
+                </tr>
+                <tr>
+                  <td><strong>Legal Rights</strong></td>
+                  <td>Know Your Rights training</td>
+                </tr>
+                <tr>
+                  <td><strong>De-escalation</strong></td>
+                  <td>Conflict resolution techniques</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3 class="text-lg font-semibold text-gray-900 mb-3">Signing Up for Training</h3>
+          <ol class="list-decimal list-inside text-gray-600 mb-6 space-y-2">
+            <li>Browse available sessions on the Trainings page</li>
+            <li>Click on a session to view details</li>
+            <li>Click <strong>"RSVP"</strong> to register</li>
+            <li>Attend the session at the scheduled time</li>
+          </ol>
+
+          <h3 class="text-lg font-semibold text-gray-900 mb-3">Training Completion</h3>
+          <ol class="list-decimal list-inside text-gray-600 space-y-2">
+            <li>A coordinator marks your attendance as confirmed</li>
+            <li>The training appears in your profile under "Completed Trainings"</li>
+            <li>You may now be eligible for shifts requiring that training</li>
+          </ol>
+        </section>
+
+        <!-- Schedule -->
+        <section id="schedule" class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
+          <h2 class="text-2xl font-bold text-gray-900 mb-6">Schedule</h2>
+          <p class="text-gray-600 mb-6">The Schedule page provides a weekly calendar view showing:</p>
+
+          <div class="space-y-4 mb-6">
+            <div class="p-4 bg-gray-50 rounded-lg">
+              <h3 class="font-semibold text-gray-900 mb-2">For All Users:</h3>
+              <ul class="text-sm text-gray-600 space-y-1">
+                <li>Your confirmed shifts for the week</li>
+                <li>Training sessions you're registered for</li>
+              </ul>
+            </div>
+            <div class="p-4 bg-blue-50 rounded-lg">
+              <h3 class="font-semibold text-blue-900 mb-2">For Coordinators/Dispatchers/Admins:</h3>
+              <ul class="text-sm text-gray-600 space-y-1">
+                <li><strong>Dispatcher Assignments</strong> - Who's on dispatch duty each day</li>
+                <li><strong>Zone Lead Assignments</strong> - Zone leads assigned to each shift</li>
+                <li>Filter by zone to see specific area coverage</li>
+              </ul>
+            </div>
+          </div>
+
+          <h3 class="text-lg font-semibold text-gray-900 mb-3">Navigating the Schedule</h3>
+          <ul class="list-disc list-inside text-gray-600 space-y-1">
+            <li>Use <strong>&larr; Previous</strong> and <strong>Next &rarr;</strong> to change weeks</li>
+            <li>Click <strong>Today</strong> to return to the current week</li>
+            <li>Click any shift to view details</li>
+          </ul>
+        </section>
+
+        <!-- Volunteers -->
+        <section id="volunteers" class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
+          <h2 class="text-2xl font-bold text-gray-900 mb-2">Volunteers</h2>
+          <p class="text-sm text-blue-600 mb-6">Available to Coordinators and Administrators only.</p>
+
+          <p class="text-gray-600 mb-6">The Volunteers page is your directory of all registered volunteers.</p>
+
+          <h3 class="text-lg font-semibold text-gray-900 mb-3">Viewing Volunteers</h3>
+          <ul class="list-disc list-inside text-gray-600 mb-6 space-y-1">
+            <li><strong>Search</strong> by name, email, or phone</li>
+            <li><strong>Filter by zone</strong> - See volunteers in specific areas</li>
+            <li><strong>Filter by role</strong> - View by permission level</li>
+            <li><strong>Filter by status</strong> - Active vs. inactive volunteers</li>
+          </ul>
+
+          <h3 class="text-lg font-semibold text-gray-900 mb-3">Volunteer Details</h3>
+          <p class="text-gray-600 mb-6">Click on any volunteer to see: contact information, assigned zones, completed trainings, upcoming shifts, and shift history.</p>
+
+          <div class="p-4 bg-purple-50 border border-purple-200 rounded-lg mb-6">
+            <h4 class="font-semibold text-purple-900 mb-2">Bulk Import (Admins Only)</h4>
+            <ol class="list-decimal list-inside text-sm text-gray-600 space-y-1">
+              <li>Click <strong>"Import Volunteers"</strong></li>
+              <li>Download the CSV template</li>
+              <li>Fill in volunteer data following the template format</li>
+              <li>Upload the completed CSV</li>
+              <li>Review the import preview</li>
+              <li>Confirm the import</li>
+            </ol>
+            <div class="mt-3 p-3 bg-white rounded border border-purple-100">
+              <strong class="text-purple-900 text-sm">CSV Format:</strong>
+              <pre class="mt-2 text-xs"><code>name,email,phone,role,zones,primaryLanguage
+John Doe,john@example.com,(919) 555-0100,VOLUNTEER,"Durham 1;Durham 2",English</code></pre>
+            </div>
+          </div>
+        </section>
+
+        <!-- Profile -->
+        <section id="profile" class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
+          <h2 class="text-2xl font-bold text-gray-900 mb-6">Profile</h2>
+          <p class="text-gray-600 mb-6">Your Profile page contains your personal information and settings.</p>
+
+          <h3 class="text-lg font-semibold text-gray-900 mb-3">Viewing Your Profile</h3>
+          <ul class="list-disc list-inside text-gray-600 mb-6 space-y-1">
+            <li>Personal information (name, email, phone)</li>
+            <li>Assigned zones</li>
+            <li>Completed trainings</li>
+            <li>Upcoming shifts</li>
+            <li>Language preferences</li>
+          </ul>
+
+          <h3 class="text-lg font-semibold text-gray-900 mb-3">Updating Your Profile</h3>
+          <ol class="list-decimal list-inside text-gray-600 space-y-2">
+            <li>Navigate to <strong>Profile</strong></li>
+            <li>Click <strong>"Edit Profile"</strong></li>
+            <li>Update your information: phone number, primary language, additional languages, zone preferences</li>
+            <li>Click <strong>"Save"</strong></li>
+          </ol>
+        </section>
+
+        <!-- Admin Panel -->
+        <section id="admin" class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
+          <h2 class="text-2xl font-bold text-gray-900 mb-2">Admin Panel</h2>
+          <p class="text-sm text-purple-600 mb-6">Available to Administrators only.</p>
+
+          <p class="text-gray-600 mb-6">The Admin section provides system configuration options.</p>
+
+          <div class="grid sm:grid-cols-2 gap-4">
+            <div class="p-4 border border-gray-200 rounded-lg">
+              <h3 class="font-semibold text-gray-900 mb-2">Zones</h3>
+              <p class="text-sm text-gray-600">Manage geographic zones: add, edit, or deactivate monitoring areas.</p>
+            </div>
+            <div class="p-4 border border-gray-200 rounded-lg">
+              <h3 class="font-semibold text-gray-900 mb-2">Shift Types</h3>
+              <p class="text-sm text-gray-600">Configure available shift categories, names, descriptions, and colors.</p>
+            </div>
+            <div class="p-4 border border-gray-200 rounded-lg">
+              <h3 class="font-semibold text-gray-900 mb-2">Training Types</h3>
+              <p class="text-sm text-gray-600">Manage training categories and set prerequisites.</p>
+            </div>
+            <div class="p-4 border border-gray-200 rounded-lg">
+              <h3 class="font-semibold text-gray-900 mb-2">System Settings</h3>
+              <p class="text-sm text-gray-600">Configure organization name, email notifications, and defaults.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Common Workflows -->
+        <section id="workflows" class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
+          <h2 class="text-2xl font-bold text-gray-900 mb-6">Common Workflows</h2>
+
+          <div class="space-y-6">
+            <!-- Workflow 1 -->
+            <div class="border-l-4 border-teal-500 pl-4">
+              <h3 class="font-semibold text-gray-900 mb-3">Volunteer Signs Up for a Shift</h3>
+              <ol class="text-sm text-gray-600 space-y-1">
+                <li>1. <strong>Volunteer</strong> browses Shifts page</li>
+                <li>2. <strong>Volunteer</strong> clicks shift and RSVPs</li>
+                <li>3. <strong>Coordinator</strong> sees pending RSVP on dashboard</li>
+                <li>4. <strong>Coordinator</strong> opens shift roster</li>
+                <li>5. <strong>Coordinator</strong> confirms the RSVP</li>
+                <li>6. <strong>Volunteer</strong> receives confirmation notification</li>
+                <li>7. <strong>Volunteer</strong> sees shift on their dashboard</li>
+              </ol>
+            </div>
+
+            <!-- Workflow 2 -->
+            <div class="border-l-4 border-blue-500 pl-4">
+              <h3 class="font-semibold text-gray-900 mb-3">Coordinator Creates a Patrol Shift</h3>
+              <ol class="text-sm text-gray-600 space-y-1">
+                <li>1. <strong>Coordinator</strong> clicks "Create Shift"</li>
+                <li>2. <strong>Coordinator</strong> selects "Zone Patrol" type</li>
+                <li>3. <strong>Coordinator</strong> chooses zone, date, time, capacity</li>
+                <li>4. <strong>Coordinator</strong> adds description with special instructions</li>
+                <li>5. <strong>Coordinator</strong> saves the shift</li>
+                <li>6. Shift appears for all volunteers to RSVP</li>
+              </ol>
+            </div>
+
+            <!-- Workflow 3 -->
+            <div class="border-l-4 border-orange-500 pl-4">
+              <h3 class="font-semibold text-gray-900 mb-3">Assigning a Zone Lead</h3>
+              <ol class="text-sm text-gray-600 space-y-1">
+                <li>1. <strong>Coordinator</strong> opens shift roster</li>
+                <li>2. <strong>Coordinator</strong> finds confirmed volunteer</li>
+                <li>3. <strong>Coordinator</strong> clicks "Assign as Zone Lead"</li>
+                <li>4. Zone Lead designation appears on schedule view</li>
+                <li>5. <strong>Zone Lead</strong> can see their assignment on dashboard</li>
+              </ol>
+            </div>
+
+            <!-- Workflow 4 -->
+            <div class="border-l-4 border-purple-500 pl-4">
+              <h3 class="font-semibold text-gray-900 mb-3">New Volunteer Onboarding</h3>
+              <ol class="text-sm text-gray-600 space-y-1">
+                <li>1. <strong>Admin</strong> creates volunteer account (or imports via CSV)</li>
+                <li>2. <strong>Volunteer</strong> logs in for first time</li>
+                <li>3. <strong>Volunteer</strong> sees welcome screen with overview</li>
+                <li>4. <strong>Volunteer</strong> completes required Basic Training</li>
+                <li>5. <strong>Volunteer</strong> can now RSVP to shifts requiring that training</li>
+              </ol>
+            </div>
+
+            <!-- Workflow 5 -->
+            <div class="border-l-4 border-green-500 pl-4">
+              <h3 class="font-semibold text-gray-900 mb-3">Confirming Multiple RSVPs</h3>
+              <ol class="text-sm text-gray-600 space-y-1">
+                <li>1. <strong>Coordinator</strong> opens shift roster</li>
+                <li>2. <strong>Coordinator</strong> reviews pending RSVPs</li>
+                <li>3. <strong>Coordinator</strong> checks boxes for volunteers to confirm</li>
+                <li>4. <strong>Coordinator</strong> clicks "Confirm Selected"</li>
+                <li>5. All selected volunteers are confirmed at once</li>
+              </ol>
+            </div>
+          </div>
+        </section>
+
+        <!-- Tips & Best Practices -->
+        <section id="tips" class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
+          <h2 class="text-2xl font-bold text-gray-900 mb-6">Tips & Best Practices</h2>
+
+          <div class="grid sm:grid-cols-2 gap-6">
+            <div class="p-4 bg-teal-50 rounded-lg">
+              <h3 class="font-semibold text-teal-900 mb-3">For Volunteers</h3>
+              <ul class="text-sm text-gray-600 space-y-2">
+                <li>&#8226; Keep your profile updated with current contact info</li>
+                <li>&#8226; RSVP early - popular shifts fill up quickly</li>
+                <li>&#8226; Complete all required trainings to unlock more shift types</li>
+                <li>&#8226; Check your dashboard regularly for schedule changes</li>
+              </ul>
+            </div>
+
+            <div class="p-4 bg-blue-50 rounded-lg">
+              <h3 class="font-semibold text-blue-900 mb-3">For Coordinators</h3>
+              <ul class="text-sm text-gray-600 space-y-2">
+                <li>&#8226; Review pending RSVPs daily to keep volunteers informed</li>
+                <li>&#8226; Use bulk confirmation to save time with multiple RSVPs</li>
+                <li>&#8226; Assign zone leads early so they can prepare</li>
+                <li>&#8226; Add clear descriptions to shifts with special requirements</li>
+              </ul>
+            </div>
+
+            <div class="p-4 bg-orange-50 rounded-lg">
+              <h3 class="font-semibold text-orange-900 mb-3">For Dispatchers</h3>
+              <ul class="text-sm text-gray-600 space-y-2">
+                <li>&#8226; Check the schedule view at the start of each day</li>
+                <li>&#8226; Know which zone leads are on duty</li>
+                <li>&#8226; Keep contact info handy for active volunteers</li>
+              </ul>
+            </div>
+
+            <div class="p-4 bg-purple-50 rounded-lg">
+              <h3 class="font-semibold text-purple-900 mb-3">For Administrators</h3>
+              <ul class="text-sm text-gray-600 space-y-2">
+                <li>&#8226; Regularly review volunteer status and engagement</li>
+                <li>&#8226; Keep zone and training configurations up to date</li>
+                <li>&#8226; Use bulk import for onboarding multiple volunteers</li>
+                <li>&#8226; Monitor system usage to identify needs</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <!-- Getting Help -->
+        <section class="bg-gradient-to-r from-teal-600 to-teal-700 rounded-xl p-8 text-white">
+          <h2 class="text-2xl font-bold mb-4">Getting Help</h2>
+          <div class="grid sm:grid-cols-2 gap-4">
+            <div class="flex items-start gap-3">
+              <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                <span class="text-xl">?</span>
+              </div>
+              <div>
+                <h3 class="font-semibold">In-App Help</h3>
+                <p class="text-teal-100 text-sm">Click the ? button in the header for page-specific help and to restart guided tours.</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-3">
+              <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="font-semibold">Contact Support</h3>
+                <p class="text-teal-100 text-sm">Contact your coordinator for shift questions or an administrator for account issues.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="text-center text-gray-500 text-sm mt-8 pb-8">
+          <p>Siembra NC Volunteer Management System</p>
+          <p>Last updated: December 2024</p>
+        </footer>
+      </main>
+    </div>
+  </div>
+</body>
+</html>
