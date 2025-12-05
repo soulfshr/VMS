@@ -104,6 +104,8 @@ The main navigation bar includes:
 - **Volunteers** - Volunteer directory (Coordinators/Admins only)
 - **Profile** - Your personal settings
 - **Admin** - System administration (Admins only)
+  - Mapping (zones, POIs, categories)
+  - Shift/Training types, Qualified roles, Settings
 
 ---
 
@@ -364,12 +366,50 @@ Your **Profile** page contains your personal information and settings.
 
 The **Admin** section provides system configuration options.
 
-### Zones
+### Mapping
 
-Manage geographic zones:
-- **Add zones** - Create new monitoring areas
-- **Edit zones** - Update zone names, counties, boundaries
-- **Deactivate zones** - Remove zones from active use
+The **Mapping** page consolidates all geographic and location management into a single tabbed interface with three sections: Zones, Points of Interest, and POI Categories.
+
+#### Zones Tab
+
+Manage operational zones where volunteers conduct monitoring:
+
+- **Add zones** - Create new monitoring areas with name, county, and description
+- **Edit zones** - Update zone names, counties, and descriptions
+- **Map color** - Assign colors for display on coverage maps
+- **Signal Group links** - Add direct links to each zone's Signal group for real-time coordination
+- **Draw boundaries** - Click "Draw Map" to define zone boundaries on an interactive map
+- **Activate/Archive** - Toggle zones between active and archived status
+
+Zones are grouped by county (Durham, Orange, Wake) for easy organization.
+
+#### Points of Interest Tab
+
+Manage important locations displayed on volunteer maps:
+
+- **Add POIs** - Create points of interest with name, address, and description
+- **Assign category** - Select a POI category (e.g., ICE/Enforcement, School, Safe Space)
+- **Set location** - Use the map picker to place POIs at exact coordinates
+- **Filter and search** - Find POIs by name, category, or zone
+- **Activate/Archive** - Toggle POI visibility on maps
+
+POIs help volunteers identify important locations during patrols, including:
+- Known enforcement locations
+- Schools and sensitive areas
+- Safe spaces and resources
+- Community partner locations
+
+#### POI Categories Tab
+
+Configure categories that organize Points of Interest:
+
+- **Add categories** - Create new POI types with name and unique slug
+- **Set colors** - Assign map marker colors for each category
+- **Choose icons** - Select icons (shield, school, heart, building, etc.)
+- **Add descriptions** - Document what each category represents
+- **Activate/Archive** - Toggle category availability
+
+Categories help volunteers quickly identify POI types on the map through consistent color-coding and iconography.
 
 ### Shift Types
 
@@ -569,6 +609,32 @@ Coordinators and Admins can view recent email blast history showing:
 5. **Coordinator** sets date range for sessions to include
 6. **Coordinator** sends the blast
 7. Volunteers receive email with upcoming training table and RSVP link
+
+### Workflow: Setting Up a New Zone with Boundaries
+
+1. **Admin** navigates to Admin → Mapping
+2. **Admin** stays on the Zones tab (default)
+3. **Admin** clicks "Add Zone"
+4. **Admin** enters zone name, selects county, adds description
+5. **Admin** optionally adds Signal Group link for coordination
+6. **Admin** selects a color for the zone on maps
+7. **Admin** clicks "Create Zone"
+8. **Admin** clicks "Draw Map" next to the new zone
+9. **Admin** draws polygon boundaries on the interactive map
+10. **Admin** saves boundaries
+11. Zone appears on coverage maps with correct boundaries and color
+
+### Workflow: Adding Points of Interest
+
+1. **Admin** navigates to Admin → Mapping
+2. **Admin** clicks "Points of Interest" tab
+3. **Admin** clicks "Add POI"
+4. **Admin** enters name and description
+5. **Admin** selects appropriate category (e.g., ICE/Enforcement, School)
+6. **Admin** uses map picker to set exact location
+7. **Admin** optionally assigns to a specific zone
+8. **Admin** saves the POI
+9. POI appears on volunteer maps with category color/icon
 
 ---
 

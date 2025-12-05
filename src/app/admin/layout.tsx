@@ -12,9 +12,7 @@ const adminNavItems = [
   { href: '/admin/qualified-roles', label: 'Qualified Roles', icon: '🏅', adminOnly: true },
   { href: '/admin/shift-types', label: 'Shift Types', icon: '📋', adminOnly: true },
   { href: '/admin/training-types', label: 'Training Types', icon: '🎓', adminOnly: true },
-  { href: '/admin/zones', label: 'Zones', icon: '📍', adminOnly: true },
-  { href: '/admin/poi-categories', label: 'POI Categories', icon: '🗂️', adminOnly: true },
-  { href: '/admin/pois', label: 'Points of Interest', icon: '📌', adminOnly: true },
+  { href: '/admin/mapping', label: 'Mapping', icon: '🗺️', adminOnly: true },
 ];
 
 export default function AdminLayout({
