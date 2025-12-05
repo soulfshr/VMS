@@ -167,7 +167,11 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       include: {
         session: {
           include: {
-            trainingType: true,
+            trainingType: {
+              include: {
+                grantsQualifiedRole: true,
+              },
+            },
           },
         },
         user: {
@@ -175,22 +179,31 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
             id: true,
             name: true,
             email: true,
-            qualifications: true,
           },
         },
       },
     });
 
-    // If training is marked as completed and grants a qualification, update user's qualifications
-    if (completedAt && attendee.session.trainingType.grantsQualification) {
-      const grantedQualification = attendee.session.trainingType.grantsQualification;
-      const currentQualifications = attendee.user.qualifications || [];
+    // If training is marked as completed and grants a qualified role, create UserQualification
+    if (completedAt && attendee.session.trainingType.grantsQualifiedRoleId) {
+      const qualifiedRoleId = attendee.session.trainingType.grantsQualifiedRoleId;
 
-      if (!currentQualifications.includes(grantedQualification)) {
-        await prisma.user.update({
-          where: { id: attendee.userId },
+      // Check if user already has this qualified role
+      const existingQualification = await prisma.userQualification.findUnique({
+        where: {
+          userId_qualifiedRoleId: {
+            userId: attendee.userId,
+            qualifiedRoleId,
+          },
+        },
+      });
+
+      if (!existingQualification) {
+        await prisma.userQualification.create({
           data: {
-            qualifications: [...currentQualifications, grantedQualification],
+            userId: attendee.userId,
+            qualifiedRoleId,
+            trainingSessionId: sessionId,
           },
         });
       }

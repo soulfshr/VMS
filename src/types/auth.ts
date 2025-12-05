@@ -1,6 +1,8 @@
-// Auth types for Siembra NC VMS
+// Auth types for RippleVMS
 
 export type UserRole = 'VOLUNTEER' | 'COORDINATOR' | 'DISPATCHER' | 'ADMINISTRATOR';
+
+export type Qualification = 'VERIFIER' | 'ZONE_LEAD' | 'DISPATCHER';
 
 export interface DevUser {
   id: string;
@@ -10,6 +12,7 @@ export interface DevUser {
   zone?: string;
   phone?: string;
   primaryLanguage?: string;
+  qualifications?: Qualification[];
 }
 
 export interface AuthSession {

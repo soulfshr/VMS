@@ -89,3 +89,26 @@
 .driver-popover-arrow-side-bottom {
   border-bottom-color: #ffffff;
 }
+
+/* Don't show again checkbox */
+.tour-dont-show-again {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.tour-dont-show-again label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.tour-dont-show-again input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #0d9488;
+  cursor: pointer;
+}

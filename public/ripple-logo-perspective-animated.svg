@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120" width="200" height="120">
+  <style>
+    .ripple {
+      transform-origin: center;
+      animation: ripple-expand 5s ease-out infinite;
+    }
+    .ripple-1 { animation-delay: 0s; }
+    .ripple-2 { animation-delay: 1.25s; }
+    .ripple-3 { animation-delay: 2.5s; }
+    .ripple-4 { animation-delay: 3.75s; }
+
+    @keyframes ripple-expand {
+      0% {
+        rx: 12;
+        ry: 5;
+        opacity: 0.8;
+        stroke-width: 4;
+      }
+      100% {
+        rx: 95;
+        ry: 38;
+        opacity: 0;
+        stroke-width: 1;
+      }
+    }
+
+    .pebble {
+      animation: pebble-pulse 5s ease-in-out infinite;
+    }
+
+    @keyframes pebble-pulse {
+      0%, 100% {
+        rx: 8;
+        ry: 4;
+      }
+      6% {
+        rx: 6;
+        ry: 3;
+      }
+      12% {
+        rx: 8;
+        ry: 4;
+      }
+    }
+
+    .highlight {
+      animation: highlight-pulse 5s ease-in-out infinite;
+    }
+
+    @keyframes highlight-pulse {
+      0%, 100% { opacity: 0.6; }
+      6% { opacity: 0.3; }
+      12% { opacity: 0.6; }
+    }
+  </style>
+
+  <!-- Animated ripples - perspective ellipses -->
+  <ellipse class="ripple ripple-1" cx="100" cy="60" rx="12" ry="5" fill="none" stroke="#0d9488"/>
+  <ellipse class="ripple ripple-2" cx="100" cy="60" rx="12" ry="5" fill="none" stroke="#0d9488"/>
+  <ellipse class="ripple ripple-3" cx="100" cy="60" rx="12" ry="5" fill="none" stroke="#0d9488"/>
+  <ellipse class="ripple ripple-4" cx="100" cy="60" rx="12" ry="5" fill="none" stroke="#0d9488"/>
+
+  <!-- Center pebble -->
+  <ellipse class="pebble" cx="100" cy="55" rx="8" ry="4" fill="#0d9488"/>
+  <!-- Pebble highlight -->
+  <ellipse class="highlight" cx="98" cy="53" rx="3" ry="1.5" fill="#5eead4"/>
+</svg>

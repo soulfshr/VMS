@@ -55,7 +55,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
 
     const { id } = await params;
     const body = await request.json();
-    const { name, county, description, signalGroup, isActive } = body;
+    const { name, county, description, signalGroup, isActive, color, fillOpacity, strokeWeight, boundaries } = body;
 
     // Check if zone exists
     const existing = await prisma.zone.findUnique({
@@ -83,6 +83,10 @@ export async function PUT(request: Request, { params }: RouteParams) {
         ...(description !== undefined && { description }),
         ...(signalGroup !== undefined && { signalGroup }),
         ...(isActive !== undefined && { isActive }),
+        ...(color !== undefined && { color }),
+        ...(fillOpacity !== undefined && { fillOpacity }),
+        ...(strokeWeight !== undefined && { strokeWeight }),
+        ...(boundaries !== undefined && { boundaries }),
       },
     });
 

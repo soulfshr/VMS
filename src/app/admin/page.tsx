@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import GuidedTour from '@/components/onboarding/GuidedTour';
+
+import type { DevUser } from '@/types/auth';
 
 interface Stats {
   shiftTypes: number;
@@ -11,15 +14,20 @@ interface Stats {
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
+  const [user, setUser] = useState<DevUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([
+      fetch('/api/auth/session').then(res => res.json()),
       fetch('/api/admin/shift-types').then(res => res.json()),
       fetch('/api/admin/zones').then(res => res.json()),
       fetch('/api/admin/settings').then(res => res.json()),
     ])
-      .then(([shiftTypes, zones, settings]) => {
+      .then(([session, shiftTypes, zones, settings]) => {
+        if (session.user) {
+          setUser(session.user);
+        }
         setStats({
           shiftTypes: Array.isArray(shiftTypes) ? shiftTypes.filter((st: { isActive: boolean }) => st.isActive).length : 0,
           zones: Array.isArray(zones) ? zones.filter((z: { isActive: boolean }) => z.isActive).length : 0,
@@ -42,6 +50,16 @@ export default function AdminDashboard() {
   }
 
   return (
+    <>
+      {/* Guided Tour */}
+      {user && (
+        <GuidedTour
+          pageName="admin"
+          userRole={user.role}
+          autoStart={true}
+        />
+      )}
+
     <div>
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
@@ -49,7 +67,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8" data-tour="admin-settings">
         <div className="bg-white rounded-xl border border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -165,5 +183,6 @@ export default function AdminDashboard() {
         </div>
       </div>
     </div>
+    </>
   );
 }

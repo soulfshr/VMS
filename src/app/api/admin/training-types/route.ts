@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
-import type { Role } from '@/generated/prisma/client';
 
 // GET /api/admin/training-types - List all training types (including archived)
 export async function GET() {
@@ -16,6 +15,14 @@ export async function GET() {
 
     const trainingTypes = await prisma.trainingType.findMany({
       include: {
+        grantsQualifiedRole: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            color: true,
+          },
+        },
         _count: {
           select: { sessions: true },
         },
@@ -50,7 +57,7 @@ export async function POST(request: Request) {
       defaultDuration,
       defaultCapacity,
       expiresAfterDays,
-      grantsRole,
+      grantsQualifiedRoleId,
       sortOrder,
     } = body;
 
@@ -82,8 +89,18 @@ export async function POST(request: Request) {
         defaultDuration: defaultDuration ?? 120,
         defaultCapacity: defaultCapacity ?? 20,
         expiresAfterDays: expiresAfterDays ?? null,
-        grantsRole: (grantsRole as Role) || null,
+        grantsQualifiedRoleId: grantsQualifiedRoleId || null,
         sortOrder: sortOrder ?? 0,
+      },
+      include: {
+        grantsQualifiedRole: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            color: true,
+          },
+        },
       },
     });
 

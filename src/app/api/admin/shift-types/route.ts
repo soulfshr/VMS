@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
-import type { Role } from '@/generated/prisma/client';
 
 // GET /api/admin/shift-types - List all shift types (including archived)
 export async function GET() {
@@ -16,7 +15,19 @@ export async function GET() {
 
     const shiftTypes = await prisma.shiftTypeConfig.findMany({
       include: {
-        roleRequirements: true,
+        qualificationRequirements: true,  // Keep for backwards compatibility
+        qualifiedRoleRequirements: {
+          include: {
+            qualifiedRole: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+                color: true,
+              },
+            },
+          },
+        },
         _count: {
           select: { shifts: true },
         },
@@ -52,7 +63,7 @@ export async function POST(request: Request) {
       defaultIdealVolunteers,
       defaultMaxVolunteers,
       sortOrder,
-      roleRequirements,
+      qualifiedRoleRequirements,
     } = body;
 
     // Validate required fields
@@ -73,7 +84,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Create shift type with role requirements
+    // Create shift type with qualified role requirements
     const shiftType = await prisma.shiftTypeConfig.create({
       data: {
         name,
@@ -84,10 +95,10 @@ export async function POST(request: Request) {
         defaultIdealVolunteers: defaultIdealVolunteers ?? 4,
         defaultMaxVolunteers: defaultMaxVolunteers ?? 6,
         sortOrder: sortOrder ?? 0,
-        ...(roleRequirements?.length > 0 && {
-          roleRequirements: {
-            create: roleRequirements.map((req: { role: Role; minRequired: number; maxAllowed?: number }) => ({
-              role: req.role,
+        ...(qualifiedRoleRequirements?.length > 0 && {
+          qualifiedRoleRequirements: {
+            create: qualifiedRoleRequirements.map((req: { qualifiedRoleId: string; minRequired: number; maxAllowed?: number }) => ({
+              qualifiedRoleId: req.qualifiedRoleId,
               minRequired: req.minRequired || 0,
               maxAllowed: req.maxAllowed ?? null,
             })),
@@ -95,7 +106,18 @@ export async function POST(request: Request) {
         }),
       },
       include: {
-        roleRequirements: true,
+        qualifiedRoleRequirements: {
+          include: {
+            qualifiedRole: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+                color: true,
+              },
+            },
+          },
+        },
       },
     });
 

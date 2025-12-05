@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import type { DevUser } from '@/types/auth';
+import { useMultiSelect } from '@/hooks/useMultiSelect';
+import GuidedTour from '@/components/onboarding/GuidedTour';
 
 interface Zone {
   id: string;
@@ -26,6 +28,13 @@ interface UpcomingShift {
   isZoneLead: boolean;
 }
 
+interface QualifiedRole {
+  id: string;
+  name: string;
+  slug: string;
+  color: string;
+}
+
 interface Volunteer {
   id: string;
   name: string;
@@ -37,7 +46,7 @@ interface Volunteer {
   isActive: boolean;
   isVerified: boolean;
   createdAt: string;
-  qualifications: string[];  // VERIFIER, ZONE_LEAD, DISPATCHER
+  qualifiedRoles: QualifiedRole[];
   zones: Zone[];
   completedTrainings: Training[];
   upcomingShifts: UpcomingShift[];
@@ -47,6 +56,7 @@ interface Volunteer {
 interface VolunteersData {
   volunteers: Volunteer[];
   zones: Zone[];
+  qualifiedRoles: QualifiedRole[];
   total: number;
 }
 
@@ -78,6 +88,38 @@ export default function VolunteersPage() {
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Add volunteer modal state
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addingVolunteer, setAddingVolunteer] = useState(false);
+  const [addVolunteerForm, setAddVolunteerForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    role: 'VOLUNTEER',
+    zoneId: '',
+    primaryLanguage: 'English',
+  });
+  const [addVolunteerError, setAddVolunteerError] = useState<string | null>(null);
+
+  // Bulk action state
+  const [showBulkActionModal, setShowBulkActionModal] = useState(false);
+  const [bulkAction, setBulkAction] = useState<'activate' | 'deactivate' | 'delete' | null>(null);
+  const [isBulkActioning, setIsBulkActioning] = useState(false);
+
+  // Multi-select with shift+click support
+  const volunteers = data?.volunteers ?? [];
+  const {
+    selectedIds: selectedVolunteers,
+    isSelected: isVolunteerSelected,
+    toggleSelection: toggleVolunteerSelection,
+    selectAll,
+    clearSelection,
+    selectedCount,
+  } = useMultiSelect({
+    items: volunteers,
+    getId: (volunteer) => volunteer.id,
+  });
 
   // Check authentication
   useEffect(() => {
@@ -146,47 +188,6 @@ export default function VolunteersPage() {
     }
   };
 
-  const getTrainingBadgeColor = (slug: string) => {
-    switch (slug) {
-      case 'DISPATCHER':
-        return 'bg-blue-100 text-blue-800';
-      case 'ZONE_LEAD':
-        return 'bg-purple-100 text-purple-800';
-      case 'VERIFIER':
-        return 'bg-green-100 text-green-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getQualificationBadgeColor = (qualification: string) => {
-    switch (qualification) {
-      case 'DISPATCHER':
-        return 'bg-blue-100 text-blue-800';
-      case 'ZONE_LEAD':
-        return 'bg-purple-100 text-purple-800';
-      case 'VERIFIER':
-        return 'bg-green-100 text-green-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getQualificationLabel = (qualification: string) => {
-    switch (qualification) {
-      case 'DISPATCHER':
-        return 'Dispatcher';
-      case 'ZONE_LEAD':
-        return 'Zone Lead';
-      case 'VERIFIER':
-        return 'Verifier';
-      default:
-        return qualification;
-    }
-  };
-
-  const AVAILABLE_QUALIFICATIONS = ['VERIFIER', 'ZONE_LEAD', 'DISPATCHER'];
-
   // Handle role change
   const handleRoleChange = async (volunteerId: string, newRole: string) => {
     if (!user || user.role !== 'ADMINISTRATOR') return;
@@ -249,39 +250,41 @@ export default function VolunteersPage() {
     }
   };
 
-  // Handle qualification toggle
-  const handleQualificationToggle = async (volunteerId: string, qualification: string, currentQualifications: string[]) => {
+  // Handle qualified role toggle
+  const handleQualifiedRoleToggle = async (volunteerId: string, qualifiedRoleId: string, currentRoles: QualifiedRole[]) => {
     if (!user || user.role !== 'ADMINISTRATOR') return;
 
     setUpdatingQualifications(volunteerId);
-    const newQualifications = currentQualifications.includes(qualification)
-      ? currentQualifications.filter(q => q !== qualification)
-      : [...currentQualifications, qualification];
+    const currentIds = currentRoles.map(r => r.id);
+    const newIds = currentIds.includes(qualifiedRoleId)
+      ? currentIds.filter(id => id !== qualifiedRoleId)
+      : [...currentIds, qualifiedRoleId];
 
     try {
       const res = await fetch(`/api/volunteers/${volunteerId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ qualifications: newQualifications }),
+        body: JSON.stringify({ qualifiedRoleIds: newIds }),
       });
 
       if (res.ok) {
+        const result = await res.json();
         setData(prev => {
           if (!prev) return prev;
           return {
             ...prev,
             volunteers: prev.volunteers.map(v =>
-              v.id === volunteerId ? { ...v, qualifications: newQualifications } : v
+              v.id === volunteerId ? { ...v, qualifiedRoles: result.qualifiedRoles } : v
             ),
           };
         });
       } else {
         const error = await res.json();
-        alert(error.error || 'Failed to update qualifications');
+        alert(error.error || 'Failed to update qualified roles');
       }
     } catch (error) {
-      console.error('Error updating qualifications:', error);
-      alert('Failed to update qualifications');
+      console.error('Error updating qualified roles:', error);
+      alert('Failed to update qualified roles');
     } finally {
       setUpdatingQualifications(null);
     }
@@ -389,6 +392,118 @@ export default function VolunteersPage() {
     }
   };
 
+  // Handle adding a single volunteer
+  const handleAddVolunteer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAddingVolunteer(true);
+    setAddVolunteerError(null);
+
+    try {
+      const volunteerData = {
+        name: addVolunteerForm.name,
+        email: addVolunteerForm.email,
+        phone: addVolunteerForm.phone || undefined,
+        role: addVolunteerForm.role,
+        primaryLanguage: addVolunteerForm.primaryLanguage,
+        zones: addVolunteerForm.zoneId ? [data?.zones.find(z => z.id === addVolunteerForm.zoneId)?.name || ''] : [],
+      };
+
+      const res = await fetch('/api/volunteers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ volunteers: [volunteerData] }),
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw new Error(result.error || 'Failed to add volunteer');
+      }
+
+      if (result.errors && result.errors.length > 0) {
+        throw new Error(result.errors[0].error);
+      }
+
+      // Success - close modal and refresh list
+      setShowAddModal(false);
+      setAddVolunteerForm({
+        name: '',
+        email: '',
+        phone: '',
+        role: 'VOLUNTEER',
+        zoneId: '',
+        primaryLanguage: 'English',
+      });
+      fetchVolunteers();
+    } catch (error) {
+      setAddVolunteerError(error instanceof Error ? error.message : 'Failed to add volunteer');
+    } finally {
+      setAddingVolunteer(false);
+    }
+  };
+
+  const closeAddModal = () => {
+    setShowAddModal(false);
+    setAddVolunteerForm({
+      name: '',
+      email: '',
+      phone: '',
+      role: 'VOLUNTEER',
+      zoneId: '',
+      primaryLanguage: 'English',
+    });
+    setAddVolunteerError(null);
+  };
+
+  // Bulk action handler
+  const handleBulkAction = async () => {
+    if (!bulkAction || selectedCount === 0) return;
+
+    setIsBulkActioning(true);
+    try {
+      const selectedIds = Array.from(selectedVolunteers);
+
+      if (bulkAction === 'activate' || bulkAction === 'deactivate') {
+        // Update active status for all selected
+        const isActive = bulkAction === 'activate';
+        await Promise.all(
+          selectedIds.map(id =>
+            fetch(`/api/volunteers/${id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ isActive }),
+            })
+          )
+        );
+      } else if (bulkAction === 'delete') {
+        // Delete all selected volunteers
+        await Promise.all(
+          selectedIds.map(id =>
+            fetch(`/api/volunteers/${id}`, {
+              method: 'DELETE',
+            })
+          )
+        );
+      }
+
+      // Refresh data and clear selection
+      await fetchVolunteers();
+      clearSelection();
+      setShowBulkActionModal(false);
+      setBulkAction(null);
+    } catch (error) {
+      console.error('Bulk action failed:', error);
+      alert('Failed to complete bulk action');
+    } finally {
+      setIsBulkActioning(false);
+    }
+  };
+
+  const openBulkActionModal = (action: 'activate' | 'deactivate' | 'delete') => {
+    setBulkAction(action);
+    setShowBulkActionModal(true);
+  };
+
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -400,6 +515,16 @@ export default function VolunteersPage() {
   const isAdmin = user.role === 'ADMINISTRATOR';
 
   return (
+    <>
+      {/* Guided Tour */}
+      {user && (
+        <GuidedTour
+          pageName="volunteers"
+          userRole={user.role}
+          autoStart={true}
+        />
+      )}
+
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-6">
         {/* Header */}
@@ -411,23 +536,35 @@ export default function VolunteersPage() {
             </p>
           </div>
           {isAdmin && (
-            <button
-              onClick={() => setShowImportModal(true)}
-              className="mt-4 md:mt-0 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors flex items-center gap-2"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-              </svg>
-              Import Volunteers
-            </button>
+            <div className="mt-4 md:mt-0 flex gap-3">
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors flex items-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Add Volunteer
+              </button>
+              <button
+                onClick={() => setShowImportModal(true)}
+                className="px-4 py-2 border border-teal-600 text-teal-600 rounded-lg hover:bg-teal-50 transition-colors flex items-center gap-2"
+                data-tour="bulk-import"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                Import CSV
+              </button>
+            </div>
           )}
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6" data-tour="volunteer-filters">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             {/* Search */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-2" data-tour="volunteer-search">
               <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
               <input
                 type="text"
@@ -455,15 +592,15 @@ export default function VolunteersPage() {
               </select>
             </div>
 
-            {/* Role filter */}
+            {/* User Type filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">User Type</label>
               <select
                 value={roleFilter}
                 onChange={e => setRoleFilter(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
               >
-                <option value="all">All Roles</option>
+                <option value="all">All User Types</option>
                 <option value="VOLUNTEER">Volunteer</option>
                 <option value="COORDINATOR">Coordinator</option>
                 <option value="DISPATCHER">Dispatcher</option>
@@ -515,17 +652,72 @@ export default function VolunteersPage() {
           </div>
         )}
 
+        {/* Selection Toolbar (Admin only) */}
+        {isAdmin && selectedCount > 0 && (
+          <div className="bg-gray-50 border border-gray-300 rounded-lg p-4 mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <span className="font-medium text-gray-700">
+                {selectedCount} volunteer{selectedCount > 1 ? 's' : ''} selected
+              </span>
+              <span className="text-xs text-gray-500">(Shift+click to select range)</span>
+              <button
+                onClick={clearSelection}
+                className="text-sm text-gray-600 hover:text-gray-800 underline"
+              >
+                Clear selection
+              </button>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => openBulkActionModal('activate')}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-sm"
+              >
+                Activate Selected
+              </button>
+              <button
+                onClick={() => openBulkActionModal('deactivate')}
+                className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors font-medium text-sm"
+              >
+                Deactivate Selected
+              </button>
+              <button
+                onClick={() => openBulkActionModal('delete')}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium text-sm"
+              >
+                Delete Selected
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Volunteer List */}
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
           </div>
         ) : data && data.volunteers.length > 0 ? (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden" data-tour="volunteer-row">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
+                    {isAdmin && (
+                      <th className="w-10 px-3 py-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedCount > 0 && selectedCount === volunteers.length}
+                          onChange={() => {
+                            if (selectedCount === volunteers.length) {
+                              clearSelection();
+                            } else {
+                              selectAll();
+                            }
+                          }}
+                          className="w-4 h-4 text-teal-600 rounded focus:ring-teal-500 cursor-pointer"
+                          title="Select all"
+                        />
+                      </th>
+                    )}
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Volunteer
                     </th>
@@ -533,13 +725,13 @@ export default function VolunteersPage() {
                       Contact
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Role
+                      User Type
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Zones
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Qualifications
+                      Qualified Roles
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Shifts
@@ -554,9 +746,20 @@ export default function VolunteersPage() {
                     <>
                       <tr
                         key={volunteer.id}
-                        className={`hover:bg-gray-50 cursor-pointer ${!volunteer.isActive ? 'opacity-60' : ''}`}
+                        className={`hover:bg-gray-50 cursor-pointer ${!volunteer.isActive ? 'opacity-60' : ''} ${isVolunteerSelected(volunteer.id) ? 'bg-teal-50' : ''}`}
                         onClick={() => setExpandedVolunteer(expandedVolunteer === volunteer.id ? null : volunteer.id)}
                       >
+                        {isAdmin && (
+                          <td className="px-3 py-4" onClick={e => e.stopPropagation()}>
+                            <input
+                              type="checkbox"
+                              checked={isVolunteerSelected(volunteer.id)}
+                              onClick={(e) => toggleVolunteerSelection(volunteer.id, e)}
+                              onChange={() => {}} // Controlled by onClick for shift+click support
+                              className="w-4 h-4 text-teal-600 rounded focus:ring-teal-500 cursor-pointer"
+                            />
+                          </td>
+                        )}
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <div className="w-10 h-10 rounded-full bg-teal-600 text-white flex items-center justify-center text-sm font-medium">
@@ -619,17 +822,23 @@ export default function VolunteersPage() {
                         <td className="px-6 py-4" onClick={e => e.stopPropagation()}>
                           {isAdmin && editingQualifications === volunteer.id ? (
                             <div className="space-y-2">
-                              {AVAILABLE_QUALIFICATIONS.map(qual => (
-                                <label key={qual} className="flex items-center gap-2 cursor-pointer">
+                              {(data?.qualifiedRoles || []).map(qr => (
+                                <label key={qr.id} className="flex items-center gap-2 cursor-pointer">
                                   <input
                                     type="checkbox"
-                                    checked={(volunteer.qualifications || []).includes(qual)}
-                                    onChange={() => handleQualificationToggle(volunteer.id, qual, volunteer.qualifications || [])}
+                                    checked={(volunteer.qualifiedRoles || []).some(r => r.id === qr.id)}
+                                    onChange={() => handleQualifiedRoleToggle(volunteer.id, qr.id, volunteer.qualifiedRoles || [])}
                                     disabled={updatingQualifications === volunteer.id}
                                     className="w-4 h-4 text-teal-600 rounded focus:ring-teal-500"
                                   />
-                                  <span className={`px-2 py-0.5 rounded text-xs ${getQualificationBadgeColor(qual)}`}>
-                                    {getQualificationLabel(qual)}
+                                  <span
+                                    className="px-2 py-0.5 rounded text-xs"
+                                    style={{
+                                      backgroundColor: `${qr.color}20`,
+                                      color: qr.color,
+                                    }}
+                                  >
+                                    {qr.name}
                                   </span>
                                 </label>
                               ))}
@@ -642,13 +851,17 @@ export default function VolunteersPage() {
                             </div>
                           ) : (
                             <div className="flex flex-wrap gap-1">
-                              {(volunteer.qualifications || []).length > 0 ? (
-                                (volunteer.qualifications || []).map(qual => (
+                              {(volunteer.qualifiedRoles || []).length > 0 ? (
+                                (volunteer.qualifiedRoles || []).map(qr => (
                                   <span
-                                    key={qual}
-                                    className={`px-2 py-0.5 rounded text-xs ${getQualificationBadgeColor(qual)}`}
+                                    key={qr.id}
+                                    className="px-2 py-0.5 rounded text-xs"
+                                    style={{
+                                      backgroundColor: `${qr.color}20`,
+                                      color: qr.color,
+                                    }}
                                   >
-                                    {getQualificationLabel(qual)}
+                                    {qr.name}
                                   </span>
                                 ))
                               ) : (
@@ -658,7 +871,7 @@ export default function VolunteersPage() {
                                 <button
                                   onClick={() => setEditingQualifications(volunteer.id)}
                                   className="ml-1 text-gray-400 hover:text-teal-600"
-                                  title="Edit qualifications"
+                                  title="Edit qualified roles"
                                 >
                                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -700,7 +913,7 @@ export default function VolunteersPage() {
                       {/* Expanded Details */}
                       {expandedVolunteer === volunteer.id && (
                         <tr key={`${volunteer.id}-details`}>
-                          <td colSpan={7} className="px-6 py-4 bg-gray-50">
+                          <td colSpan={isAdmin ? 8 : 7} className="px-6 py-4 bg-gray-50">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                               {/* Upcoming Shifts */}
                               <div>
@@ -947,6 +1160,205 @@ Jane Smith,jane@example.com,555-5678,COORDINATOR,Spanish,Zone 3`}
           </div>
         </div>
       )}
+
+      {/* Bulk Action Confirmation Modal */}
+      {showBulkActionModal && bulkAction && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-2">
+              {bulkAction === 'activate' && 'Activate Volunteers'}
+              {bulkAction === 'deactivate' && 'Deactivate Volunteers'}
+              {bulkAction === 'delete' && 'Delete Volunteers'}
+            </h2>
+            <p className="text-gray-600 mb-4">
+              {bulkAction === 'activate' && `Are you sure you want to activate ${selectedCount} volunteer${selectedCount > 1 ? 's' : ''}?`}
+              {bulkAction === 'deactivate' && `Are you sure you want to deactivate ${selectedCount} volunteer${selectedCount > 1 ? 's' : ''}?`}
+              {bulkAction === 'delete' && (
+                <span className="text-red-600">
+                  Are you sure you want to permanently delete {selectedCount} volunteer{selectedCount > 1 ? 's' : ''}? This action cannot be undone.
+                </span>
+              )}
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowBulkActionModal(false);
+                  setBulkAction(null);
+                }}
+                disabled={isBulkActioning}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleBulkAction}
+                disabled={isBulkActioning}
+                className={`flex-1 px-4 py-2 text-white rounded-lg disabled:opacity-50 ${
+                  bulkAction === 'delete'
+                    ? 'bg-red-600 hover:bg-red-700'
+                    : bulkAction === 'deactivate'
+                    ? 'bg-yellow-600 hover:bg-yellow-700'
+                    : 'bg-green-600 hover:bg-green-700'
+                }`}
+              >
+                {isBulkActioning ? 'Processing...' : 'Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Volunteer Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold text-gray-900">Add Volunteer</h2>
+                <button
+                  onClick={closeAddModal}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <p className="text-sm text-gray-600 mb-4">
+                Add a new volunteer to the system. They will receive an email to set their password.
+              </p>
+
+              {addVolunteerError && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                  {addVolunteerError}
+                </div>
+              )}
+
+              <form onSubmit={handleAddVolunteer} className="space-y-4">
+                {/* Name */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Full Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={addVolunteerForm.name}
+                    onChange={(e) => setAddVolunteerForm(prev => ({ ...prev, name: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                    placeholder="John Doe"
+                  />
+                </div>
+
+                {/* Email */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email Address <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={addVolunteerForm.email}
+                    onChange={(e) => setAddVolunteerForm(prev => ({ ...prev, email: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                    placeholder="john@example.com"
+                  />
+                </div>
+
+                {/* Phone */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Phone Number
+                  </label>
+                  <input
+                    type="tel"
+                    value={addVolunteerForm.phone}
+                    onChange={(e) => setAddVolunteerForm(prev => ({ ...prev, phone: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                    placeholder="919-555-1234"
+                  />
+                </div>
+
+                {/* User Type */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    User Type
+                  </label>
+                  <select
+                    value={addVolunteerForm.role}
+                    onChange={(e) => setAddVolunteerForm(prev => ({ ...prev, role: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  >
+                    <option value="VOLUNTEER">Volunteer</option>
+                    <option value="COORDINATOR">Coordinator</option>
+                    <option value="DISPATCHER">Dispatcher</option>
+                    <option value="ADMINISTRATOR">Administrator</option>
+                  </select>
+                </div>
+
+                {/* Zone */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Primary Zone
+                  </label>
+                  <select
+                    value={addVolunteerForm.zoneId}
+                    onChange={(e) => setAddVolunteerForm(prev => ({ ...prev, zoneId: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  >
+                    <option value="">No zone assigned</option>
+                    {data?.zones.map(zone => (
+                      <option key={zone.id} value={zone.id}>
+                        {zone.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Primary Language */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Primary Language
+                  </label>
+                  <select
+                    value={addVolunteerForm.primaryLanguage}
+                    onChange={(e) => setAddVolunteerForm(prev => ({ ...prev, primaryLanguage: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  >
+                    <option value="English">English</option>
+                    <option value="Spanish">Spanish</option>
+                    <option value="Mandarin">Mandarin</option>
+                    <option value="French">French</option>
+                    <option value="Vietnamese">Vietnamese</option>
+                    <option value="Arabic">Arabic</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+
+                {/* Submit buttons */}
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={closeAddModal}
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={addingVolunteer}
+                    className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {addingVolunteer ? 'Adding...' : 'Add Volunteer'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+    </>
   );
 }

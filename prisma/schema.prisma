@@ -1,4 +1,4 @@
-// Siembra NC VMS - Prisma Schema
+// RippleVMS - Prisma Schema
 // Phase 1: Volunteer onboarding, training, availability, and shift management
 
 generator client {
@@ -72,12 +72,88 @@ enum MediaType {
   VIDEO
 }
 
+// Email blast templates
+enum EmailTemplate {
+  GENERAL_NEWSLETTER
+  SCHEDULE_ANNOUNCEMENT
+  TRAINING_ANNOUNCEMENT
+  FREEFORM
+}
+
+// Email blast status
+enum EmailBlastStatus {
+  PENDING
+  SENDING
+  COMPLETED
+  FAILED
+}
+
+// Individual email send status
+enum EmailSendStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+// ============================================
+// QUALIFIED ROLES (Admin-configurable shift positions)
+// ============================================
+
+model QualifiedRole {
+  id                    String   @id @default(cuid())
+  name                  String   @unique  // "Verifier", "Zone Lead", "Dispatcher"
+  slug                  String   @unique  // "VERIFIER", "ZONE_LEAD", "DISPATCHER"
+  description           String?
+  color                 String   @default("#6366f1")  // Indigo by default
+
+  isActive              Boolean  @default(true)
+  isDefaultForNewUsers  Boolean  @default(false)  // Auto-assign to new users
+  countsTowardMinimum   Boolean  @default(true)   // If false, volunteers with this role don't count toward shift min/max
+  sortOrder             Int      @default(0)
+
+  // Relations
+  userQualifications    UserQualification[]
+  shiftTypeRequirements ShiftTypeQualifiedRoleRequirement[]
+  trainingTypeGrants    TrainingType[] @relation("TrainingGrantsQualifiedRole")
+  shiftVolunteers       ShiftVolunteer[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// Junction table for User qualified roles
+model UserQualification {
+  id                String        @id @default(cuid())
+  userId            String
+  qualifiedRoleId   String
+
+  // Track how the qualification was earned
+  earnedAt          DateTime      @default(now())
+  expiresAt         DateTime?
+  grantedById       String?       // Admin who granted it manually
+  trainingSessionId String?       // Training session that granted it
+
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  qualifiedRole     QualifiedRole @relation(fields: [qualifiedRoleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, qualifiedRoleId])
+  @@index([userId])
+  @@index([qualifiedRoleId])
+}
+
 // ============================================
 // ORGANIZATION SETTINGS
 // ============================================
 
 model OrganizationSettings {
   id              String   @id @default(cuid())
+
+  // Branding Settings (configurable by admin)
+  orgName          String   @default("RippleVMS")      // Organization name used in emails
+  emailFromName    String   @default("RippleVMS")      // "From" name in emails
+  emailFromAddress String   @default("")               // Email address for sending (e.g., noreply@example.com)
+  emailReplyTo     String   @default("")               // Reply-to email address (where replies go)
+  emailFooter      String   @default("RippleVMS Team") // Footer text in emails
 
   // RSVP Settings
   autoConfirmRsvp Boolean  @default(false)  // If true, RSVPs are immediately confirmed
@@ -88,6 +164,10 @@ model OrganizationSettings {
   // Upload settings for ICE sighting reports
   maxUploadSizeMb     Int  @default(50)   // Max file size in MB
   maxUploadsPerReport Int  @default(5)    // Max number of files per report
+
+  // Feature flag overrides (null = use env var default)
+  featureTrainings  Boolean?  // Override for NEXT_PUBLIC_FEATURE_TRAININGS
+  featureSightings  Boolean?  // Override for NEXT_PUBLIC_FEATURE_SIGHTINGS
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -113,22 +193,39 @@ model ShiftTypeConfig {
   sortOrder       Int      @default(0)
 
   // Relationships
-  roleRequirements ShiftTypeRoleRequirement[]
+  qualificationRequirements ShiftTypeQualificationRequirement[]  // DEPRECATED
+  qualifiedRoleRequirements ShiftTypeQualifiedRoleRequirement[] @relation("ShiftTypeQualifiedRoleReqs")  // NEW
   shifts          Shift[]  @relation("ShiftTypeConfig")
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
 
-model ShiftTypeRoleRequirement {
+// DEPRECATED: Use ShiftTypeQualifiedRoleRequirement instead
+model ShiftTypeQualificationRequirement {
   id              String          @id @default(cuid())
   shiftTypeId     String
   shiftType       ShiftTypeConfig @relation(fields: [shiftTypeId], references: [id], onDelete: Cascade)
-  role            Role            // VOLUNTEER, COORDINATOR, DISPATCHER, ADMINISTRATOR
+  qualification   Qualification   // VERIFIER, ZONE_LEAD, DISPATCHER
   minRequired     Int             @default(0)
   maxAllowed      Int?            // null = unlimited
 
-  @@unique([shiftTypeId, role])
+  @@unique([shiftTypeId, qualification])
+}
+
+// NEW: Qualified Role requirements for shift types
+model ShiftTypeQualifiedRoleRequirement {
+  id              String          @id @default(cuid())
+  shiftTypeId     String
+  qualifiedRoleId String
+
+  shiftType       ShiftTypeConfig @relation("ShiftTypeQualifiedRoleReqs", fields: [shiftTypeId], references: [id], onDelete: Cascade)
+  qualifiedRole   QualifiedRole   @relation(fields: [qualifiedRoleId], references: [id], onDelete: Cascade)
+
+  minRequired     Int             @default(0)
+  maxAllowed      Int?            // null = unlimited
+
+  @@unique([shiftTypeId, qualifiedRoleId])
 }
 
 // ============================================
@@ -163,6 +260,16 @@ model User {
   isActive          Boolean   @default(true)
   isVerified        Boolean   @default(false)
 
+  // Email preferences
+  emailNotifications Boolean  @default(true)  // Can opt out of non-critical emails
+  unsubscribeToken   String?  @unique         // Token for one-click unsubscribe
+
+  // Authentication
+  passwordHash        String?               // Hashed password (bcryptjs)
+  passwordSetAt       DateTime?             // When password was last set
+  resetToken          String?   @unique     // Password reset token (UUID)
+  resetTokenExpiresAt DateTime?             // Token expiration time
+
   // Relationships
   zones             UserZone[]
   trainings         UserTraining[]
@@ -172,6 +279,16 @@ model User {
   trainingAttendances     TrainingSessionAttendee[]
   createdTrainingSessions TrainingSession[] @relation("TrainingCreatedBy")
   dispatcherAssignments   DispatcherAssignment[]
+
+  // Qualified roles (new system - positions user can fill during shifts)
+  userQualifications    UserQualification[]
+
+  // Email blast relationships
+  sentEmailBlasts      EmailBlast[]          @relation("EmailBlastSentBy")
+  receivedEmailBlasts  EmailBlastRecipient[] @relation("EmailBlastRecipients")
+
+  // POI relationships
+  createdPOIs          PointOfInterest[]     @relation("POICreatedBy")
 
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
@@ -189,10 +306,17 @@ model Zone {
   signalGroup String?    // Signal group invite link
   isActive    Boolean    @default(true)
 
+  // Map display settings
+  boundaries  Json?      // Array of {lat, lng} coordinates defining the zone polygon
+  color       String     @default("#3b82f6")  // Fill color (hex)
+  fillOpacity Float      @default(0.3)        // 0-1 opacity
+  strokeWeight Int       @default(2)          // Border width in pixels
+
   // Relationships
   users       UserZone[]
   shifts      Shift[]
   trainingSessions TrainingSession[]
+  pois        PointOfInterest[]
 
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
@@ -268,11 +392,13 @@ model TrainingType {
   defaultCapacity     Int      @default(20)
   expiresAfterDays    Int?     // Certification expiration (null = never)
 
-  // DEPRECATED: Use grantsQualification instead
+  // DEPRECATED: Use grantsQualifiedRole instead
   grantsRole          Role?
+  grantsQualification Qualification?  // DEPRECATED
 
-  // Qualification granted upon completion
-  grantsQualification Qualification?  // If set, completing this training grants this qualification
+  // NEW: Qualified role granted upon completion
+  grantsQualifiedRoleId String?
+  grantsQualifiedRole   QualifiedRole? @relation("TrainingGrantsQualifiedRole", fields: [grantsQualifiedRoleId], references: [id])
 
   isActive        Boolean  @default(true)
   sortOrder       Int      @default(0)
@@ -411,13 +537,20 @@ model Shift {
 }
 
 model ShiftVolunteer {
-  id              String     @id @default(cuid())
+  id              String         @id @default(cuid())
   shiftId         String
   userId          String
-  status          RSVPStatus @default(PENDING)
+  status          RSVPStatus     @default(PENDING)
+
+  // DEPRECATED: The qualification/role the volunteer is signing up as
+  qualification   Qualification?
+
+  // NEW: The qualified role the volunteer is signing up as
+  qualifiedRoleId String?
+  qualifiedRole   QualifiedRole? @relation(fields: [qualifiedRoleId], references: [id])
 
   // Leadership designation
-  isZoneLead      Boolean    @default(false)  // Designate this volunteer as zone lead for this shift
+  isZoneLead      Boolean        @default(false)  // Designate this volunteer as zone lead for this shift
 
   // Confirmation
   confirmedAt     DateTime?
@@ -516,4 +649,108 @@ model SightingMedia {
   createdAt   DateTime @default(now())
 
   @@index([sightingId])
+}
+
+// ============================================
+// EMAIL BLASTS
+// ============================================
+
+model EmailBlast {
+  id          String   @id @default(cuid())
+  subject     String
+  body        String   @db.Text
+  template    EmailTemplate
+
+  // Filters used (stored as JSON for audit)
+  filters     Json
+
+  // Stats
+  recipientCount  Int
+  sentCount       Int      @default(0)
+  failedCount     Int      @default(0)
+
+  // Sender
+  sentById    String
+  sentBy      User     @relation("EmailBlastSentBy", fields: [sentById], references: [id])
+
+  status      EmailBlastStatus @default(PENDING)
+  sentAt      DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  recipients  EmailBlastRecipient[]
+
+  @@index([status])
+  @@index([sentAt])
+}
+
+model EmailBlastRecipient {
+  id          String   @id @default(cuid())
+  blastId     String
+  blast       EmailBlast @relation(fields: [blastId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation("EmailBlastRecipients", fields: [userId], references: [id])
+  email       String
+  status      EmailSendStatus @default(PENDING)
+  sentAt      DateTime?
+  error       String?
+
+  createdAt   DateTime @default(now())
+
+  @@unique([blastId, userId])
+  @@index([blastId])
+}
+
+// ============================================
+// POINTS OF INTEREST (POI)
+// ============================================
+
+model POICategory {
+  id          String   @id @default(cuid())
+  name        String   @unique  // "ICE/Enforcement", "Schools", "Safe Spaces"
+  slug        String   @unique  // "ICE_ENFORCEMENT", "SCHOOLS", "SAFE_SPACES"
+  description String?
+  color       String   @default("#6366f1")  // For map markers
+  icon        String?  // Optional icon name (e.g., "shield", "school", "heart")
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+
+  pois        PointOfInterest[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model PointOfInterest {
+  id          String      @id @default(cuid())
+  name        String      // "Stewart Detention Center", "Durham Public Library"
+  description String?
+
+  // Location
+  address     String?
+  latitude    Float
+  longitude   Float
+
+  // Optional contact/metadata
+  phone       String?
+  website     String?
+  notes       String?     // Internal notes for coordinators
+
+  // Relations
+  categoryId  String
+  category    POICategory @relation(fields: [categoryId], references: [id])
+  zoneId      String?
+  zone        Zone?       @relation(fields: [zoneId], references: [id])
+
+  // Audit
+  createdById String
+  createdBy   User        @relation("POICreatedBy", fields: [createdById], references: [id])
+  isActive    Boolean     @default(true)
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([categoryId])
+  @@index([zoneId])
+  @@index([isActive])
 }

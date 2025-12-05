@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <style>
+    .ripple {
+      transform-origin: center;
+      animation: ripple-expand 5s ease-out infinite;
+    }
+    .ripple-1 { animation-delay: 0s; }
+    .ripple-2 { animation-delay: 1.25s; }
+    .ripple-3 { animation-delay: 2.5s; }
+    .ripple-4 { animation-delay: 3.75s; }
+
+    @keyframes ripple-expand {
+      0% {
+        r: 15;
+        opacity: 0.8;
+        stroke-width: 4;
+      }
+      100% {
+        r: 95;
+        opacity: 0;
+        stroke-width: 1;
+      }
+    }
+
+    .pebble {
+      animation: pebble-pulse 5s ease-in-out infinite;
+    }
+
+    @keyframes pebble-pulse {
+      0%, 100% { r: 10; }
+      6% { r: 8; }
+      12% { r: 10; }
+    }
+  </style>
+
+  <!-- Animated ripples -->
+  <circle class="ripple ripple-1" cx="100" cy="100" r="15" fill="none" stroke="#0d9488"/>
+  <circle class="ripple ripple-2" cx="100" cy="100" r="15" fill="none" stroke="#0d9488"/>
+  <circle class="ripple ripple-3" cx="100" cy="100" r="15" fill="none" stroke="#0d9488"/>
+  <circle class="ripple ripple-4" cx="100" cy="100" r="15" fill="none" stroke="#0d9488"/>
+
+  <!-- Center pebble -->
+  <circle class="pebble" cx="100" cy="100" r="10" fill="#0d9488"/>
+</svg>

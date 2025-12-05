@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120" width="200" height="120">
+  <!-- Outer ripple - ellipse for perspective -->
+  <ellipse cx="100" cy="70" rx="90" ry="36" fill="none" stroke="#0d9488" stroke-width="2.5" opacity="0.25"/>
+  <!-- Middle-outer ripple -->
+  <ellipse cx="100" cy="65" rx="70" ry="28" fill="none" stroke="#0d9488" stroke-width="3" opacity="0.4"/>
+  <!-- Middle ripple -->
+  <ellipse cx="100" cy="60" rx="50" ry="20" fill="none" stroke="#0d9488" stroke-width="3.5" opacity="0.55"/>
+  <!-- Inner ripple -->
+  <ellipse cx="100" cy="55" rx="30" ry="12" fill="none" stroke="#0d9488" stroke-width="4" opacity="0.7"/>
+  <!-- Center pebble - slightly elevated -->
+  <ellipse cx="100" cy="50" rx="10" ry="6" fill="#0d9488"/>
+  <!-- Pebble highlight for 3D effect -->
+  <ellipse cx="98" cy="48" rx="4" ry="2" fill="#5eead4" opacity="0.6"/>
+</svg>

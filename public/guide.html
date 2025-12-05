@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>User Guide - Siembra NC VMS</title>
+  <title>User Guide - RippleVMS</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     html { scroll-behavior: smooth; }
@@ -15,6 +15,21 @@
     code { background-color: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-size: 0.875em; }
     pre { background-color: #1f2937; color: #e5e7eb; padding: 16px; border-radius: 8px; overflow-x: auto; }
     pre code { background: none; padding: 0; }
+    .coming-soon { opacity: 0.5; position: relative; }
+    .coming-soon::after {
+      content: "Coming Soon";
+      position: absolute;
+      top: 4px;
+      right: 8px;
+      background: #fbbf24;
+      color: #78350f;
+      font-size: 0.65rem;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+    .not-implemented { color: #9ca3af; text-decoration: line-through; }
   </style>
 </head>
 <body class="bg-gray-50">
@@ -23,9 +38,9 @@
     <div class="container mx-auto px-4">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-4">
-          <img src="/siembra-logo.webp" alt="Siembra NC" class="w-12 h-12 rounded-lg shadow">
+          <img src="/ripple-logo-perspective-animated.svg" alt="RippleVMS" class="w-14 h-10">
           <div>
-            <h1 class="text-2xl font-bold">Siembra NC VMS</h1>
+            <h1 class="text-2xl font-bold">RippleVMS</h1>
             <p class="text-teal-100 text-sm">User Guide</p>
           </div>
         </div>
@@ -47,12 +62,15 @@
             <li><a href="#roles" class="toc-link block text-gray-600 hover:text-teal-600">User Roles</a></li>
             <li><a href="#getting-started" class="toc-link block text-gray-600 hover:text-teal-600">Getting Started</a></li>
             <li><a href="#dashboard" class="toc-link block text-gray-600 hover:text-teal-600">Dashboard</a></li>
+            <li><a href="#sightings" class="toc-link block text-gray-600 hover:text-teal-600">ICE Sightings</a></li>
             <li><a href="#shifts" class="toc-link block text-gray-600 hover:text-teal-600">Shifts</a></li>
             <li><a href="#trainings" class="toc-link block text-gray-600 hover:text-teal-600">Trainings</a></li>
             <li><a href="#schedule" class="toc-link block text-gray-600 hover:text-teal-600">Schedule</a></li>
             <li><a href="#volunteers" class="toc-link block text-gray-600 hover:text-teal-600">Volunteers</a></li>
             <li><a href="#profile" class="toc-link block text-gray-600 hover:text-teal-600">Profile</a></li>
             <li><a href="#admin" class="toc-link block text-gray-600 hover:text-teal-600">Admin Panel</a></li>
+            <li><a href="#qualified-roles" class="toc-link block text-gray-600 hover:text-teal-600 ml-4 text-xs">- Qualified Roles</a></li>
+            <li><a href="#email-blasts" class="toc-link block text-gray-600 hover:text-teal-600">Email Blasts</a></li>
             <li><a href="#workflows" class="toc-link block text-gray-600 hover:text-teal-600">Common Workflows</a></li>
             <li><a href="#tips" class="toc-link block text-gray-600 hover:text-teal-600">Tips & Best Practices</a></li>
           </ul>
@@ -65,7 +83,7 @@
         <section id="overview" class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
           <h2 class="text-2xl font-bold text-gray-900 mb-4">Overview</h2>
           <p class="text-gray-600 mb-4">
-            The Siembra NC Volunteer Management System (VMS) coordinates community volunteers who monitor, document, and respond to immigration enforcement activities in North Carolina's Triangle region.
+            RippleVMS coordinates community volunteers who monitor, document, and respond to activities in their communities. The system helps organizations manage volunteers across multiple zones.
           </p>
           <div class="grid sm:grid-cols-2 gap-4">
             <div class="flex items-start gap-3 p-4 bg-teal-50 rounded-lg">
@@ -148,6 +166,7 @@
                 <li class="flex items-center gap-2"><span class="text-blue-500">&#10003;</span> Confirm or reject volunteer RSVPs</li>
                 <li class="flex items-center gap-2"><span class="text-blue-500">&#10003;</span> Access volunteer directory</li>
                 <li class="flex items-center gap-2"><span class="text-blue-500">&#10003;</span> Assign zone leads to shifts</li>
+                <li class="flex items-center gap-2"><span class="text-blue-500">&#10003;</span> Send email blasts to volunteers</li>
               </ul>
             </div>
 
@@ -156,12 +175,15 @@
               <div class="flex items-center gap-3 mb-3">
                 <span class="px-3 py-1 bg-orange-600 text-white text-sm font-medium rounded-full">Dispatcher</span>
               </div>
-              <p class="text-gray-600 mb-3">Handles real-time coordination during active monitoring.</p>
+              <p class="text-gray-600 mb-3">Handles real-time coordination during active monitoring and manages ICE sighting reports.</p>
               <ul class="text-sm text-gray-600 space-y-1">
                 <li class="flex items-center gap-2"><span class="text-orange-500">&#10003;</span> Everything Volunteers can do, plus:</li>
                 <li class="flex items-center gap-2"><span class="text-orange-500">&#10003;</span> View schedule dashboard with dispatcher assignments</li>
                 <li class="flex items-center gap-2"><span class="text-orange-500">&#10003;</span> See all active shifts across zones</li>
                 <li class="flex items-center gap-2"><span class="text-orange-500">&#10003;</span> Coordinate field responses</li>
+                <li class="flex items-center gap-2"><span class="text-orange-500">&#10003;</span> Receive and manage ICE sighting reports</li>
+                <li class="flex items-center gap-2"><span class="text-orange-500">&#10003;</span> Update sighting status (verify, respond, close)</li>
+                <li class="flex items-center gap-2"><span class="text-orange-500">&#10003;</span> View sightings on map</li>
               </ul>
             </div>
 
@@ -174,7 +196,8 @@
               <ul class="text-sm text-gray-600 space-y-1">
                 <li class="flex items-center gap-2"><span class="text-purple-500">&#10003;</span> Everything all other roles can do, plus:</li>
                 <li class="flex items-center gap-2"><span class="text-purple-500">&#10003;</span> Manage all users and their roles</li>
-                <li class="flex items-center gap-2"><span class="text-purple-500">&#10003;</span> Configure zones, shift types, and training types</li>
+                <li class="flex items-center gap-2"><span class="text-purple-500">&#10003;</span> Configure zones, shift types, training types, and qualified roles</li>
+                <li class="flex items-center gap-2"><span class="text-purple-500">&#10003;</span> Draw zone boundaries on coverage map</li>
                 <li class="flex items-center gap-2"><span class="text-purple-500">&#10003;</span> Bulk import volunteers</li>
                 <li class="flex items-center gap-2"><span class="text-purple-500">&#10003;</span> Access system settings</li>
               </ul>
@@ -189,9 +212,15 @@
           <h3 class="text-lg font-semibold text-gray-900 mb-3">First Login</h3>
           <ol class="list-decimal list-inside text-gray-600 mb-6 space-y-2">
             <li>Navigate to the login page</li>
-            <li>Select your user account from the available options</li>
+            <li>If you're a new user, click "Forgot Password?" to set your initial password</li>
+            <li>Enter your email and password</li>
             <li>You'll be redirected to your dashboard</li>
           </ol>
+
+          <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg mb-6">
+            <h4 class="font-semibold text-blue-900 mb-2">Need Access?</h4>
+            <p class="text-sm text-gray-600">Contact <strong>triangle.dispatch.group@gmail.com</strong> to request a volunteer account.</p>
+          </div>
 
           <h3 class="text-lg font-semibold text-gray-900 mb-3">Welcome Tour</h3>
           <p class="text-gray-600 mb-4">On your first visit to each major page, you may see a guided tour highlighting key features. You can:</p>
@@ -273,6 +302,117 @@
           </div>
         </section>
 
+        <!-- ICE Sightings -->
+        <section id="sightings" class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
+          <h2 class="text-2xl font-bold text-gray-900 mb-6">ICE Sightings</h2>
+          <p class="text-gray-600 mb-6">The ICE sighting system allows community members to report immigration enforcement activity and enables dispatchers to coordinate responses.</p>
+
+          <h3 class="text-lg font-semibold text-gray-900 mb-3">Reporting a Sighting (Public)</h3>
+          <p class="text-gray-600 mb-4">Anyone can report an ICE sighting using the public report form at <code>/report</code>. Reports use the SALUTE model:</p>
+          <div class="overflow-x-auto mb-6">
+            <table class="w-full text-sm">
+              <thead>
+                <tr>
+                  <th>Field</th>
+                  <th>Description</th>
+                  <th>Example</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>S</strong>ize/Strength</td>
+                  <td>Number of officers and vehicles</td>
+                  <td>"5-6 officers, 2 white SUVs"</td>
+                </tr>
+                <tr>
+                  <td><strong>A</strong>ctivity</td>
+                  <td>What is happening</td>
+                  <td>"Officers approaching homes"</td>
+                </tr>
+                <tr>
+                  <td><strong>L</strong>ocation</td>
+                  <td>Where the activity is occurring</td>
+                  <td>"Parked in front of Wendy's on Main St"</td>
+                </tr>
+                <tr>
+                  <td><strong>U</strong>niform</td>
+                  <td>What they're wearing</td>
+                  <td>"Blue vests with ICE on the back"</td>
+                </tr>
+                <tr>
+                  <td><strong>T</strong>ime</td>
+                  <td>When it was observed</td>
+                  <td>Date and time picker</td>
+                </tr>
+                <tr>
+                  <td><strong>E</strong>quipment</td>
+                  <td>Vehicles and gear</td>
+                  <td>"Helmets, vests, and unmarked vehicles"</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="text-gray-600 mb-6">Reporters can optionally include their contact information for follow-up, photos/videos, and use their location or pin a spot on the map.</p>
+
+          <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-lg mb-6">
+            <h4 class="font-semibold text-yellow-900 mb-2">24/7 Hotline</h4>
+            <p class="text-sm text-gray-600">For immediate reports, community members can also call the hotline: <strong>336-543-0353</strong></p>
+          </div>
+
+          <h3 class="text-lg font-semibold text-gray-900 mb-3">Viewing Sightings (Dispatchers)</h3>
+          <p class="text-gray-600 mb-4">Dispatchers can view and manage all sighting reports from the <strong>Sightings</strong> page:</p>
+          <ul class="list-disc list-inside text-gray-600 mb-6 space-y-1">
+            <li><strong>List View</strong> - Browse all sightings with filters</li>
+            <li><strong>Map View</strong> - See sightings plotted on a map with color-coded status markers</li>
+            <li><strong>Filter by status</strong> - New, Reviewing, Verified, Responded, Closed</li>
+          </ul>
+
+          <h3 class="text-lg font-semibold text-gray-900 mb-3">Sighting Statuses</h3>
+          <div class="overflow-x-auto mb-6">
+            <table class="w-full text-sm">
+              <thead>
+                <tr>
+                  <th>Status</th>
+                  <th>Meaning</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="px-2 py-1 bg-red-100 text-red-800 rounded text-xs font-medium">New</span></td>
+                  <td>Just submitted, awaiting review</td>
+                </tr>
+                <tr>
+                  <td><span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-medium">Reviewing</span></td>
+                  <td>Dispatcher is evaluating the report</td>
+                </tr>
+                <tr>
+                  <td><span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">Verified</span></td>
+                  <td>Report has been confirmed as accurate</td>
+                </tr>
+                <tr>
+                  <td><span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">Responded</span></td>
+                  <td>Field team has been dispatched/responded</td>
+                </tr>
+                <tr>
+                  <td><span class="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs font-medium">Closed</span></td>
+                  <td>Incident resolved or no longer active</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+            <h4 class="font-semibold text-orange-900 mb-2">Managing Sightings (Dispatchers)</h4>
+            <ol class="list-decimal list-inside text-sm text-gray-600 space-y-1">
+              <li>Click on a sighting to view full SALUTE details and any photos</li>
+              <li>View the location on the embedded map</li>
+              <li>Update the status as the response progresses</li>
+              <li>Add internal notes for coordination</li>
+              <li>Contact reporter if follow-up info was provided</li>
+            </ol>
+          </div>
+        </section>
+
         <!-- Shifts -->
         <section id="shifts" class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
           <h2 class="text-2xl font-bold text-gray-900 mb-6">Shifts</h2>
@@ -281,7 +421,7 @@
           <p class="text-gray-600 mb-4">The Shifts page shows all available and upcoming shifts. You can:</p>
           <ul class="list-disc list-inside text-gray-600 mb-6 space-y-1">
             <li><strong>Filter by zone</strong> - Focus on specific geographic areas</li>
-            <li><strong>Filter by shift type</strong> - Zone Patrol, On-Call, Intel Collection, etc.</li>
+            <li><strong>Filter by shift type</strong> - Patrol, Collection, On-Call Field Support</li>
             <li><strong>Filter by date range</strong> - Find shifts for specific days</li>
             <li><strong>Search</strong> - Find shifts by title or description</li>
           </ul>
@@ -297,20 +437,16 @@
               </thead>
               <tbody>
                 <tr>
-                  <td><strong>Zone Patrol</strong></td>
-                  <td>Active monitoring of assigned zones</td>
+                  <td><strong>Patrol</strong></td>
+                  <td>Community patrol shifts for area monitoring and presence</td>
                 </tr>
                 <tr>
-                  <td><strong>On-Call</strong></td>
-                  <td>Available for rapid dispatch to verify sightings</td>
+                  <td><strong>Collection</strong></td>
+                  <td>Intelligence collection and monitoring shifts</td>
                 </tr>
                 <tr>
-                  <td><strong>Intel Collection</strong></td>
-                  <td>Monitor social media and community networks</td>
-                </tr>
-                <tr>
-                  <td><strong>Training</strong></td>
-                  <td>Attend training sessions</td>
+                  <td><strong>On-Call Field Support</strong></td>
+                  <td>On-call shifts for rapid response and field support</td>
                 </tr>
               </tbody>
             </table>
@@ -392,40 +528,42 @@
           <h3 class="text-lg font-semibold text-gray-900 mb-3">Viewing Training Sessions</h3>
           <p class="text-gray-600 mb-4">The Trainings page lists all available training sessions. Filter by:</p>
           <ul class="list-disc list-inside text-gray-600 mb-6 space-y-1">
-            <li><strong>Training type</strong> - Basic Training, Field Protocol, Legal Rights, etc.</li>
+            <li><strong>Training type</strong> - Verifier, Zone Lead, Dispatcher</li>
             <li><strong>Date range</strong> - Upcoming sessions</li>
             <li><strong>Status</strong> - Sessions you've completed vs. available</li>
           </ul>
 
-          <h3 class="text-lg font-semibold text-gray-900 mb-3">Training Types</h3>
+          <h3 class="text-lg font-semibold text-gray-900 mb-3">Training Types & Qualified Roles</h3>
+          <p class="text-gray-600 mb-4">Training types are configured by administrators and can grant Qualified Roles upon completion. Default training types include:</p>
           <div class="overflow-x-auto mb-6">
             <table class="w-full text-sm">
               <thead>
                 <tr>
                   <th>Type</th>
                   <th>Description</th>
+                  <th>Grants Qualified Role</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td><strong>Basic Training</strong></td>
-                  <td>Required orientation for all new volunteers</td>
+                  <td><strong>Verifier</strong></td>
+                  <td>Learn to verify and document incidents accurately</td>
+                  <td><span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">Verifier</span></td>
                 </tr>
                 <tr>
-                  <td><strong>Field Protocol</strong></td>
-                  <td>Procedures for monitoring activities</td>
+                  <td><strong>Zone Lead</strong></td>
+                  <td>Leadership training for coordinating zone activities</td>
+                  <td><span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">Zone Lead</span></td>
                 </tr>
                 <tr>
-                  <td><strong>Legal Rights</strong></td>
-                  <td>Know Your Rights training</td>
-                </tr>
-                <tr>
-                  <td><strong>De-escalation</strong></td>
-                  <td>Conflict resolution techniques</td>
+                  <td><strong>Dispatcher</strong></td>
+                  <td>Training for dispatch operations and communication</td>
+                  <td><span class="px-2 py-1 bg-amber-100 text-amber-800 rounded text-xs">Dispatcher</span></td>
                 </tr>
               </tbody>
             </table>
           </div>
+          <p class="text-sm text-gray-500 mb-6">Note: Administrators can create additional training types and qualified roles in the Admin panel.</p>
 
           <h3 class="text-lg font-semibold text-gray-900 mb-3">Signing Up for Training</h3>
           <ol class="list-decimal list-inside text-gray-600 mb-6 space-y-2">
@@ -439,7 +577,8 @@
           <ol class="list-decimal list-inside text-gray-600 space-y-2">
             <li>A coordinator marks your attendance as confirmed</li>
             <li>The training appears in your profile under "Completed Trainings"</li>
-            <li>You may now be eligible for shifts requiring that training</li>
+            <li>If the training grants a Qualified Role (e.g., Verifier, Zone Lead), you automatically receive that qualification</li>
+            <li>You may now be eligible for shifts requiring that training or qualified role</li>
           </ol>
         </section>
 
@@ -540,10 +679,10 @@ John Doe,john@example.com,(919) 555-0100,VOLUNTEER,"Durham 1;Durham 2",English</
 
           <p class="text-gray-600 mb-6">The Admin section provides system configuration options.</p>
 
-          <div class="grid sm:grid-cols-2 gap-4">
+          <div class="grid sm:grid-cols-2 gap-4 mb-6">
             <div class="p-4 border border-gray-200 rounded-lg">
               <h3 class="font-semibold text-gray-900 mb-2">Zones</h3>
-              <p class="text-sm text-gray-600">Manage geographic zones: add, edit, or deactivate monitoring areas.</p>
+              <p class="text-sm text-gray-600">Manage geographic zones: add, edit, or deactivate monitoring areas. Set zone colors and draw boundaries on the coverage map.</p>
             </div>
             <div class="p-4 border border-gray-200 rounded-lg">
               <h3 class="font-semibold text-gray-900 mb-2">Shift Types</h3>
@@ -551,12 +690,155 @@ John Doe,john@example.com,(919) 555-0100,VOLUNTEER,"Durham 1;Durham 2",English</
             </div>
             <div class="p-4 border border-gray-200 rounded-lg">
               <h3 class="font-semibold text-gray-900 mb-2">Training Types</h3>
-              <p class="text-sm text-gray-600">Manage training categories and set prerequisites.</p>
+              <p class="text-sm text-gray-600">Manage training categories, set prerequisites, and configure which trainings grant qualified roles.</p>
+            </div>
+            <div class="p-4 border border-gray-200 rounded-lg">
+              <h3 class="font-semibold text-gray-900 mb-2">Qualified Roles</h3>
+              <p class="text-sm text-gray-600">Manage customizable positions volunteers can fill during shifts (e.g., Verifier, Zone Lead, Dispatcher).</p>
             </div>
             <div class="p-4 border border-gray-200 rounded-lg">
               <h3 class="font-semibold text-gray-900 mb-2">System Settings</h3>
               <p class="text-sm text-gray-600">Configure organization name, email notifications, and defaults.</p>
             </div>
+          </div>
+
+          <h3 id="qualified-roles" class="text-lg font-semibold text-gray-900 mb-3 mt-6">Managing Qualified Roles</h3>
+          <p class="text-gray-600 mb-4">Qualified Roles are customizable positions that volunteers can hold. They can be granted automatically through training completion or manually assigned by administrators.</p>
+
+          <div class="p-4 bg-indigo-50 border border-indigo-200 rounded-lg mb-6">
+            <h4 class="font-semibold text-indigo-900 mb-2">Creating Qualified Roles</h4>
+            <ol class="list-decimal list-inside text-sm text-gray-600 space-y-1">
+              <li>Navigate to <strong>Admin &rarr; Qualified Roles</strong></li>
+              <li>Click <strong>"Add Qualified Role"</strong></li>
+              <li>Enter a name (e.g., "Field Medic")</li>
+              <li>Add an optional description</li>
+              <li>Choose a display color</li>
+              <li>Click <strong>"Create"</strong></li>
+            </ol>
+          </div>
+
+          <div class="p-4 bg-gray-50 rounded-lg mb-6">
+            <h4 class="font-semibold text-gray-900 mb-2">Qualified Role Features</h4>
+            <ul class="text-sm text-gray-600 space-y-1">
+              <li><strong>Auto-grant via Training</strong> - Link a training type to automatically grant a qualified role upon completion</li>
+              <li><strong>Manual Assignment</strong> - Assign qualified roles directly to volunteers from the Volunteers page</li>
+              <li><strong>Shift Requirements</strong> - Configure shift types to require specific qualified roles</li>
+              <li><strong>Color Coding</strong> - Each role has a color for easy identification in the UI</li>
+            </ul>
+          </div>
+
+          <h3 class="text-lg font-semibold text-gray-900 mb-3">Managing Zone Boundaries</h3>
+          <p class="text-gray-600 mb-4">Administrators can draw zone boundaries on a map to visualize coverage areas on the landing page.</p>
+
+          <div class="p-4 bg-purple-50 border border-purple-200 rounded-lg mb-6">
+            <h4 class="font-semibold text-purple-900 mb-2">Drawing Zone Boundaries</h4>
+            <ol class="list-decimal list-inside text-sm text-gray-600 space-y-1">
+              <li>Navigate to <strong>Admin &rarr; Zones</strong></li>
+              <li>Click the zone you want to map</li>
+              <li>Click <strong>"Draw Map"</strong> to open the boundary editor</li>
+              <li>Select the polygon tool from the top-right controls</li>
+              <li>Click on the map to place vertices of your zone boundary</li>
+              <li>Close the polygon by clicking on the first point</li>
+              <li>Drag vertices to refine the shape</li>
+              <li>Click <strong>"Save Boundaries"</strong> when done</li>
+            </ol>
+          </div>
+
+          <div class="p-4 bg-gray-50 rounded-lg">
+            <h4 class="font-semibold text-gray-900 mb-2">Zone Display Settings</h4>
+            <ul class="text-sm text-gray-600 space-y-1">
+              <li><strong>Color</strong> - Each zone can have a unique color for easy identification</li>
+              <li><strong>Map Status</strong> - Shows "Drawn" or "Not set" indicating if boundaries exist</li>
+              <li><strong>Coverage Map</strong> - Zone boundaries appear on the public landing page map</li>
+            </ul>
+          </div>
+        </section>
+
+        <!-- Email Blasts -->
+        <section id="email-blasts" class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
+          <h2 class="text-2xl font-bold text-gray-900 mb-2">Email Blasts</h2>
+          <p class="text-sm text-blue-600 mb-6">Available to Coordinators and Administrators.</p>
+
+          <p class="text-gray-600 mb-6">The Email Blast feature allows you to send bulk communications to volunteers. Access it from <strong>Dashboard → Send Email Blast</strong> or through the admin section.</p>
+
+          <h3 class="text-lg font-semibold text-gray-900 mb-3">Email Templates</h3>
+          <div class="overflow-x-auto mb-6">
+            <table class="w-full text-sm">
+              <thead>
+                <tr>
+                  <th>Template</th>
+                  <th>Description</th>
+                  <th>Features</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="px-2 py-1 bg-gray-100 rounded text-xs font-medium">📰 General Newsletter</span></td>
+                  <td>Updates and announcements</td>
+                  <td>Custom message with standard wrapper</td>
+                </tr>
+                <tr>
+                  <td><span class="px-2 py-1 bg-teal-100 text-teal-800 rounded text-xs font-medium">📅 Schedule Announcement</span></td>
+                  <td>New shifts available</td>
+                  <td>Auto-includes zone-specific shift listings with open spots</td>
+                </tr>
+                <tr>
+                  <td><span class="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-medium">🎓 Training Announcement</span></td>
+                  <td>Upcoming training sessions</td>
+                  <td>Auto-includes training sessions table with availability</td>
+                </tr>
+                <tr>
+                  <td><span class="px-2 py-1 bg-gray-100 rounded text-xs font-medium">✏️ Freeform</span></td>
+                  <td>Custom subject and body</td>
+                  <td>Full control over message content</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3 class="text-lg font-semibold text-gray-900 mb-3">Sending an Email Blast</h3>
+          <ol class="list-decimal list-inside text-gray-600 mb-6 space-y-2">
+            <li>Navigate to <strong>Email Blast</strong> from your dashboard</li>
+            <li>Select a template type</li>
+            <li>Compose your message (templates provide default content you can customize)</li>
+            <li><strong>Filter recipients</strong> by user type, zone, qualified roles, or language</li>
+            <li>Preview the recipient count</li>
+            <li>Review and send</li>
+          </ol>
+
+          <div class="grid sm:grid-cols-2 gap-4 mb-6">
+            <div class="p-4 bg-teal-50 border border-teal-200 rounded-lg">
+              <h4 class="font-semibold text-teal-900 mb-2">📅 Schedule Announcement</h4>
+              <ul class="text-sm text-gray-600 space-y-1">
+                <li>&#8226; Auto-queries upcoming shifts in selected date range</li>
+                <li>&#8226; Shows zone-specific shifts based on recipient's zones</li>
+                <li>&#8226; Displays spots remaining for each shift</li>
+                <li>&#8226; Includes direct link to view all shifts</li>
+              </ul>
+            </div>
+            <div class="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+              <h4 class="font-semibold text-purple-900 mb-2">🎓 Training Announcement</h4>
+              <ul class="text-sm text-gray-600 space-y-1">
+                <li>&#8226; Auto-includes upcoming training sessions</li>
+                <li>&#8226; Shows date, time, type, title, and location</li>
+                <li>&#8226; Displays available spots for each session</li>
+                <li>&#8226; Links directly to training RSVP page</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="p-4 bg-gray-50 rounded-lg mb-6">
+            <h4 class="font-semibold text-gray-900 mb-2">Recipient Filtering</h4>
+            <ul class="text-sm text-gray-600 space-y-1">
+              <li>&#8226; Only <strong>active</strong> users with <strong>email notifications enabled</strong> receive blasts</li>
+              <li>&#8226; Filter by: User Type, Zone assignments, Qualified Roles, Language preferences</li>
+              <li>&#8226; Each email includes an unsubscribe link for compliance</li>
+            </ul>
+          </div>
+
+          <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h4 class="font-semibold text-blue-900 mb-2">Viewing Email History</h4>
+            <p class="text-sm text-gray-600">View recent email blasts showing subject, template, recipient count, sent/failed counts, and sender information.</p>
           </div>
         </section>
 
@@ -574,7 +856,7 @@ John Doe,john@example.com,(919) 555-0100,VOLUNTEER,"Durham 1;Durham 2",English</
                 <li>3. <strong>Coordinator</strong> sees pending RSVP on dashboard</li>
                 <li>4. <strong>Coordinator</strong> opens shift roster</li>
                 <li>5. <strong>Coordinator</strong> confirms the RSVP</li>
-                <li>6. <strong>Volunteer</strong> receives confirmation notification</li>
+                <li class="not-implemented">6. <strong>Volunteer</strong> receives confirmation notification <em>(coming soon)</em></li>
                 <li>7. <strong>Volunteer</strong> sees shift on their dashboard</li>
               </ol>
             </div>
@@ -584,7 +866,7 @@ John Doe,john@example.com,(919) 555-0100,VOLUNTEER,"Durham 1;Durham 2",English</
               <h3 class="font-semibold text-gray-900 mb-3">Coordinator Creates a Patrol Shift</h3>
               <ol class="text-sm text-gray-600 space-y-1">
                 <li>1. <strong>Coordinator</strong> clicks "Create Shift"</li>
-                <li>2. <strong>Coordinator</strong> selects "Zone Patrol" type</li>
+                <li>2. <strong>Coordinator</strong> selects "Patrol" type</li>
                 <li>3. <strong>Coordinator</strong> chooses zone, date, time, capacity</li>
                 <li>4. <strong>Coordinator</strong> adds description with special instructions</li>
                 <li>5. <strong>Coordinator</strong> saves the shift</li>
@@ -611,7 +893,7 @@ John Doe,john@example.com,(919) 555-0100,VOLUNTEER,"Durham 1;Durham 2",English</
                 <li>1. <strong>Admin</strong> creates volunteer account (or imports via CSV)</li>
                 <li>2. <strong>Volunteer</strong> logs in for first time</li>
                 <li>3. <strong>Volunteer</strong> sees welcome screen with overview</li>
-                <li>4. <strong>Volunteer</strong> completes required Basic Training</li>
+                <li>4. <strong>Volunteer</strong> completes required training (e.g., Verifier)</li>
                 <li>5. <strong>Volunteer</strong> can now RSVP to shifts requiring that training</li>
               </ol>
             </div>
@@ -625,6 +907,91 @@ John Doe,john@example.com,(919) 555-0100,VOLUNTEER,"Durham 1;Durham 2",English</
                 <li>3. <strong>Coordinator</strong> checks boxes for volunteers to confirm</li>
                 <li>4. <strong>Coordinator</strong> clicks "Confirm Selected"</li>
                 <li>5. All selected volunteers are confirmed at once</li>
+              </ol>
+            </div>
+
+            <!-- Workflow 6 -->
+            <div class="border-l-4 border-red-500 pl-4">
+              <h3 class="font-semibold text-gray-900 mb-3">Reporting an ICE Sighting</h3>
+              <ol class="text-sm text-gray-600 space-y-1">
+                <li>1. <strong>Community member</strong> visits <code>/report</code></li>
+                <li>2. <strong>Community member</strong> fills in SALUTE fields (Size, Activity, Location, Uniform, Time, Equipment)</li>
+                <li>3. <strong>Community member</strong> optionally adds photos and contact info</li>
+                <li>4. <strong>Community member</strong> submits the report</li>
+                <li>5. <strong>Dispatchers</strong> receive notification of new sighting</li>
+                <li>6. Sighting appears on dispatcher dashboard</li>
+              </ol>
+            </div>
+
+            <!-- Workflow 7 -->
+            <div class="border-l-4 border-yellow-500 pl-4">
+              <h3 class="font-semibold text-gray-900 mb-3">Dispatcher Responds to ICE Sighting</h3>
+              <ol class="text-sm text-gray-600 space-y-1">
+                <li>1. <strong>Dispatcher</strong> sees new sighting on dashboard</li>
+                <li>2. <strong>Dispatcher</strong> clicks to view full details and location map</li>
+                <li>3. <strong>Dispatcher</strong> sets status to "Reviewing"</li>
+                <li>4. <strong>Dispatcher</strong> verifies report validity (calls reporter if needed)</li>
+                <li>5. <strong>Dispatcher</strong> sets status to "Verified"</li>
+                <li>6. <strong>Dispatcher</strong> coordinates field response if needed</li>
+                <li>7. <strong>Dispatcher</strong> sets status to "Responded" when team dispatched</li>
+                <li>8. <strong>Dispatcher</strong> sets status to "Closed" when incident resolved</li>
+              </ol>
+            </div>
+
+            <!-- Workflow 8 -->
+            <div class="border-l-4 border-indigo-500 pl-4">
+              <h3 class="font-semibold text-gray-900 mb-3">Creating and Assigning Qualified Roles</h3>
+              <ol class="text-sm text-gray-600 space-y-1">
+                <li>1. <strong>Admin</strong> navigates to Admin &rarr; Qualified Roles</li>
+                <li>2. <strong>Admin</strong> clicks "Add Qualified Role"</li>
+                <li>3. <strong>Admin</strong> enters name (e.g., "Field Medic"), description, and color</li>
+                <li>4. <strong>Admin</strong> saves the new role</li>
+                <li>5. <strong>Admin</strong> optionally links it to a Training Type (in Training Types admin)</li>
+                <li>6. <strong>Admin</strong> can manually assign to volunteers via Volunteers page</li>
+                <li>7. Volunteers with the qualified role can now sign up for shifts requiring it</li>
+              </ol>
+            </div>
+
+            <!-- Workflow 9 -->
+            <div class="border-l-4 border-pink-500 pl-4">
+              <h3 class="font-semibold text-gray-900 mb-3">Setting Up Zone Map Coverage</h3>
+              <ol class="text-sm text-gray-600 space-y-1">
+                <li>1. <strong>Admin</strong> navigates to Admin &rarr; Zones</li>
+                <li>2. <strong>Admin</strong> clicks on a zone to edit</li>
+                <li>3. <strong>Admin</strong> sets the zone color</li>
+                <li>4. <strong>Admin</strong> clicks "Draw Map"</li>
+                <li>5. <strong>Admin</strong> uses polygon tool to trace zone boundaries</li>
+                <li>6. <strong>Admin</strong> saves boundaries</li>
+                <li>7. Zone now appears on landing page coverage map</li>
+              </ol>
+            </div>
+
+            <!-- Workflow 9 -->
+            <div class="border-l-4 border-teal-500 pl-4">
+              <h3 class="font-semibold text-gray-900 mb-3">Sending a Schedule Announcement</h3>
+              <ol class="text-sm text-gray-600 space-y-1">
+                <li>1. <strong>Coordinator</strong> clicks "Send Email Blast" on dashboard</li>
+                <li>2. <strong>Coordinator</strong> selects "Schedule Announcement" template</li>
+                <li>3. <strong>Coordinator</strong> reviews/edits the default message</li>
+                <li>4. <strong>Coordinator</strong> optionally filters by zone or role</li>
+                <li>5. <strong>Coordinator</strong> sets date range for shifts to include</li>
+                <li>6. <strong>Coordinator</strong> previews recipient count</li>
+                <li>7. <strong>Coordinator</strong> clicks "Send"</li>
+                <li>8. Each volunteer receives personalized email with their zone's shifts</li>
+              </ol>
+            </div>
+
+            <!-- Workflow 10 -->
+            <div class="border-l-4 border-purple-500 pl-4">
+              <h3 class="font-semibold text-gray-900 mb-3">Announcing New Training Sessions</h3>
+              <ol class="text-sm text-gray-600 space-y-1">
+                <li>1. <strong>Coordinator</strong> clicks "Send Email Blast" on dashboard</li>
+                <li>2. <strong>Coordinator</strong> selects "Training Announcement" template</li>
+                <li>3. <strong>Coordinator</strong> customizes the message about the trainings</li>
+                <li>4. <strong>Coordinator</strong> filters to volunteers who need the training (optional)</li>
+                <li>5. <strong>Coordinator</strong> sets date range for sessions to include</li>
+                <li>6. <strong>Coordinator</strong> sends the blast</li>
+                <li>7. Volunteers receive email with upcoming training table and RSVP link</li>
               </ol>
             </div>
           </div>
@@ -652,6 +1019,8 @@ John Doe,john@example.com,(919) 555-0100,VOLUNTEER,"Durham 1;Durham 2",English</
                 <li>&#8226; Use bulk confirmation to save time with multiple RSVPs</li>
                 <li>&#8226; Assign zone leads early so they can prepare</li>
                 <li>&#8226; Add clear descriptions to shifts with special requirements</li>
+                <li>&#8226; Use Schedule Announcement emails to notify volunteers of new shifts</li>
+                <li>&#8226; Training Announcement automatically includes upcoming sessions</li>
               </ul>
             </div>
 
@@ -661,6 +1030,9 @@ John Doe,john@example.com,(919) 555-0100,VOLUNTEER,"Durham 1;Durham 2",English</
                 <li>&#8226; Check the schedule view at the start of each day</li>
                 <li>&#8226; Know which zone leads are on duty</li>
                 <li>&#8226; Keep contact info handy for active volunteers</li>
+                <li>&#8226; Monitor incoming sightings and update status promptly</li>
+                <li>&#8226; Use the map view to see sighting locations at a glance</li>
+                <li>&#8226; Add notes to sightings to document coordination efforts</li>
               </ul>
             </div>
 
@@ -705,8 +1077,8 @@ John Doe,john@example.com,(919) 555-0100,VOLUNTEER,"Durham 1;Durham 2",English</
 
         <!-- Footer -->
         <footer class="text-center text-gray-500 text-sm mt-8 pb-8">
-          <p>Siembra NC Volunteer Management System</p>
-          <p>Last updated: December 2024</p>
+          <p>RippleVMS - Volunteer Management System</p>
+          <p>Last updated: December 2025</p>
         </footer>
       </main>
     </div>

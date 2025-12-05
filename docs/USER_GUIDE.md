@@ -16,7 +16,9 @@ A comprehensive guide to using the Siembra NC Volunteer Management System.
 8. [Volunteers](#volunteers)
 9. [Profile](#profile)
 10. [Admin Panel](#admin-panel)
-11. [Common Workflows](#common-workflows)
+    - [Qualified Roles](#qualified-roles)
+11. [Email Blasts](#email-blasts)
+12. [Common Workflows](#common-workflows)
 
 ---
 
@@ -54,6 +56,7 @@ Zone and shift coordinators who manage volunteer activities.
 - Confirm or reject volunteer RSVPs
 - Access volunteer directory
 - Assign zone leads to shifts
+- Send email blasts to volunteers
 
 ### Dispatcher
 Handles real-time coordination during active monitoring.
@@ -70,7 +73,7 @@ Full system access for organizational leadership.
 **Capabilities:**
 - Everything all other roles can do, plus:
 - Manage all users and their roles
-- Configure zones, shift types, and training types
+- Configure zones, shift types, training types, and qualified roles
 - Bulk import volunteers
 - Access system settings
 
@@ -180,6 +183,21 @@ Access the calendar view via **Shifts → Calendar** to see shifts in a monthly/
    - **Description** - Additional details or instructions
 4. Click **"Create Shift"**
 
+### Editing Shifts (Coordinators/Admins)
+
+1. Navigate to **Shifts**
+2. Find the shift you want to edit
+3. Click **"Edit"** in the shift row (list view) or the Edit button (card view)
+4. Update any details:
+   - Title, description
+   - Date and times
+   - Zone
+   - Volunteer capacity (min, ideal, max)
+   - Status (Draft/Published)
+5. Click **"Save Changes"**
+
+**Note:** Cancelled shifts cannot be edited. To modify a cancelled shift, you'll need to create a new one.
+
 ### Managing Shift Rosters (Coordinators/Admins)
 
 1. Click on any shift to view details
@@ -229,7 +247,8 @@ The **Trainings** page lists all available training sessions. Filter by:
 After attending a training:
 1. A coordinator marks your attendance as confirmed
 2. The training appears in your profile under "Completed Trainings"
-3. You may now be eligible for shifts requiring that training
+3. If the training grants a Qualified Role (e.g., Verifier, Zone Lead), you automatically receive that qualification
+4. You may now be eligible for shifts requiring that training or qualified role
 
 ### Creating Training Sessions (Coordinators/Admins)
 
@@ -365,6 +384,29 @@ Manage training categories:
 - **Add types** - Create new training categories
 - **Edit types** - Update names, requirements
 - **Set prerequisites** - Define training dependencies
+- **Grant Qualified Roles** - Configure which trainings grant specific qualified roles upon completion
+
+### Qualified Roles
+
+Manage customizable positions that volunteers can fill during shifts:
+- **Add roles** - Create new qualified roles (e.g., Verifier, Zone Lead, Dispatcher)
+- **Edit roles** - Update names, descriptions, and colors
+- **Archive roles** - Soft delete roles no longer in use
+- **View usage** - See how many volunteers hold each qualified role
+
+Qualified Roles can be:
+- Automatically granted when volunteers complete specific training types
+- Manually assigned by administrators through the Volunteers page
+- Required by certain shift types for participation
+
+#### Shadow Roles (Counts Toward Minimum)
+
+Some roles like "Shadower" are for volunteers who attend shifts but shouldn't count toward the minimum required volunteers. When creating or editing a qualified role:
+
+- **Counts toward shift minimum** (checked by default) - Volunteers with this role count toward the shift's minimum and maximum volunteer requirements
+- **Unchecked** - Volunteers with this role can attend shifts but don't count toward the minimum (useful for shadowers, observers, or trainees)
+
+Roles that don't count toward the minimum are marked with a "Shadow" badge in the Qualified Roles list.
 
 ### System Settings
 
@@ -372,6 +414,64 @@ Configure system-wide options:
 - Organization name and branding
 - Email notification settings
 - Default values for shifts and trainings
+
+---
+
+## Email Blasts
+
+*Available to Coordinators and Administrators.*
+
+The Email Blast feature allows you to send bulk communications to volunteers. Access it from **Dashboard → Send Email Blast** or through the admin section.
+
+### Email Templates
+
+| Template | Description | Features |
+|----------|-------------|----------|
+| **General Newsletter** | Updates and announcements | Custom message with standard wrapper |
+| **Schedule Announcement** | New shifts available | Auto-includes zone-specific shift listings with open spots |
+| **Training Announcement** | Upcoming training sessions | Auto-includes training sessions table with availability |
+| **Freeform** | Custom subject and body | Full control over message content |
+
+### Sending an Email Blast
+
+1. Navigate to **Email Blast** from your dashboard
+2. Select a template type
+3. Compose your message (templates provide default content you can customize)
+4. **Filter recipients** by:
+   - User Type (Volunteer, Coordinator, Dispatcher, Administrator)
+   - Zone assignments
+   - Qualified Roles (e.g., Verifier, Zone Lead, Dispatcher)
+   - Language preferences
+   - Has any qualified roles vs. none
+5. Preview the recipient count
+6. Review and send
+
+### Smart Template Features
+
+**Schedule Announcement:**
+- Automatically queries upcoming shifts in the selected date range
+- Shows zone-specific shifts if recipient has zone assignments
+- Displays spots remaining for each shift
+- Includes direct link to view all shifts
+
+**Training Announcement:**
+- Automatically includes upcoming training sessions
+- Shows date, time, type, title, location, and available spots
+- Links to training RSVP page
+
+### Recipient Filtering
+
+- Only **active** users with **email notifications enabled** receive blasts
+- Users can manage their email preferences in their profile
+- Each email includes an unsubscribe link for compliance
+
+### Viewing Email History
+
+Coordinators and Admins can view recent email blast history showing:
+- Subject and template used
+- Recipient count
+- Sent/failed counts
+- When sent and by whom
 
 ---
 
@@ -395,6 +495,15 @@ Configure system-wide options:
 4. **Coordinator** adds description with special instructions
 5. **Coordinator** saves the shift
 6. Shift appears for all volunteers to RSVP
+
+### Workflow: Coordinator Edits an Existing Shift
+
+1. **Coordinator** navigates to Shifts page
+2. **Coordinator** finds the shift in the list
+3. **Coordinator** clicks "Edit" link
+4. **Coordinator** updates needed fields (time, capacity, description, etc.)
+5. **Coordinator** clicks "Save Changes"
+6. Updates are immediately visible to volunteers
 
 ### Workflow: Assigning a Zone Lead
 
@@ -420,6 +529,47 @@ Configure system-wide options:
 4. **Coordinator** clicks "Confirm Selected"
 5. All selected volunteers are confirmed at once
 
+### Workflow: Creating and Assigning Qualified Roles
+
+1. **Admin** navigates to Admin → Qualified Roles
+2. **Admin** clicks "Add Qualified Role"
+3. **Admin** enters name (e.g., "Field Medic"), description, and color
+4. **Admin** saves the new role
+5. **Admin** optionally links it to a Training Type (in Training Types admin) to auto-grant
+6. **Admin** can manually assign to volunteers via the Volunteers page
+7. Volunteers with the qualified role can now sign up for shifts requiring it
+
+### Workflow: Configuring a Shadow Role
+
+1. **Admin** navigates to Admin → Qualified Roles
+2. **Admin** clicks "Add Qualified Role" or edits existing role
+3. **Admin** enters name (e.g., "Shadower" or "Observer")
+4. **Admin** unchecks "Counts toward shift minimum"
+5. **Admin** saves the role
+6. Volunteers with this role can attend shifts but won't count toward the minimum required volunteers
+7. The role appears with a "Shadow" badge in the admin list
+
+### Workflow: Sending a Schedule Announcement
+
+1. **Coordinator** clicks "Send Email Blast" on dashboard
+2. **Coordinator** selects "Schedule Announcement" template
+3. **Coordinator** reviews/edits the default message
+4. **Coordinator** optionally filters by zone or role
+5. **Coordinator** sets date range for shifts to include (defaults to next 14 days)
+6. **Coordinator** previews recipient count
+7. **Coordinator** clicks "Send"
+8. Each volunteer receives personalized email with their zone's shifts
+
+### Workflow: Announcing New Training Sessions
+
+1. **Coordinator** clicks "Send Email Blast" on dashboard
+2. **Coordinator** selects "Training Announcement" template
+3. **Coordinator** customizes the message about the trainings
+4. **Coordinator** filters to volunteers who need the training (optional)
+5. **Coordinator** sets date range for sessions to include
+6. **Coordinator** sends the blast
+7. Volunteers receive email with upcoming training table and RSVP link
+
 ---
 
 ## Tips & Best Practices
@@ -437,6 +587,8 @@ Configure system-wide options:
 - Use bulk confirmation to save time with multiple RSVPs
 - Assign zone leads early so they can prepare
 - Add clear descriptions to shifts with special requirements
+- Use Schedule Announcement emails to notify volunteers of new shifts
+- Training Announcement automatically includes upcoming sessions
 
 ### For Dispatchers
 
@@ -462,4 +614,4 @@ Configure system-wide options:
 
 ---
 
-*Last updated: December 2024*
+*Last updated: December 2025*

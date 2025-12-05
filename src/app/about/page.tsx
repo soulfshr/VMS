@@ -1,5 +1,14 @@
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
+import nextDynamic from 'next/dynamic';
+
+// Dynamic import to prevent SSR issues with Google Maps
+const CoverageMap = nextDynamic(
+  () => import('@/components/maps/CoverageMap'),
+  { ssr: false, loading: () => <div className="bg-gray-100 rounded-xl animate-pulse h-[400px]" /> }
+);
 
 export default function AboutPage() {
   return (
@@ -8,13 +17,13 @@ export default function AboutPage() {
       <section className="bg-gradient-to-br from-teal-600 to-teal-800 text-white py-16">
         <div className="container mx-auto px-4 text-center">
           <Image
-            src="/siembra-logo.webp"
-            alt="Siembra NC"
-            width={100}
+            src="/ripple-logo-perspective-animated.svg"
+            alt="RippleVMS"
+            width={160}
             height={100}
-            className="mx-auto rounded-xl shadow-lg mb-6"
+            className="mx-auto mb-6"
           />
-          <h1 className="text-4xl font-bold mb-4">About Siembra NC</h1>
+          <h1 className="text-4xl font-bold mb-4">About RippleVMS</h1>
           <p className="text-xl text-teal-100 max-w-2xl mx-auto">
             Protecting immigrant communities through organized volunteer monitoring and rapid response
           </p>
@@ -26,10 +35,10 @@ export default function AboutPage() {
         <div className="container mx-auto px-4 max-w-4xl">
           <h2 className="text-3xl font-bold text-gray-900 mb-6">Our Mission</h2>
           <p className="text-lg text-gray-600 mb-6">
-            Siembra NC is a community-based organization dedicated to protecting immigrant rights in North Carolina&apos;s Triangle region. Through our volunteer network, we monitor, document, and respond to immigration enforcement activities, helping keep our communities safe and informed.
+            RippleVMS is a volunteer management platform designed to help community organizations coordinate rapid response efforts. Through organized volunteer networks, communities can monitor, document, and respond to situations that affect their members.
           </p>
           <p className="text-lg text-gray-600">
-            Our Volunteer Management System (VMS) enables us to coordinate approximately 100 volunteers across 13 zones in Durham, Orange, and Wake counties. The system streamlines volunteer onboarding, shift scheduling, and real-time communication during field operations.
+            The system enables organizations to coordinate volunteers across multiple zones, streamlining onboarding, shift scheduling, and real-time communication during field operations.
           </p>
         </div>
       </section>
@@ -130,29 +139,19 @@ export default function AboutPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <iframe
-              src="https://www.google.com/maps/d/embed?mid=1ZYih3BSK-5jcHzAbRBX9W-Jo2LmrfEw"
-              width="100%"
-              height="400"
-              style={{ border: 0 }}
-              loading="lazy"
-              title="Siembra NC Coverage Map"
-            />
-          </div>
+          <CoverageMap height="400px" />
         </div>
       </section>
 
-      {/* Powered by Ripple Section */}
+      {/* Built By Section */}
       <section className="py-16 bg-gray-900 text-white">
         <div className="container mx-auto px-4 max-w-4xl text-center">
-          <h2 className="text-2xl font-bold mb-6">Powered by Ripple</h2>
+          <h2 className="text-2xl font-bold mb-6">Built for Communities</h2>
           <p className="text-gray-300 mb-8 max-w-2xl mx-auto">
-            The Siembra NC VMS is built on Ripple, a volunteer management platform developed by Honey Badger Apps. Ripple is designed to help community organizations like ours coordinate volunteers effectively and respond to situations rapidly.
+            RippleVMS is developed by Honey Badger Apps to help community organizations coordinate volunteers effectively and respond to situations rapidly.
           </p>
 
           <div className="flex items-center justify-center gap-4 mb-8">
-            <span className="text-gray-400">Powered by Ripple, a</span>
             <Image
               src="/honeybadger-logo.png"
               alt="Honey Badger Apps"
@@ -160,11 +159,11 @@ export default function AboutPage() {
               height={40}
               className="inline-block"
             />
-            <span className="text-gray-400">Honey Badger App</span>
+            <span className="text-gray-400">A Honey Badger App</span>
           </div>
 
           <p className="text-sm text-gray-500">
-            Interested in using Ripple for your organization? Contact Honey Badger Apps to learn more.
+            Interested in using RippleVMS for your organization? Contact Honey Badger Apps to learn more.
           </p>
         </div>
       </section>

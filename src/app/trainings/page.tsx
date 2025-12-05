@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
 import type { DevUser } from '@/types/auth';
+import { useMultiSelect } from '@/hooks/useMultiSelect';
+import { useFeatures } from '@/hooks/useFeatures';
 
 interface Zone {
   id: string;
@@ -39,6 +41,15 @@ interface Training {
 
 export default function TrainingsPage() {
   const router = useRouter();
+  const features = useFeatures();
+
+  // Feature flag redirect
+  useEffect(() => {
+    if (!features.isLoading && !features.trainings) {
+      router.replace('/shifts');
+    }
+  }, [router, features.isLoading, features.trainings]);
+
   const [user, setUser] = useState<DevUser | null>(null);
   const [trainings, setTrainings] = useState<Training[]>([]);
   const [trainingTypes, setTrainingTypes] = useState<TrainingType[]>([]);
@@ -51,6 +62,25 @@ export default function TrainingsPage() {
 
   // View mode: 'cards' or 'list'
   const [viewMode, setViewMode] = useState<'cards' | 'list'>('list');
+
+  // Selection state for coordinators (with shift+click range selection)
+  const selectableTrainings = trainings.filter(t => t.status !== 'CANCELLED');
+  const {
+    selectedIds: selectedTrainings,
+    isSelected: isTrainingSelected,
+    toggleSelection: toggleTrainingSelection,
+    clearSelection,
+    selectedCount,
+  } = useMultiSelect({
+    items: selectableTrainings,
+    getId: (training) => training.id,
+  });
+
+  // Bulk action state
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false);
 
   const fetchTrainings = useCallback(async () => {
     try {
@@ -173,6 +203,65 @@ export default function TrainingsPage() {
     return `${hours}h ${mins}m`;
   };
 
+  // Bulk cancel handler
+  const handleCancelTrainings = async (reason: string) => {
+    setIsCancelling(true);
+    setError(null);
+
+    try {
+      const res = await fetch('/api/trainings/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          trainingIds: Array.from(selectedTrainings),
+          reason: reason || undefined,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to cancel trainings');
+      }
+
+      await fetchTrainings();
+      clearSelection();
+      setShowCancelModal(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to cancel trainings');
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  // Bulk confirm RSVPs handler
+  const handleConfirmRsvps = async () => {
+    setIsConfirming(true);
+    setError(null);
+
+    try {
+      const res = await fetch('/api/trainings/confirm-rsvps', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          trainingIds: Array.from(selectedTrainings),
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to confirm RSVPs');
+      }
+
+      await fetchTrainings();
+      clearSelection();
+      setShowConfirmModal(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to confirm RSVPs');
+    } finally {
+      setIsConfirming(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-[calc(100vh-200px)] flex items-center justify-center">
@@ -209,6 +298,46 @@ export default function TrainingsPage() {
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-red-700">
             {error}
+          </div>
+        )}
+
+        {/* Selection Toolbar (Coordinator only) */}
+        {canCreateTraining && selectedCount > 0 && (
+          <div className="bg-gray-50 border border-gray-300 rounded-lg p-4 mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <span className="font-medium text-gray-700">
+                {selectedCount} training{selectedCount > 1 ? 's' : ''} selected
+              </span>
+              <span className="text-xs text-gray-500">(Shift+click to select range)</span>
+              <button
+                onClick={clearSelection}
+                className="text-sm text-gray-600 hover:text-gray-800 underline"
+              >
+                Clear selection
+              </button>
+            </div>
+            <div className="flex items-center gap-3">
+              {/* Show pending count for selected trainings */}
+              {(() => {
+                const pendingCount = trainings
+                  .filter(t => isTrainingSelected(t.id))
+                  .reduce((sum, t) => sum + t.pendingCount, 0);
+                return pendingCount > 0 ? (
+                  <button
+                    onClick={() => setShowConfirmModal(true)}
+                    className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium"
+                  >
+                    Confirm {pendingCount} Pending
+                  </button>
+                ) : null;
+              })()}
+              <button
+                onClick={() => setShowCancelModal(true)}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+              >
+                Cancel Selected
+              </button>
+            </div>
           </div>
         )}
 
@@ -287,6 +416,7 @@ export default function TrainingsPage() {
               <table className="w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
+                    {canCreateTraining && <th className="w-10 px-3 py-3"></th>}
                     <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                     <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
                     <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Training</th>
@@ -303,8 +433,21 @@ export default function TrainingsPage() {
                       key={training.id}
                       className={`hover:bg-gray-50 transition-colors ${
                         training.status === 'CANCELLED' ? 'bg-red-50/50 text-gray-500' : ''
-                      }`}
+                      } ${isTrainingSelected(training.id) ? 'bg-red-50' : ''}`}
                     >
+                      {canCreateTraining && (
+                        <td className="px-3 py-3">
+                          {training.status !== 'CANCELLED' && (
+                            <input
+                              type="checkbox"
+                              checked={isTrainingSelected(training.id)}
+                              onClick={(e) => toggleTrainingSelection(training.id, e)}
+                              onChange={() => {}} // Controlled by onClick for shift+click support
+                              className="w-4 h-4 text-red-600 rounded focus:ring-red-500 cursor-pointer"
+                            />
+                          )}
+                        </td>
+                      )}
                       <td className="px-4 py-3 text-sm font-medium text-gray-900 whitespace-nowrap">
                         {formatDate(training.date)}
                       </td>
@@ -399,19 +542,33 @@ export default function TrainingsPage() {
                   className={`bg-white rounded-xl border p-5 hover:shadow-md transition-shadow ${
                     training.status === 'CANCELLED'
                       ? 'border-red-300 bg-red-50 opacity-75'
+                      : isTrainingSelected(training.id)
+                      ? 'border-red-400 ring-2 ring-red-200'
                       : 'border-gray-200'
                   }`}
                 >
                   <div className="flex justify-between items-start mb-3">
-                    <span
-                      className="px-2 py-1 rounded text-xs font-medium"
-                      style={{
-                        backgroundColor: `${training.trainingType.color}20`,
-                        color: training.trainingType.color,
-                      }}
-                    >
-                      {training.trainingType.name}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {/* Checkbox for coordinators (non-cancelled trainings only) */}
+                      {canCreateTraining && training.status !== 'CANCELLED' && (
+                        <input
+                          type="checkbox"
+                          checked={isTrainingSelected(training.id)}
+                          onClick={(e) => toggleTrainingSelection(training.id, e)}
+                          onChange={() => {}} // Controlled by onClick for shift+click support
+                          className="w-4 h-4 text-red-600 rounded focus:ring-red-500 cursor-pointer"
+                        />
+                      )}
+                      <span
+                        className="px-2 py-1 rounded text-xs font-medium"
+                        style={{
+                          backgroundColor: `${training.trainingType.color}20`,
+                          color: training.trainingType.color,
+                        }}
+                      >
+                        {training.trainingType.name}
+                      </span>
+                    </div>
                     <span className={`text-sm ${training.spotsLeft <= 2 ? 'text-orange-600 font-medium' : 'text-gray-500'}`}>
                       {training.spotsLeft}/{training.maxAttendees} spots
                     </span>
@@ -514,6 +671,94 @@ export default function TrainingsPage() {
           </div>
         )}
       </div>
+
+      {/* Cancel Modal */}
+      {showCancelModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Cancel Trainings</h2>
+            <p className="text-gray-600 mb-4">
+              Are you sure you want to cancel {selectedCount} training{selectedCount > 1 ? 's' : ''}?
+              All signed-up attendees will be notified by email.
+            </p>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Reason (optional)
+              </label>
+              <textarea
+                id="cancel-reason"
+                placeholder="e.g., Instructor unavailable, low enrollment..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                rows={3}
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowCancelModal(false)}
+                disabled={isCancelling}
+                className="flex-1 py-2 px-4 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium disabled:opacity-50"
+              >
+                Keep Trainings
+              </button>
+              <button
+                onClick={() => {
+                  const reason = (document.getElementById('cancel-reason') as HTMLTextAreaElement)?.value || '';
+                  handleCancelTrainings(reason);
+                }}
+                disabled={isCancelling}
+                className="flex-1 py-2 px-4 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium disabled:opacity-50"
+              >
+                {isCancelling ? 'Cancelling...' : 'Cancel Trainings'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm RSVPs Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Confirm Pending RSVPs</h2>
+            <p className="text-gray-600 mb-4">
+              This will confirm all pending RSVPs across {selectedCount} selected training{selectedCount > 1 ? 's' : ''}.
+              {(() => {
+                const pendingCount = trainings
+                  .filter(t => isTrainingSelected(t.id))
+                  .reduce((sum, t) => sum + t.pendingCount, 0);
+                return pendingCount > 0 ? (
+                  <span className="block mt-2 font-medium text-teal-700">
+                    {pendingCount} pending RSVP{pendingCount > 1 ? 's' : ''} will be confirmed.
+                  </span>
+                ) : null;
+              })()}
+            </p>
+
+            <p className="text-sm text-gray-500 mb-4">
+              Each attendee will receive a confirmation email.
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                disabled={isConfirming}
+                className="flex-1 py-2 px-4 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmRsvps}
+                disabled={isConfirming}
+                className="flex-1 py-2 px-4 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium disabled:opacity-50"
+              >
+                {isConfirming ? 'Confirming...' : 'Confirm All'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -18,8 +18,8 @@ interface Slide {
 
 const volunteerSlides: Slide[] = [
   {
-    title: 'Welcome to Siembra NC!',
-    description: 'Thank you for joining our volunteer community. Together, we protect and support immigrant families across North Carolina.',
+    title: 'Welcome to RippleVMS!',
+    description: 'Thank you for joining our volunteer community. Together, we make a difference through organized response and coordination.',
     icon: (
       <div className="w-20 h-20 rounded-full bg-teal-100 flex items-center justify-center">
         <svg className="w-10 h-10 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

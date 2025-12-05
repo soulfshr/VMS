@@ -3,6 +3,8 @@
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import SightingMap from '@/components/maps/SightingMap';
+import { useFeatures } from '@/hooks/useFeatures';
 
 interface SightingMedia {
   id: string;
@@ -71,6 +73,15 @@ function formatFileSize(bytes: number) {
 export default function SightingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
+  const features = useFeatures();
+
+  // Feature flag redirect
+  useEffect(() => {
+    if (!features.isLoading && !features.sightings) {
+      router.replace('/shifts');
+    }
+  }, [router, features.isLoading, features.sightings]);
+
   const [sighting, setSighting] = useState<Sighting | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -297,26 +308,40 @@ export default function SightingDetailPage({ params }: { params: Promise<{ id: s
               </div>
               <div className="flex-1">
                 <div className="text-sm font-medium text-gray-500">Location / Direction</div>
-                <div className="text-gray-900">{sighting.location}</div>
-                {sighting.latitude && sighting.longitude && (
-                  <div className="mt-2">
-                    <a
-                      href={`https://www.google.com/maps?q=${sighting.latitude},${sighting.longitude}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-sm text-teal-600 hover:underline"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                      View on Google Maps
-                    </a>
-                    <span className="text-xs text-gray-400 ml-2">
-                      ({sighting.latitude.toFixed(6)}, {sighting.longitude.toFixed(6)})
-                    </span>
+                <div className="flex flex-col lg:flex-row gap-4">
+                  <div className="flex-1">
+                    <div className="text-gray-900">{sighting.location}</div>
+                    {sighting.latitude && sighting.longitude && (
+                      <div className="mt-2">
+                        <a
+                          href={`https://www.google.com/maps?q=${sighting.latitude},${sighting.longitude}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-sm text-teal-600 hover:underline"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                          Open in Google Maps
+                        </a>
+                        <span className="text-xs text-gray-400 ml-2">
+                          ({sighting.latitude.toFixed(6)}, {sighting.longitude.toFixed(6)})
+                        </span>
+                      </div>
+                    )}
                   </div>
-                )}
+                  {sighting.latitude && sighting.longitude && (
+                    <div className="lg:w-64 xl:w-80 flex-shrink-0">
+                      <div className="rounded-lg overflow-hidden border border-gray-200">
+                        <SightingMap
+                          latitude={sighting.latitude}
+                          longitude={sighting.longitude}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 

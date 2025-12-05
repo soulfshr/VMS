@@ -1,22 +1,23 @@
 <div align="center">
-  <img src="SiembraNC Logo.webp" alt="Siembra NC Logo" width="300">
+  <img src="public/ripple-logo-perspective-animated.svg" alt="RippleVMS Logo" width="300">
 </div>
 
-# Siembra NC Volunteer Management System (VMS)
+# RippleVMS - Volunteer Management System
 
-A comprehensive digital platform designed to streamline volunteer coordination, shift management, and incident reporting for Siembra NC's community safety initiatives.
+A comprehensive digital platform designed to streamline volunteer coordination, shift management, and incident reporting for community organizations.
 
-## 🌐 Live Wireframes
+## 🌐 Live Demo
 
-View the interactive wireframes: [Deployed on Vercel]
+View the application: [dev.ripple-vms.com](https://dev.ripple-vms.com)
 
 ## 📋 Project Overview
 
-This repository contains the planning and design documentation for the Siembra NC VMS, including:
+RippleVMS is a volunteer management platform that helps community organizations:
 
-- **Project Proposal & Requirements** - Detailed functional requirements and system specifications
-- **User Roles & Permissions** - Complete role-based access control (RBAC) documentation
-- **Interactive Wireframes** - HTML mockups for all major workflows
+- **Coordinate volunteers** across multiple zones
+- **Manage shifts** with automated invitations and RSVP tracking
+- **Handle incidents** with real-time dispatch and field response workflows
+- **Track training** and volunteer qualifications
 
 ## 🎯 Key Features
 
@@ -33,10 +34,10 @@ This repository contains the planning and design documentation for the Siembra N
 - Real-time coverage monitoring
 
 ### 🚨 Incident Management
-- Standardized sighting intake
+- Standardized sighting intake (S.A.L.U.T.E. model)
 - Real-time dispatch coordination
 - Field verification workflow
-- Community alert publication (Ojo integration)
+- Community alert publication
 
 ### 🔐 Role-Based Access Control
 - **Volunteer** - Attend shifts, report sightings
@@ -46,73 +47,20 @@ This repository contains the planning and design documentation for the Siembra N
 
 ## 🛠️ Technology Stack
 
-**Approved Stack (November 2025):**
-
-### Core Technologies
-- **Frontend:** Next.js 14+ (App Router) with React & TypeScript
+- **Frontend:** Next.js 16 (App Router) with React & TypeScript
 - **Backend:** Next.js API Routes (Serverless)
 - **Database:** Neon DB (Serverless Postgres)
 - **ORM:** Prisma
 - **Hosting:** Vercel
+- **Email:** Nodemailer with SMTP
 
-### Authentication & Communications
-- **Auth:** Auth.js (Next-Auth)
-  - Email/Password with verification
-  - Google OAuth
-- **Email:** Resend (3,000/month free tier)
-- **SMS:** Postponed to Phase 2
+## 🚀 Getting Started
 
-### Design Decisions
-- ✅ **Serverless architecture** - Cost-effective, auto-scaling
-- ✅ **Modern stack** - TypeScript, React Server Components
-- ✅ **Proven tools** - Widely adopted, well-documented
-- ✅ **Low initial cost** - $0-40/month for production
+### Prerequisites
+- Node.js 18+
+- npm or yarn
 
-**Detailed Documentation:**
-See [Technical Architecture.md](Technical%20Architecture.md) for complete specifications, database schema, API design, security considerations, and implementation roadmap.
-
-## 📁 Repository Structure
-
-```
-VMS/
-├── index.html                          # Landing page
-├── Project Notes                       # Project proposal & requirements
-├── User Roles & Permissions.md         # RBAC documentation
-├── Technical Architecture.md           # Tech stack & implementation plan
-├── Signal Integration Strategy.md      # Signal/VMS integration guide
-├── Workflow Diagrams.md                # Process flows (Mermaid diagrams)
-├── Wireframes.md                       # Wireframe specifications
-├── workflows/
-│   ├── index.html                      # Interactive workflow diagrams
-│   └── css/
-│       └── workflow.css                # Workflow diagram styling
-├── wireframes/
-│   ├── index.html                      # Wireframe navigation hub
-│   ├── css/
-│   │   └── wireframe.css              # Shared styling
-│   ├── dashboards/
-│   │   ├── volunteer-dashboard.html
-│   │   ├── coordinator-dashboard.html
-│   │   └── dispatcher-dashboard.html
-│   ├── volunteer/
-│   │   ├── registration.html
-│   │   ├── profile.html
-│   │   └── directory.html
-│   ├── shifts/
-│   │   ├── create-shift.html
-│   │   ├── browse-rsvp.html
-│   │   └── roster.html
-│   └── incidents/
-│       ├── intake-form.html
-│       ├── dispatcher-view.html
-│       ├── field-response.html
-│       └── ojo-publication.html
-└── vercel.json                         # Vercel deployment configuration
-```
-
-## 🚀 Local Development
-
-To view the wireframes locally:
+### Local Development
 
 1. Clone the repository:
    ```bash
@@ -120,80 +68,68 @@ To view the wireframes locally:
    cd VMS
    ```
 
-2. Open in your browser:
+2. Install dependencies:
    ```bash
-   open index.html
-   # or
-   python -m http.server 8000
-   # then navigate to http://localhost:8000
+   npm install
    ```
 
-## 📱 Wireframe Categories
+3. Set up environment variables:
+   ```bash
+   cp .env.example .env.local
+   # Edit .env.local with your database and email credentials
+   ```
 
-### Dashboard Views (3)
-- Volunteer Dashboard - Personal shift view and training status
-- Coordinator Dashboard - Shift management and volunteer statistics
-- Dispatcher Dashboard - Active incidents and team assignments
+4. Push database schema:
+   ```bash
+   npx prisma db push
+   npx prisma generate
+   ```
 
-### Volunteer Management (3)
-- Registration Form - Multi-step volunteer signup
-- Profile View - Qualifications, availability, and activity
-- Directory - Searchable volunteer roster
+5. Seed the database (optional):
+   ```bash
+   npm run db:seed
+   ```
 
-### Shift Coordination (3)
-- Create Shift - Complete shift setup with invitation settings
-- Browse & RSVP - Volunteer shift browsing and signup
-- Roster Management - Track confirmed/pending/declined volunteers
+6. Start the development server:
+   ```bash
+   npm run dev
+   ```
 
-### Incident Management (4)
-- Sighting Intake - Report submission form
-- Dispatcher View - Incident detail and team assignment
-- Field Response - Mobile-optimized field interface
-- Ojo Publication - Community alert publishing
+7. Open [http://localhost:3000](http://localhost:3000)
 
-## 🎨 Design Features
+## 📁 Repository Structure
 
-- ✅ Professional UI/UX with modern styling
-- ✅ Color-coded priorities and status indicators
-- ✅ Responsive design (mobile-optimized where appropriate)
-- ✅ Consistent navigation across all wireframes
-- ✅ Form validation indicators
-- ✅ Interactive elements (buttons, forms, tables)
+```
+VMS/
+├── src/
+│   ├── app/           # Next.js App Router pages
+│   ├── components/    # React components
+│   ├── lib/           # Utility libraries
+│   └── types/         # TypeScript types
+├── prisma/
+│   ├── schema.prisma  # Database schema
+│   └── seed.ts        # Seed data
+├── public/            # Static assets
+└── docs/              # Documentation
+```
 
 ## 📖 Documentation
 
-### Planning & Requirements
-- **[Project Notes](Project%20Notes)** - Comprehensive project proposal including background, requirements, and implementation phases
-- **[User Roles & Permissions](User%20Roles%20%26%20Permissions.md)** - Detailed RBAC specification with permission matrices
-
-### Technical Documentation
-- **[Technical Architecture](Technical%20Architecture.md)** - Complete tech stack, database schema, API design, and implementation roadmap
-- **[Signal Integration Strategy](Signal%20Integration%20Strategy.md)** - How VMS complements Signal for real-time coordination
-
-### Design Documentation
-- **[Workflow Diagrams](Workflow%20Diagrams.md)** - Complete process flows with Mermaid diagrams
-  - Volunteer Journey (registration → active participation)
-  - Shift Coordination (creation → completion)
-  - Incident Management (report → Ojo publication)
-  - Training & Certification workflows
-- **[Interactive Workflow Diagrams](workflows/index.html)** - Visual process flows with swimlanes
-- **[Wireframes](Wireframes.md)** - Text-based wireframe specifications
-- **[Interactive Wireframes](wireframes/index.html)** - HTML mockups for all workflows
+- **[User Guide](docs/USER_GUIDE.md)** - How to use the system
+- **[Technical Architecture](Technical%20Architecture.md)** - System design and implementation
 
 ## 🤝 Contributing
 
-This is currently in the design and planning phase. Feedback and suggestions are welcome!
+Contributions are welcome! Please read our contributing guidelines before submitting pull requests.
 
 ## 📄 License
 
 [To be determined]
 
-## 🙏 Acknowledgments
+## 🙏 Built By
 
-Built for Siembra NC's mission to support and protect immigrant communities.
+Developed by Honey Badger Apps for community organizations.
 
 ---
-
-**Status:** Planning Phase | November 2025
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)

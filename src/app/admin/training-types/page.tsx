@@ -1,6 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useFeatures } from '@/hooks/useFeatures';
+
+interface QualifiedRole {
+  id: string;
+  name: string;
+  slug: string;
+  color: string;
+}
 
 interface TrainingType {
   id: string;
@@ -11,7 +20,8 @@ interface TrainingType {
   defaultDuration: number;
   defaultCapacity: number;
   expiresAfterDays: number | null;
-  grantsRole: string | null;
+  grantsQualifiedRoleId: string | null;
+  grantsQualifiedRole: QualifiedRole | null;
   sortOrder: number;
   isActive: boolean;
   _count: {
@@ -19,17 +29,19 @@ interface TrainingType {
   };
 }
 
-const ROLES = ['VOLUNTEER', 'COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR'];
-
-const roleLabels: Record<string, string> = {
-  VOLUNTEER: 'Volunteer',
-  COORDINATOR: 'Coordinator',
-  DISPATCHER: 'Dispatcher',
-  ADMINISTRATOR: 'Administrator',
-};
-
 export default function TrainingTypesPage() {
+  const router = useRouter();
+  const features = useFeatures();
+
+  // Feature flag redirect
+  useEffect(() => {
+    if (!features.isLoading && !features.trainings) {
+      router.replace('/admin');
+    }
+  }, [router, features.isLoading, features.trainings]);
+
   const [trainingTypes, setTrainingTypes] = useState<TrainingType[]>([]);
+  const [qualifiedRoles, setQualifiedRoles] = useState<QualifiedRole[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -44,12 +56,24 @@ export default function TrainingTypesPage() {
     defaultDuration: 120,
     defaultCapacity: 20,
     expiresAfterDays: null as number | null,
-    grantsRole: '',
+    grantsQualifiedRoleId: '',
   });
 
   useEffect(() => {
-    loadTrainingTypes();
+    Promise.all([loadTrainingTypes(), loadQualifiedRoles()]);
   }, []);
+
+  const loadQualifiedRoles = async () => {
+    try {
+      const res = await fetch('/api/admin/qualified-roles');
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setQualifiedRoles(data.filter((qr: QualifiedRole & { isActive?: boolean }) => qr.isActive !== false));
+      }
+    } catch (err) {
+      console.error('Error loading qualified roles:', err);
+    }
+  };
 
   const loadTrainingTypes = async () => {
     try {
@@ -74,7 +98,7 @@ export default function TrainingTypesPage() {
       defaultDuration: 120,
       defaultCapacity: 20,
       expiresAfterDays: null,
-      grantsRole: '',
+      grantsQualifiedRoleId: '',
     });
   };
 
@@ -89,7 +113,7 @@ export default function TrainingTypesPage() {
       defaultDuration: tt.defaultDuration,
       defaultCapacity: tt.defaultCapacity,
       expiresAfterDays: tt.expiresAfterDays,
-      grantsRole: tt.grantsRole || '',
+      grantsQualifiedRoleId: tt.grantsQualifiedRoleId || '',
     });
   };
 
@@ -119,7 +143,7 @@ export default function TrainingTypesPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
-          grantsRole: formData.grantsRole || null,
+          grantsQualifiedRoleId: formData.grantsQualifiedRoleId || null,
         }),
       });
 
@@ -239,7 +263,7 @@ export default function TrainingTypesPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:bg-gray-50 disabled:text-gray-500"
                 placeholder="e.g., DISPATCHER"
               />
-              {editingId && <p className="text-xs text-gray-500 mt-1">Slug cannot be changed after creation</p>}
+              {editingId && <p className="text-xs text-gray-500 mt-1">Slug is a database label and not visible in the main app. It cannot be changed after creation.</p>}
             </div>
           </div>
 
@@ -307,19 +331,19 @@ export default function TrainingTypesPage() {
           </div>
 
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Grants Role</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Grants Qualified Role</label>
             <select
-              value={formData.grantsRole}
-              onChange={e => setFormData(prev => ({ ...prev, grantsRole: e.target.value }))}
+              value={formData.grantsQualifiedRoleId}
+              onChange={e => setFormData(prev => ({ ...prev, grantsQualifiedRoleId: e.target.value }))}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
             >
-              <option value="">None (no role granted)</option>
-              {ROLES.map(role => (
-                <option key={role} value={role}>{roleLabels[role]}</option>
+              <option value="">None (no qualified role granted)</option>
+              {qualifiedRoles.map(role => (
+                <option key={role.id} value={role.id}>{role.name}</option>
               ))}
             </select>
             <p className="text-xs text-gray-500 mt-1">
-              If set, completing this training will add this role to the volunteer&apos;s qualifications
+              If set, completing this training will grant this qualified role to the volunteer
             </p>
           </div>
 
@@ -355,7 +379,7 @@ export default function TrainingTypesPage() {
                 Capacity
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Grants Role
+                Grants Qualified Role
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Sessions
@@ -390,9 +414,15 @@ export default function TrainingTypesPage() {
                   {tt.defaultCapacity}
                 </td>
                 <td className="px-4 py-4">
-                  {tt.grantsRole ? (
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                      {roleLabels[tt.grantsRole]}
+                  {tt.grantsQualifiedRole ? (
+                    <span
+                      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                      style={{
+                        backgroundColor: `${tt.grantsQualifiedRole.color}20`,
+                        color: tt.grantsQualifiedRole.color,
+                      }}
+                    >
+                      {tt.grantsQualifiedRole.name}
                     </span>
                   ) : (
                     <span className="text-sm text-gray-400">None</span>

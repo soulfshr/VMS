@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
-import { Role, Qualification } from '@/generated/prisma/enums';
+import { Role } from '@/generated/prisma/enums';
 
 // GET /api/volunteers - Get all volunteers (Coordinator/Admin only)
 export async function GET(request: NextRequest) {
@@ -21,6 +21,8 @@ export async function GET(request: NextRequest) {
     const role = searchParams.get('role');
     const search = searchParams.get('search');
     const status = searchParams.get('status'); // 'active' or 'inactive'
+    const qualifiedRoleId = searchParams.get('qualifiedRoleId');
+    const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined;
 
     // Build where clause
     const where: Record<string, unknown> = {};
@@ -43,6 +45,15 @@ export async function GET(request: NextRequest) {
       where.isActive = false;
     }
 
+    // Filter by qualified role
+    if (qualifiedRoleId && qualifiedRoleId !== 'all') {
+      where.userQualifications = {
+        some: {
+          qualifiedRoleId: qualifiedRoleId,
+        },
+      };
+    }
+
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
@@ -61,6 +72,18 @@ export async function GET(request: NextRequest) {
                 id: true,
                 name: true,
                 county: true,
+              },
+            },
+          },
+        },
+        userQualifications: {
+          include: {
+            qualifiedRole: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+                color: true,
               },
             },
           },
@@ -114,6 +137,7 @@ export async function GET(request: NextRequest) {
         { isActive: 'desc' },
         { name: 'asc' },
       ],
+      ...(limit && { take: limit }),
     });
 
     // Get all zones for filtering
@@ -139,7 +163,12 @@ export async function GET(request: NextRequest) {
       isActive: v.isActive,
       isVerified: v.isVerified,
       createdAt: v.createdAt,
-      qualifications: v.qualifications || [],  // New qualifications field
+      qualifiedRoles: v.userQualifications.map(uq => ({
+        id: uq.qualifiedRole.id,
+        name: uq.qualifiedRole.name,
+        slug: uq.qualifiedRole.slug,
+        color: uq.qualifiedRole.color,
+      })),
       zones: v.zones.map(uz => ({
         id: uz.zone.id,
         name: uz.zone.name,
@@ -161,9 +190,22 @@ export async function GET(request: NextRequest) {
       totalConfirmedShifts: v._count.shiftVolunteers,
     }));
 
+    // Get all qualified roles for editing
+    const qualifiedRoles = await prisma.qualifiedRole.findMany({
+      where: { isActive: true },
+      orderBy: { sortOrder: 'asc' },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        color: true,
+      },
+    });
+
     return NextResponse.json({
       volunteers: result,
       zones,
+      qualifiedRoles,
       total: result.length,
     });
   } catch (error) {
@@ -207,6 +249,18 @@ export async function POST(request: NextRequest) {
     });
     const zoneMap = new Map(zones.map(z => [z.name.toLowerCase(), z.id]));
 
+    // Get all qualified roles for mapping
+    const qualifiedRoles = await prisma.qualifiedRole.findMany({
+      where: { isActive: true },
+      select: { id: true, slug: true, isDefaultForNewUsers: true },
+    });
+    const qualifiedRoleMap = new Map(qualifiedRoles.map(qr => [qr.slug.toUpperCase(), qr.id]));
+
+    // Get default qualified roles for new users
+    const defaultQualifiedRoleIds = qualifiedRoles
+      .filter(qr => qr.isDefaultForNewUsers)
+      .map(qr => qr.id);
+
     for (let i = 0; i < volunteers.length; i++) {
       const vol = volunteers[i];
       const rowNum = i + 1;
@@ -229,19 +283,18 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      // Validate qualifications if provided
-      const validQualifications = ['VERIFIER', 'ZONE_LEAD', 'DISPATCHER'];
-      let parsedQualifications: Qualification[] = [];
+      // Parse and validate qualified roles if provided
+      let qualifiedRoleIds: string[] = [];
       if (vol.qualifications) {
         const quals = Array.isArray(vol.qualifications)
           ? vol.qualifications
           : vol.qualifications.split(';').map((q: string) => q.trim().toUpperCase()).filter(Boolean);
-        const invalidQuals = quals.filter((q: string) => !validQualifications.includes(q));
+        const invalidQuals = quals.filter((q: string) => !qualifiedRoleMap.has(q));
         if (invalidQuals.length > 0) {
-          results.errors.push({ row: rowNum, email: vol.email, error: `Invalid qualifications: ${invalidQuals.join(', ')}` });
+          results.errors.push({ row: rowNum, email: vol.email, error: `Invalid qualified roles: ${invalidQuals.join(', ')}` });
           continue;
         }
-        parsedQualifications = quals as Qualification[];
+        qualifiedRoleIds = quals.map((q: string) => qualifiedRoleMap.get(q)!);
       }
 
       try {
@@ -257,7 +310,6 @@ export async function POST(request: NextRequest) {
           role: (vol.role?.toUpperCase() || 'VOLUNTEER') as Role,
           primaryLanguage: vol.primaryLanguage || 'English',
           otherLanguages: vol.otherLanguages || [],
-          qualifications: parsedQualifications,  // New qualifications field
           isActive: vol.isActive !== false,
           isVerified: vol.isVerified !== false,
         };
@@ -291,6 +343,24 @@ export async function POST(request: NextRequest) {
             }
           }
 
+          // Update qualified roles if provided
+          if (qualifiedRoleIds.length > 0) {
+            // Remove existing qualified role assignments
+            await prisma.userQualification.deleteMany({
+              where: { userId: existingUser.id },
+            });
+
+            // Add new qualified role assignments
+            for (const qualifiedRoleId of qualifiedRoleIds) {
+              await prisma.userQualification.create({
+                data: {
+                  userId: existingUser.id,
+                  qualifiedRoleId,
+                },
+              });
+            }
+          }
+
           results.updated++;
         } else {
           // Create new user
@@ -312,6 +382,19 @@ export async function POST(request: NextRequest) {
                 });
               }
             }
+          }
+
+          // Add qualified role assignments
+          // If specific qualifications were provided in import, use those
+          // Otherwise, assign default qualified roles to new users
+          const rolesToAssign = qualifiedRoleIds.length > 0 ? qualifiedRoleIds : defaultQualifiedRoleIds;
+          for (const qualifiedRoleId of rolesToAssign) {
+            await prisma.userQualification.create({
+              data: {
+                userId: newUser.id,
+                qualifiedRoleId,
+              },
+            });
           }
 
           results.created++;

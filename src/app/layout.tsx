@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Header, Footer } from "@/components/layout";
+import LayoutClient from "@/components/layout/LayoutClient";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Siembra NC VMS",
-  description: "Volunteer Management System for Siembra NC - Coordinating community volunteers for immigrant rights monitoring",
+  title: "RippleVMS",
+  description: "Volunteer Management System - Coordinating community volunteers for community response and monitoring",
   // Next.js auto-detects icon.png and apple-icon.png in the app directory
 };
 
@@ -29,11 +29,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen`}
       >
-        <Header />
-        <main className="flex-grow">
+        <LayoutClient>
           {children}
-        </main>
-        <Footer />
+        </LayoutClient>
       </body>
     </html>
   );

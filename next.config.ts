@@ -1,18 +1,15 @@
 import type { NextConfig } from "next";
-import path from "path";
 
 const nextConfig: NextConfig = {
-  // Exclude react-big-calendar from server-side bundling
-  serverExternalPackages: ['react-big-calendar'],
+  // Exclude packages from server-side bundling
+  serverExternalPackages: ['react-big-calendar', '@react-google-maps/api', 'driver.js'],
+
+  // Transpile packages for compatibility
+  transpilePackages: [],
 
   // Experimental settings
   experimental: {
     optimizePackageImports: ['date-fns'],
-  },
-
-  // Set turbopack root to fix iCloud path issues
-  turbopack: {
-    root: path.resolve(__dirname),
   },
 };
 

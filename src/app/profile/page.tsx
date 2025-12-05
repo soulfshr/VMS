@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import type { DevUser } from '@/types/auth';
+import GuidedTour from '@/components/onboarding/GuidedTour';
 
 interface Zone {
   id: string;
@@ -43,6 +44,7 @@ export default function ProfilePage() {
   // Form state
   const [phone, setPhone] = useState('');
   const [primaryLanguage, setPrimaryLanguage] = useState('English');
+  const [emailNotifications, setEmailNotifications] = useState(true);
   const [selectedZoneIds, setSelectedZoneIds] = useState<string[]>([]);
   const [primaryZoneId, setPrimaryZoneId] = useState<string>('');
   const [availability, setAvailability] = useState<Record<string, boolean>>({});
@@ -62,6 +64,7 @@ export default function ProfilePage() {
         if (profileData.user) {
           setPhone(profileData.user.phone || '');
           setPrimaryLanguage(profileData.user.primaryLanguage || 'English');
+          setEmailNotifications(profileData.user.emailNotifications ?? true);
         }
 
         if (profileData.allZones) {
@@ -130,6 +133,7 @@ export default function ProfilePage() {
         body: JSON.stringify({
           phone,
           primaryLanguage,
+          emailNotifications,
         }),
       });
       if (!profileRes.ok) throw new Error('Failed to save profile');
@@ -198,6 +202,16 @@ export default function ProfilePage() {
   };
 
   return (
+    <>
+      {/* Guided Tour */}
+      {user && (
+        <GuidedTour
+          pageName="profile"
+          userRole={user.role}
+          autoStart={true}
+        />
+      )}
+
     <div className="min-h-[calc(100vh-200px)] bg-gray-50 py-8">
       <div className="container mx-auto px-4 max-w-4xl">
         {/* Header */}
@@ -238,7 +252,7 @@ export default function ProfilePage() {
           {/* Profile Details */}
           <div className="lg:col-span-2 space-y-6">
             {/* Contact Information */}
-            <div className="bg-white rounded-xl border border-gray-200">
+            <div className="bg-white rounded-xl border border-gray-200" data-tour="contact-info">
               <div className="p-4 border-b border-gray-200">
                 <h3 className="font-semibold text-gray-900">Contact Information</h3>
               </div>
@@ -277,8 +291,34 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Weekly Availability */}
+            {/* Email Preferences */}
             <div className="bg-white rounded-xl border border-gray-200">
+              <div className="p-4 border-b border-gray-200">
+                <h3 className="font-semibold text-gray-900">Email Preferences</h3>
+              </div>
+              <div className="p-4">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={emailNotifications}
+                    onChange={(e) => setEmailNotifications(e.target.checked)}
+                    className="mt-1 w-5 h-5 text-teal-600 rounded border-gray-300 focus:ring-teal-500"
+                  />
+                  <div>
+                    <span className="font-medium text-gray-900">Email Notifications</span>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Receive email notifications for shift signups, confirmations, cancellations, and ICE sighting alerts.
+                    </p>
+                  </div>
+                </label>
+                <p className="text-xs text-gray-500 mt-3">
+                  Note: Critical account-related emails will still be sent regardless of this setting.
+                </p>
+              </div>
+            </div>
+
+            {/* Weekly Availability */}
+            <div className="bg-white rounded-xl border border-gray-200" data-tour="availability">
               <div className="p-4 border-b border-gray-200">
                 <h3 className="font-semibold text-gray-900">Weekly Availability</h3>
               </div>
@@ -329,7 +369,7 @@ export default function ProfilePage() {
             </div>
 
             {/* Zone Preferences */}
-            <div className="bg-white rounded-xl border border-gray-200">
+            <div className="bg-white rounded-xl border border-gray-200" data-tour="zone-assignment">
               <div className="p-4 border-b border-gray-200">
                 <h3 className="font-semibold text-gray-900">Zone Preferences</h3>
               </div>
@@ -385,5 +425,6 @@ export default function ProfilePage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

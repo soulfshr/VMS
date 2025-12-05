@@ -3,12 +3,13 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import type { DevUser } from '@/types/auth';
+import GuidedTour from '@/components/onboarding/GuidedTour';
 
 const SAMPLE_TRAININGS = [
   {
     id: '1',
     name: 'Volunteer Orientation',
-    description: 'Introduction to Siembra NC mission, policies, and procedures',
+    description: 'Introduction to the organization mission, policies, and procedures',
     duration: '45 min',
     status: 'COMPLETED',
     completedAt: 'Nov 15, 2025',
@@ -82,6 +83,16 @@ export default function TrainingPage() {
   const requiredCount = SAMPLE_TRAININGS.filter(t => !('isOptional' in t) || !t.isOptional).length;
 
   return (
+    <>
+      {/* Guided Tour */}
+      {user && (
+        <GuidedTour
+          pageName="trainings"
+          userRole={user.role}
+          autoStart={true}
+        />
+      )}
+
     <div className="min-h-[calc(100vh-200px)] bg-gray-50 py-8">
       <div className="container mx-auto px-4 max-w-4xl">
         {/* Header */}
@@ -91,7 +102,7 @@ export default function TrainingPage() {
         </div>
 
         {/* Progress Card */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8">
+        <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8" data-tour="training-progress">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold text-gray-900">Your Progress</h2>
             <span className="text-2xl font-bold text-teal-600">
@@ -112,7 +123,7 @@ export default function TrainingPage() {
         </div>
 
         {/* Training Modules */}
-        <div className="space-y-4">
+        <div className="space-y-4" data-tour="training-list">
           {SAMPLE_TRAININGS.map((training) => (
             <div
               key={training.id}
@@ -184,5 +195,6 @@ export default function TrainingPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

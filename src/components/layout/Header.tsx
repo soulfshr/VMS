@@ -2,30 +2,31 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import type { DevUser } from '@/types/auth';
-import { HelpButton } from '@/components/onboarding';
+import { useSession, signOut } from 'next-auth/react';
+import HelpButton from '@/components/onboarding/HelpButton';
+import { useFeatures } from '@/hooks/useFeatures';
 
 export default function Header() {
+  const features = useFeatures();
   const pathname = usePathname();
-  const router = useRouter();
-  const [user, setUser] = useState<DevUser | null>(null);
+  const { data: session, status } = useSession();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [showWelcome, setShowWelcome] = useState(false);
 
+  // Mark component as mounted after hydration
   useEffect(() => {
-    // Fetch current session
-    fetch('/api/auth/session')
-      .then(res => res.json())
-      .then(data => setUser(data.user))
-      .catch(() => setUser(null));
-  }, [pathname]);
+    setMounted(true);
+  }, []);
+
+  const user = session?.user;
+  const isLoading = status === 'loading' || !mounted;
 
   const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    setUser(null);
-    router.push('/');
+    await signOut({ callbackUrl: '/' });
   };
 
   const isActive = (path: string) => pathname === path;
@@ -33,24 +34,30 @@ export default function Header() {
   return (
     <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
       <div className="container mx-auto px-4">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex justify-between items-center h-24">
           {/* Logo & Title */}
-          <Link href="/" className="flex items-center gap-3 hover:opacity-90 transition-opacity">
+          <Link href="/" className="flex items-center gap-1 hover:opacity-90 transition-opacity">
             <Image
-              src="/siembra-logo.webp"
-              alt="Siembra NC"
-              width={40}
-              height={40}
-              className="rounded"
+              src="/ripple-logo-perspective-animated.svg"
+              alt="RippleVMS"
+              width={200}
+              height={120}
+              style={{ width: '100px', height: '60px' }}
+              priority
             />
-            <span className="font-semibold text-gray-900 text-lg hidden sm:inline">
-              Siembra NC VMS
+            <span className="font-semibold text-gray-900 text-xl hidden sm:inline">
+              RippleVMS
             </span>
           </Link>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-6">
-            {user ? (
+            {isLoading ? (
+              <div className="animate-pulse flex gap-4">
+                <div className="h-4 w-20 bg-gray-200 rounded" />
+                <div className="h-4 w-16 bg-gray-200 rounded" />
+              </div>
+            ) : user ? (
               <>
                 <Link
                   href="/dashboard"
@@ -63,6 +70,16 @@ export default function Header() {
                   Dashboard
                 </Link>
                 <Link
+                  href="/map"
+                  className={`text-sm font-medium transition-colors ${
+                    isActive('/map')
+                      ? 'text-teal-700'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Map
+                </Link>
+                <Link
                   href="/shifts"
                   className={`text-sm font-medium transition-colors ${
                     pathname.startsWith('/shifts')
@@ -72,16 +89,18 @@ export default function Header() {
                 >
                   Shifts
                 </Link>
-                <Link
-                  href="/trainings"
-                  className={`text-sm font-medium transition-colors ${
-                    pathname.startsWith('/trainings')
-                      ? 'text-teal-700'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  Trainings
-                </Link>
+                {features.trainings && (
+                  <Link
+                    href="/trainings"
+                    className={`text-sm font-medium transition-colors ${
+                      pathname.startsWith('/trainings')
+                        ? 'text-teal-700'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Trainings
+                  </Link>
+                )}
                 <Link
                   href="/schedule"
                   className={`text-sm font-medium transition-colors ${
@@ -114,6 +133,14 @@ export default function Header() {
                 >
                   Profile
                 </Link>
+                <a
+                  href="/guide.html"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+                >
+                  User Guide
+                </a>
                 {user.role === 'ADMINISTRATOR' && (
                   <Link
                     href="/admin"
@@ -162,13 +189,6 @@ export default function Header() {
                           <p className="text-xs text-gray-500">{user.zone}</p>
                         )}
                       </div>
-                      <Link
-                        href="/login"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        Switch User
-                      </Link>
                       <button
                         onClick={handleLogout}
                         className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
@@ -191,14 +211,6 @@ export default function Header() {
                 >
                   About
                 </Link>
-                <a
-                  href="/guide.html"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
-                >
-                  User Guide
-                </a>
                 <Link
                   href="/login"
                   className="px-4 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 transition-colors"
@@ -241,19 +253,28 @@ export default function Header() {
                   Dashboard
                 </Link>
                 <Link
+                  href="/map"
+                  className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Map
+                </Link>
+                <Link
                   href="/shifts"
                   className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Shifts
                 </Link>
-                <Link
-                  href="/trainings"
-                  className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Trainings
-                </Link>
+                {features.trainings && (
+                  <Link
+                    href="/trainings"
+                    className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Trainings
+                  </Link>
+                )}
                 <Link
                   href="/schedule"
                   className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
@@ -277,6 +298,15 @@ export default function Header() {
                 >
                   Profile
                 </Link>
+                <a
+                  href="/guide.html"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  User Guide
+                </a>
                 {user.role === 'ADMINISTRATOR' && (
                   <Link
                     href="/admin"
@@ -286,13 +316,6 @@ export default function Header() {
                     Admin
                   </Link>
                 )}
-                <Link
-                  href="/login"
-                  className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Switch User
-                </Link>
                 <button
                   onClick={handleLogout}
                   className="w-full text-left px-2 py-2 text-red-600 hover:bg-red-50 rounded-lg"
@@ -309,15 +332,6 @@ export default function Header() {
                 >
                   About
                 </Link>
-                <a
-                  href="/guide.html"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  User Guide
-                </a>
                 <Link
                   href="/login"
                   className="block px-2 py-2 bg-teal-600 text-white text-center rounded-lg hover:bg-teal-700"

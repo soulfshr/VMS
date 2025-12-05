@@ -6,11 +6,15 @@ import Link from 'next/link';
 import type { DevUser } from '@/types/auth';
 
 const adminNavItems = [
-  { href: '/admin', label: 'Dashboard', icon: '📊' },
-  { href: '/admin/settings', label: 'General Settings', icon: '⚙️' },
-  { href: '/admin/shift-types', label: 'Shift Types', icon: '📋' },
-  { href: '/admin/training-types', label: 'Training Types', icon: '🎓' },
-  { href: '/admin/zones', label: 'Zones', icon: '📍' },
+  { href: '/admin', label: 'Dashboard', icon: '📊', adminOnly: true },
+  { href: '/admin/email-blast', label: 'Email Blast', icon: '📧', adminOnly: false },
+  { href: '/admin/settings', label: 'General Settings', icon: '⚙️', adminOnly: true },
+  { href: '/admin/qualified-roles', label: 'Qualified Roles', icon: '🏅', adminOnly: true },
+  { href: '/admin/shift-types', label: 'Shift Types', icon: '📋', adminOnly: true },
+  { href: '/admin/training-types', label: 'Training Types', icon: '🎓', adminOnly: true },
+  { href: '/admin/zones', label: 'Zones', icon: '📍', adminOnly: true },
+  { href: '/admin/poi-categories', label: 'POI Categories', icon: '🗂️', adminOnly: true },
+  { href: '/admin/pois', label: 'Points of Interest', icon: '📌', adminOnly: true },
 ];
 
 export default function AdminLayout({
@@ -31,7 +35,13 @@ export default function AdminLayout({
           router.push('/login');
           return;
         }
-        if (data.user.role !== 'ADMINISTRATOR') {
+        // Coordinators can access email-blast, but other admin pages require ADMINISTRATOR
+        const isEmailBlastPage = pathname?.startsWith('/admin/email-blast');
+        const allowedRoles = isEmailBlastPage
+          ? ['ADMINISTRATOR', 'COORDINATOR']
+          : ['ADMINISTRATOR'];
+
+        if (!allowedRoles.includes(data.user.role)) {
           router.push('/dashboard');
           return;
         }
@@ -41,7 +51,7 @@ export default function AdminLayout({
       .catch(() => {
         router.push('/login');
       });
-  }, [router]);
+  }, [router, pathname]);
 
   if (isLoading) {
     return (
@@ -64,23 +74,25 @@ export default function AdminLayout({
                 Admin Settings
               </h2>
               <nav className="space-y-1">
-                {adminNavItems.map(item => {
-                  const isActive = pathname === item.href;
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        isActive
-                          ? 'bg-teal-50 text-teal-700'
-                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                      }`}
-                    >
-                      <span>{item.icon}</span>
-                      {item.label}
-                    </Link>
-                  );
-                })}
+                {adminNavItems
+                  .filter(item => !item.adminOnly || user?.role === 'ADMINISTRATOR')
+                  .map(item => {
+                    const isActive = pathname === item.href;
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          isActive
+                            ? 'bg-teal-50 text-teal-700'
+                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        }`}
+                      >
+                        <span>{item.icon}</span>
+                        {item.label}
+                      </Link>
+                    );
+                  })}
               </nav>
             </div>
           </aside>

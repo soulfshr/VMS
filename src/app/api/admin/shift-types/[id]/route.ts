@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
-import type { Role } from '@/generated/prisma/client';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -23,7 +22,19 @@ export async function GET(request: Request, { params }: RouteParams) {
     const shiftType = await prisma.shiftTypeConfig.findUnique({
       where: { id },
       include: {
-        roleRequirements: true,
+        qualificationRequirements: true,  // Keep for backwards compatibility
+        qualifiedRoleRequirements: {
+          include: {
+            qualifiedRole: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+                color: true,
+              },
+            },
+          },
+        },
         _count: {
           select: { shifts: true },
         },
@@ -63,7 +74,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
       defaultMaxVolunteers,
       sortOrder,
       isActive,
-      roleRequirements,
+      qualifiedRoleRequirements,
     } = body;
 
     // Check if shift type exists
@@ -101,23 +112,34 @@ export async function PUT(request: Request, { params }: RouteParams) {
         ...(isActive !== undefined && { isActive }),
       },
       include: {
-        roleRequirements: true,
+        qualifiedRoleRequirements: {
+          include: {
+            qualifiedRole: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+                color: true,
+              },
+            },
+          },
+        },
       },
     });
 
-    // Update role requirements if provided
-    if (roleRequirements !== undefined) {
+    // Update qualified role requirements if provided
+    if (qualifiedRoleRequirements !== undefined) {
       // Delete existing requirements
-      await prisma.shiftTypeRoleRequirement.deleteMany({
+      await prisma.shiftTypeQualifiedRoleRequirement.deleteMany({
         where: { shiftTypeId: id },
       });
 
       // Create new requirements
-      if (roleRequirements.length > 0) {
-        await prisma.shiftTypeRoleRequirement.createMany({
-          data: roleRequirements.map((req: { role: Role; minRequired: number; maxAllowed?: number }) => ({
+      if (qualifiedRoleRequirements.length > 0) {
+        await prisma.shiftTypeQualifiedRoleRequirement.createMany({
+          data: qualifiedRoleRequirements.map((req: { qualifiedRoleId: string; minRequired: number; maxAllowed?: number }) => ({
             shiftTypeId: id,
-            role: req.role,
+            qualifiedRoleId: req.qualifiedRoleId,
             minRequired: req.minRequired || 0,
             maxAllowed: req.maxAllowed ?? null,
           })),
@@ -128,7 +150,18 @@ export async function PUT(request: Request, { params }: RouteParams) {
       const updatedShiftType = await prisma.shiftTypeConfig.findUnique({
         where: { id },
         include: {
-          roleRequirements: true,
+          qualifiedRoleRequirements: {
+            include: {
+              qualifiedRole: {
+                select: {
+                  id: true,
+                  name: true,
+                  slug: true,
+                  color: true,
+                },
+              },
+            },
+          },
         },
       });
 

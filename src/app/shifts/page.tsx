@@ -3,7 +3,22 @@
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, useCallback, Suspense } from 'react';
-import type { DevUser } from '@/types/auth';
+import type { DevUser, Qualification } from '@/types/auth';
+import { useMultiSelect } from '@/hooks/useMultiSelect';
+import GuidedTour from '@/components/onboarding/GuidedTour';
+
+// Qualification labels for display
+const qualificationLabels: Record<Qualification, string> = {
+  VERIFIER: 'Verifier',
+  ZONE_LEAD: 'Zone Lead',
+  DISPATCHER: 'Dispatcher',
+};
+
+const qualificationDescriptions: Record<Qualification, string> = {
+  VERIFIER: 'Verify community members at patrol locations',
+  ZONE_LEAD: 'Lead and coordinate volunteers in your zone',
+  DISPATCHER: 'Handle dispatch calls and coordinate responses',
+};
 
 interface Zone {
   id: string;
@@ -147,11 +162,68 @@ function ConfirmRsvpsModal({
   );
 }
 
+// Qualification Picker Modal Component
+function QualificationPickerModal({
+  isOpen,
+  onClose,
+  onSelect,
+  qualifications,
+  shiftTitle,
+  isSubmitting,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onSelect: (qualification: Qualification) => void;
+  qualifications: Qualification[];
+  shiftTitle: string;
+  isSubmitting: boolean;
+}) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
+        <h2 className="text-xl font-bold text-gray-900 mb-2">Select Your Role</h2>
+        <p className="text-gray-600 mb-4">
+          You have multiple qualifications. Please select which role you want to sign up as for:
+        </p>
+        <p className="font-medium text-gray-900 mb-4">{shiftTitle}</p>
+
+        <div className="space-y-3 mb-6">
+          {qualifications.map((qual) => (
+            <button
+              key={qual}
+              onClick={() => onSelect(qual)}
+              disabled={isSubmitting}
+              className="w-full text-left p-4 border border-gray-200 rounded-lg hover:border-teal-500 hover:bg-teal-50 transition-colors disabled:opacity-50"
+            >
+              <div className="font-medium text-gray-900">{qualificationLabels[qual]}</div>
+              <div className="text-sm text-gray-500">{qualificationDescriptions[qual]}</div>
+            </button>
+          ))}
+        </div>
+
+        <button
+          onClick={onClose}
+          disabled={isSubmitting}
+          className="w-full py-2 px-4 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium disabled:opacity-50"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
 const typeColors: Record<string, { bg: string; text: string }> = {
   PATROL: { bg: 'bg-blue-100', text: 'text-blue-700' },
   COLLECTION: { bg: 'bg-purple-100', text: 'text-purple-700' },
   ON_CALL_FIELD_SUPPORT: { bg: 'bg-orange-100', text: 'text-orange-700' },
 };
+
+// Default fallback for unknown shift types
+const defaultTypeColor = { bg: 'bg-gray-100', text: 'text-gray-700' };
+const getTypeColor = (type: string) => typeColors[type] || defaultTypeColor;
 
 const typeLabels: Record<string, string> = {
   PATROL: 'Patrol',
@@ -172,12 +244,26 @@ function ShiftsPageContent() {
   const [filterPendingOnly, setFilterPendingOnly] = useState<boolean>(false);
   const [rsvpingShiftId, setRsvpingShiftId] = useState<string | null>(null);
 
-  // Selection state for coordinators
-  const [selectedShifts, setSelectedShifts] = useState<Set<string>>(new Set());
+  // Selection state for coordinators (with shift+click range selection)
+  const selectableShifts = shifts.filter(s => s.status !== 'CANCELLED');
+  const {
+    selectedIds: selectedShifts,
+    isSelected: isShiftSelected,
+    toggleSelection: toggleShiftSelection,
+    clearSelection,
+    selectedCount,
+  } = useMultiSelect({
+    items: selectableShifts,
+    getId: (shift) => shift.id,
+  });
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
+
+  // Qualification picker state
+  const [showQualificationPicker, setShowQualificationPicker] = useState(false);
+  const [pendingRsvpShift, setPendingRsvpShift] = useState<Shift | null>(null);
 
   // View mode: 'cards' or 'list'
   const [viewMode, setViewMode] = useState<'cards' | 'list'>('list');
@@ -231,13 +317,30 @@ function ShiftsPageContent() {
     }
   }, [user, fetchShifts]);
 
-  const handleRsvp = async (shiftId: string) => {
+  // Handle clicking the Sign Up button
+  const handleSignUpClick = (shift: Shift) => {
+    const qualifications = user?.qualifications || [];
+
+    // If user has multiple qualifications, show picker
+    if (qualifications.length > 1) {
+      setPendingRsvpShift(shift);
+      setShowQualificationPicker(true);
+    } else {
+      // If 0 or 1 qualification, sign up directly (qualification may be null or the single one)
+      handleRsvp(shift.id, qualifications[0] || null);
+    }
+  };
+
+  // Perform the actual RSVP with optional qualification
+  const handleRsvp = async (shiftId: string, qualification: Qualification | null) => {
     setRsvpingShiftId(shiftId);
     setError(null);
 
     try {
       const res = await fetch(`/api/shifts/${shiftId}/rsvp`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ qualification }),
       });
 
       if (!res.ok) {
@@ -247,10 +350,21 @@ function ShiftsPageContent() {
 
       // Refresh shifts to show updated status
       await fetchShifts();
+
+      // Close the qualification picker if it was open
+      setShowQualificationPicker(false);
+      setPendingRsvpShift(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to sign up');
     } finally {
       setRsvpingShiftId(null);
+    }
+  };
+
+  // Handle qualification selection from picker
+  const handleQualificationSelect = (qualification: Qualification) => {
+    if (pendingRsvpShift) {
+      handleRsvp(pendingRsvpShift.id, qualification);
     }
   };
 
@@ -296,21 +410,6 @@ function ShiftsPageContent() {
     return `${start.toLocaleTimeString('en-US', formatOpts)} - ${end.toLocaleTimeString('en-US', formatOpts)}`;
   };
 
-  const toggleShiftSelection = (shiftId: string) => {
-    setSelectedShifts(prev => {
-      const next = new Set(prev);
-      if (next.has(shiftId)) {
-        next.delete(shiftId);
-      } else {
-        next.add(shiftId);
-      }
-      return next;
-    });
-  };
-
-  const clearSelection = () => {
-    setSelectedShifts(new Set());
-  };
 
   const handleCancelShifts = async (reason: string) => {
     setIsCancelling(true);
@@ -333,7 +432,7 @@ function ShiftsPageContent() {
 
       // Refresh shifts and clear selection
       await fetchShifts();
-      setSelectedShifts(new Set());
+      clearSelection();
       setShowCancelModal(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to cancel shifts');
@@ -362,7 +461,7 @@ function ShiftsPageContent() {
 
       // Refresh shifts and clear selection
       await fetchShifts();
-      setSelectedShifts(new Set());
+      clearSelection();
       setShowConfirmModal(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to confirm RSVPs');
@@ -389,6 +488,16 @@ function ShiftsPageContent() {
     : shifts;
 
   return (
+    <>
+      {/* Guided Tour */}
+      {user && (
+        <GuidedTour
+          pageName="shifts"
+          userRole={user.role}
+          autoStart={true}
+        />
+      )}
+
     <div className="min-h-[calc(100vh-200px)] bg-gray-50 py-8">
       <div className="container mx-auto px-4 max-w-6xl">
         {/* Header */}
@@ -416,12 +525,13 @@ function ShiftsPageContent() {
         </div>
 
         {/* Selection Toolbar (Coordinator only) */}
-        {canCreateShift && selectedShifts.size > 0 && (
-          <div className="bg-gray-50 border border-gray-300 rounded-lg p-4 mb-6 flex items-center justify-between">
+        {canCreateShift && selectedCount > 0 && (
+          <div className="bg-gray-50 border border-gray-300 rounded-lg p-4 mb-6 flex items-center justify-between" data-tour="bulk-actions">
             <div className="flex items-center gap-4">
               <span className="font-medium text-gray-700">
-                {selectedShifts.size} shift{selectedShifts.size > 1 ? 's' : ''} selected
+                {selectedCount} shift{selectedCount > 1 ? 's' : ''} selected
               </span>
+              <span className="text-xs text-gray-500">(Shift+click to select range)</span>
               <button
                 onClick={clearSelection}
                 className="text-sm text-gray-600 hover:text-gray-800 underline"
@@ -433,7 +543,7 @@ function ShiftsPageContent() {
               {/* Show pending count for selected shifts */}
               {(() => {
                 const pendingCount = shifts
-                  .filter(s => selectedShifts.has(s.id))
+                  .filter(s => isShiftSelected(s.id))
                   .reduce((sum, s) => sum + s.pendingCount, 0);
                 return pendingCount > 0 ? (
                   <button
@@ -461,7 +571,7 @@ function ShiftsPageContent() {
         )}
 
         {/* Filters */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6">
+        <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6" data-tour="shift-filters">
           <div className="flex flex-wrap gap-4 items-end justify-between">
             <div className="flex flex-wrap gap-4">
               <div>
@@ -544,7 +654,7 @@ function ShiftsPageContent() {
         {filteredShifts.length > 0 ? (
           viewMode === 'list' ? (
             /* List View */
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden" data-tour="shift-list">
               <table className="w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
@@ -565,15 +675,16 @@ function ShiftsPageContent() {
                       key={shift.id}
                       className={`hover:bg-gray-50 transition-colors ${
                         shift.status === 'CANCELLED' ? 'bg-red-50/50 text-gray-500' : ''
-                      } ${selectedShifts.has(shift.id) ? 'bg-red-50' : ''}`}
+                      } ${isShiftSelected(shift.id) ? 'bg-red-50' : ''}`}
                     >
                       {canCreateShift && (
                         <td className="px-3 py-3">
                           {shift.status !== 'CANCELLED' && (
                             <input
                               type="checkbox"
-                              checked={selectedShifts.has(shift.id)}
-                              onChange={() => toggleShiftSelection(shift.id)}
+                              checked={isShiftSelected(shift.id)}
+                              onClick={(e) => toggleShiftSelection(shift.id, e)}
+                              onChange={() => {}} // Controlled by onClick for shift+click support
                               className="w-4 h-4 text-red-600 rounded focus:ring-red-500 cursor-pointer"
                             />
                           )}
@@ -598,7 +709,7 @@ function ShiftsPageContent() {
                         <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
                           shift.status === 'CANCELLED'
                             ? 'bg-red-100 text-red-700'
-                            : `${typeColors[shift.type].bg} ${typeColors[shift.type].text}`
+                            : `${getTypeColor(shift.type).bg} ${getTypeColor(shift.type).text}`
                         }`}>
                           {shift.status === 'CANCELLED' ? 'Cancelled' : typeLabels[shift.type]}
                         </span>
@@ -636,7 +747,7 @@ function ShiftsPageContent() {
                           </button>
                         ) : shift.spotsLeft > 0 ? (
                           <button
-                            onClick={() => handleRsvp(shift.id)}
+                            onClick={() => handleSignUpClick(shift)}
                             disabled={rsvpingShiftId === shift.id}
                             className="text-xs px-3 py-1 bg-teal-600 text-white rounded hover:bg-teal-700 transition-colors disabled:opacity-50"
                           >
@@ -644,12 +755,20 @@ function ShiftsPageContent() {
                           </button>
                         ) : null}
                         {canCreateShift && shift.status !== 'CANCELLED' && (
-                          <Link
-                            href={`/shifts/${shift.id}/roster`}
-                            className="ml-2 text-xs text-teal-600 hover:text-teal-700"
-                          >
-                            Roster{shift.pendingCount > 0 && ` (${shift.pendingCount})`}
-                          </Link>
+                          <>
+                            <Link
+                              href={`/shifts/${shift.id}/edit`}
+                              className="ml-2 text-xs text-gray-600 hover:text-gray-800"
+                            >
+                              Edit
+                            </Link>
+                            <Link
+                              href={`/shifts/${shift.id}/roster`}
+                              className="ml-2 text-xs text-teal-600 hover:text-teal-700"
+                            >
+                              Roster{shift.pendingCount > 0 && ` (${shift.pendingCount})`}
+                            </Link>
+                          </>
                         )}
                       </td>
                     </tr>
@@ -666,7 +785,7 @@ function ShiftsPageContent() {
                   className={`bg-white rounded-xl border p-5 hover:shadow-md transition-shadow ${
                     shift.status === 'CANCELLED'
                       ? 'border-red-300 bg-red-50 opacity-75'
-                      : selectedShifts.has(shift.id)
+                      : isShiftSelected(shift.id)
                       ? 'border-red-400 ring-2 ring-red-200'
                       : 'border-gray-200'
                   }`}
@@ -677,15 +796,16 @@ function ShiftsPageContent() {
                       {canCreateShift && shift.status !== 'CANCELLED' && (
                         <input
                           type="checkbox"
-                          checked={selectedShifts.has(shift.id)}
-                          onChange={() => toggleShiftSelection(shift.id)}
+                          checked={isShiftSelected(shift.id)}
+                          onClick={(e) => toggleShiftSelection(shift.id, e)}
+                          onChange={() => {}} // Controlled by onClick for shift+click support
                           className="w-4 h-4 text-red-600 rounded focus:ring-red-500 cursor-pointer"
                         />
                       )}
                       <span className={`px-2 py-1 rounded text-xs font-medium ${
                         shift.status === 'CANCELLED'
                           ? 'bg-red-100 text-red-700'
-                          : `${typeColors[shift.type].bg} ${typeColors[shift.type].text}`
+                          : `${getTypeColor(shift.type).bg} ${getTypeColor(shift.type).text}`
                       }`}>
                         {shift.status === 'CANCELLED' ? 'Cancelled' : typeLabels[shift.type]}
                       </span>
@@ -740,7 +860,7 @@ function ShiftsPageContent() {
                     </div>
                   ) : shift.spotsLeft > 0 ? (
                     <button
-                      onClick={() => handleRsvp(shift.id)}
+                      onClick={() => handleSignUpClick(shift)}
                       disabled={rsvpingShiftId === shift.id}
                       className="w-full py-2 px-4 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium disabled:opacity-50"
                     >
@@ -752,14 +872,22 @@ function ShiftsPageContent() {
                     </div>
                   )}
 
-                  {/* Coordinator: Manage link (not for cancelled shifts) */}
+                  {/* Coordinator: Edit and Manage links (not for cancelled shifts) */}
                   {canCreateShift && shift.status !== 'CANCELLED' && (
-                    <Link
-                      href={`/shifts/${shift.id}/roster`}
-                      className="block text-center text-sm text-teal-600 hover:text-teal-700 mt-2"
-                    >
-                      Manage Roster {shift.pendingCount > 0 && `(${shift.pendingCount} pending)`}
-                    </Link>
+                    <div className="flex gap-3 mt-2">
+                      <Link
+                        href={`/shifts/${shift.id}/edit`}
+                        className="flex-1 text-center text-sm text-gray-600 hover:text-gray-800 py-1 border border-gray-300 rounded"
+                      >
+                        Edit
+                      </Link>
+                      <Link
+                        href={`/shifts/${shift.id}/roster`}
+                        className="flex-1 text-center text-sm text-teal-600 hover:text-teal-700 py-1 border border-teal-300 rounded"
+                      >
+                        Roster {shift.pendingCount > 0 && `(${shift.pendingCount})`}
+                      </Link>
+                    </div>
                   )}
                 </div>
               ))}
@@ -785,7 +913,7 @@ function ShiftsPageContent() {
         isOpen={showCancelModal}
         onClose={() => setShowCancelModal(false)}
         onConfirm={handleCancelShifts}
-        selectedCount={selectedShifts.size}
+        selectedCount={selectedCount}
         isSubmitting={isCancelling}
       />
 
@@ -794,13 +922,27 @@ function ShiftsPageContent() {
         isOpen={showConfirmModal}
         onClose={() => setShowConfirmModal(false)}
         onConfirm={handleConfirmRsvps}
-        selectedCount={selectedShifts.size}
+        selectedCount={selectedCount}
         pendingRsvpCount={shifts
-          .filter(s => selectedShifts.has(s.id))
+          .filter(s => isShiftSelected(s.id))
           .reduce((sum, s) => sum + s.pendingCount, 0)}
         isSubmitting={isConfirming}
       />
+
+      {/* Qualification Picker Modal */}
+      <QualificationPickerModal
+        isOpen={showQualificationPicker}
+        onClose={() => {
+          setShowQualificationPicker(false);
+          setPendingRsvpShift(null);
+        }}
+        onSelect={handleQualificationSelect}
+        qualifications={user?.qualifications || []}
+        shiftTitle={pendingRsvpShift?.title || ''}
+        isSubmitting={rsvpingShiftId !== null}
+      />
     </div>
+    </>
   );
 }
 

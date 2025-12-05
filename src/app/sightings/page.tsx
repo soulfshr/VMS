@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import SightingsListMap from '@/components/maps/SightingsListMap';
+import { useFeatures } from '@/hooks/useFeatures';
 
 interface SightingMedia {
   id: string;
@@ -58,11 +60,21 @@ function formatDate(dateString: string) {
 
 export default function SightingsPage() {
   const router = useRouter();
+  const features = useFeatures();
+
+  // Feature flag redirect
+  useEffect(() => {
+    if (!features.isLoading && !features.sightings) {
+      router.replace('/shifts');
+    }
+  }, [router, features.isLoading, features.sightings]);
+
   const [sightings, setSightings] = useState<Sighting[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
 
   useEffect(() => {
     fetchSightings();
@@ -163,23 +175,57 @@ export default function SightingsPage() {
           ))}
         </div>
 
-        {/* Filter indicator */}
-        {statusFilter !== 'all' && (
-          <div className="mb-4 flex items-center gap-2">
-            <span className="text-sm text-gray-600">Filtering by:</span>
-            <span className={`inline-flex px-2 py-1 rounded text-xs font-medium ${statusColors[statusFilter]}`}>
-              {statusLabels[statusFilter]}
-            </span>
+        {/* View toggle and filter */}
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            {statusFilter !== 'all' && (
+              <>
+                <span className="text-sm text-gray-600">Filtering by:</span>
+                <span className={`inline-flex px-2 py-1 rounded text-xs font-medium ${statusColors[statusFilter]}`}>
+                  {statusLabels[statusFilter]}
+                </span>
+                <button
+                  onClick={() => setStatusFilter('all')}
+                  className="text-sm text-teal-600 hover:underline"
+                >
+                  Clear filter
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* View toggle */}
+          <div className="flex bg-gray-100 rounded-lg p-1">
             <button
-              onClick={() => setStatusFilter('all')}
-              className="text-sm text-teal-600 hover:underline"
+              onClick={() => setViewMode('list')}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                viewMode === 'list'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
             >
-              Clear filter
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+              </svg>
+              List
+            </button>
+            <button
+              onClick={() => setViewMode('map')}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                viewMode === 'map'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+              </svg>
+              Map
             </button>
           </div>
-        )}
+        </div>
 
-        {/* Sightings list */}
+        {/* Sightings content */}
         {sightings.length === 0 ? (
           <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
             <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -190,6 +236,8 @@ export default function SightingsPage() {
               {statusFilter !== 'all' ? 'Try clearing the filter' : 'Reports will appear here when submitted'}
             </p>
           </div>
+        ) : viewMode === 'map' ? (
+          <SightingsListMap sightings={sightings} />
         ) : (
           <div className="space-y-4">
             {sightings.map((sighting) => (

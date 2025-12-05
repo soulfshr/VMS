@@ -2,8 +2,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import type { DevUser } from '@/types/auth';
 import AssignmentModal from '@/components/schedule/AssignmentModal';
+import GuidedTour from '@/components/onboarding/GuidedTour';
 
 interface TimeBlock {
   startTime: string;
@@ -205,6 +207,16 @@ export default function SchedulePage() {
   }
 
   return (
+    <>
+      {/* Guided Tour */}
+      {user && (
+        <GuidedTour
+          pageName="schedule"
+          userRole={user.role}
+          autoStart={true}
+        />
+      )}
+
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-6">
         {/* Header */}
@@ -220,7 +232,7 @@ export default function SchedulePage() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
             {/* Week navigation */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2" data-tour="week-nav">
               <button
                 onClick={() => navigateWeek('prev')}
                 className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
@@ -244,26 +256,36 @@ export default function SchedulePage() {
               </span>
             </div>
 
-            {/* County filter */}
-            <div className="flex items-center gap-2">
-              <label className="text-sm text-gray-600">Filter:</label>
-              <select
-                value={selectedCounty}
-                onChange={e => setSelectedCounty(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg"
-              >
-                <option value="all">All Counties</option>
-                {scheduleData?.counties.map(county => (
-                  <option key={county} value={county}>
-                    {county} County
-                  </option>
-                ))}
-              </select>
+            {/* County filter and Create button */}
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2" data-tour="county-filter">
+                <label className="text-sm text-gray-600">Filter:</label>
+                <select
+                  value={selectedCounty}
+                  onChange={e => setSelectedCounty(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg"
+                >
+                  <option value="all">All Counties</option>
+                  {scheduleData?.counties.map(county => (
+                    <option key={county} value={county}>
+                      {county} County
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {canEdit && (
+                <Link
+                  href="/shifts/create"
+                  className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium"
+                >
+                  + Create Shift
+                </Link>
+              )}
             </div>
           </div>
 
           {/* Legend */}
-          <div className="flex flex-wrap items-center gap-4 mt-4 pt-4 border-t border-gray-200 text-sm">
+          <div className="flex flex-wrap items-center gap-4 mt-4 pt-4 border-t border-gray-200 text-sm" data-tour="coverage-legend">
             <span className="text-gray-500 font-medium">Coverage:</span>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 rounded bg-green-100 border border-green-300"></div>
@@ -295,7 +317,7 @@ export default function SchedulePage() {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
           </div>
         ) : scheduleData ? (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden" data-tour="schedule-grid">
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
                 <thead>
@@ -459,5 +481,6 @@ export default function SchedulePage() {
         />
       )}
     </div>
+    </>
   );
 }

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useFeatures } from '@/hooks/useFeatures';
 
 interface Attendee {
   id: string;
@@ -57,6 +58,15 @@ interface TrainingSession {
 export default function TrainingDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const features = useFeatures();
+
+  // Feature flag redirect
+  useEffect(() => {
+    if (!features.isLoading && !features.trainings) {
+      router.replace('/shifts');
+    }
+  }, [router, features.isLoading, features.trainings]);
+
   const [training, setTraining] = useState<TrainingSession | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);

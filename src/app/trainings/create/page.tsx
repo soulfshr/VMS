@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import type { DevUser } from '@/types/auth';
+import { useFeatures } from '@/hooks/useFeatures';
 
 interface Zone {
   id: string;
@@ -23,6 +24,15 @@ interface TrainingType {
 
 export default function CreateTrainingPage() {
   const router = useRouter();
+  const features = useFeatures();
+
+  // Feature flag redirect
+  useEffect(() => {
+    if (!features.isLoading && !features.trainings) {
+      router.replace('/shifts');
+    }
+  }, [router, features.isLoading, features.trainings]);
+
   const [user, setUser] = useState<DevUser | null>(null);
   const [zones, setZones] = useState<Zone[]>([]);
   const [trainingTypes, setTrainingTypes] = useState<TrainingType[]>([]);

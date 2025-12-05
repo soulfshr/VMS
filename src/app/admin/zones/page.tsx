@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 
 interface Zone {
   id: string;
@@ -9,6 +10,10 @@ interface Zone {
   description: string | null;
   signalGroup: string | null;
   isActive: boolean;
+  color: string;
+  fillOpacity: number;
+  strokeWeight: number;
+  boundaries: { lat: number; lng: number }[] | null;
   _count: {
     users: number;
     shifts: number;
@@ -16,6 +21,19 @@ interface Zone {
 }
 
 const COUNTIES = ['Durham', 'Orange', 'Wake'];
+
+const DEFAULT_COLORS = [
+  '#3b82f6', // blue
+  '#22c55e', // green
+  '#ef4444', // red
+  '#f59e0b', // amber
+  '#8b5cf6', // violet
+  '#ec4899', // pink
+  '#14b8a6', // teal
+  '#f97316', // orange
+  '#6366f1', // indigo
+  '#84cc16', // lime
+];
 
 export default function ZonesPage() {
   const [zones, setZones] = useState<Zone[]>([]);
@@ -30,6 +48,7 @@ export default function ZonesPage() {
     county: '',
     description: '',
     signalGroup: '',
+    color: '#3b82f6',
   });
 
   useEffect(() => {
@@ -56,6 +75,7 @@ export default function ZonesPage() {
       county: '',
       description: '',
       signalGroup: '',
+      color: '#3b82f6',
     });
   };
 
@@ -67,6 +87,7 @@ export default function ZonesPage() {
       county: zone.county || '',
       description: zone.description || '',
       signalGroup: zone.signalGroup || '',
+      color: zone.color || '#3b82f6',
     });
   };
 
@@ -104,6 +125,7 @@ export default function ZonesPage() {
           county: formData.county || null,
           description: formData.description || null,
           signalGroup: formData.signalGroup || null,
+          color: formData.color,
         }),
       });
 
@@ -251,6 +273,43 @@ export default function ZonesPage() {
             <p className="text-xs text-gray-500 mt-1">Optional link to the zone&apos;s Signal group for real-time coordination</p>
           </div>
 
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Map Color</label>
+            <div className="flex flex-wrap gap-2">
+              {DEFAULT_COLORS.map(color => (
+                <button
+                  key={color}
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, color }))}
+                  className={`w-8 h-8 rounded-full border-2 transition-all ${
+                    formData.color === color
+                      ? 'border-gray-800 ring-2 ring-gray-400 ring-offset-1'
+                      : 'border-gray-200 hover:border-gray-400'
+                  }`}
+                  style={{ backgroundColor: color }}
+                  title={color}
+                />
+              ))}
+              <div className="relative">
+                <input
+                  type="color"
+                  value={formData.color}
+                  onChange={e => setFormData(prev => ({ ...prev, color: e.target.value }))}
+                  className="w-8 h-8 rounded-full cursor-pointer opacity-0 absolute inset-0"
+                />
+                <div
+                  className="w-8 h-8 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 hover:border-gray-400"
+                  title="Custom color"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">Color used to display zone on coverage map</p>
+          </div>
+
           <div className="flex gap-3 pt-4 border-t border-gray-200">
             <button
               onClick={handleSave}
@@ -283,10 +342,10 @@ export default function ZonesPage() {
                     Description
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Users
+                    Map
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Shifts
+                    Users
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
@@ -300,26 +359,46 @@ export default function ZonesPage() {
                 {countyZones.map(zone => (
                   <tr key={zone.id} className={!zone.isActive ? 'bg-gray-50' : ''}>
                     <td className="px-4 py-4">
-                      <div className="font-medium text-gray-900">{zone.name}</div>
-                      {zone.signalGroup && (
-                        <a
-                          href={zone.signalGroup}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-teal-600 hover:text-teal-700"
-                        >
-                          Signal Group →
-                        </a>
-                      )}
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="w-4 h-4 rounded-full flex-shrink-0 border border-gray-200"
+                          style={{ backgroundColor: zone.color }}
+                          title={`Map color: ${zone.color}`}
+                        />
+                        <div>
+                          <div className="font-medium text-gray-900">{zone.name}</div>
+                          {zone.signalGroup && (
+                            <a
+                              href={zone.signalGroup}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-teal-600 hover:text-teal-700"
+                            >
+                              Signal Group →
+                            </a>
+                          )}
+                        </div>
+                      </div>
                     </td>
                     <td className="px-4 py-4 text-sm text-gray-600 max-w-xs truncate">
                       {zone.description || <span className="text-gray-400">No description</span>}
                     </td>
-                    <td className="px-4 py-4 text-sm text-gray-600">
-                      {zone._count.users}
+                    <td className="px-4 py-4">
+                      {zone.boundaries && Array.isArray(zone.boundaries) && zone.boundaries.length > 2 ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          Drawn
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-500">
+                          Not set
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-4 text-sm text-gray-600">
-                      {zone._count.shifts}
+                      {zone._count.users}
                     </td>
                     <td className="px-4 py-4">
                       <button
@@ -335,6 +414,12 @@ export default function ZonesPage() {
                     </td>
                     <td className="px-4 py-4 text-right">
                       <div className="flex justify-end gap-2">
+                        <Link
+                          href={`/admin/zones/${zone.id}/boundaries`}
+                          className="text-sm text-blue-600 hover:text-blue-700"
+                        >
+                          Draw Map
+                        </Link>
                         <button
                           onClick={() => startEdit(zone)}
                           className="text-sm text-teal-600 hover:text-teal-700"

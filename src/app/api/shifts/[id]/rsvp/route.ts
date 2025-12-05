@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
-import { RSVPStatus } from '@/generated/prisma/enums';
+import { RSVPStatus, Qualification } from '@/generated/prisma/enums';
 import {
   sendShiftSignupEmail,
   sendShiftConfirmationEmail,
@@ -20,6 +20,17 @@ export async function POST(
     }
 
     const { id: shiftId } = await params;
+
+    // Parse optional qualification from body
+    let qualification: Qualification | null = null;
+    try {
+      const body = await request.json();
+      if (body.qualification && Object.values(Qualification).includes(body.qualification)) {
+        qualification = body.qualification as Qualification;
+      }
+    } catch {
+      // No body or invalid JSON is fine - qualification is optional
+    }
 
     // Check if shift exists and is published
     const shift = await prisma.shift.findUnique({
@@ -69,6 +80,7 @@ export async function POST(
         userId: user.id,
         status: autoConfirm ? 'CONFIRMED' : 'PENDING',
         confirmedAt: autoConfirm ? new Date() : null,
+        qualification,
       },
       include: {
         shift: {
@@ -87,31 +99,37 @@ export async function POST(
     });
 
     // Send appropriate email based on auto-confirm setting
-    if (autoConfirm) {
-      // Send confirmation email with calendar invite
-      sendShiftConfirmationEmail({
-        to: rsvp.user.email,
-        volunteerName: rsvp.user.name,
-        shiftTitle: rsvp.shift.title,
-        shiftType: rsvp.shift.type,
-        shiftDate: rsvp.shift.date,
-        startTime: rsvp.shift.startTime,
-        endTime: rsvp.shift.endTime,
-        zoneName: rsvp.shift.zone.name,
-        description: rsvp.shift.description || undefined,
-      }).catch(err => console.error('Email send error:', err));
-    } else {
-      // Send signup confirmation email (pending status)
-      sendShiftSignupEmail({
-        to: rsvp.user.email,
-        volunteerName: rsvp.user.name,
-        shiftTitle: rsvp.shift.title,
-        shiftType: rsvp.shift.type,
-        shiftDate: rsvp.shift.date,
-        startTime: rsvp.shift.startTime,
-        endTime: rsvp.shift.endTime,
-        zoneName: rsvp.shift.zone.name,
-      }).catch(err => console.error('Email send error:', err));
+    // Use try/catch with await to ensure email completes before serverless function terminates
+    try {
+      if (autoConfirm) {
+        // Send confirmation email with calendar invite
+        await sendShiftConfirmationEmail({
+          to: rsvp.user.email,
+          volunteerName: rsvp.user.name,
+          shiftTitle: rsvp.shift.title,
+          shiftType: rsvp.shift.type,
+          shiftDate: rsvp.shift.date,
+          startTime: rsvp.shift.startTime,
+          endTime: rsvp.shift.endTime,
+          zoneName: rsvp.shift.zone.name,
+          description: rsvp.shift.description || undefined,
+        });
+      } else {
+        // Send signup confirmation email (pending status)
+        await sendShiftSignupEmail({
+          to: rsvp.user.email,
+          volunteerName: rsvp.user.name,
+          shiftTitle: rsvp.shift.title,
+          shiftType: rsvp.shift.type,
+          shiftDate: rsvp.shift.date,
+          startTime: rsvp.shift.startTime,
+          endTime: rsvp.shift.endTime,
+          zoneName: rsvp.shift.zone.name,
+        });
+      }
+    } catch (emailErr) {
+      console.error('Email send error:', emailErr);
+      // Don't fail the RSVP if email fails
     }
 
     return NextResponse.json(rsvp, { status: 201 });
@@ -170,17 +188,21 @@ export async function DELETE(
       where: { id: rsvp.id },
     });
 
-    // Send cancellation email (async, don't block response)
-    sendShiftCancellationEmail({
-      to: rsvp.user.email,
-      volunteerName: rsvp.user.name,
-      shiftTitle: rsvp.shift.title,
-      shiftType: rsvp.shift.type,
-      shiftDate: rsvp.shift.date,
-      startTime: rsvp.shift.startTime,
-      endTime: rsvp.shift.endTime,
-      zoneName: rsvp.shift.zone.name,
-    }).catch(err => console.error('Email send error:', err));
+    // Send cancellation email - await to ensure it completes before function terminates
+    try {
+      await sendShiftCancellationEmail({
+        to: rsvp.user.email,
+        volunteerName: rsvp.user.name,
+        shiftTitle: rsvp.shift.title,
+        shiftType: rsvp.shift.type,
+        shiftDate: rsvp.shift.date,
+        startTime: rsvp.shift.startTime,
+        endTime: rsvp.shift.endTime,
+        zoneName: rsvp.shift.zone.name,
+      });
+    } catch (emailErr) {
+      console.error('Email send error:', emailErr);
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -258,17 +280,21 @@ export async function PATCH(
 
     // Send confirmation email with calendar invite when status is changed to CONFIRMED
     if (statusUpdated === 'CONFIRMED') {
-      sendShiftConfirmationEmail({
-        to: rsvp.user.email,
-        volunteerName: rsvp.user.name,
-        shiftTitle: rsvp.shift.title,
-        shiftType: rsvp.shift.type,
-        shiftDate: rsvp.shift.date,
-        startTime: rsvp.shift.startTime,
-        endTime: rsvp.shift.endTime,
-        zoneName: rsvp.shift.zone.name,
-        description: rsvp.shift.description || undefined,
-      }).catch(err => console.error('Email send error:', err));
+      try {
+        await sendShiftConfirmationEmail({
+          to: rsvp.user.email,
+          volunteerName: rsvp.user.name,
+          shiftTitle: rsvp.shift.title,
+          shiftType: rsvp.shift.type,
+          shiftDate: rsvp.shift.date,
+          startTime: rsvp.shift.startTime,
+          endTime: rsvp.shift.endTime,
+          zoneName: rsvp.shift.zone.name,
+          description: rsvp.shift.description || undefined,
+        });
+      } catch (emailErr) {
+        console.error('Email send error:', emailErr);
+      }
     }
 
     return NextResponse.json(rsvp);

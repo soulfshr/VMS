@@ -9,8 +9,9 @@ export async function GET() {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    if (user.role !== 'ADMINISTRATOR') {
-      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
+    // Allow coordinators to read zones (for email blast filtering)
+    if (!['ADMINISTRATOR', 'COORDINATOR'].includes(user.role)) {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
     const zones = await prisma.zone.findMany({
@@ -44,7 +45,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { name, county, description, signalGroup } = body;
+    const { name, county, description, signalGroup, color, fillOpacity, strokeWeight, boundaries } = body;
 
     // Validate required fields
     if (!name) {
@@ -65,6 +66,10 @@ export async function POST(request: Request) {
         county: county || null,
         description: description || null,
         signalGroup: signalGroup || null,
+        color: color || '#3b82f6',
+        fillOpacity: fillOpacity ?? 0.3,
+        strokeWeight: strokeWeight ?? 2,
+        boundaries: boundaries || null,
       },
     });
 

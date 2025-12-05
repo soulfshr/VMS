@@ -41,6 +41,19 @@ interface SearchableUser {
   name: string;
   email: string;
   phone: string | null;
+  qualifiedRoles?: {
+    id: string;
+    name: string;
+    slug: string;
+    color: string;
+  }[];
+}
+
+interface QualifiedRole {
+  id: string;
+  name: string;
+  slug: string;
+  color: string;
 }
 
 export default function RosterPage() {
@@ -58,10 +71,22 @@ export default function RosterPage() {
   const [searching, setSearching] = useState(false);
   const [addingVolunteer, setAddingVolunteer] = useState<string | null>(null);
   const [addError, setAddError] = useState<string | null>(null);
+  const [qualifiedRoles, setQualifiedRoles] = useState<QualifiedRole[]>([]);
+  const [selectedRoleFilter, setSelectedRoleFilter] = useState<string>('all');
 
   useEffect(() => {
     fetchShift();
   }, [params.id]);
+
+  // Fetch qualified roles when modal opens
+  useEffect(() => {
+    if (showAddModal && qualifiedRoles.length === 0) {
+      fetch('/api/admin/qualified-roles')
+        .then(res => res.ok ? res.json() : [])
+        .then(data => setQualifiedRoles(data))
+        .catch(() => setQualifiedRoles([]));
+    }
+  }, [showAddModal, qualifiedRoles.length]);
 
   const fetchShift = async () => {
     try {
@@ -125,20 +150,30 @@ export default function RosterPage() {
   };
 
   // Search for volunteers to add
-  const searchVolunteers = useCallback(async (query: string) => {
-    if (query.length < 2) {
+  const searchVolunteers = useCallback(async (query: string, roleId: string) => {
+    if (query.length < 2 && roleId === 'all') {
       setSearchResults([]);
       return;
     }
 
     setSearching(true);
     try {
-      const res = await fetch(`/api/users?search=${encodeURIComponent(query)}&limit=10`);
+      const params = new URLSearchParams();
+      if (query.length >= 2) {
+        params.set('search', query);
+      }
+      if (roleId !== 'all') {
+        params.set('qualifiedRoleId', roleId);
+      }
+      params.set('limit', '15');
+      params.set('status', 'active');
+
+      const res = await fetch(`/api/volunteers?${params.toString()}`);
       if (res.ok) {
         const data = await res.json();
         // Filter out users already on this shift
         const existingIds = shift?.volunteers.map(v => v.user.id) || [];
-        const filtered = data.users.filter((u: SearchableUser) => !existingIds.includes(u.id));
+        const filtered = (data.volunteers || []).filter((u: SearchableUser) => !existingIds.includes(u.id));
         setSearchResults(filtered);
       }
     } catch (error) {
@@ -151,14 +186,14 @@ export default function RosterPage() {
   // Debounced search
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (searchQuery) {
-        searchVolunteers(searchQuery);
+      if (searchQuery || selectedRoleFilter !== 'all') {
+        searchVolunteers(searchQuery, selectedRoleFilter);
       } else {
         setSearchResults([]);
       }
     }, 300);
     return () => clearTimeout(timer);
-  }, [searchQuery, searchVolunteers]);
+  }, [searchQuery, selectedRoleFilter, searchVolunteers]);
 
   const handleAddVolunteer = async (volunteerId: string) => {
     setAddingVolunteer(volunteerId);
@@ -191,6 +226,7 @@ export default function RosterPage() {
     setSearchQuery('');
     setSearchResults([]);
     setAddError(null);
+    setSelectedRoleFilter('all');
   };
 
   if (loading) {
@@ -462,9 +498,29 @@ export default function RosterPage() {
             </div>
 
             <div className="px-6 py-4">
+              {/* Filter by Qualified Role */}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Search Volunteers
+                  Filter by Qualified Role
+                </label>
+                <select
+                  value={selectedRoleFilter}
+                  onChange={(e) => setSelectedRoleFilter(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                >
+                  <option value="all">All Volunteers</option>
+                  {qualifiedRoles.map((role) => (
+                    <option key={role.id} value={role.id}>
+                      {role.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Search by Name/Email */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Search by Name or Email
                 </label>
                 <input
                   type="text"
@@ -492,15 +548,21 @@ export default function RosterPage() {
                   </div>
                 )}
 
-                {!searching && searchQuery.length > 0 && searchQuery.length < 2 && (
+                {!searching && searchQuery.length > 0 && searchQuery.length < 2 && selectedRoleFilter === 'all' && (
                   <div className="text-center py-4 text-gray-500 text-sm">
-                    Type at least 2 characters to search
+                    Type at least 2 characters to search, or select a qualified role to filter
                   </div>
                 )}
 
-                {!searching && searchQuery.length >= 2 && searchResults.length === 0 && (
+                {!searching && (searchQuery.length >= 2 || selectedRoleFilter !== 'all') && searchResults.length === 0 && (
                   <div className="text-center py-4 text-gray-500">
                     No volunteers found
+                  </div>
+                )}
+
+                {!searching && searchQuery.length === 0 && selectedRoleFilter === 'all' && searchResults.length === 0 && (
+                  <div className="text-center py-4 text-gray-500 text-sm">
+                    Select a qualified role or type to search
                   </div>
                 )}
 
@@ -509,14 +571,30 @@ export default function RosterPage() {
                     key={user.id}
                     className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg border-b last:border-b-0"
                   >
-                    <div>
+                    <div className="min-w-0 flex-1">
                       <p className="font-medium text-gray-900">{user.name}</p>
-                      <p className="text-sm text-gray-500">{user.email}</p>
+                      <p className="text-sm text-gray-500 truncate">{user.email}</p>
+                      {user.qualifiedRoles && user.qualifiedRoles.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {user.qualifiedRoles.map((role) => (
+                            <span
+                              key={role.id}
+                              className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                              style={{
+                                backgroundColor: `${role.color}20`,
+                                color: role.color,
+                              }}
+                            >
+                              {role.name}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     <button
                       onClick={() => handleAddVolunteer(user.id)}
                       disabled={addingVolunteer === user.id}
-                      className="px-3 py-1.5 bg-teal-600 text-white text-sm rounded hover:bg-teal-700 disabled:opacity-50 flex items-center gap-1"
+                      className="ml-3 px-3 py-1.5 bg-teal-600 text-white text-sm rounded hover:bg-teal-700 disabled:opacity-50 flex items-center gap-1 flex-shrink-0"
                     >
                       {addingVolunteer === user.id ? (
                         'Adding...'

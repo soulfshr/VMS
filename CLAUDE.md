@@ -1,10 +1,20 @@
-# Claude Code Instructions for Siembra NC VMS
+# Claude Code Instructions for RippleVMS
 
 ## Deployment
 
 **IMPORTANT:** All deployments should go to **dev/preview** by default.
 - Use `vercel` (without `--prod`) for standard deployments
 - Only deploy to production (`vercel --prod`) when explicitly requested by the user
+
+### Stable Dev URL
+
+After each preview deployment, update the stable dev alias so the user has a consistent URL:
+
+```bash
+vercel alias <deployment-url> dev-nc.ripple-vms.com
+```
+
+This ensures https://dev-nc.ripple-vms.com always points to the latest preview deployment.
 
 ## Tech Stack
 

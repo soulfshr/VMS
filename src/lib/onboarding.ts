@@ -5,6 +5,7 @@ const STORAGE_KEYS = {
   hasSeenWelcome: 'vms_hasSeenWelcome',
   hasSeenPageTour: 'vms_hasSeenPageTour_',
   welcomeDismissedAt: 'vms_welcomeDismissedAt',
+  allToursDismissed: 'vms_allToursDismissed',
 } as const;
 
 export function hasSeenWelcome(): boolean {
@@ -52,4 +53,19 @@ export function resetAllTours(): void {
 export function resetAllOnboarding(): void {
   resetWelcome();
   resetAllTours();
+}
+
+export function hasAllToursDismissed(): boolean {
+  if (typeof window === 'undefined') return false;
+  return localStorage.getItem(STORAGE_KEYS.allToursDismissed) === 'true';
+}
+
+export function markAllToursDismissed(): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(STORAGE_KEYS.allToursDismissed, 'true');
+}
+
+export function resetAllToursDismissed(): void {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(STORAGE_KEYS.allToursDismissed);
 }

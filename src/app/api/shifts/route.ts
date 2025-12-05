@@ -51,6 +51,13 @@ export async function GET(request: NextRequest) {
                 email: true,
               },
             },
+            qualifiedRole: {
+              select: {
+                id: true,
+                name: true,
+                countsTowardMinimum: true,
+              },
+            },
           },
         },
         createdBy: {
@@ -68,13 +75,21 @@ export async function GET(request: NextRequest) {
 
     // Transform to include computed fields
     const shiftsWithMeta = shifts.map(shift => {
-      const confirmedCount = shift.volunteers.filter(v => v.status === 'CONFIRMED').length;
+      // Only count volunteers whose qualified role counts toward minimum (or have no role assigned)
+      const countingVolunteers = shift.volunteers.filter(v =>
+        v.status === 'CONFIRMED' && (v.qualifiedRole?.countsTowardMinimum !== false)
+      );
+      const confirmedCount = countingVolunteers.length;
+
+      // Total confirmed (including non-counting roles like Shadowers)
+      const totalConfirmed = shift.volunteers.filter(v => v.status === 'CONFIRMED').length;
       const pendingCount = shift.volunteers.filter(v => v.status === 'PENDING').length;
       const userRsvp = shift.volunteers.find(v => v.userId === user.id);
 
       return {
         ...shift,
-        confirmedCount,
+        confirmedCount,        // Volunteers that count toward minimum
+        totalConfirmed,        // All confirmed volunteers (including shadows)
         pendingCount,
         spotsLeft: shift.maxVolunteers - confirmedCount,
         userRsvpStatus: userRsvp?.status || null,

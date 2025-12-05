@@ -14,6 +14,8 @@ export async function GET(request: NextRequest) {
     const typeId = searchParams.get('typeId');
     const status = searchParams.get('status') || 'PUBLISHED';
     const zoneId = searchParams.get('zoneId');
+    const upcoming = searchParams.get('upcoming') === 'true';
+    const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined;
 
     // Build where clause
     const where: Record<string, unknown> = {};
@@ -28,6 +30,11 @@ export async function GET(request: NextRequest) {
 
     if (zoneId && zoneId !== 'all') {
       where.zoneId = zoneId;
+    }
+
+    // Filter for upcoming trainings (start time in the future)
+    if (upcoming) {
+      where.startTime = { gte: new Date() };
     }
 
     const sessions = await prisma.trainingSession.findMany({
@@ -47,15 +54,26 @@ export async function GET(request: NextRequest) {
         },
       },
       orderBy: { startTime: 'asc' },
+      ...(limit && { take: limit }),
     });
 
-    // Add computed fields
-    const sessionsWithCounts = sessions.map(session => ({
-      ...session,
-      confirmedCount: session.attendees.filter(a => a.status === 'CONFIRMED').length,
-      pendingCount: session.attendees.filter(a => a.status === 'PENDING').length,
-      spotsLeft: session.maxAttendees - session.attendees.filter(a => a.status === 'CONFIRMED').length,
-    }));
+    // Add computed fields and user's RSVP status
+    const sessionsWithCounts = sessions.map(session => {
+      const userRsvp = session.attendees.find(a => a.userId === user.id);
+      return {
+        ...session,
+        confirmedCount: session.attendees.filter(a => a.status === 'CONFIRMED').length,
+        pendingCount: session.attendees.filter(a => a.status === 'PENDING').length,
+        spotsLeft: session.maxAttendees - session.attendees.filter(a => a.status === 'CONFIRMED').length,
+        currentAttendees: session.attendees.filter(a => ['CONFIRMED', 'PENDING'].includes(a.status)).length,
+        userRsvp: userRsvp ? { status: userRsvp.status } : null,
+      };
+    });
+
+    // Return wrapped in trainings object for dashboard compatibility
+    if (upcoming) {
+      return NextResponse.json({ trainings: sessionsWithCounts });
+    }
 
     return NextResponse.json(sessionsWithCounts);
   } catch (error) {

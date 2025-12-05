@@ -43,7 +43,20 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json();
-    const { autoConfirmRsvp, timezone, maxUploadSizeMb, maxUploadsPerReport } = body;
+    const {
+      autoConfirmRsvp,
+      timezone,
+      maxUploadSizeMb,
+      maxUploadsPerReport,
+      // Branding settings
+      orgName,
+      emailFromName,
+      emailFromAddress,
+      emailFooter,
+      // Feature flag overrides
+      featureTrainings,
+      featureSightings,
+    } = body;
 
     // Validate upload settings
     if (maxUploadSizeMb !== undefined && (maxUploadSizeMb < 1 || maxUploadSizeMb > 100)) {
@@ -51,6 +64,26 @@ export async function PUT(request: Request) {
     }
     if (maxUploadsPerReport !== undefined && (maxUploadsPerReport < 1 || maxUploadsPerReport > 20)) {
       return NextResponse.json({ error: 'Max uploads per report must be between 1 and 20' }, { status: 400 });
+    }
+
+    // Validate branding settings
+    if (orgName !== undefined && (typeof orgName !== 'string' || orgName.length > 100)) {
+      return NextResponse.json({ error: 'Organization name must be a string under 100 characters' }, { status: 400 });
+    }
+    if (emailFromName !== undefined && (typeof emailFromName !== 'string' || emailFromName.length > 100)) {
+      return NextResponse.json({ error: 'Email from name must be a string under 100 characters' }, { status: 400 });
+    }
+    if (emailFromAddress !== undefined) {
+      if (typeof emailFromAddress !== 'string' || emailFromAddress.length > 255) {
+        return NextResponse.json({ error: 'Email from address must be a string under 255 characters' }, { status: 400 });
+      }
+      // Basic email format validation (only if non-empty)
+      if (emailFromAddress && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailFromAddress)) {
+        return NextResponse.json({ error: 'Email from address must be a valid email format' }, { status: 400 });
+      }
+    }
+    if (emailFooter !== undefined && (typeof emailFooter !== 'string' || emailFooter.length > 200)) {
+      return NextResponse.json({ error: 'Email footer must be a string under 200 characters' }, { status: 400 });
     }
 
     // Get or create settings singleton
@@ -62,6 +95,10 @@ export async function PUT(request: Request) {
           timezone: timezone ?? 'America/New_York',
           maxUploadSizeMb: maxUploadSizeMb ?? 50,
           maxUploadsPerReport: maxUploadsPerReport ?? 5,
+          orgName: orgName ?? 'RippleVMS',
+          emailFromName: emailFromName ?? 'RippleVMS',
+          emailFromAddress: emailFromAddress ?? '',
+          emailFooter: emailFooter ?? 'RippleVMS Team',
         },
       });
     } else {
@@ -72,6 +109,13 @@ export async function PUT(request: Request) {
           ...(timezone !== undefined && { timezone }),
           ...(maxUploadSizeMb !== undefined && { maxUploadSizeMb }),
           ...(maxUploadsPerReport !== undefined && { maxUploadsPerReport }),
+          ...(orgName !== undefined && { orgName }),
+          ...(emailFromName !== undefined && { emailFromName }),
+          ...(emailFromAddress !== undefined && { emailFromAddress }),
+          ...(emailFooter !== undefined && { emailFooter }),
+          // Feature flags can be null (reset to default), true, or false
+          ...(featureTrainings !== undefined && { featureTrainings }),
+          ...(featureSightings !== undefined && { featureSightings }),
         },
       });
     }

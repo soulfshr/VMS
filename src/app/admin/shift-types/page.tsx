@@ -2,9 +2,16 @@
 
 import { useEffect, useState } from 'react';
 
-interface RoleRequirement {
+interface QualificationRequirement {
   id: string;
-  role: string;
+  qualification: string;
+  qualifiedRoleId?: string;
+  qualifiedRole?: {
+    id: string;
+    name: string;
+    slug: string;
+    color: string;
+  };
   minRequired: number;
   maxAllowed: number | null;
 }
@@ -20,29 +27,30 @@ interface ShiftType {
   defaultMaxVolunteers: number;
   sortOrder: number;
   isActive: boolean;
-  roleRequirements: RoleRequirement[];
+  qualificationRequirements: QualificationRequirement[];
+  qualifiedRoleRequirements: QualificationRequirement[];
   _count: {
     shifts: number;
   };
 }
 
-const ROLES = ['VOLUNTEER', 'COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR'];
-
-const roleLabels: Record<string, string> = {
-  VOLUNTEER: 'Volunteer',
-  COORDINATOR: 'Coordinator',
-  DISPATCHER: 'Dispatcher',
-  ADMINISTRATOR: 'Administrator',
-};
+interface QualifiedRole {
+  id: string;
+  name: string;
+  slug: string;
+  color: string;
+  isActive: boolean;
+}
 
 export default function ShiftTypesPage() {
   const [shiftTypes, setShiftTypes] = useState<ShiftType[]>([]);
+  const [qualifiedRoles, setQualifiedRoles] = useState<QualifiedRole[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Form state
+  // Form state - using qualifiedRoleId instead of qualification enum
   const [formData, setFormData] = useState({
     name: '',
     slug: '',
@@ -51,12 +59,30 @@ export default function ShiftTypesPage() {
     defaultMinVolunteers: 2,
     defaultIdealVolunteers: 4,
     defaultMaxVolunteers: 6,
-    roleRequirements: [] as { role: string; minRequired: number; maxAllowed: number | null }[],
+    qualifiedRoleRequirements: [] as { qualifiedRoleId: string; minRequired: number; maxAllowed: number | null }[],
   });
 
   useEffect(() => {
-    loadShiftTypes();
+    Promise.all([loadShiftTypes(), loadQualifiedRoles()]);
   }, []);
+
+  const loadQualifiedRoles = async () => {
+    try {
+      const res = await fetch('/api/admin/qualified-roles');
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setQualifiedRoles(data.filter((qr: QualifiedRole) => qr.isActive));
+      }
+    } catch (err) {
+      console.error('Error loading qualified roles:', err);
+    }
+  };
+
+  // Helper to get qualified role name by ID
+  const getQualifiedRoleName = (id: string) => {
+    const role = qualifiedRoles.find(qr => qr.id === id);
+    return role?.name || id;
+  };
 
   const loadShiftTypes = async () => {
     try {
@@ -81,13 +107,30 @@ export default function ShiftTypesPage() {
       defaultMinVolunteers: 2,
       defaultIdealVolunteers: 4,
       defaultMaxVolunteers: 6,
-      roleRequirements: [],
+      qualifiedRoleRequirements: [],
     });
   };
 
   const startEdit = (st: ShiftType) => {
     setEditingId(st.id);
     setIsCreating(false);
+    // Use new qualifiedRoleRequirements if available, fall back to old format
+    const requirements = st.qualifiedRoleRequirements?.length > 0
+      ? st.qualifiedRoleRequirements.map(qr => ({
+          qualifiedRoleId: qr.qualifiedRoleId || qr.qualifiedRole?.id || '',
+          minRequired: qr.minRequired,
+          maxAllowed: qr.maxAllowed,
+        }))
+      : st.qualificationRequirements?.map(qr => {
+          // Map old enum to new ID
+          const matchingRole = qualifiedRoles.find(r => r.slug === qr.qualification);
+          return {
+            qualifiedRoleId: matchingRole?.id || '',
+            minRequired: qr.minRequired,
+            maxAllowed: qr.maxAllowed,
+          };
+        }) || [];
+
     setFormData({
       name: st.name,
       slug: st.slug,
@@ -96,11 +139,7 @@ export default function ShiftTypesPage() {
       defaultMinVolunteers: st.defaultMinVolunteers,
       defaultIdealVolunteers: st.defaultIdealVolunteers,
       defaultMaxVolunteers: st.defaultMaxVolunteers,
-      roleRequirements: st.roleRequirements.map(rr => ({
-        role: rr.role,
-        minRequired: rr.minRequired,
-        maxAllowed: rr.maxAllowed,
-      })),
+      qualifiedRoleRequirements: requirements,
     });
   };
 
@@ -108,11 +147,14 @@ export default function ShiftTypesPage() {
     setEditingId(null);
     setIsCreating(true);
     resetForm();
-    // Add default volunteer role requirement
-    setFormData(prev => ({
-      ...prev,
-      roleRequirements: [{ role: 'VOLUNTEER', minRequired: 2, maxAllowed: null }],
-    }));
+    // Add default verifier qualified role requirement if available
+    const verifierRole = qualifiedRoles.find(qr => qr.slug === 'VERIFIER');
+    if (verifierRole) {
+      setFormData(prev => ({
+        ...prev,
+        qualifiedRoleRequirements: [{ qualifiedRoleId: verifierRole.id, minRequired: 2, maxAllowed: null }],
+      }));
+    }
   };
 
   const cancelEdit = () => {
@@ -121,32 +163,32 @@ export default function ShiftTypesPage() {
     resetForm();
   };
 
-  const addRoleRequirement = () => {
-    const usedRoles = formData.roleRequirements.map(rr => rr.role);
-    const availableRoles = ROLES.filter(r => !usedRoles.includes(r));
+  const addQualifiedRoleRequirement = () => {
+    const usedRoleIds = formData.qualifiedRoleRequirements.map(qr => qr.qualifiedRoleId);
+    const availableRoles = qualifiedRoles.filter(qr => !usedRoleIds.includes(qr.id));
     if (availableRoles.length === 0) return;
 
     setFormData(prev => ({
       ...prev,
-      roleRequirements: [
-        ...prev.roleRequirements,
-        { role: availableRoles[0], minRequired: 0, maxAllowed: null },
+      qualifiedRoleRequirements: [
+        ...prev.qualifiedRoleRequirements,
+        { qualifiedRoleId: availableRoles[0].id, minRequired: 0, maxAllowed: null },
       ],
     }));
   };
 
-  const removeRoleRequirement = (index: number) => {
+  const removeQualifiedRoleRequirement = (index: number) => {
     setFormData(prev => ({
       ...prev,
-      roleRequirements: prev.roleRequirements.filter((_, i) => i !== index),
+      qualifiedRoleRequirements: prev.qualifiedRoleRequirements.filter((_, i) => i !== index),
     }));
   };
 
-  const updateRoleRequirement = (index: number, field: string, value: string | number | null) => {
+  const updateQualifiedRoleRequirement = (index: number, field: string, value: string | number | null) => {
     setFormData(prev => ({
       ...prev,
-      roleRequirements: prev.roleRequirements.map((rr, i) =>
-        i === index ? { ...rr, [field]: value } : rr
+      qualifiedRoleRequirements: prev.qualifiedRoleRequirements.map((qr, i) =>
+        i === index ? { ...qr, [field]: value } : qr
       ),
     }));
   };
@@ -222,7 +264,7 @@ export default function ShiftTypesPage() {
       <div className="flex justify-between items-start mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Shift Types</h1>
-          <p className="text-gray-600 mt-1">Manage shift types and their role requirements</p>
+          <p className="text-gray-600 mt-1">Manage shift types and their qualification requirements</p>
         </div>
         {!isCreating && !editingId && (
           <button
@@ -274,7 +316,7 @@ export default function ShiftTypesPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:bg-gray-50 disabled:text-gray-500"
                 placeholder="e.g., PATROL"
               />
-              {editingId && <p className="text-xs text-gray-500 mt-1">Slug cannot be changed after creation</p>}
+              {editingId && <p className="text-xs text-gray-500 mt-1">Slug is a database label and not visible in the main app. It cannot be changed after creation.</p>}
             </div>
           </div>
 
@@ -339,35 +381,36 @@ export default function ShiftTypesPage() {
             </div>
           </div>
 
-          {/* Role Requirements */}
+          {/* Qualified Role Requirements */}
           <div className="mb-4">
             <div className="flex justify-between items-center mb-2">
-              <label className="block text-sm font-medium text-gray-700">Role Requirements</label>
+              <label className="block text-sm font-medium text-gray-700">Qualified Role Requirements</label>
               <button
                 type="button"
-                onClick={addRoleRequirement}
-                className="text-sm text-teal-600 hover:text-teal-700"
+                onClick={addQualifiedRoleRequirement}
+                disabled={qualifiedRoles.length === 0}
+                className="text-sm text-teal-600 hover:text-teal-700 disabled:text-gray-400"
               >
-                + Add Role
+                + Add Qualified Role
               </button>
             </div>
             <p className="text-xs text-gray-500 mb-3">
-              Define how many of each role are needed for this shift type (e.g., 1 Dispatcher + 3 Volunteers)
+              Define how many of each qualified role are needed for this shift type (e.g., 1 Zone Lead + 3 Verifiers)
             </p>
 
-            {formData.roleRequirements.length === 0 ? (
-              <p className="text-sm text-gray-500 italic">No role requirements defined</p>
+            {formData.qualifiedRoleRequirements.length === 0 ? (
+              <p className="text-sm text-gray-500 italic">No qualified role requirements defined</p>
             ) : (
               <div className="space-y-2">
-                {formData.roleRequirements.map((rr, index) => (
+                {formData.qualifiedRoleRequirements.map((qr, index) => (
                   <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                     <select
-                      value={rr.role}
-                      onChange={e => updateRoleRequirement(index, 'role', e.target.value)}
+                      value={qr.qualifiedRoleId}
+                      onChange={e => updateQualifiedRoleRequirement(index, 'qualifiedRoleId', e.target.value)}
                       className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                     >
-                      {ROLES.map(role => (
-                        <option key={role} value={role}>{roleLabels[role]}</option>
+                      {qualifiedRoles.map(role => (
+                        <option key={role.id} value={role.id}>{role.name}</option>
                       ))}
                     </select>
                     <div className="flex items-center gap-2">
@@ -375,8 +418,8 @@ export default function ShiftTypesPage() {
                       <input
                         type="number"
                         min="0"
-                        value={rr.minRequired}
-                        onChange={e => updateRoleRequirement(index, 'minRequired', parseInt(e.target.value) || 0)}
+                        value={qr.minRequired}
+                        onChange={e => updateQualifiedRoleRequirement(index, 'minRequired', parseInt(e.target.value) || 0)}
                         className="w-16 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                       />
                     </div>
@@ -385,15 +428,15 @@ export default function ShiftTypesPage() {
                       <input
                         type="number"
                         min="0"
-                        value={rr.maxAllowed ?? ''}
-                        onChange={e => updateRoleRequirement(index, 'maxAllowed', e.target.value ? parseInt(e.target.value) : null)}
+                        value={qr.maxAllowed ?? ''}
+                        onChange={e => updateQualifiedRoleRequirement(index, 'maxAllowed', e.target.value ? parseInt(e.target.value) : null)}
                         placeholder="∞"
                         className="w-16 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                       />
                     </div>
                     <button
                       type="button"
-                      onClick={() => removeRoleRequirement(index)}
+                      onClick={() => removeQualifiedRoleRequirement(index)}
                       className="text-red-500 hover:text-red-700 ml-auto"
                     >
                       ×
@@ -430,7 +473,7 @@ export default function ShiftTypesPage() {
                 Shift Type
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Role Requirements
+                Qualified Role Requirements
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Volunteers
@@ -455,23 +498,33 @@ export default function ShiftTypesPage() {
                       className="w-4 h-4 rounded"
                       style={{ backgroundColor: st.color }}
                     />
-                    <div>
-                      <div className="font-medium text-gray-900">{st.name}</div>
-                      <div className="text-xs text-gray-500">{st.slug}</div>
-                    </div>
+                    <div className="font-medium text-gray-900">{st.name}</div>
                   </div>
                 </td>
                 <td className="px-4 py-4">
-                  {st.roleRequirements.length > 0 ? (
+                  {(st.qualifiedRoleRequirements?.length > 0 || st.qualificationRequirements?.length > 0) ? (
                     <div className="flex flex-wrap gap-1">
-                      {st.roleRequirements.map(rr => (
+                      {/* Show new qualified role requirements if available */}
+                      {st.qualifiedRoleRequirements?.map(qr => (
                         <span
-                          key={rr.id}
+                          key={qr.id}
                           className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800"
                         >
-                          {rr.minRequired}{rr.maxAllowed ? `-${rr.maxAllowed}` : '+'} {roleLabels[rr.role]}
+                          {qr.minRequired}{qr.maxAllowed ? `-${qr.maxAllowed}` : '+'} {qr.qualifiedRole?.name || getQualifiedRoleName(qr.qualifiedRoleId || '')}
                         </span>
                       ))}
+                      {/* Fall back to old format if no new requirements */}
+                      {!st.qualifiedRoleRequirements?.length && st.qualificationRequirements?.map(qr => {
+                        const role = qualifiedRoles.find(r => r.slug === qr.qualification);
+                        return (
+                          <span
+                            key={qr.id}
+                            className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800"
+                          >
+                            {qr.minRequired}{qr.maxAllowed ? `-${qr.maxAllowed}` : '+'} {role?.name || qr.qualification}
+                          </span>
+                        );
+                      })}
                     </div>
                   ) : (
                     <span className="text-sm text-gray-400">None</span>

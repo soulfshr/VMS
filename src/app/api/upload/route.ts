@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { put } from '@vercel/blob';
+import { uploadToS3 } from '@/lib/s3';
 import { prisma } from '@/lib/db';
 
 // Get upload settings from database
@@ -11,7 +11,7 @@ async function getUploadSettings() {
   };
 }
 
-// POST /api/upload - Upload a file to Vercel Blob (PUBLIC - no auth required for sighting reports)
+// POST /api/upload - Upload a file to S3 (PUBLIC - no auth required for sighting reports)
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
@@ -64,16 +64,17 @@ export async function POST(request: NextRequest) {
     const timestamp = Date.now();
     const randomStr = Math.random().toString(36).substring(2, 8);
     const extension = file.name.split('.').pop() || 'bin';
-    const filename = `sightings/${timestamp}-${randomStr}.${extension}`;
+    const key = `sightings/${timestamp}-${randomStr}.${extension}`;
 
-    // Upload to Vercel Blob
-    const blob = await put(filename, file, {
-      access: 'public',
-      addRandomSuffix: false,
-    });
+    // Convert file to buffer
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    // Upload to S3
+    const url = await uploadToS3(buffer, key, file.type);
 
     return NextResponse.json({
-      url: blob.url,
+      url,
       type: mediaType,
       filename: file.name,
       size: file.size,

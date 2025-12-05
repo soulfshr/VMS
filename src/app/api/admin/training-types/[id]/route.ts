@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
-import type { Role } from '@/generated/prisma/client';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -23,6 +22,14 @@ export async function GET(request: Request, { params }: RouteParams) {
     const trainingType = await prisma.trainingType.findUnique({
       where: { id },
       include: {
+        grantsQualifiedRole: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            color: true,
+          },
+        },
         _count: {
           select: { sessions: true },
         },
@@ -60,7 +67,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
       defaultDuration,
       defaultCapacity,
       expiresAfterDays,
-      grantsRole,
+      grantsQualifiedRoleId,
       sortOrder,
       isActive,
     } = body;
@@ -96,9 +103,19 @@ export async function PUT(request: Request, { params }: RouteParams) {
         ...(defaultDuration !== undefined && { defaultDuration }),
         ...(defaultCapacity !== undefined && { defaultCapacity }),
         ...(expiresAfterDays !== undefined && { expiresAfterDays }),
-        ...(grantsRole !== undefined && { grantsRole: (grantsRole as Role) || null }),
+        ...(grantsQualifiedRoleId !== undefined && { grantsQualifiedRoleId: grantsQualifiedRoleId || null }),
         ...(sortOrder !== undefined && { sortOrder }),
         ...(isActive !== undefined && { isActive }),
+      },
+      include: {
+        grantsQualifiedRole: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            color: true,
+          },
+        },
       },
     });
 

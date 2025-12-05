@@ -5,7 +5,7 @@ import { driver, type DriveStep, type Driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 import '@/styles/tour.css';
 import { getTour, filterStepsForRole, type PageName } from '@/lib/tours';
-import { hasSeenPageTour, markPageTourSeen } from '@/lib/onboarding';
+import { hasSeenPageTour, markPageTourSeen, hasAllToursDismissed, markAllToursDismissed } from '@/lib/onboarding';
 
 interface GuidedTourProps {
   pageName: PageName;
@@ -28,18 +28,25 @@ export default function GuidedTour({
   const tour = getTour(pageName);
   const filteredSteps = tour ? filterStepsForRole(tour.steps, userRole) : [];
 
-  // Convert our tour steps to driver.js format
-  const driverSteps: DriveStep[] = filteredSteps.map(step => ({
-    element: step.target,
-    popover: {
-      title: step.title,
-      description: step.content,
-      side: step.placement === 'left' ? 'left' :
-            step.placement === 'right' ? 'right' :
-            step.placement === 'top' ? 'top' : 'bottom',
-      align: 'center' as const,
-    },
-  }));
+  // Convert our tour steps to driver.js format with "Don't show again" option on last step
+  const driverSteps: DriveStep[] = filteredSteps.map((step, index) => {
+    const isLastStep = index === filteredSteps.length - 1;
+    const dontShowAgainHtml = isLastStep
+      ? '<div class="tour-dont-show-again"><label><input type="checkbox" id="dontShowTours" /> Don\'t show tours again</label></div>'
+      : '';
+
+    return {
+      element: step.target,
+      popover: {
+        title: step.title,
+        description: step.content + dontShowAgainHtml,
+        side: step.placement === 'left' ? 'left' :
+              step.placement === 'right' ? 'right' :
+              step.placement === 'top' ? 'top' : 'bottom',
+        align: 'center' as const,
+      },
+    };
+  });
 
   const startTour = useCallback(() => {
     if (driverSteps.length === 0) return;
@@ -59,6 +66,11 @@ export default function GuidedTour({
       prevBtnText: 'Back',
       doneBtnText: 'Done',
       onDestroyStarted: () => {
+        // Check if user checked "Don't show again"
+        const checkbox = document.getElementById('dontShowTours') as HTMLInputElement;
+        if (checkbox?.checked) {
+          markAllToursDismissed();
+        }
         markPageTourSeen(pageName);
         onComplete?.();
         driverRef.current?.destroy();
@@ -80,9 +92,9 @@ export default function GuidedTour({
     }
   }, [run, startTour]);
 
-  // Handle auto-start on first visit
+  // Handle auto-start on first visit (skip if user dismissed all tours)
   useEffect(() => {
-    if (autoStart && !hasSeenPageTour(pageName) && !hasStartedRef.current) {
+    if (autoStart && !hasSeenPageTour(pageName) && !hasAllToursDismissed() && !hasStartedRef.current) {
       hasStartedRef.current = true;
       // Longer delay for auto-start to ensure page is fully loaded
       const timer = setTimeout(() => {

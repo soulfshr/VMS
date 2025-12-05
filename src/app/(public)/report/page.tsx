@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import LocationPicker from '@/components/maps/LocationPicker';
 import MediaUploader from '@/components/MediaUploader';
+import { useFeatures } from '@/hooks/useFeatures';
 
 interface UploadSettings {
   maxUploadSizeMb: number;
@@ -35,6 +37,16 @@ function formatDatetimeLocal(date: Date): string {
 }
 
 export default function ReportPage() {
+  const router = useRouter();
+  const features = useFeatures();
+
+  // Feature flag redirect - public report page redirects to landing when disabled
+  useEffect(() => {
+    if (!features.isLoading && !features.sightings) {
+      router.replace('/');
+    }
+  }, [router, features.isLoading, features.sightings]);
+
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);

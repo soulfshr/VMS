@@ -6,27 +6,32 @@ export default function Footer() {
     <footer className="bg-gray-900 text-white py-8 mt-auto">
       <div className="container mx-auto px-4">
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-          {/* Left side - Siembra NC */}
+          {/* Left side - RippleVMS */}
           <div className="flex items-center gap-3">
             <Image
-              src="/siembra-logo.webp"
-              alt="Siembra NC"
-              width={32}
-              height={32}
-              className="rounded"
+              src="/ripple-logo-perspective-animated.svg"
+              alt="RippleVMS"
+              width={40}
+              height={25}
             />
             <span className="text-sm text-gray-400">
-              Siembra NC Volunteer Management System
+              RippleVMS - Volunteer Management System
             </span>
           </div>
 
           {/* Center - Navigation */}
-          <nav className="flex gap-6 text-sm">
+          <nav className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm">
             <Link href="/about" className="text-gray-400 hover:text-white transition-colors">
               About
             </Link>
             <Link href="/login" className="text-gray-400 hover:text-white transition-colors">
               Login
+            </Link>
+            <Link href="/privacy" className="text-gray-400 hover:text-white transition-colors">
+              Privacy
+            </Link>
+            <Link href="/terms" className="text-gray-400 hover:text-white transition-colors">
+              Terms
             </Link>
           </nav>
 
@@ -45,7 +50,7 @@ export default function Footer() {
 
         {/* Copyright */}
         <div className="text-center text-xs text-gray-500 mt-6 pt-4 border-t border-gray-800">
-          &copy; {new Date().getFullYear()} Siembra NC. All rights reserved.
+          &copy; {new Date().getFullYear()} RippleVMS. All rights reserved.
         </div>
       </div>
     </footer>

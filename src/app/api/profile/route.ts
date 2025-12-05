@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUserWithZones } from '@/lib/user';
+import { generateUnsubscribeToken } from '@/lib/email';
 
 // GET /api/profile - Get current user's profile
 export async function GET() {
@@ -61,18 +62,28 @@ export async function PUT(request: NextRequest) {
       otherLanguages,
       emergencyContact,
       emergencyPhone,
+      emailNotifications,
     } = body;
+
+    // Build update data
+    const updateData: Record<string, unknown> = {};
+    if (name) updateData.name = name;
+    if (phone !== undefined) updateData.phone = phone;
+    if (primaryLanguage) updateData.primaryLanguage = primaryLanguage;
+    if (otherLanguages) updateData.otherLanguages = otherLanguages;
+    if (emergencyContact !== undefined) updateData.emergencyContact = emergencyContact;
+    if (emergencyPhone !== undefined) updateData.emergencyPhone = emergencyPhone;
+    if (typeof emailNotifications === 'boolean') {
+      updateData.emailNotifications = emailNotifications;
+      // Generate unsubscribe token if user is enabling notifications and doesn't have one
+      if (emailNotifications && !dbUser.unsubscribeToken) {
+        updateData.unsubscribeToken = generateUnsubscribeToken();
+      }
+    }
 
     const updatedUser = await prisma.user.update({
       where: { id: dbUser.id },
-      data: {
-        ...(name && { name }),
-        ...(phone !== undefined && { phone }),
-        ...(primaryLanguage && { primaryLanguage }),
-        ...(otherLanguages && { otherLanguages }),
-        ...(emergencyContact !== undefined && { emergencyContact }),
-        ...(emergencyPhone !== undefined && { emergencyPhone }),
-      },
+      data: updateData,
     });
 
     return NextResponse.json(updatedUser);

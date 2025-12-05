@@ -8,7 +8,22 @@ interface Settings {
   timezone: string;
   maxUploadSizeMb: number;
   maxUploadsPerReport: number;
+  // Branding settings
+  orgName: string;
+  emailFromName: string;
+  emailFromAddress: string;
+  emailReplyTo: string;
+  emailFooter: string;
+  // Feature flag overrides
+  featureTrainings: boolean | null;
+  featureSightings: boolean | null;
 }
+
+// Environment variable defaults for feature flags
+const ENV_FEATURE_DEFAULTS = {
+  trainings: process.env.NEXT_PUBLIC_FEATURE_TRAININGS === 'true',
+  sightings: process.env.NEXT_PUBLIC_FEATURE_SIGHTINGS === 'true',
+};
 
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<Settings | null>(null);
@@ -16,11 +31,25 @@ export default function AdminSettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  // Local state for text inputs to prevent cursor jumping
+  const [localOrgName, setLocalOrgName] = useState('');
+  const [localEmailFromName, setLocalEmailFromName] = useState('');
+  const [localEmailFromAddress, setLocalEmailFromAddress] = useState('');
+  const [localEmailReplyTo, setLocalEmailReplyTo] = useState('');
+  const [localEmailFooter, setLocalEmailFooter] = useState('');
+
   useEffect(() => {
     fetch('/api/admin/settings')
       .then(res => res.json())
       .then(data => {
         setSettings(data);
+        // Initialize local state for branding fields
+        setLocalOrgName(data.orgName || '');
+        setLocalEmailFromName(data.emailFromName || '');
+        const localPart = data.emailFromAddress?.replace(/@ripple-vms\.com$/, '') || '';
+        setLocalEmailFromAddress(localPart);
+        setLocalEmailReplyTo(data.emailReplyTo || '');
+        setLocalEmailFooter(data.emailFooter || '');
         setIsLoading(false);
       })
       .catch(err => {
@@ -86,6 +115,79 @@ export default function AdminSettingsPage() {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleUpdateBranding = async (field: 'orgName' | 'emailFromName' | 'emailFromAddress' | 'emailReplyTo' | 'emailFooter', value: string) => {
+    if (!settings) return;
+
+    setIsSaving(true);
+    setMessage(null);
+
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          [field]: value,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to update settings');
+      }
+
+      const updated = await res.json();
+      setSettings(updated);
+      setMessage({ type: 'success', text: 'Branding settings updated successfully' });
+    } catch (err) {
+      console.error('Error updating settings:', err);
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to update settings' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleUpdateFeatureFlag = async (
+    flag: 'featureTrainings' | 'featureSightings',
+    value: boolean | null
+  ) => {
+    if (!settings) return;
+
+    setIsSaving(true);
+    setMessage(null);
+
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          [flag]: value,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to update settings');
+      }
+
+      const updated = await res.json();
+      setSettings(updated);
+      setMessage({ type: 'success', text: 'Feature flag updated successfully' });
+    } catch (err) {
+      console.error('Error updating feature flag:', err);
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to update feature flag' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const getFeatureFlagValue = (dbValue: boolean | null, envDefault: boolean): boolean => {
+    return dbValue !== null ? dbValue : envDefault;
+  };
+
+  const isFeatureFlagOverridden = (dbValue: boolean | null): boolean => {
+    return dbValue !== null;
   };
 
   if (isLoading) {
@@ -257,6 +359,306 @@ export default function AdminSettingsPage() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Email Branding Settings */}
+      <div className="mt-8">
+        <h2 className="text-xl font-bold text-gray-900 mb-4">Email Branding</h2>
+        <p className="text-gray-600 mb-4">
+          Customize how your organization appears in emails sent by the system.
+        </p>
+        <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-200">
+          {/* Organization Name */}
+          <div className="p-6">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Organization Name
+                </h3>
+                <p className="text-sm text-gray-500 mt-1 max-w-xl">
+                  Used in email subject lines and body text (e.g., &quot;Thank you for volunteering with [Organization Name]!&quot;)
+                </p>
+              </div>
+              <div className="ml-6 flex items-center gap-2">
+                <input
+                  type="text"
+                  value={localOrgName}
+                  onChange={(e) => setLocalOrgName(e.target.value)}
+                  onBlur={() => {
+                    if (localOrgName !== settings?.orgName) {
+                      handleUpdateBranding('orgName', localOrgName);
+                    }
+                  }}
+                  disabled={isSaving}
+                  className={`px-3 py-2 border border-gray-300 rounded-lg text-sm w-48 ${
+                    isSaving ? 'bg-gray-50 text-gray-500 cursor-not-allowed' : 'bg-white'
+                  }`}
+                  placeholder="RippleVMS"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Email From Name */}
+          <div className="p-6">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Email From Name
+                </h3>
+                <p className="text-sm text-gray-500 mt-1 max-w-xl">
+                  The name that appears in the &quot;From&quot; field of emails (e.g., &quot;[From Name] &lt;noreply@example.com&gt;&quot;)
+                </p>
+              </div>
+              <div className="ml-6 flex items-center gap-2">
+                <input
+                  type="text"
+                  value={localEmailFromName}
+                  onChange={(e) => setLocalEmailFromName(e.target.value)}
+                  onBlur={() => {
+                    if (localEmailFromName !== settings?.emailFromName) {
+                      handleUpdateBranding('emailFromName', localEmailFromName);
+                    }
+                  }}
+                  disabled={isSaving}
+                  className={`px-3 py-2 border border-gray-300 rounded-lg text-sm w-48 ${
+                    isSaving ? 'bg-gray-50 text-gray-500 cursor-not-allowed' : 'bg-white'
+                  }`}
+                  placeholder="RippleVMS"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Email From Address */}
+          <div className="p-6">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Email From Address
+                </h3>
+                <p className="text-sm text-gray-500 mt-1 max-w-xl">
+                  The email address used as the sender for all system emails. Only the local part can be customized (domain is verified in AWS SES).
+                </p>
+              </div>
+              <div className="ml-6 flex items-center gap-2">
+                <div className="flex items-center">
+                  <input
+                    type="text"
+                    value={localEmailFromAddress}
+                    onChange={(e) => {
+                      const localPart = e.target.value.replace(/[^a-zA-Z0-9._-]/g, '');
+                      setLocalEmailFromAddress(localPart);
+                    }}
+                    onBlur={() => {
+                      const fullEmail = localEmailFromAddress ? `${localEmailFromAddress}@ripple-vms.com` : '';
+                      if (fullEmail !== settings?.emailFromAddress) {
+                        handleUpdateBranding('emailFromAddress', fullEmail);
+                      }
+                    }}
+                    disabled={isSaving}
+                    className={`px-3 py-2 border border-gray-300 rounded-l-lg text-sm w-32 ${
+                      isSaving ? 'bg-gray-50 text-gray-500 cursor-not-allowed' : 'bg-white'
+                    }`}
+                    placeholder="noreply"
+                  />
+                  <span className="px-3 py-2 bg-gray-100 border border-l-0 border-gray-300 rounded-r-lg text-sm text-gray-600">
+                    @ripple-vms.com
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Email Reply-To */}
+          <div className="p-6">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Reply-To Email Address
+                </h3>
+                <p className="text-sm text-gray-500 mt-1 max-w-xl">
+                  When recipients reply to system emails, their replies will go to this address.
+                  Leave blank to use the From Address.
+                </p>
+              </div>
+              <div className="ml-6 flex items-center gap-2">
+                <input
+                  type="email"
+                  value={localEmailReplyTo}
+                  onChange={(e) => setLocalEmailReplyTo(e.target.value)}
+                  onBlur={() => {
+                    if (localEmailReplyTo !== settings?.emailReplyTo) {
+                      handleUpdateBranding('emailReplyTo', localEmailReplyTo);
+                    }
+                  }}
+                  disabled={isSaving}
+                  className={`px-3 py-2 border border-gray-300 rounded-lg text-sm w-64 ${
+                    isSaving ? 'bg-gray-50 text-gray-500 cursor-not-allowed' : 'bg-white'
+                  }`}
+                  placeholder="contact@example.com"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Email Footer */}
+          <div className="p-6">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Email Footer Team Name
+                </h3>
+                <p className="text-sm text-gray-500 mt-1 max-w-xl">
+                  The team name shown in the email footer (e.g., &quot;Best regards, [Team Name]&quot;)
+                </p>
+              </div>
+              <div className="ml-6 flex items-center gap-2">
+                <input
+                  type="text"
+                  value={localEmailFooter}
+                  onChange={(e) => setLocalEmailFooter(e.target.value)}
+                  onBlur={() => {
+                    if (localEmailFooter !== settings?.emailFooter) {
+                      handleUpdateBranding('emailFooter', localEmailFooter);
+                    }
+                  }}
+                  disabled={isSaving}
+                  className={`px-3 py-2 border border-gray-300 rounded-lg text-sm w-48 ${
+                    isSaving ? 'bg-gray-50 text-gray-500 cursor-not-allowed' : 'bg-white'
+                  }`}
+                  placeholder="RippleVMS Team"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Feature Flags */}
+      <div className="mt-8">
+        <h2 className="text-xl font-bold text-gray-900 mb-4">Feature Flags</h2>
+        <p className="text-gray-600 mb-4">
+          Override feature visibility for testing and screenshots. When set to &quot;Use Default&quot;, the environment variable setting is used.
+        </p>
+        <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-200">
+          {/* Trainings Feature */}
+          <div className="p-6">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Trainings Feature
+                </h3>
+                <p className="text-sm text-gray-500 mt-1 max-w-xl">
+                  Shows/hides the Trainings section in the navigation and all training-related pages.
+                </p>
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="text-xs text-gray-400">
+                    Environment default: {ENV_FEATURE_DEFAULTS.trainings ? 'ON' : 'OFF'}
+                  </span>
+                  {isFeatureFlagOverridden(settings?.featureTrainings ?? null) && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+                      Overridden
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="ml-6 flex items-center gap-3">
+                <button
+                  onClick={() => handleUpdateFeatureFlag('featureTrainings', null)}
+                  disabled={isSaving || !isFeatureFlagOverridden(settings?.featureTrainings ?? null)}
+                  className={`px-3 py-1.5 text-sm rounded-lg border ${
+                    !isFeatureFlagOverridden(settings?.featureTrainings ?? null)
+                      ? 'bg-gray-100 text-gray-700 border-gray-300 cursor-default'
+                      : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                  } ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  Use Default
+                </button>
+                <button
+                  onClick={() => {
+                    const currentValue = getFeatureFlagValue(settings?.featureTrainings ?? null, ENV_FEATURE_DEFAULTS.trainings);
+                    handleUpdateFeatureFlag('featureTrainings', !currentValue);
+                  }}
+                  disabled={isSaving}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    getFeatureFlagValue(settings?.featureTrainings ?? null, ENV_FEATURE_DEFAULTS.trainings)
+                      ? 'bg-teal-600'
+                      : 'bg-gray-200'
+                  } ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      getFeatureFlagValue(settings?.featureTrainings ?? null, ENV_FEATURE_DEFAULTS.trainings)
+                        ? 'translate-x-6'
+                        : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Sightings Feature */}
+          <div className="p-6">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <h3 className="text-lg font-medium text-gray-900">
+                  ICE Sightings Feature
+                </h3>
+                <p className="text-sm text-gray-500 mt-1 max-w-xl">
+                  Shows/hides the ICE Sightings report feature, including the public report form and sightings management.
+                </p>
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="text-xs text-gray-400">
+                    Environment default: {ENV_FEATURE_DEFAULTS.sightings ? 'ON' : 'OFF'}
+                  </span>
+                  {isFeatureFlagOverridden(settings?.featureSightings ?? null) && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+                      Overridden
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="ml-6 flex items-center gap-3">
+                <button
+                  onClick={() => handleUpdateFeatureFlag('featureSightings', null)}
+                  disabled={isSaving || !isFeatureFlagOverridden(settings?.featureSightings ?? null)}
+                  className={`px-3 py-1.5 text-sm rounded-lg border ${
+                    !isFeatureFlagOverridden(settings?.featureSightings ?? null)
+                      ? 'bg-gray-100 text-gray-700 border-gray-300 cursor-default'
+                      : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                  } ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  Use Default
+                </button>
+                <button
+                  onClick={() => {
+                    const currentValue = getFeatureFlagValue(settings?.featureSightings ?? null, ENV_FEATURE_DEFAULTS.sightings);
+                    handleUpdateFeatureFlag('featureSightings', !currentValue);
+                  }}
+                  disabled={isSaving}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    getFeatureFlagValue(settings?.featureSightings ?? null, ENV_FEATURE_DEFAULTS.sightings)
+                      ? 'bg-teal-600'
+                      : 'bg-gray-200'
+                  } ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      getFeatureFlagValue(settings?.featureSightings ?? null, ENV_FEATURE_DEFAULTS.sightings)
+                        ? 'translate-x-6'
+                        : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p className="mt-3 text-xs text-gray-500">
+          Note: Feature flag changes take effect immediately for all users. A page refresh may be needed to see changes.
+        </p>
       </div>
 
       {/* Info box */}

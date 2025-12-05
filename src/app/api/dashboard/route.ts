@@ -25,8 +25,9 @@ export async function GET() {
       },
       include: {
         zone: true,
+        typeConfig: true,
         volunteers: {
-          where: { userId: user.id },
+          where: { status: { in: ['PENDING', 'CONFIRMED'] } },
         },
       },
       orderBy: [
@@ -251,10 +252,30 @@ export async function GET() {
         role: user.role,
         zones: user.zones,
       },
-      upcomingShifts: upcomingShifts.map(shift => ({
-        ...shift,
-        userRsvpStatus: shift.volunteers[0]?.status || null,
-      })),
+      upcomingShifts: upcomingShifts.map(shift => {
+        const userVolunteer = shift.volunteers.find(v => v.userId === user.id);
+        return {
+          ...shift,
+          shiftType: shift.typeConfig ? {
+            name: shift.typeConfig.name,
+            color: shift.typeConfig.color,
+          } : null,
+          signedUpCount: shift.volunteers.length,
+          userRsvp: userVolunteer ? { status: userVolunteer.status } : null,
+        };
+      }),
+      // Stats in the format expected by DashboardClient
+      volunteerStats: {
+        myShifts: upcomingShifts.length,
+        hoursThisMonth: Math.round(hoursThisMonth),
+        zones: user.zones,
+        qualifiedRoles: user.userQualifications.map(uq => ({
+          id: uq.qualifiedRole.id,
+          name: uq.qualifiedRole.name,
+          slug: uq.qualifiedRole.slug,
+          color: uq.qualifiedRole.color,
+        })),
+      },
       stats: {
         upcomingShiftCount: upcomingShifts.length,
         availableShiftCount: shiftsWithSpots.length,
