@@ -133,11 +133,11 @@ export async function GET(request: NextRequest) {
       orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
     });
 
-    // Derive time blocks from shifts (use UTC hours consistently)
+    // Derive time blocks from shifts (use Eastern Time consistently)
     const timeBlocksMap = new Map<string, TimeBlock>();
     shifts.forEach(shift => {
-      const startHour = shift.startTime.getUTCHours();
-      const endHour = shift.endTime.getUTCHours();
+      const startHour = getHourInTimezone(shift.startTime);
+      const endHour = getHourInTimezone(shift.endTime);
       const key = `${startHour}-${endHour}`;
       if (!timeBlocksMap.has(key)) {
         timeBlocksMap.set(key, {
@@ -148,10 +148,10 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    // Also include dispatcher assignment time blocks (use UTC hours consistently)
+    // Also include dispatcher assignment time blocks (use Eastern Time consistently)
     dispatcherAssignments.forEach(assignment => {
-      const startHour = assignment.startTime.getUTCHours();
-      const endHour = assignment.endTime.getUTCHours();
+      const startHour = getHourInTimezone(assignment.startTime);
+      const endHour = getHourInTimezone(assignment.endTime);
       const key = `${startHour}-${endHour}`;
       if (!timeBlocksMap.has(key)) {
         timeBlocksMap.set(key, {
@@ -185,11 +185,11 @@ export async function GET(request: NextRequest) {
           const startHour = parseInt(timeBlock.startTime);
           const endHour = parseInt(timeBlock.endTime);
 
-          // Find dispatcher for this county/date/time (use UTC hours)
+          // Find dispatcher for this county/date/time (use Eastern Time)
           const dispatchers = dispatcherAssignments.filter(a => {
             const assignmentDate = a.date.toISOString().split('T')[0];
-            const assignmentStartHour = a.startTime.getUTCHours();
-            const assignmentEndHour = a.endTime.getUTCHours();
+            const assignmentStartHour = getHourInTimezone(a.startTime);
+            const assignmentEndHour = getHourInTimezone(a.endTime);
             return (
               a.county === countyName &&
               assignmentDate === date &&
@@ -205,11 +205,11 @@ export async function GET(request: NextRequest) {
           const zoneDataList: ZoneData[] = [];
 
           for (const zone of countyZones) {
-            // Find shifts for this zone/date/time (use UTC hours)
+            // Find shifts for this zone/date/time (use Eastern Time)
             const zoneShifts = shifts.filter(s => {
               const shiftDate = s.date.toISOString().split('T')[0];
-              const shiftStartHour = s.startTime.getUTCHours();
-              const shiftEndHour = s.endTime.getUTCHours();
+              const shiftStartHour = getHourInTimezone(s.startTime);
+              const shiftEndHour = getHourInTimezone(s.endTime);
               return (
                 s.zoneId === zone.id &&
                 shiftDate === date &&
@@ -323,6 +323,19 @@ export async function GET(request: NextRequest) {
     console.error('Error fetching schedule:', error);
     return NextResponse.json({ error: 'Failed to fetch schedule' }, { status: 500 });
   }
+}
+
+// Organization timezone - Eastern Time
+const ORG_TIMEZONE = 'America/New_York';
+
+function getHourInTimezone(date: Date): number {
+  // Get hour in Eastern Time
+  const hourStr = date.toLocaleString('en-US', {
+    hour: 'numeric',
+    hour12: false,
+    timeZone: ORG_TIMEZONE,
+  });
+  return parseInt(hourStr);
 }
 
 function formatHour(hour: number): string {

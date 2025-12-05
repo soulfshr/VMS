@@ -2,6 +2,18 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUserWithZones } from '@/lib/user';
 
+// Organization timezone - Eastern Time
+const ORG_TIMEZONE = 'America/New_York';
+
+function getHourInTimezone(date: Date): number {
+  const hourStr = date.toLocaleString('en-US', {
+    hour: 'numeric',
+    hour12: false,
+    timeZone: ORG_TIMEZONE,
+  });
+  return parseInt(hourStr);
+}
+
 // GET /api/dashboard - Get dashboard data for current user
 export async function GET() {
   try {
@@ -161,8 +173,8 @@ export async function GET() {
 
       thisWeekShifts.forEach(shift => {
         const dateStr = shift.date.toISOString().split('T')[0];
-        const startHour = shift.startTime.getUTCHours();
-        const endHour = shift.endTime.getUTCHours();
+        const startHour = getHourInTimezone(shift.startTime);
+        const endHour = getHourInTimezone(shift.endTime);
         const county = shift.zone?.county || 'Unknown';
         const key = `${county}-${dateStr}-${startHour}-${endHour}`;
 
@@ -179,8 +191,8 @@ export async function GET() {
       // Mark slots with dispatchers
       dispatcherAssignments.forEach(assignment => {
         const dateStr = assignment.date.toISOString().split('T')[0];
-        const startHour = assignment.startTime.getUTCHours();
-        const endHour = assignment.endTime.getUTCHours();
+        const startHour = getHourInTimezone(assignment.startTime);
+        const endHour = getHourInTimezone(assignment.endTime);
         const key = `${assignment.county}-${dateStr}-${startHour}-${endHour}`;
 
         if (slotsByKey.has(key)) {
