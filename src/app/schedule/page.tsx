@@ -96,6 +96,7 @@ interface RegionalDispatcher {
     assignmentId: string;
     notes: string | null;
   }>;
+  coverage: 'full' | 'none';
 }
 
 interface CountyDispatcher {
@@ -109,6 +110,7 @@ interface CountyDispatcher {
     assignmentId: string;
     notes: string | null;
   }>;
+  coverage: 'full' | 'none';
 }
 
 interface ScheduleData {
