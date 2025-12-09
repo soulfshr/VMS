@@ -45,13 +45,14 @@
 - Login page
 - Dashboard with:
   - Upcoming shifts widget
-  - Recent ICE sightings widget (collapsible)
   - Quick action buttons
 - Point out the welcome banner for new users
 
 **Talking Points:**
 - "Volunteers see their personalized dashboard immediately after login"
-- "At-a-glance view of their upcoming commitments and recent activity"
+- "At-a-glance view of their upcoming commitments"
+
+> **Note:** ICE Sightings widget is visible to Dispatchers and Coordinators, not basic volunteers
 
 ---
 
@@ -94,22 +95,25 @@
 
 **URL:** /schedule
 
+**Login as:** Dispatcher or Coordinator
+
 **Show:**
 - Calendar grid view
 - Regional Lead row (if populated)
-- Dispatcher coverage row
+- Dispatcher coverage row (varies by scheduling mode)
 - Click into a day to see shift details
 
 **Talking Points:**
-- "Weekly schedule gives coordinators a bird's-eye view"
+- "Weekly schedule gives dispatchers and coordinators a bird's-eye view"
 - "See coverage gaps at a glance"
 - "Dispatcher and Regional Lead assignments visible here"
+- "Dispatchers and Coordinators have identical access to all scheduling features"
 
 ---
 
-## Scene 7: Coordinator Tools (2 min)
+## Scene 7: Coordinator/Dispatcher Tools (2 min)
 
-**Login as:** Coordinator account
+**Login as:** Coordinator or Dispatcher account (both have identical access)
 
 **Show:**
 1. **Create Shift** (/shifts/create)
@@ -133,11 +137,12 @@
    - "Volunteers see cancelled shifts clearly and can dismiss them"
 
 **Talking Points:**
-- "Coordinators can create shifts in under a minute"
+- "Dispatchers and Coordinators have full access to all shift management tools"
+- "Create shifts in under a minute"
 - "Manage RSVPs and confirm volunteers directly"
 - "Bulk actions for efficiency - edit, confirm, or cancel multiple shifts at once"
 - "Bulk edit lets you change shift types, times, or volunteer limits across many shifts"
-- "When shifts are cancelled, volunteers see it immediately on their dashboard with clear visual indicators"
+- "When shifts are cancelled, volunteers see it immediately with clear visual indicators"
 - "Cancellation emails are sent automatically to all signed-up volunteers"
 
 ---
@@ -145,6 +150,8 @@
 ## Scene 8: Coordinator Console (1 min)
 
 **URL:** /coordinator
+
+**Login as:** Coordinator or Dispatcher (both have access)
 
 **Show:**
 1. **Email Blast** (/coordinator/email-blast)
@@ -156,9 +163,16 @@
    - Zones tab with boundary status
    - POIs tab - add/edit locations
 
+3. **ICE Sightings** (navigate to /sightings from header)
+   - Show sighting list with status filters
+   - Click into a sighting detail
+   - Update status (Reviewing → Verified → Responded)
+
 **Talking Points:**
+- "Both Dispatchers and Coordinators have full access to the Coordinator Console"
 - "Send targeted email blasts to volunteers by zone or shift"
 - "Manage map data - add new points of interest as you discover them"
+- "View and manage ICE sighting reports - update status as response progresses"
 
 ---
 
@@ -186,6 +200,8 @@
 
 **URL:** /volunteers
 
+**Login as:** Dispatcher, Coordinator, or Administrator (all have access)
+
 **Show:**
 - Searchable volunteer list
 - Filter by zone, role, qualifications
@@ -194,6 +210,7 @@
 
 **Talking Points:**
 - "Complete volunteer directory with search and filters"
+- "Accessible to Dispatchers, Coordinators, and Administrators"
 - "See qualifications, contact info, and activity history"
 - "Bulk actions for volunteer management"
 
@@ -241,8 +258,10 @@
 
 1. **Prep accounts ahead of time:**
    - One volunteer account with some shift signups
-   - One coordinator account
+   - One coordinator OR dispatcher account (they have identical permissions)
    - One admin account
+
+   > **Note on roles:** Dispatchers and Coordinators now have harmonized access. You only need to demo one of these roles - they can do everything the other can do, plus Dispatchers have the specialized real-time coordination focus.
 
 2. **Pre-populate data:**
    - Have shifts scheduled for the current/next week
