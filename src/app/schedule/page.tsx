@@ -526,7 +526,7 @@ export default function SchedulePage() {
                                   }
                                 }}
                                 className={`border-b border-r px-3 py-2 text-sm ${
-                                  regionalDisp?.coverage === 'full' ? 'bg-green-100 border-green-200' : 'bg-gray-100 border-gray-200'
+                                  regionalDisp?.coverage === 'full' ? 'bg-green-100 border-green-200' : 'bg-red-50 border-red-200'
                                 } ${canEdit ? 'cursor-pointer hover:bg-opacity-80' : ''}`}
                               >
                                 {regionalDisp?.dispatcher ? (
@@ -547,8 +547,8 @@ export default function SchedulePage() {
                                     ))}
                                   </div>
                                 ) : (
-                                  <div className="text-gray-400 text-xs">
-                                    {canEdit ? 'Click to assign' : '—'}
+                                  <div className="text-red-400 text-xs font-medium">
+                                    {canEdit ? '⚠ Click to assign' : '—'}
                                   </div>
                                 )}
                               </td>
@@ -616,7 +616,7 @@ export default function SchedulePage() {
                                       }
                                     }}
                                     className={`border-b border-r px-3 py-2 text-sm ${
-                                      countyDisp?.coverage === 'full' ? 'bg-green-100 border-green-200' : 'bg-gray-100 border-gray-200'
+                                      countyDisp?.coverage === 'full' ? 'bg-green-100 border-green-200' : 'bg-red-50 border-red-200'
                                     } ${canEdit ? 'cursor-pointer hover:bg-opacity-80' : ''}`}
                                   >
                                     {countyDisp?.dispatcher ? (
@@ -637,8 +637,8 @@ export default function SchedulePage() {
                                         ))}
                                       </div>
                                     ) : (
-                                      <div className="text-gray-400 text-xs">
-                                        {canEdit ? 'Click to assign' : '—'}
+                                      <div className="text-red-400 text-xs font-medium">
+                                        {canEdit ? '⚠ Click to assign' : '—'}
                                       </div>
                                     )}
                                   </td>
