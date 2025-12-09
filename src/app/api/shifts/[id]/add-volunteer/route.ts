@@ -21,7 +21,7 @@ export async function POST(
 
     const { id: shiftId } = await params;
     const body = await request.json();
-    const { volunteerId } = body;
+    const { volunteerId, isZoneLead } = body;
 
     if (!volunteerId) {
       return NextResponse.json(
@@ -90,6 +90,7 @@ export async function POST(
         userId: volunteerId,
         status: 'CONFIRMED',
         confirmedAt: new Date(),
+        isZoneLead: isZoneLead || false,
       },
       include: {
         user: {

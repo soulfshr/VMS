@@ -80,11 +80,14 @@ export default function AssignmentModal({ cell, zones: _zones, onClose, onSave, 
   // Note: _zones prop available for future use showing zones without shifts
   const focusTrapRef = useFocusTrap(true); // Modal is always open when rendered
   const [qualifiedDispatchers, setQualifiedDispatchers] = useState<QualifiedUser[]>([]);
+  const [qualifiedZoneLeads, setQualifiedZoneLeads] = useState<QualifiedUser[]>([]);
   const [selectedDispatcher, setSelectedDispatcher] = useState<string>(cell.dispatcher?.id || '');
   const [dispatcherNotes, setDispatcherNotes] = useState<string>(cell.dispatcher?.notes || '');
   const [isBackup, setIsBackup] = useState<boolean>(false);
   const [saving, setSaving] = useState(false);
   const [savingZoneLead, setSavingZoneLead] = useState<string | null>(null);
+  const [addingZoneLead, setAddingZoneLead] = useState<string | null>(null);
+  const [selectedZoneLeads, setSelectedZoneLeads] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [dispatcherExpanded, setDispatcherExpanded] = useState(true);
 
@@ -114,6 +117,18 @@ export default function AssignmentModal({ cell, zones: _zones, onClose, onSave, 
         .catch(err => console.error('Error fetching dispatchers:', err));
     }
   }, [dispatcherExpanded, cell.county, dispatcherMode]);
+
+  // Fetch qualified zone leads on mount
+  useEffect(() => {
+    fetch(`/api/users/qualified?role=ZONE_LEAD&county=${cell.county}`)
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setQualifiedZoneLeads(data);
+        }
+      })
+      .catch(err => console.error('Error fetching zone leads:', err));
+  }, [cell.county]);
 
   const handleSaveDispatcher = async () => {
     setSaving(true);
@@ -189,6 +204,35 @@ export default function AssignmentModal({ cell, zones: _zones, onClose, onSave, 
       setError((err as Error).message);
     } finally {
       setSavingZoneLead(null);
+    }
+  };
+
+  const handleAddZoneLead = async (shiftId: string) => {
+    const userId = selectedZoneLeads[shiftId];
+    if (!userId) return;
+
+    setAddingZoneLead(shiftId);
+    setError(null);
+    try {
+      const res = await fetch(`/api/shifts/${shiftId}/add-volunteer`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          volunteerId: userId,
+          isZoneLead: true,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to add zone lead');
+      }
+      // Clear selection and refresh
+      setSelectedZoneLeads(prev => ({ ...prev, [shiftId]: '' }));
+      onSave();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setAddingZoneLead(null);
     }
   };
 
@@ -427,6 +471,36 @@ export default function AssignmentModal({ cell, zones: _zones, onClose, onSave, 
                             </div>
                           ))
                         )}
+                      </div>
+
+                      {/* Assign Zone Lead Dropdown */}
+                      <div className="px-4 py-3 bg-amber-50 border-t border-gray-200">
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Assign Zone Lead
+                        </label>
+                        <div className="flex gap-2">
+                          <select
+                            value={selectedZoneLeads[shift.id] || ''}
+                            onChange={e => setSelectedZoneLeads(prev => ({ ...prev, [shift.id]: e.target.value }))}
+                            className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                          >
+                            <option value="">-- Select zone lead --</option>
+                            {qualifiedZoneLeads
+                              .filter(zl => !allVolunteers.some(v => v.id === zl.id))
+                              .map(user => (
+                                <option key={user.id} value={user.id}>
+                                  {user.name}
+                                </option>
+                              ))}
+                          </select>
+                          <button
+                            onClick={() => handleAddZoneLead(shift.id)}
+                            disabled={!selectedZoneLeads[shift.id] || addingZoneLead === shift.id}
+                            className="px-3 py-1.5 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {addingZoneLead === shift.id ? 'Adding...' : 'Add'}
+                          </button>
+                        </div>
                       </div>
 
                       {/* View Full Roster Link */}
