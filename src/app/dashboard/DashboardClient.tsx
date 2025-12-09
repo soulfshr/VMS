@@ -910,12 +910,18 @@ export default function DashboardClient() {
                         </div>
                       ))}
                     </div>
-                    <div className="p-4 border-t border-gray-200">
+                    <div className="p-4 border-t border-gray-200 space-y-2">
                       <Link
-                        href="/sightings"
+                        href="/report"
                         className="w-full py-2 px-4 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium inline-block text-center"
                       >
                         Report New Sighting
+                      </Link>
+                      <Link
+                        href="/sightings"
+                        className="w-full py-2 px-4 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium inline-block text-center"
+                      >
+                        View All Sightings
                       </Link>
                     </div>
                   </div>
