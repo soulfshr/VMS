@@ -11,10 +11,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Only coordinators and admins can view all volunteers
-    if (!['COORDINATOR', 'ADMINISTRATOR'].includes(user.role)) {
+    // Coordinators, dispatchers, admins, and developers can view all volunteers
+    if (!['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
+
+    const isDeveloper = user.role === 'DEVELOPER';
 
     const searchParams = request.nextUrl.searchParams;
     const zone = searchParams.get('zone');
@@ -22,10 +24,16 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search');
     const status = searchParams.get('status'); // 'active' or 'inactive'
     const qualifiedRoleId = searchParams.get('qualifiedRoleId');
+    const qualification = searchParams.get('qualification'); // Filter by slug e.g., REGIONAL_LEAD
     const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined;
 
     // Build where clause
     const where: Record<string, unknown> = {};
+
+    // Hide DEVELOPER users from non-developers
+    if (!isDeveloper) {
+      where.role = { not: 'DEVELOPER' };
+    }
 
     if (zone && zone !== 'all') {
       where.zones = {
@@ -36,7 +44,13 @@ export async function GET(request: NextRequest) {
     }
 
     if (role && role !== 'all') {
-      where.role = role;
+      // If a specific role filter is selected, use it (but still respect developer exclusion)
+      if (!isDeveloper && role === 'DEVELOPER') {
+        // Non-developers can't filter to see developers - return empty
+        where.role = 'NONE_MATCH';
+      } else {
+        where.role = role;
+      }
     }
 
     if (status === 'active') {
@@ -45,11 +59,22 @@ export async function GET(request: NextRequest) {
       where.isActive = false;
     }
 
-    // Filter by qualified role
+    // Filter by qualified role ID
     if (qualifiedRoleId && qualifiedRoleId !== 'all') {
       where.userQualifications = {
         some: {
           qualifiedRoleId: qualifiedRoleId,
+        },
+      };
+    }
+
+    // Filter by qualification slug (e.g., REGIONAL_LEAD)
+    if (qualification) {
+      where.userQualifications = {
+        some: {
+          qualifiedRole: {
+            slug: qualification.toUpperCase(),
+          },
         },
       };
     }
@@ -163,6 +188,8 @@ export async function GET(request: NextRequest) {
       isActive: v.isActive,
       isVerified: v.isVerified,
       createdAt: v.createdAt,
+      // Only include lastLoginAt for developers
+      ...(isDeveloper && { lastLoginAt: v.lastLoginAt }),
       qualifiedRoles: v.userQualifications.map(uq => ({
         id: uq.qualifiedRole.id,
         name: uq.qualifiedRole.name,
@@ -286,15 +313,23 @@ export async function POST(request: NextRequest) {
       // Parse and validate qualified roles if provided
       let qualifiedRoleIds: string[] = [];
       if (vol.qualifications) {
+        // Support both semicolons and colons as separators
         const quals = Array.isArray(vol.qualifications)
           ? vol.qualifications
-          : vol.qualifications.split(';').map((q: string) => q.trim().toUpperCase()).filter(Boolean);
-        const invalidQuals = quals.filter((q: string) => !qualifiedRoleMap.has(q));
+          : vol.qualifications.split(/[;:]/).map((q: string) => q.trim().toUpperCase()).filter(Boolean);
+
+        // Fix common typos
+        const fixedQuals = quals.map((q: string) => {
+          if (q === 'DIPSATCHER') return 'DISPATCHER';
+          return q;
+        });
+
+        const invalidQuals = fixedQuals.filter((q: string) => !qualifiedRoleMap.has(q));
         if (invalidQuals.length > 0) {
-          results.errors.push({ row: rowNum, email: vol.email, error: `Invalid qualified roles: ${invalidQuals.join(', ')}` });
+          results.errors.push({ row: rowNum, email: vol.email, error: `Invalid qualified roles: ${invalidQuals.join(', ')}. Valid options: ${Array.from(qualifiedRoleMap.keys()).join(', ')}` });
           continue;
         }
-        qualifiedRoleIds = quals.map((q: string) => qualifiedRoleMap.get(q)!);
+        qualifiedRoleIds = fixedQuals.map((q: string) => qualifiedRoleMap.get(q)!);
       }
 
       try {

@@ -109,7 +109,7 @@ export default function ZoneBoundariesPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full" />
+        <div className="animate-spin w-8 h-8 border-4 border-cyan-600 border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -118,7 +118,7 @@ export default function ZoneBoundariesPage() {
     return (
       <div className="text-center py-12">
         <h1 className="text-2xl font-bold text-gray-900 mb-4">Zone Not Found</h1>
-        <Link href="/admin/zones" className="text-teal-600 hover:underline">
+        <Link href="/admin/zones" className="text-cyan-600 hover:underline">
           ← Back to Zones
         </Link>
       </div>
@@ -208,7 +208,7 @@ export default function ZoneBoundariesPage() {
             disabled={isSaving || !hasChanges}
             className={`px-6 py-2 rounded-lg font-medium transition-colors ${
               hasChanges
-                ? 'bg-teal-600 text-white hover:bg-teal-700'
+                ? 'bg-cyan-600 text-white hover:bg-cyan-700'
                 : 'bg-gray-200 text-gray-500 cursor-not-allowed'
             }`}
           >

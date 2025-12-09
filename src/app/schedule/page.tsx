@@ -5,12 +5,15 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import type { DevUser } from '@/types/auth';
 import AssignmentModal from '@/components/schedule/AssignmentModal';
+import RegionalLeadModal from '@/components/schedule/RegionalLeadModal';
 import GuidedTour from '@/components/onboarding/GuidedTour';
 
 interface TimeBlock {
-  startTime: string;
-  endTime: string;
-  label: string;
+  startTime: string;      // Eastern time format "6:00"
+  endTime: string;        // Eastern time format "10:00"
+  label: string;          // Display label "6am - 10am"
+  startTimeUTC: string;   // UTC ISO string for saving
+  endTimeUTC: string;     // UTC ISO string for saving
 }
 
 interface ZoneData {
@@ -31,6 +34,7 @@ interface ZoneData {
     id: string;
     title: string;
     type: string;
+    typeConfigName: string | null;
   }>;
 }
 
@@ -65,12 +69,67 @@ interface Zone {
   county: string | null;
 }
 
+interface RegionalLead {
+  id: string;
+  userId: string;
+  userName: string;
+  date: string;
+  isPrimary: boolean;
+  notes: string | null;
+}
+
+interface DispatcherInfo {
+  id: string;
+  name: string;
+  assignmentId: string;
+  isBackup: boolean;
+  notes: string | null;
+}
+
+interface RegionalDispatcher {
+  date: string;
+  timeBlock: TimeBlock;
+  dispatcher: DispatcherInfo | null;
+  backupDispatchers: Array<{
+    id: string;
+    name: string;
+    assignmentId: string;
+    notes: string | null;
+  }>;
+}
+
+interface CountyDispatcher {
+  county: string;
+  date: string;
+  timeBlock: TimeBlock;
+  dispatcher: DispatcherInfo | null;
+  backupDispatchers: Array<{
+    id: string;
+    name: string;
+    assignmentId: string;
+    notes: string | null;
+  }>;
+}
+
 interface ScheduleData {
   counties: string[];
   zones: Zone[];
   timeBlocks: TimeBlock[];
   dates: string[];
   schedule: CellData[];
+  regionalLeads: RegionalLead[];
+  dispatcherSchedulingMode: 'REGIONAL' | 'COUNTY' | 'ZONE';
+  schedulingMode: 'SIMPLE' | 'FULL';
+  regionalDispatchers: RegionalDispatcher[];
+  countyDispatchers: CountyDispatcher[];
+}
+
+// Format date as YYYY-MM-DD in local timezone (not UTC)
+function formatDateLocal(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 export default function SchedulePage() {
@@ -88,6 +147,8 @@ export default function SchedulePage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedCell, setSelectedCell] = useState<CellData | null>(null);
   const [expandedCells, setExpandedCells] = useState<Set<string>>(new Set());
+  const [regionalLeadModalOpen, setRegionalLeadModalOpen] = useState(false);
+  const [selectedRegionalLeadDate, setSelectedRegionalLeadDate] = useState<string | null>(null);
 
   // Check authentication
   useEffect(() => {
@@ -109,10 +170,10 @@ export default function SchedulePage() {
 
     setLoading(true);
     try {
-      const startDate = currentWeekStart.toISOString().split('T')[0];
+      const startDate = formatDateLocal(currentWeekStart);
       const endDate = new Date(currentWeekStart);
       endDate.setDate(endDate.getDate() + 6);
-      const endDateStr = endDate.toISOString().split('T')[0];
+      const endDateStr = formatDateLocal(endDate);
 
       const url = new URL('/api/schedule', window.location.origin);
       url.searchParams.set('startDate', startDate);
@@ -158,6 +219,20 @@ export default function SchedulePage() {
     }
   };
 
+  const handleRegionalLeadClick = (dateStr: string) => {
+    if (canEdit) {
+      setSelectedRegionalLeadDate(dateStr);
+      setRegionalLeadModalOpen(true);
+    }
+  };
+
+  const getRegionalLeadsForDate = (dateStr: string): RegionalLead[] => {
+    if (!scheduleData?.regionalLeads) return [];
+    return scheduleData.regionalLeads
+      .filter(rl => rl.date === dateStr)
+      .sort((a, b) => (b.isPrimary ? 1 : 0) - (a.isPrimary ? 1 : 0));
+  };
+
   const toggleCellExpanded = (cellKey: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setExpandedCells(prev => {
@@ -201,7 +276,7 @@ export default function SchedulePage() {
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-600"></div>
       </div>
     );
   }
@@ -276,7 +351,7 @@ export default function SchedulePage() {
               {canEdit && (
                 <Link
                   href="/shifts/create"
-                  className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium"
+                  className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium"
                 >
                   + Create Shift
                 </Link>
@@ -305,6 +380,10 @@ export default function SchedulePage() {
               <span className="text-gray-600">Dispatcher</span>
             </div>
             <div className="flex items-center gap-2">
+              <span>🌐</span>
+              <span className="text-gray-600">Regional Lead</span>
+            </div>
+            <div className="flex items-center gap-2">
               <span className="text-amber-600 font-medium text-xs">Need X</span>
               <span className="text-gray-600">Gap</span>
             </div>
@@ -314,7 +393,7 @@ export default function SchedulePage() {
         {/* Schedule Grid */}
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-600"></div>
           </div>
         ) : scheduleData ? (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden" data-tour="schedule-grid">
@@ -322,13 +401,13 @@ export default function SchedulePage() {
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-gray-100">
-                    <th className="border-b border-r border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-600 min-w-[140px]">
+                    <th className="border-b border-r border-gray-200 px-2 py-3 text-left text-sm font-medium text-gray-600 min-w-[100px] w-[100px] sticky left-0 z-20 bg-gray-100 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">
                       County / Time
                     </th>
                     {weekDates.map(date => (
                       <th
                         key={date.toISOString()}
-                        className="border-b border-r border-gray-200 px-4 py-3 text-center text-sm font-medium text-gray-600 min-w-[180px]"
+                        className="border-b border-r border-gray-200 px-2 py-3 text-center text-sm font-medium text-gray-600 min-w-[120px]"
                       >
                         <div>{date.toLocaleDateString('en-US', { weekday: 'short' })}</div>
                         <div className="text-gray-500">
@@ -339,25 +418,243 @@ export default function SchedulePage() {
                   </tr>
                 </thead>
                 <tbody>
+                  {/* Regional Lead Row - spans all counties */}
+                  <tr className="bg-purple-50">
+                    <td className="border-b border-r border-purple-200 px-2 py-2 font-semibold text-purple-800 bg-purple-100 w-[100px] sticky left-0 z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">
+                      <div className="flex items-center gap-1">
+                        <span>🌐</span>
+                        <span className="text-sm">Regional Lead</span>
+                      </div>
+                      <div className="text-xs font-normal text-purple-600 mt-0.5">All day</div>
+                    </td>
+                    {weekDates.map(date => {
+                      const dateStr = formatDateLocal(date);
+                      const leads = getRegionalLeadsForDate(dateStr);
+                      const primaryLead = leads.find(l => l.isPrimary);
+                      const backupLeads = leads.filter(l => !l.isPrimary);
+
+                      return (
+                        <td
+                          key={dateStr}
+                          onClick={() => handleRegionalLeadClick(dateStr)}
+                          className={`border-b border-r border-purple-200 px-3 py-2 text-sm ${
+                            canEdit ? 'cursor-pointer hover:bg-purple-100' : ''
+                          }`}
+                        >
+                          {leads.length > 0 ? (
+                            <div className="space-y-1">
+                              {primaryLead && (
+                                <div className="flex items-center gap-1">
+                                  <span className="text-yellow-500 text-xs">★</span>
+                                  <span className="font-medium text-gray-900">
+                                    {primaryLead.userName.split(' ')[0]}
+                                    {primaryLead.notes && (
+                                      <span className="ml-1 font-normal text-purple-600">{primaryLead.notes}</span>
+                                    )}
+                                  </span>
+                                </div>
+                              )}
+                              {backupLeads.slice(0, 2).map(lead => (
+                                <div key={lead.id} className="text-xs text-gray-600">
+                                  {lead.userName.split(' ')[0]}
+                                  {lead.notes && (
+                                    <span className="ml-1 text-purple-600">{lead.notes}</span>
+                                  )}
+                                </div>
+                              ))}
+                              {backupLeads.length > 2 && (
+                                <div className="text-xs text-purple-600">
+                                  +{backupLeads.length - 2} more
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="text-gray-400 text-xs">
+                              {canEdit ? 'Click to assign' : '—'}
+                            </div>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+
+                  {/* Regional Dispatcher Section - only shown in REGIONAL mode */}
+                  {scheduleData.dispatcherSchedulingMode === 'REGIONAL' && (
+                    <>
+                      {/* Regional Dispatcher Header */}
+                      <tr className="bg-cyan-50">
+                        <td className="border-b border-r border-cyan-200 px-2 py-2 font-semibold text-cyan-800 bg-cyan-100 w-[100px] sticky left-0 z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">
+                          <div className="flex items-center gap-1">
+                            <span>🎧</span>
+                            <span className="text-sm">Dispatcher</span>
+                          </div>
+                          <div className="text-xs font-normal text-cyan-600 mt-0.5">All counties</div>
+                        </td>
+                        <td colSpan={7} className="border-b border-cyan-200 bg-cyan-50"></td>
+                      </tr>
+                      {/* Time block rows for regional dispatchers */}
+                      {scheduleData.timeBlocks.map(timeBlock => (
+                        <tr key={`regional-${timeBlock.label}`} className="bg-cyan-50">
+                          <td className="border-b border-r border-cyan-200 px-2 py-2 text-sm text-cyan-700 bg-cyan-50 w-[100px] sticky left-0 z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">
+                            {timeBlock.label}
+                          </td>
+                          {weekDates.map(date => {
+                            const dateStr = formatDateLocal(date);
+                            const regionalDisp = scheduleData.regionalDispatchers.find(
+                              rd => rd.date === dateStr && rd.timeBlock.label === timeBlock.label
+                            );
+
+                            return (
+                              <td
+                                key={dateStr}
+                                onClick={() => {
+                                  if (canEdit) {
+                                    // Create a synthetic cell for the modal
+                                    const syntheticCell: CellData = {
+                                      county: 'ALL',
+                                      date: dateStr,
+                                      timeBlock,
+                                      dispatcher: regionalDisp?.dispatcher || null,
+                                      backupDispatchers: regionalDisp?.backupDispatchers || [],
+                                      zones: [],
+                                      coverage: 'none',
+                                      gaps: { needsDispatcher: !regionalDisp?.dispatcher, zonesNeedingLeads: [] },
+                                    };
+                                    handleCellClick(syntheticCell);
+                                  }
+                                }}
+                                className={`border-b border-r border-cyan-200 px-3 py-2 text-sm ${
+                                  canEdit ? 'cursor-pointer hover:bg-cyan-100' : ''
+                                }`}
+                              >
+                                {regionalDisp?.dispatcher ? (
+                                  <div className="space-y-1">
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-yellow-500 text-xs">★</span>
+                                      <span className="font-medium text-gray-900">
+                                        {regionalDisp.dispatcher.name.split(' ')[0]}
+                                        {regionalDisp.dispatcher.notes && (
+                                          <span className="ml-1 font-normal text-cyan-600">{regionalDisp.dispatcher.notes}</span>
+                                        )}
+                                      </span>
+                                    </div>
+                                    {regionalDisp.backupDispatchers.slice(0, 2).map(backup => (
+                                      <div key={backup.id} className="text-xs text-gray-600">
+                                        {backup.name.split(' ')[0]}
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="text-gray-400 text-xs">
+                                    {canEdit ? 'Click to assign' : '—'}
+                                  </div>
+                                )}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </>
+                  )}
+
                   {(selectedCounty === 'all' ? scheduleData.counties : [selectedCounty]).map(county => (
                     <>
                       {/* County header row */}
                       <tr key={`${county}-header`} className="bg-gray-50">
                         <td
                           colSpan={8}
-                          className="border-b border-gray-200 px-4 py-2 font-semibold text-gray-800"
+                          className="border-b border-gray-200 px-2 py-2 font-semibold text-gray-800"
                         >
                           {county} County
                         </td>
                       </tr>
+
+                      {/* County Dispatcher Section - only shown in COUNTY mode */}
+                      {scheduleData.dispatcherSchedulingMode === 'COUNTY' && (
+                        <>
+                          {/* County Dispatcher Header */}
+                          <tr key={`${county}-dispatcher-header`} className="bg-cyan-50">
+                            <td className="border-b border-r border-cyan-200 px-2 py-2 font-semibold text-cyan-800 bg-cyan-100 w-[100px] sticky left-0 z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">
+                              <div className="flex items-center gap-1">
+                                <span>🎧</span>
+                                <span className="text-sm">Dispatcher</span>
+                              </div>
+                            </td>
+                            <td colSpan={7} className="border-b border-cyan-200 bg-cyan-50"></td>
+                          </tr>
+                          {/* Time block rows for county dispatchers */}
+                          {scheduleData.timeBlocks.map(timeBlock => (
+                            <tr key={`${county}-dispatcher-${timeBlock.label}`} className="bg-cyan-50">
+                              <td className="border-b border-r border-cyan-200 px-2 py-2 text-sm text-cyan-700 bg-cyan-50 w-[100px] sticky left-0 z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">
+                                {timeBlock.label}
+                              </td>
+                              {weekDates.map(date => {
+                                const dateStr = formatDateLocal(date);
+                                const countyDisp = scheduleData.countyDispatchers.find(
+                                  cd => cd.county === county && cd.date === dateStr && cd.timeBlock.label === timeBlock.label
+                                );
+
+                                return (
+                                  <td
+                                    key={dateStr}
+                                    onClick={() => {
+                                      if (canEdit) {
+                                        // Create a synthetic cell for the modal
+                                        const syntheticCell: CellData = {
+                                          county,
+                                          date: dateStr,
+                                          timeBlock,
+                                          dispatcher: countyDisp?.dispatcher || null,
+                                          backupDispatchers: countyDisp?.backupDispatchers || [],
+                                          zones: [],
+                                          coverage: 'none',
+                                          gaps: { needsDispatcher: !countyDisp?.dispatcher, zonesNeedingLeads: [] },
+                                        };
+                                        handleCellClick(syntheticCell);
+                                      }
+                                    }}
+                                    className={`border-b border-r border-cyan-200 px-3 py-2 text-sm ${
+                                      canEdit ? 'cursor-pointer hover:bg-cyan-100' : ''
+                                    }`}
+                                  >
+                                    {countyDisp?.dispatcher ? (
+                                      <div className="space-y-1">
+                                        <div className="flex items-center gap-1">
+                                          <span className="text-yellow-500 text-xs">★</span>
+                                          <span className="font-medium text-gray-900">
+                                            {countyDisp.dispatcher.name.split(' ')[0]}
+                                            {countyDisp.dispatcher.notes && (
+                                              <span className="ml-1 font-normal text-cyan-600">{countyDisp.dispatcher.notes}</span>
+                                            )}
+                                          </span>
+                                        </div>
+                                        {countyDisp.backupDispatchers.slice(0, 2).map(backup => (
+                                          <div key={backup.id} className="text-xs text-gray-600">
+                                            {backup.name.split(' ')[0]}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <div className="text-gray-400 text-xs">
+                                        {canEdit ? 'Click to assign' : '—'}
+                                      </div>
+                                    )}
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          ))}
+                        </>
+                      )}
+
                       {/* Time block rows */}
                       {scheduleData.timeBlocks.map(timeBlock => (
                         <tr key={`${county}-${timeBlock.label}`}>
-                          <td className="border-b border-r border-gray-200 px-4 py-2 text-sm text-gray-600 bg-gray-50">
+                          <td className="border-b border-r border-gray-200 px-2 py-2 text-sm text-gray-600 bg-gray-50 w-[100px] sticky left-0 z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">
                             {timeBlock.label}
                           </td>
                           {weekDates.map(date => {
-                            const dateStr = date.toISOString().split('T')[0];
+                            const dateStr = formatDateLocal(date);
                             const cellKey = `${county}-${dateStr}-${timeBlock.label}`;
                             const cell = scheduleData.schedule.find(
                               s =>
@@ -390,13 +687,15 @@ export default function SchedulePage() {
                               >
                                 {cell ? (
                                   <div className="space-y-1">
-                                    {/* Dispatcher */}
-                                    <div className="flex items-center gap-1">
-                                      <span className="text-xs">🎧</span>
-                                      <span className={cell.dispatcher ? 'font-medium text-gray-900' : 'text-gray-400'}>
-                                        {cell.dispatcher?.name || '—'}
-                                      </span>
-                                    </div>
+                                    {/* Dispatcher - only show in ZONE mode */}
+                                    {scheduleData.dispatcherSchedulingMode === 'ZONE' && (
+                                      <div className="flex items-center gap-1">
+                                        <span className="text-xs">🎧</span>
+                                        <span className={cell.dispatcher ? 'font-medium text-gray-900' : 'text-gray-400'}>
+                                          {cell.dispatcher?.name || '—'}
+                                        </span>
+                                      </div>
+                                    )}
                                     {/* Zone Leads - only show zones with actual shifts */}
                                     {cell.zones.slice(0, isExpanded ? undefined : 3).map(zoneData => {
                                       const zoneLead = zoneData.zoneLeads[0];
@@ -409,7 +708,8 @@ export default function SchedulePage() {
                                           ) : (
                                             <span className="text-gray-400">—</span>
                                           )}
-                                          {volunteerCount > 1 && (
+                                          {/* Show volunteer count only in FULL mode */}
+                                          {scheduleData.schedulingMode === 'FULL' && volunteerCount > 1 && (
                                             <span className="text-gray-400 text-[10px]">+{volunteerCount - 1}</span>
                                           )}
                                         </div>
@@ -419,15 +719,15 @@ export default function SchedulePage() {
                                     {cell.zones.length > 3 && (
                                       <button
                                         onClick={e => toggleCellExpanded(cellKey, e)}
-                                        className="text-xs text-teal-600 hover:text-teal-800"
+                                        className="text-xs text-cyan-600 hover:text-cyan-800"
                                       >
                                         {isExpanded ? 'Show less' : `+${cell.zones.length - 3} more`}
                                       </button>
                                     )}
                                     {/* Gap indicators - show what's missing */}
-                                    {(cell.gaps?.needsDispatcher || (cell.gaps?.zonesNeedingLeads?.length ?? 0) > 0) && (
+                                    {((scheduleData.dispatcherSchedulingMode === 'ZONE' && cell.gaps?.needsDispatcher) || (cell.gaps?.zonesNeedingLeads?.length ?? 0) > 0) && (
                                       <div className="mt-1 space-y-0.5">
-                                        {cell.gaps?.needsDispatcher && (
+                                        {scheduleData.dispatcherSchedulingMode === 'ZONE' && cell.gaps?.needsDispatcher && (
                                           <div className="text-[10px] text-amber-600 font-medium">
                                             Need dispatcher
                                           </div>
@@ -443,7 +743,7 @@ export default function SchedulePage() {
                                     )}
                                   </div>
                                 ) : (
-                                  <div className="text-gray-400 text-xs">No shifts</div>
+                                  <div className="text-gray-500 text-xs">No shifts</div>
                                 )}
                               </td>
                             );
@@ -476,6 +776,23 @@ export default function SchedulePage() {
           onSave={() => {
             setModalOpen(false);
             setSelectedCell(null);
+            fetchSchedule();
+          }}
+          dispatcherMode={scheduleData.dispatcherSchedulingMode}
+          schedulingMode={scheduleData.schedulingMode}
+        />
+      )}
+
+      {/* Regional Lead Modal */}
+      {regionalLeadModalOpen && selectedRegionalLeadDate && scheduleData && (
+        <RegionalLeadModal
+          date={selectedRegionalLeadDate}
+          existingLeads={getRegionalLeadsForDate(selectedRegionalLeadDate)}
+          onClose={() => {
+            setRegionalLeadModalOpen(false);
+            setSelectedRegionalLeadDate(null);
+          }}
+          onSave={() => {
             fetchSchedule();
           }}
         />

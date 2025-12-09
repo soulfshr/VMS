@@ -12,7 +12,7 @@ export default function TermsOfServicePage() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 md:p-12">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Terms of Service</h1>
           <p className="text-gray-500 mb-8">RippleVMS - Volunteer Management System</p>
-          <p className="text-sm text-gray-400 mb-8">Last Updated: December 4, 2024</p>
+          <p className="text-sm text-gray-500 mb-8">Last Updated: December 6, 2025</p>
 
           <div className="prose prose-gray max-w-none">
             <hr className="my-6" />
@@ -151,7 +151,7 @@ export default function TermsOfServicePage() {
 
             <h2 className="text-xl font-semibold text-gray-900 mt-8 mb-4">8. Privacy</h2>
             <p className="text-gray-600 mb-4">
-              Your use of the Service is also governed by our <a href="/privacy" className="text-teal-600 hover:underline">Privacy Policy</a>, which describes how we collect, use, and protect your personal information. By using the Service, you consent to the practices described in the Privacy Policy.
+              Your use of the Service is also governed by our <a href="/privacy" className="text-cyan-600 hover:underline">Privacy Policy</a>, which describes how we collect, use, and protect your personal information. By using the Service, you consent to the practices described in the Privacy Policy.
             </p>
 
             <hr className="my-6" />
@@ -270,8 +270,8 @@ export default function TermsOfServicePage() {
             </p>
             <p className="text-gray-600 mb-4">
               <strong>RippleVMS</strong><br />
-              Email: <a href="mailto:triangle.dispatch.group@gmail.com" className="text-teal-600 hover:underline">triangle.dispatch.group@gmail.com</a><br />
-              Website: <a href="https://nc.ripple-vms.com" className="text-teal-600 hover:underline">nc.ripple-vms.com</a>
+              Email: <a href="mailto:triangle.dispatch.group@gmail.com" className="text-cyan-600 hover:underline">triangle.dispatch.group@gmail.com</a><br />
+              Website: <a href="https://nc.ripple-vms.com" className="text-cyan-600 hover:underline">nc.ripple-vms.com</a>
             </p>
             <p className="text-gray-600 mb-4">
               For general inquiries about volunteer activities, please contact your assigned coordinator.

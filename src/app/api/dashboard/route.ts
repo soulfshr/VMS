@@ -24,7 +24,8 @@ export async function GET() {
 
     const now = new Date();
 
-    // Get user's upcoming shifts (confirmed or pending)
+    // Get user's upcoming shifts (confirmed, pending, or cancelled but not dismissed)
+    // Include cancelled shifts so users can see what was cancelled
     const upcomingShifts = await prisma.shift.findMany({
       where: {
         date: { gte: now },
@@ -39,6 +40,42 @@ export async function GET() {
         zone: true,
         typeConfig: true,
         volunteers: {
+          where: {
+            userId: user.id,
+            status: { in: ['PENDING', 'CONFIRMED'] }
+          },
+        },
+      },
+      orderBy: [
+        { date: 'asc' },
+        { startTime: 'asc' },
+      ],
+      take: 10, // Get more to account for cancelled ones
+    });
+
+    // Get user's zone IDs for filtering
+    const userZoneIds = user.zones.map(uz => uz.zone.id);
+
+    // Get available shifts in user's zones (published, future, with spots available)
+    const availableZoneShifts = await prisma.shift.findMany({
+      where: {
+        status: 'PUBLISHED',
+        date: { gte: now },
+        zoneId: { in: userZoneIds.length > 0 ? userZoneIds : ['no-zones'] },
+        // Exclude shifts user already signed up for
+        NOT: {
+          volunteers: {
+            some: {
+              userId: user.id,
+              status: { in: ['PENDING', 'CONFIRMED'] },
+            },
+          },
+        },
+      },
+      include: {
+        zone: true,
+        typeConfig: true,
+        volunteers: {
           where: { status: { in: ['PENDING', 'CONFIRMED'] } },
         },
       },
@@ -46,25 +83,13 @@ export async function GET() {
         { date: 'asc' },
         { startTime: 'asc' },
       ],
-      take: 5,
+      take: 20, // Get more to filter for spots
     });
 
-    // Get count of available shifts (published, future, with spots available)
-    const availableShifts = await prisma.shift.findMany({
-      where: {
-        status: 'PUBLISHED',
-        date: { gte: now },
-      },
-      include: {
-        volunteers: {
-          where: { status: 'CONFIRMED' },
-        },
-      },
-    });
-
-    const shiftsWithSpots = availableShifts.filter(
+    // Filter to only shifts with available spots
+    const shiftsWithSpots = availableZoneShifts.filter(
       shift => shift.volunteers.length < shift.maxVolunteers
-    );
+    ).slice(0, 5); // Take top 5 for the widget
 
     // Get user's completed hours this month
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -115,7 +140,8 @@ export async function GET() {
         where: { zoneId: primaryZone.id },
       });
 
-      const zoneShiftsThisWeek = await prisma.shift.count({
+      // Get zone shifts with volunteer counts for open slots calculation
+      const zoneShifts = await prisma.shift.findMany({
         where: {
           zoneId: primaryZone.id,
           date: {
@@ -123,12 +149,23 @@ export async function GET() {
             lt: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
           },
         },
+        include: {
+          volunteers: {
+            where: { status: 'CONFIRMED' },
+          },
+        },
       });
+
+      const openSlots = zoneShifts.reduce((sum, shift) => {
+        const spotsRemaining = shift.maxVolunteers - shift.volunteers.length;
+        return sum + Math.max(0, spotsRemaining);
+      }, 0);
 
       zoneStats = {
         zone: primaryZone,
-        volunteerCount: zoneVolunteers,
-        shiftsThisWeek: zoneShiftsThisWeek,
+        upcomingShifts: zoneShifts.length,
+        activeVolunteers: zoneVolunteers,
+        openSlots,
       };
     }
 
@@ -240,6 +277,64 @@ export async function GET() {
         }
       });
 
+      // Calculate week-by-week volunteer coverage summary
+      const nextWeekStart = new Date(weekEnd);
+      const nextWeekEnd = new Date(nextWeekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+      // Get this week's shifts with all confirmed/pending volunteers
+      const thisWeekAllShifts = await prisma.shift.findMany({
+        where: {
+          status: 'PUBLISHED',
+          date: { gte: now, lt: weekEnd },
+        },
+        include: {
+          volunteers: {
+            where: { status: { in: ['PENDING', 'CONFIRMED'] } },
+          },
+        },
+      });
+
+      // Get next week's shifts
+      const nextWeekAllShifts = await prisma.shift.findMany({
+        where: {
+          status: 'PUBLISHED',
+          date: { gte: nextWeekStart, lt: nextWeekEnd },
+        },
+        include: {
+          volunteers: {
+            where: { status: { in: ['PENDING', 'CONFIRMED'] } },
+          },
+        },
+      });
+
+      // Calculate coverage for each week
+      const calculateWeekCoverage = (shifts: typeof thisWeekAllShifts) => {
+        let totalSlots = 0;
+        let filledSlots = 0;
+        let shiftsNeedingHelp = 0;
+
+        shifts.forEach(shift => {
+          totalSlots += shift.maxVolunteers;
+          const confirmed = shift.volunteers.filter(v => v.status === 'CONFIRMED').length;
+          filledSlots += confirmed;
+          if (confirmed < shift.minVolunteers) {
+            shiftsNeedingHelp++;
+          }
+        });
+
+        return {
+          totalShifts: shifts.length,
+          totalSlots,
+          filledSlots,
+          openSlots: totalSlots - filledSlots,
+          shiftsNeedingHelp,
+          coveragePercent: totalSlots > 0 ? Math.round((filledSlots / totalSlots) * 100) : 0,
+        };
+      };
+
+      const thisWeekCoverage = calculateWeekCoverage(thisWeekAllShifts);
+      const nextWeekCoverage = calculateWeekCoverage(nextWeekAllShifts);
+
       coordinatorStats = {
         pendingRsvps,
         coverage: {
@@ -253,6 +348,11 @@ export async function GET() {
           zonesNeedingLeads,
         },
         topGaps,
+        // New week-by-week coverage summary
+        weeklyCoverage: {
+          thisWeek: thisWeekCoverage,
+          nextWeek: nextWeekCoverage,
+        },
       };
     }
 
@@ -268,6 +368,7 @@ export async function GET() {
         const userVolunteer = shift.volunteers.find(v => v.userId === user.id);
         return {
           ...shift,
+          shiftStatus: shift.status, // Include shift status (PUBLISHED, CANCELLED, etc.)
           shiftType: shift.typeConfig ? {
             name: shift.typeConfig.name,
             color: shift.typeConfig.color,
@@ -276,6 +377,26 @@ export async function GET() {
           userRsvp: userVolunteer ? { status: userVolunteer.status } : null,
         };
       }),
+      // Available shifts in user's zones (not yet signed up)
+      availableZoneShifts: shiftsWithSpots.map(shift => ({
+        id: shift.id,
+        title: shift.title,
+        date: shift.date,
+        startTime: shift.startTime,
+        endTime: shift.endTime,
+        shiftType: shift.typeConfig ? {
+          name: shift.typeConfig.name,
+          color: shift.typeConfig.color,
+        } : null,
+        zone: shift.zone ? {
+          id: shift.zone.id,
+          name: shift.zone.name,
+        } : null,
+        signedUpCount: shift.volunteers.length,
+        minVolunteers: shift.minVolunteers,
+        maxVolunteers: shift.maxVolunteers,
+        spotsRemaining: shift.maxVolunteers - shift.volunteers.length,
+      })),
       // Stats in the format expected by DashboardClient
       volunteerStats: {
         myShifts: upcomingShifts.length,

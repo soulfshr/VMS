@@ -130,7 +130,7 @@ export default function SightingsPage() {
         <div className="max-w-6xl mx-auto">
           <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
             <p className="text-red-700">{error}</p>
-            <Link href="/dashboard" className="text-teal-600 hover:underline mt-4 inline-block">
+            <Link href="/dashboard" className="text-cyan-600 hover:underline mt-4 inline-block">
               Return to Dashboard
             </Link>
           </div>
@@ -145,7 +145,7 @@ export default function SightingsPage() {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-            <Link href="/dashboard" className="hover:text-teal-600">Dashboard</Link>
+            <Link href="/dashboard" className="hover:text-cyan-600">Dashboard</Link>
             <span>/</span>
             <span>ICE Sightings</span>
           </div>
@@ -161,7 +161,7 @@ export default function SightingsPage() {
               onClick={() => setStatusFilter(statusFilter === status ? 'all' : status)}
               className={`p-4 rounded-xl border transition-all ${
                 statusFilter === status
-                  ? 'border-teal-500 bg-teal-50 ring-2 ring-teal-500'
+                  ? 'border-cyan-500 bg-cyan-50 ring-2 ring-cyan-500'
                   : 'border-gray-200 bg-white hover:border-gray-300'
               }`}
             >
@@ -186,7 +186,7 @@ export default function SightingsPage() {
                 </span>
                 <button
                   onClick={() => setStatusFilter('all')}
-                  className="text-sm text-teal-600 hover:underline"
+                  className="text-sm text-cyan-600 hover:underline"
                 >
                   Clear filter
                 </button>
@@ -232,7 +232,7 @@ export default function SightingsPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
             <p className="text-gray-500 text-lg">No sighting reports found</p>
-            <p className="text-gray-400 text-sm mt-1">
+            <p className="text-gray-500 text-sm mt-1">
               {statusFilter !== 'all' ? 'Try clearing the filter' : 'Reports will appear here when submitted'}
             </p>
           </div>
@@ -244,7 +244,7 @@ export default function SightingsPage() {
               <Link
                 key={sighting.id}
                 href={`/sightings/${sighting.id}`}
-                className="block bg-white rounded-xl border border-gray-200 p-6 hover:border-teal-300 hover:shadow-md transition-all"
+                className="block bg-white rounded-xl border border-gray-200 p-6 hover:border-cyan-300 hover:shadow-md transition-all"
               >
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">

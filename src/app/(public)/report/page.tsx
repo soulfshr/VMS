@@ -140,7 +140,7 @@ export default function ReportPage() {
   // Success screen
   if (submitted) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white">
+      <div className="min-h-screen bg-gradient-to-b from-cyan-50 to-white">
         <div className="max-w-2xl mx-auto px-4 py-12">
           <div className="text-center space-y-6">
             {/* Success icon */}
@@ -167,7 +167,7 @@ export default function ReportPage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
               <button
                 onClick={resetForm}
-                className="px-6 py-3 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 transition-colors"
+                className="px-6 py-3 bg-cyan-600 text-white font-medium rounded-lg hover:bg-cyan-700 transition-colors"
               >
                 Submit Another Report
               </button>
@@ -185,9 +185,9 @@ export default function ReportPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-teal-50 to-white">
+    <div className="min-h-screen bg-gradient-to-b from-cyan-50 to-white">
       {/* Header with hotline */}
-      <div className="bg-teal-700 text-white">
+      <div className="bg-cyan-700 text-white">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <Link href="/" className="flex items-center gap-3">
@@ -201,7 +201,7 @@ export default function ReportPage() {
               <span className="font-semibold text-lg">Siembra NC</span>
             </Link>
             <div className="text-center sm:text-right">
-              <p className="text-sm text-teal-200">Report ICE Sightings to 24/7 Hotline</p>
+              <p className="text-sm text-cyan-200">Report ICE Sightings to 24/7 Hotline</p>
               <a href="tel:336-543-0353" className="text-xl font-bold hover:underline">
                 336-543-0353
               </a>
@@ -214,7 +214,7 @@ export default function ReportPage() {
       <div className="max-w-3xl mx-auto px-4 py-8">
         {/* Hero section */}
         <div className="text-center mb-8">
-          <p className="text-teal-700 font-semibold tracking-wide uppercase text-sm mb-2">
+          <p className="text-cyan-700 font-semibold tracking-wide uppercase text-sm mb-2">
             Spread Information, Not Panic
           </p>
           <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
@@ -228,15 +228,15 @@ export default function ReportPage() {
         {/* SALUTE legend */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8 shadow-sm">
           <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <span className="text-teal-600">S.A.L.U.T.E.</span> Reporting Model
+            <span className="text-cyan-600">S.A.L.U.T.E.</span> Reporting Model
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
-            <div><span className="font-bold text-teal-700">S</span> - Size/Strength</div>
-            <div><span className="font-bold text-teal-700">A</span> - Actions/Activity</div>
-            <div><span className="font-bold text-teal-700">L</span> - Location/Direction</div>
-            <div><span className="font-bold text-teal-700">U</span> - Uniform/Clothes</div>
-            <div><span className="font-bold text-teal-700">T</span> - Time & Date</div>
-            <div><span className="font-bold text-teal-700">E</span> - Equipment/Weapons</div>
+            <div><span className="font-bold text-cyan-700">S</span> - Size/Strength</div>
+            <div><span className="font-bold text-cyan-700">A</span> - Actions/Activity</div>
+            <div><span className="font-bold text-cyan-700">L</span> - Location/Direction</div>
+            <div><span className="font-bold text-cyan-700">U</span> - Uniform/Clothes</div>
+            <div><span className="font-bold text-cyan-700">T</span> - Time & Date</div>
+            <div><span className="font-bold text-cyan-700">E</span> - Equipment/Weapons</div>
           </div>
         </div>
 
@@ -244,45 +244,53 @@ export default function ReportPage() {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Error message */}
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+            <div role="alert" className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
               {error}
             </div>
           )}
 
           {/* S - Size/Strength */}
           <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <label className="block">
+            <label htmlFor="report-size" className="block">
               <span className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <span className="w-8 h-8 bg-teal-100 text-teal-700 rounded-lg flex items-center justify-center font-bold">S</span>
-                Size / Strength
+                <span className="w-8 h-8 bg-cyan-100 text-cyan-700 rounded-lg flex items-center justify-center font-bold" aria-hidden="true">S</span>
+                Size / Strength <span aria-hidden="true">*</span>
+                <span className="sr-only">(required)</span>
               </span>
-              <span className="text-sm text-gray-500 mt-1 block">How many people and vehicles?</span>
+              <span id="size-hint" className="text-sm text-gray-500 mt-1 block">How many people and vehicles?</span>
               <textarea
+                id="report-size"
                 value={size}
                 onChange={(e) => setSize(e.target.value)}
                 placeholder="5-6 officers, 2 white SUVs"
                 rows={2}
                 required
-                className="mt-3 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent placeholder:text-gray-400"
+                aria-required="true"
+                aria-describedby="size-hint"
+                className="mt-3 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent placeholder:text-gray-400"
               />
             </label>
           </div>
 
           {/* A - Actions/Activity */}
           <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <label className="block">
+            <label htmlFor="report-activity" className="block">
               <span className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <span className="w-8 h-8 bg-teal-100 text-teal-700 rounded-lg flex items-center justify-center font-bold">A</span>
-                Actions / Activity
+                <span className="w-8 h-8 bg-cyan-100 text-cyan-700 rounded-lg flex items-center justify-center font-bold" aria-hidden="true">A</span>
+                Actions / Activity <span aria-hidden="true">*</span>
+                <span className="sr-only">(required)</span>
               </span>
-              <span className="text-sm text-gray-500 mt-1 block">What are they doing?</span>
+              <span id="activity-hint" className="text-sm text-gray-500 mt-1 block">What are they doing?</span>
               <textarea
+                id="report-activity"
                 value={activity}
                 onChange={(e) => setActivity(e.target.value)}
                 placeholder="trying to force a man into their SUV"
                 rows={2}
                 required
-                className="mt-3 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent placeholder:text-gray-400"
+                aria-required="true"
+                aria-describedby="activity-hint"
+                className="mt-3 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent placeholder:text-gray-400"
               />
             </label>
           </div>
@@ -291,8 +299,9 @@ export default function ReportPage() {
           <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
             <div>
               <span className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <span className="w-8 h-8 bg-teal-100 text-teal-700 rounded-lg flex items-center justify-center font-bold">L</span>
-                Location / Direction
+                <span className="w-8 h-8 bg-cyan-100 text-cyan-700 rounded-lg flex items-center justify-center font-bold" aria-hidden="true">L</span>
+                Location / Direction <span aria-hidden="true">*</span>
+                <span className="sr-only">(required)</span>
               </span>
               <span className="text-sm text-gray-500 mt-1 block">Where is this happening?</span>
               <div className="mt-3">
@@ -307,56 +316,68 @@ export default function ReportPage() {
 
           {/* U - Uniform/Clothes */}
           <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <label className="block">
+            <label htmlFor="report-uniform" className="block">
               <span className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <span className="w-8 h-8 bg-teal-100 text-teal-700 rounded-lg flex items-center justify-center font-bold">U</span>
-                Uniform / Clothes
+                <span className="w-8 h-8 bg-cyan-100 text-cyan-700 rounded-lg flex items-center justify-center font-bold" aria-hidden="true">U</span>
+                Uniform / Clothes <span aria-hidden="true">*</span>
+                <span className="sr-only">(required)</span>
               </span>
-              <span className="text-sm text-gray-500 mt-1 block">What are they wearing?</span>
+              <span id="uniform-hint" className="text-sm text-gray-500 mt-1 block">What are they wearing?</span>
               <textarea
+                id="report-uniform"
                 value={uniform}
                 onChange={(e) => setUniform(e.target.value)}
                 placeholder="blue vests with ICE on the back"
                 rows={2}
                 required
-                className="mt-3 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent placeholder:text-gray-400"
+                aria-required="true"
+                aria-describedby="uniform-hint"
+                className="mt-3 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent placeholder:text-gray-400"
               />
             </label>
           </div>
 
           {/* T - Time & Date */}
           <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <label className="block">
+            <label htmlFor="report-time" className="block">
               <span className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <span className="w-8 h-8 bg-teal-100 text-teal-700 rounded-lg flex items-center justify-center font-bold">T</span>
-                Time & Date
+                <span className="w-8 h-8 bg-cyan-100 text-cyan-700 rounded-lg flex items-center justify-center font-bold" aria-hidden="true">T</span>
+                Time & Date <span aria-hidden="true">*</span>
+                <span className="sr-only">(required)</span>
               </span>
-              <span className="text-sm text-gray-500 mt-1 block">When did you observe this?</span>
+              <span id="time-hint" className="text-sm text-gray-500 mt-1 block">When did you observe this?</span>
               <input
+                id="report-time"
                 type="datetime-local"
                 value={observedAt}
                 onChange={(e) => setObservedAt(e.target.value)}
                 required
-                className="mt-3 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                aria-required="true"
+                aria-describedby="time-hint"
+                className="mt-3 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
               />
             </label>
           </div>
 
           {/* E - Equipment/Weapons */}
           <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <label className="block">
+            <label htmlFor="report-equipment" className="block">
               <span className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <span className="w-8 h-8 bg-teal-100 text-teal-700 rounded-lg flex items-center justify-center font-bold">E</span>
-                Equipment & Weapons
+                <span className="w-8 h-8 bg-cyan-100 text-cyan-700 rounded-lg flex items-center justify-center font-bold" aria-hidden="true">E</span>
+                Equipment & Weapons <span aria-hidden="true">*</span>
+                <span className="sr-only">(required)</span>
               </span>
-              <span className="text-sm text-gray-500 mt-1 block">What equipment or weapons are visible?</span>
+              <span id="equipment-hint" className="text-sm text-gray-500 mt-1 block">What equipment or weapons are visible?</span>
               <textarea
+                id="report-equipment"
                 value={equipment}
                 onChange={(e) => setEquipment(e.target.value)}
                 placeholder="helmets, vests, and guns"
                 rows={2}
                 required
-                className="mt-3 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent placeholder:text-gray-400"
+                aria-required="true"
+                aria-describedby="equipment-hint"
+                className="mt-3 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent placeholder:text-gray-400"
               />
             </label>
           </div>
@@ -365,7 +386,7 @@ export default function ReportPage() {
           <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
             <div>
               <span className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <svg className="w-8 h-8 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-8 h-8 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
                 Photos & Videos
@@ -399,7 +420,7 @@ export default function ReportPage() {
                   value={reporterName}
                   onChange={(e) => setReporterName(e.target.value)}
                   placeholder="Optional"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent placeholder:text-gray-400"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent placeholder:text-gray-400"
                 />
               </div>
               <div>
@@ -409,7 +430,7 @@ export default function ReportPage() {
                   value={reporterPhone}
                   onChange={(e) => setReporterPhone(e.target.value)}
                   placeholder="Optional"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent placeholder:text-gray-400"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent placeholder:text-gray-400"
                 />
               </div>
               <div className="sm:col-span-2">
@@ -419,7 +440,7 @@ export default function ReportPage() {
                   value={reporterEmail}
                   onChange={(e) => setReporterEmail(e.target.value)}
                   placeholder="Optional"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent placeholder:text-gray-400"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent placeholder:text-gray-400"
                 />
               </div>
             </div>
@@ -430,7 +451,7 @@ export default function ReportPage() {
             <button
               type="submit"
               disabled={submitting || !location.address}
-              className="w-full py-4 bg-teal-600 text-white font-semibold rounded-xl hover:bg-teal-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full py-4 bg-cyan-600 text-white font-semibold rounded-xl hover:bg-cyan-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {submitting ? (
                 <>
@@ -453,7 +474,7 @@ export default function ReportPage() {
             For immediate emergencies, call <strong>911</strong>.
             <br />
             For ICE sighting reports, call the Siembra NC hotline:{' '}
-            <a href="tel:336-543-0353" className="text-teal-600 font-medium hover:underline">
+            <a href="tel:336-543-0353" className="text-cyan-600 font-medium hover:underline">
               336-543-0353
             </a>
           </p>

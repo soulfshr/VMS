@@ -11,6 +11,13 @@ interface Zone {
   county: string | null;
 }
 
+interface ShiftTypeConfig {
+  id: string;
+  name: string;
+  slug: string;
+  color: string;
+}
+
 interface Shift {
   id: string;
   type: string;
@@ -35,13 +42,14 @@ export default function EditShiftPage() {
 
   const [user, setUser] = useState<DevUser | null>(null);
   const [zones, setZones] = useState<Zone[]>([]);
+  const [shiftTypes, setShiftTypes] = useState<ShiftTypeConfig[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Form state
   const [formData, setFormData] = useState({
-    type: 'PATROL',
+    typeConfigId: '',
     title: '',
     description: '',
     date: '',
@@ -59,9 +67,10 @@ export default function EditShiftPage() {
     Promise.all([
       fetch('/api/auth/session').then(res => res.json()),
       fetch('/api/zones').then(res => res.json()),
+      fetch('/api/admin/shift-types').then(res => res.json()).catch(() => []),
       fetch(`/api/shifts/${shiftId}`).then(res => res.json()),
     ])
-      .then(([sessionData, zonesData, shiftData]) => {
+      .then(([sessionData, zonesData, shiftTypesData, shiftData]) => {
         if (!sessionData.user) {
           router.push('/login');
           return;
@@ -75,6 +84,9 @@ export default function EditShiftPage() {
 
         if (Array.isArray(zonesData)) {
           setZones(zonesData);
+        }
+        if (Array.isArray(shiftTypesData)) {
+          setShiftTypes(shiftTypesData);
         }
 
         if (shiftData && !shiftData.error) {
@@ -91,7 +103,7 @@ export default function EditShiftPage() {
           const endTime = new Date(shiftData.endTime);
 
           setFormData({
-            type: shiftData.type,
+            typeConfigId: shiftData.typeConfigId || '',
             title: shiftData.title,
             description: shiftData.description || '',
             date: shiftDate.toISOString().split('T')[0],
@@ -146,7 +158,7 @@ export default function EditShiftPage() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          type: formData.type,
+          typeConfigId: formData.typeConfigId,
           title: formData.title,
           description: formData.description,
           zoneId: formData.zoneId,
@@ -185,7 +197,7 @@ export default function EditShiftPage() {
   if (isLoading) {
     return (
       <div className="min-h-[calc(100vh-200px)] flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full" />
+        <div className="animate-spin w-8 h-8 border-4 border-cyan-600 border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -197,7 +209,7 @@ export default function EditShiftPage() {
       <div className="container mx-auto px-4 max-w-2xl">
         {/* Header */}
         <div className="mb-8">
-          <Link href={`/shifts/${shiftId}`} className="text-teal-600 hover:text-teal-700 text-sm mb-2 inline-block">
+          <Link href={`/shifts/${shiftId}`} className="text-cyan-600 hover:text-cyan-700 text-sm mb-2 inline-block">
             &larr; Back to Shift
           </Link>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Edit Shift</h1>
@@ -221,15 +233,16 @@ export default function EditShiftPage() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Shift Type *</label>
               <select
-                name="type"
-                value={formData.type}
+                name="typeConfigId"
+                value={formData.typeConfigId}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 required
               >
-                <option value="PATROL">Patrol</option>
-                <option value="COLLECTION">Collection (Intel)</option>
-                <option value="ON_CALL_FIELD_SUPPORT">On-Call Field Support</option>
+                <option value="">Select type...</option>
+                {shiftTypes.map((type) => (
+                  <option key={type.id} value={type.id}>{type.name}</option>
+                ))}
               </select>
             </div>
 
@@ -242,7 +255,7 @@ export default function EditShiftPage() {
                 value={formData.title}
                 onChange={handleChange}
                 placeholder="e.g., Morning Patrol, Evening Collection"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 required
               />
             </div>
@@ -256,7 +269,7 @@ export default function EditShiftPage() {
                 onChange={handleChange}
                 rows={3}
                 placeholder="Additional details about this shift..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
               />
             </div>
 
@@ -269,7 +282,7 @@ export default function EditShiftPage() {
                   name="date"
                   value={formData.date}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                   required
                 />
               </div>
@@ -280,7 +293,7 @@ export default function EditShiftPage() {
                   name="startTime"
                   value={formData.startTime}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                   required
                 />
               </div>
@@ -291,7 +304,7 @@ export default function EditShiftPage() {
                   name="endTime"
                   value={formData.endTime}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                   required
                 />
               </div>
@@ -304,7 +317,7 @@ export default function EditShiftPage() {
                 name="zoneId"
                 value={formData.zoneId}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 required
               >
                 {zones.map((zone) => (
@@ -324,7 +337,7 @@ export default function EditShiftPage() {
                 value={formData.meetingLocation}
                 onChange={handleChange}
                 placeholder="e.g., Corner of Main St and 1st Ave"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
               />
             </div>
 
@@ -338,7 +351,7 @@ export default function EditShiftPage() {
                   value={formData.minVolunteers}
                   onChange={handleChange}
                   min={1}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 />
               </div>
               <div>
@@ -349,7 +362,7 @@ export default function EditShiftPage() {
                   value={formData.idealVolunteers}
                   onChange={handleChange}
                   min={1}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 />
               </div>
               <div>
@@ -360,7 +373,7 @@ export default function EditShiftPage() {
                   value={formData.maxVolunteers}
                   onChange={handleChange}
                   min={1}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 />
               </div>
             </div>
@@ -372,7 +385,7 @@ export default function EditShiftPage() {
                 name="status"
                 value={formData.status}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
               >
                 <option value="DRAFT">Draft (not visible to volunteers)</option>
                 <option value="PUBLISHED">Published (open for signups)</option>
@@ -384,7 +397,7 @@ export default function EditShiftPage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="flex-1 py-3 px-4 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium disabled:opacity-50"
+                className="flex-1 py-3 px-4 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium disabled:opacity-50"
               >
                 {isSubmitting ? 'Saving...' : 'Save Changes'}
               </button>

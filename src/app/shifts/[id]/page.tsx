@@ -53,6 +53,7 @@ export default function ShiftDetailPage() {
   const [shift, setShift] = useState<Shift | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
+  const [accessRestricted, setAccessRestricted] = useState(false);
 
   useEffect(() => {
     fetchShift();
@@ -64,6 +65,9 @@ export default function ShiftDetailPage() {
       if (res.ok) {
         const data = await res.json();
         setShift(data);
+      } else if (res.status === 403) {
+        // Access restricted in SIMPLE mode
+        setAccessRestricted(true);
       }
     } catch (error) {
       console.error('Error fetching shift:', error);
@@ -124,11 +128,27 @@ export default function ShiftDetailPage() {
     );
   }
 
+  if (accessRestricted) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+          <p className="text-yellow-800 font-medium mb-2">Access Restricted</p>
+          <p className="text-yellow-700 text-sm mb-4">
+            Shift signup is currently restricted to qualified zone leads and dispatchers.
+          </p>
+          <Link href="/shifts" className="text-cyan-600 hover:underline">
+            ← Back to shifts
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   if (!shift) {
     return (
       <div className="container mx-auto px-4 py-8">
         <p className="text-red-600">Shift not found</p>
-        <Link href="/shifts" className="text-teal-600 hover:underline">
+        <Link href="/shifts" className="text-cyan-600 hover:underline">
           ← Back to shifts
         </Link>
       </div>
@@ -148,6 +168,7 @@ export default function ShiftDetailPage() {
     return new Date(dateStr).toLocaleTimeString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
+      timeZone: 'America/New_York',
     });
   };
 
@@ -172,7 +193,7 @@ export default function ShiftDetailPage() {
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       {/* Back link */}
-      <Link href="/shifts" className="text-teal-600 hover:underline mb-4 inline-block">
+      <Link href="/shifts" className="text-cyan-600 hover:underline mb-4 inline-block">
         ← Back to shifts
       </Link>
 
@@ -180,7 +201,7 @@ export default function ShiftDetailPage() {
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
         <div className="flex justify-between items-start mb-4">
           <div>
-            <span className="inline-block px-3 py-1 bg-teal-100 text-teal-800 rounded-full text-sm font-medium mb-2">
+            <span className="inline-block px-3 py-1 bg-cyan-100 text-cyan-800 rounded-full text-sm font-medium mb-2">
               {shift.type.replace(/_/g, ' ')}
             </span>
             <h1 className="text-2xl font-bold text-gray-900">{shift.title}</h1>
@@ -226,7 +247,7 @@ export default function ShiftDetailPage() {
             {shift.userRsvpStatus === null && shift.spotsLeft > 0 && (
               <button
                 onClick={handleRsvp}
-                className="bg-teal-600 text-white px-6 py-2 rounded-lg hover:bg-teal-700 transition-colors"
+                className="bg-cyan-600 text-white px-6 py-2 rounded-lg hover:bg-cyan-700 transition-colors"
               >
                 Sign Up for this Shift
               </button>
@@ -264,7 +285,7 @@ export default function ShiftDetailPage() {
             <h2 className="text-xl font-bold text-gray-900">Shift Roster</h2>
             <Link
               href={`/shifts/${shift.id}/roster`}
-              className="text-teal-600 hover:underline text-sm"
+              className="text-cyan-600 hover:underline text-sm"
             >
               Open Full Roster View →
             </Link>

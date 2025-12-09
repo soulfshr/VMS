@@ -220,7 +220,7 @@ export default function EmailBlastPage() {
           <p className="text-gray-600 mb-6">{sendResult.message}</p>
           <button
             onClick={resetForm}
-            className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+            className="px-6 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors"
           >
             Done
           </button>
@@ -233,7 +233,7 @@ export default function EmailBlastPage() {
     <div>
       <div className="mb-6">
         <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-          <Link href="/admin" className="hover:text-teal-600">Admin</Link>
+          <Link href="/admin" className="hover:text-cyan-600">Admin</Link>
           <span>/</span>
           <span className="text-gray-900">Email Blast</span>
         </div>
@@ -248,7 +248,7 @@ export default function EmailBlastPage() {
             <div
               className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
                 step >= s
-                  ? 'bg-teal-600 text-white'
+                  ? 'bg-cyan-600 text-white'
                   : 'bg-gray-200 text-gray-500'
               }`}
             >
@@ -274,8 +274,8 @@ export default function EmailBlastPage() {
               onClick={() => handleTemplateSelect(t)}
               className={`text-left p-6 bg-white rounded-xl border-2 transition-all ${
                 template === t
-                  ? 'border-teal-500 bg-teal-50'
-                  : 'border-gray-200 hover:border-teal-300'
+                  ? 'border-cyan-500 bg-cyan-50'
+                  : 'border-gray-200 hover:border-cyan-300'
               }`}
             >
               <div className="text-3xl mb-2">{TEMPLATES[t].icon}</div>
@@ -301,8 +301,8 @@ export default function EmailBlastPage() {
                     key={role}
                     className={`px-3 py-1.5 rounded-full border cursor-pointer transition-colors ${
                       filters.roles.includes(role)
-                        ? 'bg-teal-100 border-teal-500 text-teal-700'
-                        : 'bg-white border-gray-300 text-gray-700 hover:border-teal-300'
+                        ? 'bg-cyan-100 border-cyan-500 text-cyan-700'
+                        : 'bg-white border-gray-300 text-gray-700 hover:border-cyan-300'
                     }`}
                   >
                     <input
@@ -331,8 +331,8 @@ export default function EmailBlastPage() {
                     key={opt.value}
                     className={`px-3 py-1.5 rounded-full border cursor-pointer transition-colors ${
                       filters.hasQualifications === opt.value
-                        ? 'bg-teal-100 border-teal-500 text-teal-700'
-                        : 'bg-white border-gray-300 text-gray-700 hover:border-teal-300'
+                        ? 'bg-cyan-100 border-cyan-500 text-cyan-700'
+                        : 'bg-white border-gray-300 text-gray-700 hover:border-cyan-300'
                     }`}
                   >
                     <input
@@ -430,10 +430,10 @@ export default function EmailBlastPage() {
           </div>
 
           {/* Preview Count */}
-          <div className="bg-teal-50 border border-teal-200 rounded-xl p-4">
+          <div className="bg-cyan-50 border border-cyan-200 rounded-xl p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium text-teal-900">
+                <p className="font-medium text-cyan-900">
                   {isLoadingPreview ? (
                     'Counting recipients...'
                   ) : (
@@ -443,13 +443,13 @@ export default function EmailBlastPage() {
                   )}
                 </p>
                 {preview && preview.sample.length > 0 && (
-                  <p className="text-sm text-teal-700 mt-1">
+                  <p className="text-sm text-cyan-700 mt-1">
                     Including: {preview.sample.map(s => s.name).join(', ')}
                     {preview.count > 5 && ` and ${preview.count - 5} more`}
                   </p>
                 )}
-                <p className="text-xs text-teal-600 mt-1">
-                  Only users with email notifications enabled will receive emails
+                <p className="text-xs text-cyan-600 mt-1">
+                  Only active users with email notifications enabled will receive emails. Inactive users are excluded.
                 </p>
               </div>
             </div>
@@ -465,7 +465,7 @@ export default function EmailBlastPage() {
             <button
               onClick={() => setStep(3)}
               disabled={!preview || preview.count === 0}
-              className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Continue →
             </button>
@@ -485,7 +485,7 @@ export default function EmailBlastPage() {
                 type="text"
                 value={subject}
                 onChange={e => setSubject(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                 placeholder="Email subject line"
               />
             </div>
@@ -496,7 +496,7 @@ export default function EmailBlastPage() {
                 value={content}
                 onChange={e => setContent(e.target.value)}
                 rows={10}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                 placeholder={
                   template === 'FREEFORM'
                     ? 'Write your message here...'
@@ -555,7 +555,7 @@ export default function EmailBlastPage() {
             <button
               onClick={() => setStep(4)}
               disabled={!subject || !content}
-              className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Preview →
             </button>
@@ -612,7 +612,7 @@ export default function EmailBlastPage() {
               <button
                 onClick={handleSend}
                 disabled={isSending}
-                className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 flex items-center gap-2"
+                className="px-6 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 disabled:opacity-50 flex items-center gap-2"
               >
                 {isSending ? (
                   <>

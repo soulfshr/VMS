@@ -4,12 +4,20 @@
   --background: #ffffff;
   --foreground: #171717;
 
-  /* Siembra NC Brand Colors */
-  --primary: #16a34a;        /* green-600 */
-  --primary-dark: #15803d;   /* green-700 */
-  --primary-light: #22c55e;  /* green-500 */
-  --secondary: #0891b2;      /* cyan-600 */
-  --accent: #eab308;         /* yellow-500 */
+  /* RippleVMS Brand Colors - Blue/Cyan from logo */
+  --primary: #0891b2;        /* cyan-600 */
+  --primary-dark: #0e7490;   /* cyan-700 */
+  --primary-light: #22d3ee;  /* cyan-400 */
+
+  --secondary: #0369a1;      /* sky-700 - darker blue */
+  --secondary-light: #0ea5e9; /* sky-500 */
+
+  --accent: #14b8a6;         /* teal-500 - accent color */
+  --accent-dark: #0d9488;    /* teal-600 */
+
+  --success: #22c55e;        /* green-500 */
+  --warning: #eab308;        /* yellow-500 */
+  --error: #ef4444;          /* red-500 */
 }
 
 @theme inline {
@@ -118,7 +126,7 @@ body {
 .form-input:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+  box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.1);
 }
 
 /* Status Badges */
@@ -216,7 +224,7 @@ body {
 }
 
 .rbc-today {
-  background-color: #f0fdfa !important;
+  background-color: #ecfeff !important;
 }
 
 .rbc-off-range-bg {
@@ -228,7 +236,7 @@ body {
 }
 
 .rbc-event:focus {
-  outline: 2px solid #0d9488;
+  outline: 2px solid #0891b2;
 }
 
 .rbc-toolbar button {
@@ -241,11 +249,35 @@ body {
 }
 
 .rbc-toolbar button.rbc-active {
-  background-color: #0d9488;
+  background-color: #0891b2;
   color: white;
-  border-color: #0d9488;
+  border-color: #0891b2;
 }
 
 .rbc-toolbar button.rbc-active:hover {
-  background-color: #0f766e;
+  background-color: #0e7490;
+}
+
+/* Brand Gradient Utilities */
+.brand-gradient {
+  background: linear-gradient(135deg, #0369a1 0%, #0891b2 50%, #14b8a6 100%);
+}
+
+.brand-gradient-text {
+  background: linear-gradient(90deg, #0369a1 0%, #0891b2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

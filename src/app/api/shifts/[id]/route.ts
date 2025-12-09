@@ -16,10 +16,26 @@ export async function GET(
 
     const { id } = await params;
 
+    // Check scheduling mode - in SIMPLE mode, restrict access for non-qualified users
+    const settings = await prisma.organizationSettings.findFirst();
+    const schedulingMode = settings?.schedulingMode || 'SIMPLE';
+    const isAdmin = ['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role);
+    const hasLeadQualification = user.qualifications?.some(q =>
+      q === 'DISPATCHER' || q === 'ZONE_LEAD'
+    );
+
     const shift = await prisma.shift.findUnique({
       where: { id },
       include: {
         zone: true,
+        typeConfig: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            color: true,
+          },
+        },
         volunteers: {
           include: {
             user: {
@@ -56,6 +72,12 @@ export async function GET(
 
     if (!shift) {
       return NextResponse.json({ error: 'Shift not found' }, { status: 404 });
+    }
+
+    // In SIMPLE mode, restrict access for non-qualified users who aren't signed up
+    const isUserSignedUp = shift.volunteers.some(v => v.userId === user.id);
+    if (schedulingMode === 'SIMPLE' && !isAdmin && !hasLeadQualification && !isUserSignedUp) {
+      return NextResponse.json({ error: 'Access restricted' }, { status: 403 });
     }
 
     // Add computed fields
@@ -122,6 +144,7 @@ export async function PUT(
     // Build update data
     const updateData: {
       type?: ShiftType;
+      typeConfigId?: string;
       title?: string;
       description?: string | null;
       date?: Date;
@@ -135,7 +158,18 @@ export async function PUT(
       status?: ShiftStatus;
     } = {};
 
-    if (body.type !== undefined) {
+    // Handle typeConfigId - look up the config and set both type enum and typeConfigId
+    if (body.typeConfigId !== undefined) {
+      const typeConfig = await prisma.shiftTypeConfig.findUnique({
+        where: { id: body.typeConfigId },
+      });
+      if (!typeConfig) {
+        return NextResponse.json({ error: 'Invalid shift type' }, { status: 400 });
+      }
+      updateData.typeConfigId = body.typeConfigId;
+      updateData.type = typeConfig.slug as ShiftType;
+    } else if (body.type !== undefined) {
+      // Legacy support: allow setting type directly
       updateData.type = body.type as ShiftType;
     }
 

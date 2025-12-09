@@ -183,7 +183,7 @@ export default function LocationPickerClient({
           value={value.address}
           onChange={handleAddressChange}
           placeholder={placeholder}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
         />
         <p className="text-sm text-gray-500">
           Map unavailable. Please describe the location as specifically as possible.
@@ -221,7 +221,7 @@ export default function LocationPickerClient({
             value={value.address}
             onChange={handleAddressChange}
             placeholder={placeholder}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent placeholder:text-gray-400"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent placeholder:text-gray-400"
           />
         </Autocomplete>
       </div>
@@ -231,7 +231,7 @@ export default function LocationPickerClient({
         <button
           type="button"
           onClick={getCurrentLocation}
-          className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-teal-700 bg-teal-50 rounded-lg hover:bg-teal-100 transition-colors"
+          className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-cyan-700 bg-cyan-50 rounded-lg hover:bg-cyan-100 transition-colors"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />

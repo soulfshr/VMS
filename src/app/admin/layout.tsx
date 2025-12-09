@@ -7,6 +7,7 @@ import type { DevUser } from '@/types/auth';
 
 const adminNavItems = [
   { href: '/admin', label: 'Dashboard', icon: '📊', adminOnly: true },
+  { href: '/admin/shifts-import', label: 'Bulk Import Shifts', icon: '📥', adminOnly: false },
   { href: '/admin/email-blast', label: 'Email Blast', icon: '📧', adminOnly: false },
   { href: '/admin/settings', label: 'General Settings', icon: '⚙️', adminOnly: true },
   { href: '/admin/qualified-roles', label: 'Qualified Roles', icon: '🏅', adminOnly: true },
@@ -33,9 +34,9 @@ export default function AdminLayout({
           router.push('/login');
           return;
         }
-        // Coordinators can access email-blast, but other admin pages require ADMINISTRATOR
-        const isEmailBlastPage = pathname?.startsWith('/admin/email-blast');
-        const allowedRoles = isEmailBlastPage
+        // Coordinators can access email-blast and shifts-import, but other admin pages require ADMINISTRATOR
+        const isCoordinatorAllowedPage = pathname?.startsWith('/admin/email-blast') || pathname?.startsWith('/admin/shifts-import');
+        const allowedRoles = isCoordinatorAllowedPage
           ? ['ADMINISTRATOR', 'COORDINATOR']
           : ['ADMINISTRATOR'];
 
@@ -54,7 +55,7 @@ export default function AdminLayout({
   if (isLoading) {
     return (
       <div className="min-h-[calc(100vh-200px)] flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full" />
+        <div className="animate-spin w-8 h-8 border-4 border-cyan-600 border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -82,7 +83,7 @@ export default function AdminLayout({
                         href={item.href}
                         className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                           isActive
-                            ? 'bg-teal-50 text-teal-700'
+                            ? 'bg-cyan-50 text-cyan-700'
                             : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                         }`}
                       >

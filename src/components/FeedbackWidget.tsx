@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 
 export default function FeedbackWidget() {
   const [isOpen, setIsOpen] = useState(false);
+  const focusTrapRef = useFocusTrap(isOpen);
   const [category, setCategory] = useState('');
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -61,7 +63,7 @@ export default function FeedbackWidget() {
       {/* Floating Button - Bottom Right */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-4 right-4 z-40 p-3 bg-teal-600 text-white rounded-full shadow-lg hover:bg-teal-700 transition-colors group"
+        className="fixed bottom-4 right-4 z-40 p-3 bg-cyan-600 text-white rounded-full shadow-lg hover:bg-cyan-700 transition-colors group"
         aria-label="Send feedback"
         title="Send feedback"
       >
@@ -88,10 +90,16 @@ export default function FeedbackWidget() {
             if (e.target === e.currentTarget) setIsOpen(false);
           }}
         >
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+          <div
+            ref={focusTrapRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="feedback-modal-title"
+            className="bg-white rounded-lg shadow-xl max-w-md w-full"
+          >
             {/* Header */}
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">
+              <h2 id="feedback-modal-title" className="text-lg font-semibold text-gray-900">
                 Send Feedback
               </h2>
               <button
@@ -130,20 +138,23 @@ export default function FeedbackWidget() {
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-4">
                   {error && (
-                    <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">
+                    <div role="alert" className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">
                       {error}
                     </div>
                   )}
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Category
+                    <label htmlFor="feedback-category" className="block text-sm font-medium text-gray-700 mb-1">
+                      Category <span aria-hidden="true">*</span>
+                      <span className="sr-only">(required)</span>
                     </label>
                     <select
+                      id="feedback-category"
                       value={category}
                       onChange={(e) => setCategory(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                       required
+                      aria-required="true"
                     >
                       <option value="">Select a category...</option>
                       <option value="bug">Bug Report</option>
@@ -155,15 +166,18 @@ export default function FeedbackWidget() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Message
+                    <label htmlFor="feedback-message" className="block text-sm font-medium text-gray-700 mb-1">
+                      Message <span aria-hidden="true">*</span>
+                      <span className="sr-only">(required)</span>
                     </label>
                     <textarea
+                      id="feedback-message"
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
                       placeholder="Tell us what's on your mind..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 min-h-[120px] resize-y"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 min-h-[120px] resize-y"
                       required
+                      aria-required="true"
                     />
                   </div>
 
@@ -178,7 +192,7 @@ export default function FeedbackWidget() {
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="flex-1 px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                       {isSubmitting ? 'Sending...' : 'Send Feedback'}
                     </button>

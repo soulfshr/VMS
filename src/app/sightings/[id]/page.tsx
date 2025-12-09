@@ -188,7 +188,7 @@ export default function SightingDetailPage({ params }: { params: Promise<{ id: s
         <div className="max-w-4xl mx-auto">
           <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
             <p className="text-red-700">{error || 'Sighting not found'}</p>
-            <Link href="/sightings" className="text-teal-600 hover:underline mt-4 inline-block">
+            <Link href="/sightings" className="text-cyan-600 hover:underline mt-4 inline-block">
               Back to Sightings
             </Link>
           </div>
@@ -225,9 +225,9 @@ export default function SightingDetailPage({ params }: { params: Promise<{ id: s
       <div className="max-w-4xl mx-auto p-4 sm:p-8">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
-          <Link href="/dashboard" className="hover:text-teal-600">Dashboard</Link>
+          <Link href="/dashboard" className="hover:text-cyan-600">Dashboard</Link>
           <span>/</span>
-          <Link href="/sightings" className="hover:text-teal-600">Sightings</Link>
+          <Link href="/sightings" className="hover:text-cyan-600">Sightings</Link>
           <span>/</span>
           <span className="text-gray-700">Report Details</span>
         </div>
@@ -281,7 +281,7 @@ export default function SightingDetailPage({ params }: { params: Promise<{ id: s
           <div className="space-y-4">
             {/* Size */}
             <div className="flex gap-4">
-              <div className="w-8 h-8 bg-teal-100 text-teal-700 rounded-lg flex items-center justify-center font-bold flex-shrink-0">
+              <div className="w-8 h-8 bg-cyan-100 text-cyan-700 rounded-lg flex items-center justify-center font-bold flex-shrink-0">
                 S
               </div>
               <div>
@@ -292,7 +292,7 @@ export default function SightingDetailPage({ params }: { params: Promise<{ id: s
 
             {/* Activity */}
             <div className="flex gap-4">
-              <div className="w-8 h-8 bg-teal-100 text-teal-700 rounded-lg flex items-center justify-center font-bold flex-shrink-0">
+              <div className="w-8 h-8 bg-cyan-100 text-cyan-700 rounded-lg flex items-center justify-center font-bold flex-shrink-0">
                 A
               </div>
               <div>
@@ -303,7 +303,7 @@ export default function SightingDetailPage({ params }: { params: Promise<{ id: s
 
             {/* Location */}
             <div className="flex gap-4">
-              <div className="w-8 h-8 bg-teal-100 text-teal-700 rounded-lg flex items-center justify-center font-bold flex-shrink-0">
+              <div className="w-8 h-8 bg-cyan-100 text-cyan-700 rounded-lg flex items-center justify-center font-bold flex-shrink-0">
                 L
               </div>
               <div className="flex-1">
@@ -317,7 +317,7 @@ export default function SightingDetailPage({ params }: { params: Promise<{ id: s
                           href={`https://www.google.com/maps?q=${sighting.latitude},${sighting.longitude}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-sm text-teal-600 hover:underline"
+                          className="inline-flex items-center gap-1 text-sm text-cyan-600 hover:underline"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -347,7 +347,7 @@ export default function SightingDetailPage({ params }: { params: Promise<{ id: s
 
             {/* Uniform */}
             <div className="flex gap-4">
-              <div className="w-8 h-8 bg-teal-100 text-teal-700 rounded-lg flex items-center justify-center font-bold flex-shrink-0">
+              <div className="w-8 h-8 bg-cyan-100 text-cyan-700 rounded-lg flex items-center justify-center font-bold flex-shrink-0">
                 U
               </div>
               <div>
@@ -358,7 +358,7 @@ export default function SightingDetailPage({ params }: { params: Promise<{ id: s
 
             {/* Time */}
             <div className="flex gap-4">
-              <div className="w-8 h-8 bg-teal-100 text-teal-700 rounded-lg flex items-center justify-center font-bold flex-shrink-0">
+              <div className="w-8 h-8 bg-cyan-100 text-cyan-700 rounded-lg flex items-center justify-center font-bold flex-shrink-0">
                 T
               </div>
               <div>
@@ -369,7 +369,7 @@ export default function SightingDetailPage({ params }: { params: Promise<{ id: s
 
             {/* Equipment */}
             <div className="flex gap-4">
-              <div className="w-8 h-8 bg-teal-100 text-teal-700 rounded-lg flex items-center justify-center font-bold flex-shrink-0">
+              <div className="w-8 h-8 bg-cyan-100 text-cyan-700 rounded-lg flex items-center justify-center font-bold flex-shrink-0">
                 E
               </div>
               <div>
@@ -392,7 +392,7 @@ export default function SightingDetailPage({ params }: { params: Promise<{ id: s
                   {media.type === 'IMAGE' ? (
                     <button
                       onClick={() => setSelectedImage(media.url)}
-                      className="w-full aspect-square rounded-lg overflow-hidden bg-gray-100 hover:ring-2 hover:ring-teal-500 transition-all"
+                      className="w-full aspect-square rounded-lg overflow-hidden bg-gray-100 hover:ring-2 hover:ring-cyan-500 transition-all"
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
@@ -434,7 +434,7 @@ export default function SightingDetailPage({ params }: { params: Promise<{ id: s
               {sighting.reporterPhone && (
                 <div>
                   <span className="font-medium text-gray-500">Phone:</span>{' '}
-                  <a href={`tel:${sighting.reporterPhone}`} className="text-teal-600 hover:underline">
+                  <a href={`tel:${sighting.reporterPhone}`} className="text-cyan-600 hover:underline">
                     {sighting.reporterPhone}
                   </a>
                 </div>
@@ -442,7 +442,7 @@ export default function SightingDetailPage({ params }: { params: Promise<{ id: s
               {sighting.reporterEmail && (
                 <div>
                   <span className="font-medium text-gray-500">Email:</span>{' '}
-                  <a href={`mailto:${sighting.reporterEmail}`} className="text-teal-600 hover:underline">
+                  <a href={`mailto:${sighting.reporterEmail}`} className="text-cyan-600 hover:underline">
                     {sighting.reporterEmail}
                   </a>
                 </div>
@@ -459,13 +459,13 @@ export default function SightingDetailPage({ params }: { params: Promise<{ id: s
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Add notes about this sighting..."
             rows={4}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
           />
           <div className="mt-3 flex justify-end">
             <button
               onClick={saveNotes}
               disabled={updating || notes === (sighting.notes || '')}
-              className="px-4 py-2 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 bg-cyan-600 text-white font-medium rounded-lg hover:bg-cyan-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {updating ? 'Saving...' : 'Save Notes'}
             </button>

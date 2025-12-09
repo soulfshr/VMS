@@ -183,7 +183,7 @@ export default function ZonesPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full" />
+        <div className="animate-spin w-8 h-8 border-4 border-cyan-600 border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -198,7 +198,7 @@ export default function ZonesPage() {
         {!isCreating && !editingId && (
           <button
             onClick={startCreate}
-            className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium"
+            className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium"
           >
             + Add Zone
           </button>
@@ -231,7 +231,7 @@ export default function ZonesPage() {
                 type="text"
                 value={formData.name}
                 onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 placeholder="e.g., Durham 1"
               />
             </div>
@@ -240,7 +240,7 @@ export default function ZonesPage() {
               <select
                 value={formData.county}
                 onChange={e => setFormData(prev => ({ ...prev, county: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
               >
                 <option value="">Select county...</option>
                 {COUNTIES.map(county => (
@@ -255,7 +255,7 @@ export default function ZonesPage() {
             <textarea
               value={formData.description}
               onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
               rows={2}
               placeholder="Area coverage description..."
             />
@@ -267,7 +267,7 @@ export default function ZonesPage() {
               type="text"
               value={formData.signalGroup}
               onChange={e => setFormData(prev => ({ ...prev, signalGroup: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
               placeholder="https://signal.group/..."
             />
             <p className="text-xs text-gray-500 mt-1">Optional link to the zone&apos;s Signal group for real-time coordination</p>
@@ -313,7 +313,7 @@ export default function ZonesPage() {
           <div className="flex gap-3 pt-4 border-t border-gray-200">
             <button
               onClick={handleSave}
-              className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium"
+              className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium"
             >
               {isCreating ? 'Create Zone' : 'Save Changes'}
             </button>
@@ -372,7 +372,7 @@ export default function ZonesPage() {
                               href={zone.signalGroup}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-xs text-teal-600 hover:text-teal-700"
+                              className="text-xs text-cyan-600 hover:text-cyan-700"
                             >
                               Signal Group →
                             </a>
@@ -381,7 +381,7 @@ export default function ZonesPage() {
                       </div>
                     </td>
                     <td className="px-4 py-4 text-sm text-gray-600 max-w-xs truncate">
-                      {zone.description || <span className="text-gray-400">No description</span>}
+                      {zone.description || <span className="text-gray-500">No description</span>}
                     </td>
                     <td className="px-4 py-4">
                       {zone.boundaries && Array.isArray(zone.boundaries) && zone.boundaries.length > 2 ? (
@@ -422,7 +422,7 @@ export default function ZonesPage() {
                         </Link>
                         <button
                           onClick={() => startEdit(zone)}
-                          className="text-sm text-teal-600 hover:text-teal-700"
+                          className="text-sm text-cyan-600 hover:text-cyan-700"
                         >
                           Edit
                         </button>

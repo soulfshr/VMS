@@ -1,6 +1,6 @@
 // Auth types for RippleVMS
 
-export type UserRole = 'VOLUNTEER' | 'COORDINATOR' | 'DISPATCHER' | 'ADMINISTRATOR';
+export type UserRole = 'VOLUNTEER' | 'COORDINATOR' | 'DISPATCHER' | 'ADMINISTRATOR' | 'DEVELOPER';
 
 export type Qualification = 'VERIFIER' | 'ZONE_LEAD' | 'DISPATCHER';
 

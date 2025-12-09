@@ -5,7 +5,7 @@ import { markWelcomeSeen, hasSeenWelcome } from '@/lib/onboarding';
 
 interface WelcomeScreenProps {
   userName: string;
-  userRole: 'VOLUNTEER' | 'COORDINATOR' | 'DISPATCHER' | 'ADMINISTRATOR';
+  userRole: 'VOLUNTEER' | 'COORDINATOR' | 'DISPATCHER' | 'ADMINISTRATOR' | 'DEVELOPER';
   onComplete: () => void;
 }
 
@@ -21,8 +21,8 @@ const volunteerSlides: Slide[] = [
     title: 'Welcome to RippleVMS!',
     description: 'Thank you for joining our volunteer community. Together, we make a difference through organized response and coordination.',
     icon: (
-      <div className="w-20 h-20 rounded-full bg-teal-100 flex items-center justify-center">
-        <svg className="w-10 h-10 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="w-20 h-20 rounded-full bg-cyan-100 flex items-center justify-center">
+        <svg className="w-10 h-10 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
         </svg>
       </div>
@@ -30,7 +30,7 @@ const volunteerSlides: Slide[] = [
   },
   {
     title: 'Your Dashboard',
-    description: 'Your home base for everything volunteer-related. Track your shifts, monitor your training progress, and stay connected.',
+    description: 'Your home base for everything volunteer-related. Track your shifts, manage your schedule, and stay connected.',
     icon: (
       <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center">
         <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -40,7 +40,7 @@ const volunteerSlides: Slide[] = [
     ),
     features: [
       'See your upcoming shifts at a glance',
-      'Track hours and training progress',
+      'Cancel shift RSVPs directly from the dashboard',
       'Quick access to sign up for new shifts',
     ],
   },
@@ -56,7 +56,7 @@ const volunteerSlides: Slide[] = [
     ),
     features: [
       '1. Complete your required training modules',
-      '2. Set your weekly availability in your profile',
+      '2. Set your zone preferences in your profile',
       '3. Browse and sign up for available shifts',
     ],
   },
@@ -74,9 +74,9 @@ const coordinatorSlide: Slide = {
   ),
   features: [
     'Monitor weekly coverage on the Schedule page',
-    'Review and confirm volunteer RSVPs',
+    'Review and bulk-confirm volunteer RSVPs',
     'Create and manage shifts',
-    'Access the volunteer directory',
+    'Bulk edit volunteers (role, zone, status)',
   ],
 };
 
@@ -92,9 +92,26 @@ const adminSlide: Slide = {
     </div>
   ),
   features: [
-    'Manage zones and shift types',
+    'Manage zones, shift types, and qualified roles',
     'Configure RSVP settings (auto-confirm vs manual)',
-    'Assign roles and qualifications to volunteers',
+    'Send email blasts to volunteers',
+  ],
+};
+
+const feedbackSlide: Slide = {
+  title: 'We Value Your Feedback',
+  description: 'Help us improve RippleVMS! Look for the feedback button in the bottom-right corner of every page.',
+  icon: (
+    <div className="w-20 h-20 rounded-full bg-cyan-100 flex items-center justify-center">
+      <svg className="w-10 h-10 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+      </svg>
+    </div>
+  ),
+  features: [
+    'Report bugs or issues you encounter',
+    'Suggest new features or improvements',
+    'Ask questions about how things work',
   ],
 };
 
@@ -106,6 +123,8 @@ function getSlides(role: string): Slide[] {
   if (role === 'ADMINISTRATOR') {
     slides.push(adminSlide);
   }
+  // Always add feedback slide as the last slide for all users
+  slides.push(feedbackSlide);
   return slides;
 }
 
@@ -161,7 +180,7 @@ export default function WelcomeScreen({ userName, userRole, onComplete }: Welcom
   const isLastSlide = currentSlide === slides.length - 1;
 
   return (
-    <div className="fixed inset-0 z-[100] bg-gradient-to-br from-teal-600 via-teal-700 to-teal-800 flex items-center justify-center">
+    <div className="fixed inset-0 z-[100] bg-gradient-to-br from-cyan-600 via-cyan-700 to-cyan-800 flex items-center justify-center">
       {/* Background pattern */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute inset-0" style={{
@@ -209,7 +228,7 @@ export default function WelcomeScreen({ userName, userRole, onComplete }: Welcom
               <ul className="text-left space-y-3 mb-6">
                 {slide.features.map((feature, idx) => (
                   <li key={idx} className="flex items-start gap-3 text-gray-700">
-                    <svg className="w-5 h-5 text-teal-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 text-cyan-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                     <span>{feature}</span>
@@ -228,7 +247,7 @@ export default function WelcomeScreen({ userName, userRole, onComplete }: Welcom
                   key={idx}
                   onClick={() => setCurrentSlide(idx)}
                   className={`w-2 h-2 rounded-full transition-colors ${
-                    idx === currentSlide ? 'bg-teal-600' : 'bg-gray-300 hover:bg-gray-400'
+                    idx === currentSlide ? 'bg-cyan-600' : 'bg-gray-300 hover:bg-gray-400'
                   }`}
                   aria-label={`Go to slide ${idx + 1}`}
                 />
@@ -247,7 +266,7 @@ export default function WelcomeScreen({ userName, userRole, onComplete }: Welcom
               )}
               <button
                 onClick={handleNext}
-                className="flex-1 py-3 px-4 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium"
+                className="flex-1 py-3 px-4 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium"
               >
                 {isLastSlide ? "Let's Go!" : 'Next'}
               </button>

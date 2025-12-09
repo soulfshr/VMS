@@ -51,10 +51,10 @@ export default function LoginClient() {
         {/* Header */}
         <div className="text-center mb-8">
           <Image
-            src="/ripple-logo-perspective-animated.svg"
+            src="/ripple-logo.png"
             alt="RippleVMS"
-            width={120}
-            height={75}
+            width={150}
+            height={124}
             className="mx-auto mb-4"
           />
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -85,7 +85,7 @@ export default function LoginClient() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="email"
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-colors"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition-colors"
                 placeholder="you@example.com"
               />
             </div>
@@ -97,7 +97,7 @@ export default function LoginClient() {
                 </label>
                 <Link
                   href="/forgot-password"
-                  className="text-sm text-teal-600 hover:text-teal-700"
+                  className="text-sm text-cyan-600 hover:text-cyan-700"
                 >
                   Forgot password?
                 </Link>
@@ -109,7 +109,7 @@ export default function LoginClient() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 autoComplete="current-password"
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-colors"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition-colors"
                 placeholder="Enter your password"
               />
             </div>
@@ -117,7 +117,7 @@ export default function LoginClient() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full py-3 bg-cyan-600 text-white font-semibold rounded-lg hover:bg-cyan-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isLoading ? (
                 <>
@@ -133,19 +133,19 @@ export default function LoginClient() {
 
         {/* First-time User Note */}
         <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h3 className="font-semibold text-blue-800 mb-1">First time here?</h3>
+          <h3 className="font-semibold text-blue-800 mb-1">Already an active volunteer, but first time with this app?</h3>
           <p className="text-sm text-blue-700">
-            If you&apos;re a new volunteer, use &quot;Forgot password?&quot; above to set up your account password.
+            Use &quot;Forgot password?&quot; above to set up your account password.
           </p>
         </div>
 
         {/* Request Access */}
         <div className="mt-4 text-center">
           <p className="text-sm text-gray-600">
-            Need access?{' '}
+            Interested in learning about how you can help?{' '}
             <a
               href="mailto:triangle.dispatch.group@gmail.com"
-              className="text-teal-600 hover:text-teal-700 font-medium"
+              className="text-cyan-600 hover:text-cyan-700 font-medium"
             >
               Email triangle.dispatch.group@gmail.com
             </a>

@@ -8,13 +8,29 @@
 
 ### Stable Dev URL
 
-After each preview deployment, update the stable dev alias so the user has a consistent URL:
+After each **preview** deployment (NOT production), update the stable dev alias:
 
 ```bash
 vercel alias <deployment-url> dev-nc.ripple-vms.com
 ```
 
 This ensures https://dev-nc.ripple-vms.com always points to the latest preview deployment.
+
+### ⚠️ CRITICAL: Never Mix Environments
+
+**NEVER alias a production deployment to dev-nc.ripple-vms.com!**
+
+- Production deployments (`vercel --prod`) use **production DATABASE_URL** with real user data
+- Preview deployments (`vercel`) use **preview DATABASE_URL** with test data
+- Aliasing a prod deployment to the dev URL would expose production data in the dev environment
+
+**Correct workflow:**
+1. For dev: `vercel` → then `vercel alias <url> dev-nc.ripple-vms.com`
+2. For prod: `vercel --prod` (no alias needed, uses nc.ripple-vms.com automatically)
+
+**Database hosts:**
+- Dev/Preview: `ep-steep-hall-a4jn07l3-pooler`
+- Production: `ep-frosty-wave-a4l37b2r-pooler`
 
 ## Tech Stack
 

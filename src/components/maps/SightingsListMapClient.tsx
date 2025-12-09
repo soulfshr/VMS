@@ -149,7 +149,7 @@ export default function SightingsListMapClient({ sightings }: SightingsListMapCl
               <p className="text-xs text-gray-600 line-clamp-2 mb-2">{selectedSighting.activity}</p>
               <Link
                 href={`/sightings/${selectedSighting.id}`}
-                className="text-xs text-teal-600 hover:underline font-medium"
+                className="text-xs text-cyan-600 hover:underline font-medium"
               >
                 View Details →
               </Link>

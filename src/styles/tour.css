@@ -1,6 +1,6 @@
 /* Custom driver.js styles for VMS tours */
 
-/* Override driver.js colors to match our teal theme */
+/* Override driver.js colors to match our cyan theme */
 .driver-popover {
   background-color: #ffffff;
   border-radius: 12px;
@@ -26,7 +26,7 @@
 
 /* Primary button (Next/Done) */
 .driver-popover-next-btn {
-  background-color: #0d9488 !important;
+  background-color: #0891b2 !important;
   color: white !important;
   border: none !important;
   border-radius: 8px !important;
@@ -36,7 +36,7 @@
 }
 
 .driver-popover-next-btn:hover {
-  background-color: #0f766e !important;
+  background-color: #0e7490 !important;
 }
 
 /* Secondary button (Back) */
@@ -109,6 +109,6 @@
 .tour-dont-show-again input[type="checkbox"] {
   width: 16px;
   height: 16px;
-  accent-color: #0d9488;
+  accent-color: #0891b2;
   cursor: pointer;
 }

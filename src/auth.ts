@@ -66,6 +66,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null;
         }
 
+        // Update last login timestamp
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { lastLoginAt: new Date() },
+        });
+
         // Get primary zone name
         const primaryZone = user.zones[0]?.zone?.name;
 

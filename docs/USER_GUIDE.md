@@ -217,6 +217,37 @@ To confirm multiple RSVPs at once:
 2. Click **"Confirm Selected"**
 3. All selected volunteers will be confirmed and notified
 
+### Bulk Shift Operations (Coordinators/Admins)
+
+The Shifts page supports multi-select for efficient bulk operations:
+
+#### Selecting Multiple Shifts
+1. Navigate to **Shifts**
+2. Check the boxes next to shifts you want to modify
+3. Use **Shift+Click** to select a range of shifts
+4. Use the **Select All** checkbox in the header to select all visible shifts
+
+#### Bulk Edit
+
+Edit multiple shifts at once:
+1. Select the shifts you want to modify
+2. Click **"Edit Selected"** in the toolbar
+3. Check the fields you want to change:
+   - **Shift Type** - Change to a different configured type
+   - **Volunteer Limits** - Update min/max volunteers
+   - **Time Slot** - Change start/end times
+4. Click **"Update"** to apply changes
+
+Only the fields you check will be modified - unchecked fields remain unchanged.
+
+#### Bulk Cancel
+
+Cancel multiple shifts at once:
+1. Select the shifts you want to cancel
+2. Click **"Cancel Selected"** in the toolbar
+3. Confirm the action
+4. All signed-up volunteers will be notified automatically
+
 ---
 
 ## Trainings
@@ -275,15 +306,27 @@ The **Schedule** page provides a weekly calendar view showing:
 - Training sessions you're registered for
 
 ### For Coordinators/Dispatchers/Admins:
-- **Dispatcher Assignments** - Who's on dispatch duty each day
+- **Regional Lead Assignments** - Who's the regional lead each day
+- **Dispatcher Assignments** - Who's on dispatch duty (display varies by mode)
 - **Zone Lead Assignments** - Zone leads assigned to each shift
 - Filter by zone to see specific area coverage
+
+### Dispatcher Display by Mode
+
+The Schedule page displays dispatchers differently based on the admin-configured Dispatcher Scheduling Mode:
+
+| Mode | Display |
+|------|---------|
+| **Regional** | A dedicated "🎧 Dispatcher (Regional)" section appears between the Regional Lead row and county sections, showing one dispatcher per time block for all counties |
+| **County** | A "🎧 Dispatcher" row appears under each county header, showing that county's dispatcher for each day |
+| **Zone** | Dispatchers appear inside each shift cell alongside zone assignments (original behavior) |
 
 ### Navigating the Schedule
 
 - Use **← Previous** and **Next →** to change weeks
 - Click **Today** to return to the current week
 - Click any shift to view details
+- Click dispatcher cells/rows to assign or change dispatchers (Coordinators/Admins only)
 
 ---
 
@@ -454,6 +497,25 @@ Configure system-wide options:
 - Organization name and branding
 - Email notification settings
 - Default values for shifts and trainings
+- Dispatcher scheduling mode
+
+#### Dispatcher Scheduling Mode
+
+The VMS supports three dispatcher scheduling modes to match varying activity levels:
+
+| Mode | Activity Level | Description |
+|------|----------------|-------------|
+| **Regional** | Low | One dispatcher covers all counties per time block. Shows a dedicated "Dispatcher" row between Regional Lead and county sections. |
+| **County** | Medium | One dispatcher per county per time block. Shows a dispatcher row under each county header. |
+| **Zone** | High (default) | Dispatcher shown per cell alongside zone assignments. This is the original behavior. |
+
+To change the mode:
+1. Navigate to **Admin → Settings**
+2. Find the "Dispatcher Scheduling Mode" section
+3. Select the appropriate mode for current activity level
+4. Changes take effect immediately on the Schedule page
+
+**Note:** When switching modes, existing dispatcher assignments are hidden (not deleted). Switching back to a previous mode will restore those assignments.
 
 ---
 
@@ -521,11 +583,13 @@ Coordinators and Admins can view recent email blast history showing:
 
 1. **Volunteer** browses Shifts page
 2. **Volunteer** clicks shift and RSVPs
-3. **Coordinator** sees pending RSVP on dashboard
-4. **Coordinator** opens shift roster
-5. **Coordinator** confirms the RSVP
-6. **Volunteer** receives confirmation notification
-7. **Volunteer** sees shift on their dashboard
+3. **If auto-confirm is enabled:** Volunteer is automatically confirmed
+   - **If auto-confirm is disabled:**
+     - a. Coordinator sees pending RSVP on dashboard
+     - b. Coordinator opens shift roster and confirms the RSVP
+4. **Volunteer** sees shift on their dashboard
+
+> **Note:** Auto-confirm can be enabled in Admin → Settings
 
 ### Workflow: Coordinator Creates a Patrol Shift
 

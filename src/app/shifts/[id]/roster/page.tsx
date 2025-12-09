@@ -241,7 +241,7 @@ export default function RosterPage() {
     return (
       <div className="container mx-auto px-4 py-8">
         <p className="text-red-600">Shift not found or access denied</p>
-        <Link href="/shifts" className="text-teal-600 hover:underline">
+        <Link href="/shifts" className="text-cyan-600 hover:underline">
           ← Back to shifts
         </Link>
       </div>
@@ -260,6 +260,7 @@ export default function RosterPage() {
     return new Date(dateStr).toLocaleTimeString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
+      timeZone: 'America/New_York',
     });
   };
 
@@ -277,7 +278,7 @@ export default function RosterPage() {
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-6">
-        <Link href={`/shifts/${shift.id}`} className="text-teal-600 hover:underline mb-2 inline-block">
+        <Link href={`/shifts/${shift.id}`} className="text-cyan-600 hover:underline mb-2 inline-block">
           ← Back to shift details
         </Link>
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -289,7 +290,7 @@ export default function RosterPage() {
           </div>
           <div className="flex items-center gap-4">
             <div className="text-right">
-              <p className="text-2xl font-bold text-teal-600">{shift.confirmedCount}/{shift.maxVolunteers}</p>
+              <p className="text-2xl font-bold text-cyan-600">{shift.confirmedCount}/{shift.maxVolunteers}</p>
               <p className="text-sm text-gray-500">confirmed</p>
             </div>
           </div>
@@ -318,7 +319,7 @@ export default function RosterPage() {
           <button
             onClick={() => setFilter('all')}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              filter === 'all' ? 'bg-teal-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              filter === 'all' ? 'bg-cyan-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
             All ({shift.volunteers.length})
@@ -343,7 +344,7 @@ export default function RosterPage() {
         <div className="flex gap-2">
           <button
             onClick={() => setShowAddModal(true)}
-            className="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition-colors flex items-center gap-2"
+            className="bg-cyan-600 text-white px-4 py-2 rounded-lg hover:bg-cyan-700 transition-colors flex items-center gap-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -506,7 +507,7 @@ export default function RosterPage() {
                 <select
                   value={selectedRoleFilter}
                   onChange={(e) => setSelectedRoleFilter(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                 >
                   <option value="all">All Volunteers</option>
                   {qualifiedRoles.map((role) => (
@@ -527,7 +528,7 @@ export default function RosterPage() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Type name or email to search..."
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                   autoFocus
                 />
                 <p className="mt-1 text-xs text-gray-500">
@@ -594,7 +595,7 @@ export default function RosterPage() {
                     <button
                       onClick={() => handleAddVolunteer(user.id)}
                       disabled={addingVolunteer === user.id}
-                      className="ml-3 px-3 py-1.5 bg-teal-600 text-white text-sm rounded hover:bg-teal-700 disabled:opacity-50 flex items-center gap-1 flex-shrink-0"
+                      className="ml-3 px-3 py-1.5 bg-cyan-600 text-white text-sm rounded hover:bg-cyan-700 disabled:opacity-50 flex items-center gap-1 flex-shrink-0"
                     >
                       {addingVolunteer === user.id ? (
                         'Adding...'

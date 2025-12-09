@@ -26,9 +26,17 @@ interface Zone {
   county: string | null;
 }
 
+interface ShiftTypeConfig {
+  id: string;
+  name: string;
+  color: string;
+}
+
 interface Shift {
   id: string;
   type: 'PATROL' | 'COLLECTION' | 'ON_CALL_FIELD_SUPPORT';
+  typeConfigId: string | null;
+  typeConfig: ShiftTypeConfig | null;
   title: string;
   description: string | null;
   date: string;
@@ -131,7 +139,7 @@ function ConfirmRsvpsModal({
         <p className="text-gray-600 mb-4">
           This will confirm all pending RSVPs across {selectedCount} selected shift{selectedCount > 1 ? 's' : ''}.
           {pendingRsvpCount > 0 && (
-            <span className="block mt-2 font-medium text-teal-700">
+            <span className="block mt-2 font-medium text-cyan-700">
               {pendingRsvpCount} pending RSVP{pendingRsvpCount > 1 ? 's' : ''} will be confirmed.
             </span>
           )}
@@ -152,7 +160,7 @@ function ConfirmRsvpsModal({
           <button
             onClick={onConfirm}
             disabled={isSubmitting || pendingRsvpCount === 0}
-            className="flex-1 py-2 px-4 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium disabled:opacity-50"
+            className="flex-1 py-2 px-4 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium disabled:opacity-50"
           >
             {isSubmitting ? 'Confirming...' : 'Confirm All'}
           </button>
@@ -195,7 +203,7 @@ function QualificationPickerModal({
               key={qual}
               onClick={() => onSelect(qual)}
               disabled={isSubmitting}
-              className="w-full text-left p-4 border border-gray-200 rounded-lg hover:border-teal-500 hover:bg-teal-50 transition-colors disabled:opacity-50"
+              className="w-full text-left p-4 border border-gray-200 rounded-lg hover:border-cyan-500 hover:bg-cyan-50 transition-colors disabled:opacity-50"
             >
               <div className="font-medium text-gray-900">{qualificationLabels[qual]}</div>
               <div className="text-sm text-gray-500">{qualificationDescriptions[qual]}</div>
@@ -215,21 +223,209 @@ function QualificationPickerModal({
   );
 }
 
-const typeColors: Record<string, { bg: string; text: string }> = {
-  PATROL: { bg: 'bg-blue-100', text: 'text-blue-700' },
-  COLLECTION: { bg: 'bg-purple-100', text: 'text-purple-700' },
-  ON_CALL_FIELD_SUPPORT: { bg: 'bg-orange-100', text: 'text-orange-700' },
-};
+// Bulk Edit Modal Component
+interface BulkEditData {
+  typeConfigId?: string;
+  minVolunteers?: number;
+  maxVolunteers?: number;
+  startHour?: number;
+  endHour?: number;
+}
 
-// Default fallback for unknown shift types
-const defaultTypeColor = { bg: 'bg-gray-100', text: 'text-gray-700' };
-const getTypeColor = (type: string) => typeColors[type] || defaultTypeColor;
+function BulkEditModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  selectedCount,
+  isSubmitting,
+  shiftTypes,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: (data: BulkEditData) => void;
+  selectedCount: number;
+  isSubmitting: boolean;
+  shiftTypes: ShiftTypeConfig[];
+}) {
+  const [editData, setEditData] = useState<BulkEditData>({});
+  const [enabledFields, setEnabledFields] = useState<Record<string, boolean>>({});
 
-const typeLabels: Record<string, string> = {
-  PATROL: 'Patrol',
-  COLLECTION: 'Collection',
-  ON_CALL_FIELD_SUPPORT: 'On-Call',
-};
+  if (!isOpen) return null;
+
+  const handleSubmit = () => {
+    const dataToSubmit: BulkEditData = {};
+    if (enabledFields.typeConfigId && editData.typeConfigId) {
+      dataToSubmit.typeConfigId = editData.typeConfigId;
+    }
+    if (enabledFields.volunteers && editData.minVolunteers !== undefined) {
+      dataToSubmit.minVolunteers = editData.minVolunteers;
+      dataToSubmit.maxVolunteers = editData.maxVolunteers;
+    }
+    if (enabledFields.time && editData.startHour !== undefined) {
+      dataToSubmit.startHour = editData.startHour;
+      dataToSubmit.endHour = editData.endHour;
+    }
+    onConfirm(dataToSubmit);
+  };
+
+  const hasChanges = Object.values(enabledFields).some(v => v);
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl shadow-xl max-w-lg w-full mx-4 p-6 max-h-[90vh] overflow-y-auto">
+        <h2 className="text-xl font-bold text-gray-900 mb-2">Bulk Edit Shifts</h2>
+        <p className="text-gray-600 mb-4">
+          Edit {selectedCount} selected shift{selectedCount > 1 ? 's' : ''}. Only enabled fields will be updated.
+        </p>
+
+        <div className="space-y-4">
+          {/* Shift Type */}
+          <div className="border border-gray-200 rounded-lg p-4">
+            <label className="flex items-center gap-2 mb-3">
+              <input
+                type="checkbox"
+                checked={enabledFields.typeConfigId || false}
+                onChange={(e) => setEnabledFields(prev => ({ ...prev, typeConfigId: e.target.checked }))}
+                className="w-4 h-4 text-cyan-600 rounded focus:ring-cyan-500"
+              />
+              <span className="font-medium text-gray-900">Change Shift Type</span>
+            </label>
+            {enabledFields.typeConfigId && (
+              <select
+                value={editData.typeConfigId || ''}
+                onChange={(e) => setEditData(prev => ({ ...prev, typeConfigId: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              >
+                <option value="">Select type...</option>
+                {shiftTypes.map((type) => (
+                  <option key={type.id} value={type.id}>{type.name}</option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {/* Volunteer Limits */}
+          <div className="border border-gray-200 rounded-lg p-4">
+            <label className="flex items-center gap-2 mb-3">
+              <input
+                type="checkbox"
+                checked={enabledFields.volunteers || false}
+                onChange={(e) => setEnabledFields(prev => ({ ...prev, volunteers: e.target.checked }))}
+                className="w-4 h-4 text-cyan-600 rounded focus:ring-cyan-500"
+              />
+              <span className="font-medium text-gray-900">Change Volunteer Limits</span>
+            </label>
+            {enabledFields.volunteers && (
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <label className="block text-sm text-gray-600 mb-1">Min</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={editData.minVolunteers || 1}
+                    onChange={(e) => setEditData(prev => ({ ...prev, minVolunteers: parseInt(e.target.value) || 1 }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-sm text-gray-600 mb-1">Max</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={editData.maxVolunteers || 4}
+                    onChange={(e) => setEditData(prev => ({ ...prev, maxVolunteers: parseInt(e.target.value) || 4 }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Time Slot */}
+          <div className="border border-gray-200 rounded-lg p-4">
+            <label className="flex items-center gap-2 mb-3">
+              <input
+                type="checkbox"
+                checked={enabledFields.time || false}
+                onChange={(e) => setEnabledFields(prev => ({ ...prev, time: e.target.checked }))}
+                className="w-4 h-4 text-cyan-600 rounded focus:ring-cyan-500"
+              />
+              <span className="font-medium text-gray-900">Change Time Slot</span>
+            </label>
+            {enabledFields.time && (
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <label className="block text-sm text-gray-600 mb-1">Start Hour (ET)</label>
+                  <select
+                    value={editData.startHour ?? 6}
+                    onChange={(e) => setEditData(prev => ({ ...prev, startHour: parseInt(e.target.value) }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  >
+                    {Array.from({ length: 24 }, (_, i) => (
+                      <option key={i} value={i}>
+                        {i === 0 ? '12 AM' : i < 12 ? `${i} AM` : i === 12 ? '12 PM' : `${i - 12} PM`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex-1">
+                  <label className="block text-sm text-gray-600 mb-1">End Hour (ET)</label>
+                  <select
+                    value={editData.endHour ?? 10}
+                    onChange={(e) => setEditData(prev => ({ ...prev, endHour: parseInt(e.target.value) }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  >
+                    {Array.from({ length: 24 }, (_, i) => (
+                      <option key={i} value={i}>
+                        {i === 0 ? '12 AM' : i < 12 ? `${i} AM` : i === 12 ? '12 PM' : `${i - 12} PM`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="flex gap-3 mt-6">
+          <button
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="flex-1 py-2 px-4 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={isSubmitting || !hasChanges}
+            className="flex-1 py-2 px-4 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium disabled:opacity-50"
+          >
+            {isSubmitting ? 'Updating...' : `Update ${selectedCount} Shift${selectedCount > 1 ? 's' : ''}`}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Helper to convert hex color to Tailwind-like classes
+function getTypeColorClasses(hexColor: string | null | undefined): { bg: string; text: string } {
+  if (!hexColor) return { bg: 'bg-gray-100', text: 'text-gray-700' };
+  // Use inline style for custom colors
+  return { bg: '', text: '' };
+}
+
+// Get display name for shift type (prefer typeConfig, fallback to enum label)
+function getShiftTypeName(shift: { typeConfig?: { name: string } | null; type: string }): string {
+  if (shift.typeConfig?.name) return shift.typeConfig.name;
+  // Fallback for legacy shifts without typeConfig
+  const fallbackLabels: Record<string, string> = {
+    PATROL: 'Patrol',
+    COLLECTION: 'Collection',
+    ON_CALL_FIELD_SUPPORT: 'On-Call',
+  };
+  return fallbackLabels[shift.type] || shift.type;
+}
 
 function ShiftsPageContent() {
   const router = useRouter();
@@ -237,6 +433,7 @@ function ShiftsPageContent() {
   const [user, setUser] = useState<DevUser | null>(null);
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [zones, setZones] = useState<Zone[]>([]);
+  const [shiftTypes, setShiftTypes] = useState<ShiftTypeConfig[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filterType, setFilterType] = useState<string>('all');
@@ -250,16 +447,24 @@ function ShiftsPageContent() {
     selectedIds: selectedShifts,
     isSelected: isShiftSelected,
     toggleSelection: toggleShiftSelection,
+    selectAll: selectAllShifts,
     clearSelection,
     selectedCount,
   } = useMultiSelect({
     items: selectableShifts,
     getId: (shift) => shift.id,
   });
+
+  // Check if all selectable shifts are selected
+  const allShiftsSelected = selectableShifts.length > 0 && selectedCount === selectableShifts.length;
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
+
+  // Bulk edit state
+  const [showBulkEditModal, setShowBulkEditModal] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   // Qualification picker state
   const [showQualificationPicker, setShowQualificationPicker] = useState(false);
@@ -267,6 +472,9 @@ function ShiftsPageContent() {
 
   // View mode: 'cards' or 'list'
   const [viewMode, setViewMode] = useState<'cards' | 'list'>('list');
+
+  // Scheduling mode (SIMPLE or FULL)
+  const [schedulingMode, setSchedulingMode] = useState<'SIMPLE' | 'FULL'>('SIMPLE');
 
   // Initialize filter from URL params
   useEffect(() => {
@@ -278,7 +486,7 @@ function ShiftsPageContent() {
   const fetchShifts = useCallback(async () => {
     try {
       const params = new URLSearchParams();
-      if (filterType !== 'all') params.set('type', filterType);
+      if (filterType !== 'all') params.set('typeConfigId', filterType);
       if (filterZone !== 'all') params.set('zoneId', filterZone);
 
       const res = await fetch(`/api/shifts?${params}`);
@@ -294,8 +502,10 @@ function ShiftsPageContent() {
     Promise.all([
       fetch('/api/auth/session').then(res => res.json()),
       fetch('/api/zones').then(res => res.json()),
+      fetch('/api/admin/shift-types').then(res => res.json()).catch(() => []),
+      fetch('/api/admin/settings').then(res => res.json()).catch(() => ({ schedulingMode: 'SIMPLE' })),
     ])
-      .then(([sessionData, zonesData]) => {
+      .then(([sessionData, zonesData, shiftTypesData, settingsData]) => {
         if (!sessionData.user) {
           router.push('/login');
           return;
@@ -303,6 +513,12 @@ function ShiftsPageContent() {
         setUser(sessionData.user);
         if (Array.isArray(zonesData)) {
           setZones(zonesData);
+        }
+        if (Array.isArray(shiftTypesData)) {
+          setShiftTypes(shiftTypesData);
+        }
+        if (settingsData?.schedulingMode) {
+          setSchedulingMode(settingsData.schedulingMode);
         }
         setIsLoading(false);
       })
@@ -406,6 +622,7 @@ function ShiftsPageContent() {
       hour: 'numeric',
       minute: '2-digit',
       hour12: true,
+      timeZone: 'America/New_York',
     };
     return `${start.toLocaleTimeString('en-US', formatOpts)} - ${end.toLocaleTimeString('en-US', formatOpts)}`;
   };
@@ -470,10 +687,40 @@ function ShiftsPageContent() {
     }
   };
 
+  const handleBulkEdit = async (editData: BulkEditData) => {
+    setIsEditing(true);
+    setError(null);
+
+    try {
+      const res = await fetch('/api/shifts/bulk-edit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          shiftIds: Array.from(selectedShifts),
+          ...editData,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to update shifts');
+      }
+
+      // Refresh shifts and clear selection
+      await fetchShifts();
+      clearSelection();
+      setShowBulkEditModal(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update shifts');
+    } finally {
+      setIsEditing(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-[calc(100vh-200px)] flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full" />
+        <div className="animate-spin w-8 h-8 border-4 border-cyan-600 border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -501,7 +748,7 @@ function ShiftsPageContent() {
     <div className="min-h-[calc(100vh-200px)] bg-gray-50 py-8">
       <div className="container mx-auto px-4 max-w-6xl">
         {/* Header */}
-        <div className="flex justify-between items-start mb-8">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Browse Shifts</h1>
             <p className="text-gray-600">Find and sign up for available volunteer shifts</p>
@@ -509,14 +756,14 @@ function ShiftsPageContent() {
           <div className="flex items-center gap-3">
             <Link
               href="/shifts/calendar"
-              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+              className="px-4 py-3 sm:py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium text-center"
             >
               Calendar View
             </Link>
             {canCreateShift && (
                 <Link
                   href="/shifts/create"
-                  className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium"
+                  className="px-4 py-3 sm:py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium text-center"
                 >
                   + Create Shift
                 </Link>
@@ -548,12 +795,18 @@ function ShiftsPageContent() {
                 return pendingCount > 0 ? (
                   <button
                     onClick={() => setShowConfirmModal(true)}
-                    className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium"
+                    className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium"
                   >
                     Confirm {pendingCount} Pending
                   </button>
                 ) : null;
               })()}
+              <button
+                onClick={() => setShowBulkEditModal(true)}
+                className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium"
+              >
+                Edit Selected
+              </button>
               <button
                 onClick={() => setShowCancelModal(true)}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
@@ -579,12 +832,14 @@ function ShiftsPageContent() {
                 <select
                   value={filterType}
                   onChange={(e) => setFilterType(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 >
                   <option value="all">All Types</option>
-                  <option value="PATROL">Patrol</option>
-                  <option value="COLLECTION">Collection</option>
-                  <option value="ON_CALL_FIELD_SUPPORT">On-Call Support</option>
+                  {shiftTypes.map((type) => (
+                    <option key={type.id} value={type.id}>
+                      {type.name}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -592,7 +847,7 @@ function ShiftsPageContent() {
                 <select
                   value={filterZone}
                   onChange={(e) => setFilterZone(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 >
                   <option value="all">All Zones</option>
                   {zones.map((zone) => (
@@ -618,13 +873,13 @@ function ShiftsPageContent() {
                 </div>
               )}
             </div>
-            {/* View Toggle */}
-            <div className="flex border border-gray-300 rounded-lg overflow-hidden">
+            {/* View Toggle - Hidden on mobile (cards forced) */}
+            <div className="hidden lg:flex border border-gray-300 rounded-lg overflow-hidden">
               <button
                 onClick={() => setViewMode('list')}
                 className={`px-3 py-2 text-sm font-medium transition-colors ${
                   viewMode === 'list'
-                    ? 'bg-teal-600 text-white'
+                    ? 'bg-cyan-600 text-white'
                     : 'bg-white text-gray-700 hover:bg-gray-50'
                 }`}
                 title="List View"
@@ -637,7 +892,7 @@ function ShiftsPageContent() {
                 onClick={() => setViewMode('cards')}
                 className={`px-3 py-2 text-sm font-medium transition-colors ${
                   viewMode === 'cards'
-                    ? 'bg-teal-600 text-white'
+                    ? 'bg-cyan-600 text-white'
                     : 'bg-white text-gray-700 hover:bg-gray-50'
                 }`}
                 title="Card View"
@@ -652,13 +907,24 @@ function ShiftsPageContent() {
 
         {/* Shifts Display */}
         {filteredShifts.length > 0 ? (
-          viewMode === 'list' ? (
-            /* List View */
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden" data-tour="shift-list">
+          <>
+            {/* List View - Hidden on mobile/tablet, shown when viewMode is 'list' on desktop */}
+            {viewMode === 'list' && (
+            <div className="hidden lg:block bg-white rounded-xl border border-gray-200 overflow-hidden" data-tour="shift-list">
               <table className="w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    {canCreateShift && <th className="w-10 px-3 py-3"></th>}
+                    {canCreateShift && (
+                      <th className="w-10 px-3 py-3">
+                        <input
+                          type="checkbox"
+                          checked={allShiftsSelected}
+                          onChange={() => allShiftsSelected ? clearSelection() : selectAllShifts()}
+                          className="w-4 h-4 text-red-600 rounded focus:ring-red-500 cursor-pointer"
+                          title={allShiftsSelected ? 'Deselect all' : 'Select all'}
+                        />
+                      </th>
+                    )}
                     <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                     <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
                     <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Shift</th>
@@ -699,20 +965,28 @@ function ShiftsPageContent() {
                       <td className="px-4 py-3">
                         <Link
                           href={`/shifts/${shift.id}`}
-                          className="text-sm font-medium text-gray-900 hover:text-teal-600 transition-colors"
+                          className="text-sm font-medium text-gray-900 hover:text-cyan-600 transition-colors"
                         >
                           {shift.title}
                         </Link>
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">{shift.zone.name}</td>
                       <td className="px-4 py-3">
-                        <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
-                          shift.status === 'CANCELLED'
-                            ? 'bg-red-100 text-red-700'
-                            : `${getTypeColor(shift.type).bg} ${getTypeColor(shift.type).text}`
-                        }`}>
-                          {shift.status === 'CANCELLED' ? 'Cancelled' : typeLabels[shift.type]}
-                        </span>
+                        {shift.status === 'CANCELLED' ? (
+                          <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">
+                            Cancelled
+                          </span>
+                        ) : (
+                          <span
+                            className="inline-block px-2 py-0.5 rounded text-xs font-medium"
+                            style={{
+                              backgroundColor: shift.typeConfig?.color ? `${shift.typeConfig.color}20` : '#e5e7eb',
+                              color: shift.typeConfig?.color || '#374151',
+                            }}
+                          >
+                            {getShiftTypeName(shift)}
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-center">
                         <span className={`text-sm ${shift.spotsLeft <= 1 && shift.status !== 'CANCELLED' ? 'text-orange-600 font-medium' : 'text-gray-600'}`}>
@@ -725,7 +999,7 @@ function ShiftsPageContent() {
                         ) : shift.userRsvpStatus ? (
                           <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
                             shift.userRsvpStatus === 'CONFIRMED'
-                              ? 'bg-teal-100 text-teal-700'
+                              ? 'bg-cyan-100 text-cyan-700'
                               : 'bg-yellow-100 text-yellow-700'
                           }`}>
                             {shift.userRsvpStatus === 'CONFIRMED' ? 'Confirmed' : 'Pending'}
@@ -749,7 +1023,7 @@ function ShiftsPageContent() {
                           <button
                             onClick={() => handleSignUpClick(shift)}
                             disabled={rsvpingShiftId === shift.id}
-                            className="text-xs px-3 py-1 bg-teal-600 text-white rounded hover:bg-teal-700 transition-colors disabled:opacity-50"
+                            className="text-xs px-3 py-1 bg-cyan-600 text-white rounded hover:bg-cyan-700 transition-colors disabled:opacity-50"
                           >
                             {rsvpingShiftId === shift.id ? '...' : 'Sign Up'}
                           </button>
@@ -764,7 +1038,7 @@ function ShiftsPageContent() {
                             </Link>
                             <Link
                               href={`/shifts/${shift.id}/roster`}
-                              className="ml-2 text-xs text-teal-600 hover:text-teal-700"
+                              className="ml-2 text-xs text-cyan-600 hover:text-cyan-700"
                             >
                               Roster{shift.pendingCount > 0 && ` (${shift.pendingCount})`}
                             </Link>
@@ -776,9 +1050,10 @@ function ShiftsPageContent() {
                 </tbody>
               </table>
             </div>
-          ) : (
-            /* Card View */
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            )}
+
+            {/* Card View - Always shown on mobile/tablet, shown when viewMode is 'cards' on desktop */}
+            <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 ${viewMode === 'list' ? 'lg:hidden' : ''}`}>
               {filteredShifts.map((shift) => (
                 <div
                   key={shift.id}
@@ -802,13 +1077,21 @@ function ShiftsPageContent() {
                           className="w-4 h-4 text-red-600 rounded focus:ring-red-500 cursor-pointer"
                         />
                       )}
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        shift.status === 'CANCELLED'
-                          ? 'bg-red-100 text-red-700'
-                          : `${getTypeColor(shift.type).bg} ${getTypeColor(shift.type).text}`
-                      }`}>
-                        {shift.status === 'CANCELLED' ? 'Cancelled' : typeLabels[shift.type]}
-                      </span>
+                      {shift.status === 'CANCELLED' ? (
+                        <span className="px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-700">
+                          Cancelled
+                        </span>
+                      ) : (
+                        <span
+                          className="px-2 py-1 rounded text-xs font-medium"
+                          style={{
+                            backgroundColor: shift.typeConfig?.color ? `${shift.typeConfig.color}20` : '#e5e7eb',
+                            color: shift.typeConfig?.color || '#374151',
+                          }}
+                        >
+                          {getShiftTypeName(shift)}
+                        </span>
+                      )}
                     </div>
                     <span className={`text-sm ${shift.spotsLeft <= 1 ? 'text-orange-600 font-medium' : 'text-gray-500'}`}>
                       {shift.spotsLeft}/{shift.maxVolunteers} spots
@@ -816,7 +1099,7 @@ function ShiftsPageContent() {
                   </div>
 
                   <Link href={`/shifts/${shift.id}`} className="block group">
-                    <h3 className="font-semibold text-gray-900 mb-1 group-hover:text-teal-600 transition-colors">
+                    <h3 className="font-semibold text-gray-900 mb-1 group-hover:text-cyan-600 transition-colors">
                       {shift.title}
                     </h3>
                   </Link>
@@ -845,7 +1128,7 @@ function ShiftsPageContent() {
                     <div className="space-y-2">
                       <div className={`text-center py-2 px-4 rounded-lg text-sm font-medium ${
                         shift.userRsvpStatus === 'CONFIRMED'
-                          ? 'bg-teal-100 text-teal-700'
+                          ? 'bg-cyan-100 text-cyan-700'
                           : 'bg-yellow-100 text-yellow-700'
                       }`}>
                         {shift.userRsvpStatus === 'CONFIRMED' ? 'Confirmed' : 'Pending Confirmation'}
@@ -862,7 +1145,7 @@ function ShiftsPageContent() {
                     <button
                       onClick={() => handleSignUpClick(shift)}
                       disabled={rsvpingShiftId === shift.id}
-                      className="w-full py-2 px-4 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium disabled:opacity-50"
+                      className="w-full py-2 px-4 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors text-sm font-medium disabled:opacity-50"
                     >
                       {rsvpingShiftId === shift.id ? 'Signing up...' : 'Sign Up'}
                     </button>
@@ -883,7 +1166,7 @@ function ShiftsPageContent() {
                       </Link>
                       <Link
                         href={`/shifts/${shift.id}/roster`}
-                        className="flex-1 text-center text-sm text-teal-600 hover:text-teal-700 py-1 border border-teal-300 rounded"
+                        className="flex-1 text-center text-sm text-cyan-600 hover:text-cyan-700 py-1 border border-cyan-300 rounded"
                       >
                         Roster {shift.pendingCount > 0 && `(${shift.pendingCount})`}
                       </Link>
@@ -892,17 +1175,28 @@ function ShiftsPageContent() {
                 </div>
               ))}
             </div>
-          )
+          </>
         ) : (
           <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
-            <p className="text-gray-500 mb-4">No shifts available matching your filters.</p>
-            {canCreateShift && (
-              <Link
-                href="/shifts/create"
-                className="inline-block px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium"
-              >
-                Create First Shift
-              </Link>
+            {schedulingMode === 'SIMPLE' && !canCreateShift && !user?.qualifications?.some(q => q === 'DISPATCHER' || q === 'ZONE_LEAD') ? (
+              <>
+                <p className="text-gray-600 mb-2 font-medium">Shift signup is currently restricted to qualified leads.</p>
+                <p className="text-gray-500 text-sm">
+                  Contact your coordinator to be assigned to shifts or to complete zone lead training.
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-gray-500 mb-4">No shifts available matching your filters.</p>
+                {canCreateShift && (
+                  <Link
+                    href="/shifts/create"
+                    className="inline-block px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium"
+                  >
+                    Create First Shift
+                  </Link>
+                )}
+              </>
             )}
           </div>
         )}
@@ -941,6 +1235,16 @@ function ShiftsPageContent() {
         shiftTitle={pendingRsvpShift?.title || ''}
         isSubmitting={rsvpingShiftId !== null}
       />
+
+      {/* Bulk Edit Modal */}
+      <BulkEditModal
+        isOpen={showBulkEditModal}
+        onClose={() => setShowBulkEditModal(false)}
+        onConfirm={handleBulkEdit}
+        selectedCount={selectedCount}
+        isSubmitting={isEditing}
+        shiftTypes={shiftTypes}
+      />
     </div>
     </>
   );
@@ -950,7 +1254,7 @@ export default function ShiftsPage() {
   return (
     <Suspense fallback={
       <div className="min-h-[calc(100vh-200px)] flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full" />
+        <div className="animate-spin w-8 h-8 border-4 border-cyan-600 border-t-transparent rounded-full" />
       </div>
     }>
       <ShiftsPageContent />

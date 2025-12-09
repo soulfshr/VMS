@@ -127,7 +127,7 @@ export default function TrainingRosterPage() {
     return (
       <div className="container mx-auto px-4 py-8">
         <p className="text-red-600">Training not found or access denied</p>
-        <Link href="/trainings" className="text-teal-600 hover:underline">
+        <Link href="/trainings" className="text-cyan-600 hover:underline">
           ← Back to trainings
         </Link>
       </div>
@@ -146,6 +146,7 @@ export default function TrainingRosterPage() {
     return new Date(dateStr).toLocaleTimeString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
+      timeZone: 'America/New_York',
     });
   };
 
@@ -173,7 +174,7 @@ export default function TrainingRosterPage() {
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-6">
-        <Link href={`/trainings/${training.id}`} className="text-teal-600 hover:underline mb-2 inline-block">
+        <Link href={`/trainings/${training.id}`} className="text-cyan-600 hover:underline mb-2 inline-block">
           ← Back to training details
         </Link>
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -201,7 +202,7 @@ export default function TrainingRosterPage() {
           </div>
           <div className="flex items-center gap-4">
             <div className="text-right">
-              <p className="text-2xl font-bold text-teal-600">{training.confirmedCount}/{training.maxAttendees}</p>
+              <p className="text-2xl font-bold text-cyan-600">{training.confirmedCount}/{training.maxAttendees}</p>
               <p className="text-sm text-gray-500">confirmed</p>
             </div>
           </div>
@@ -234,7 +235,7 @@ export default function TrainingRosterPage() {
           <button
             onClick={() => setFilter('all')}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              filter === 'all' ? 'bg-teal-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              filter === 'all' ? 'bg-cyan-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
             All ({training.attendees.length})

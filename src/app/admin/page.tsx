@@ -44,7 +44,7 @@ export default function AdminDashboard() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full" />
+        <div className="animate-spin w-8 h-8 border-4 border-cyan-600 border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -80,7 +80,7 @@ export default function AdminDashboard() {
           </div>
           <Link
             href="/admin/shift-types"
-            className="text-sm text-teal-600 hover:text-teal-700 mt-4 inline-block"
+            className="text-sm text-cyan-600 hover:text-cyan-700 mt-4 inline-block"
           >
             Manage shift types →
           </Link>
@@ -98,7 +98,7 @@ export default function AdminDashboard() {
           </div>
           <Link
             href="/admin/zones"
-            className="text-sm text-teal-600 hover:text-teal-700 mt-4 inline-block"
+            className="text-sm text-cyan-600 hover:text-cyan-700 mt-4 inline-block"
           >
             Manage zones →
           </Link>
@@ -118,7 +118,7 @@ export default function AdminDashboard() {
           </div>
           <Link
             href="/admin/settings"
-            className="text-sm text-teal-600 hover:text-teal-700 mt-4 inline-block"
+            className="text-sm text-cyan-600 hover:text-cyan-700 mt-4 inline-block"
           >
             Change settings →
           </Link>
@@ -131,7 +131,7 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Link
             href="/admin/shift-types"
-            className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg hover:border-teal-300 hover:bg-teal-50 transition-colors"
+            className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg hover:border-cyan-300 hover:bg-cyan-50 transition-colors"
           >
             <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
               <span className="text-xl">➕</span>
@@ -144,7 +144,7 @@ export default function AdminDashboard() {
 
           <Link
             href="/admin/zones"
-            className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg hover:border-teal-300 hover:bg-teal-50 transition-colors"
+            className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg hover:border-cyan-300 hover:bg-cyan-50 transition-colors"
           >
             <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
               <span className="text-xl">➕</span>
@@ -157,7 +157,7 @@ export default function AdminDashboard() {
 
           <Link
             href="/admin/settings"
-            className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg hover:border-teal-300 hover:bg-teal-50 transition-colors"
+            className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg hover:border-cyan-300 hover:bg-cyan-50 transition-colors"
           >
             <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
               <span className="text-xl">⚙️</span>
@@ -170,7 +170,7 @@ export default function AdminDashboard() {
 
           <Link
             href="/shifts"
-            className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg hover:border-teal-300 hover:bg-teal-50 transition-colors"
+            className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg hover:border-cyan-300 hover:bg-cyan-50 transition-colors"
           >
             <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
               <span className="text-xl">📅</span>

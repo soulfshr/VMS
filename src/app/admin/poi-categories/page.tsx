@@ -163,7 +163,7 @@ export default function POICategoriesPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full" />
+        <div className="animate-spin w-8 h-8 border-4 border-cyan-600 border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -180,7 +180,7 @@ export default function POICategoriesPage() {
         {!isCreating && !editingId && (
           <button
             onClick={startCreate}
-            className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium"
+            className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium"
           >
             + Add Category
           </button>
@@ -213,7 +213,7 @@ export default function POICategoriesPage() {
                 type="text"
                 value={formData.name}
                 onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 placeholder="e.g., ICE/Enforcement"
               />
             </div>
@@ -224,7 +224,7 @@ export default function POICategoriesPage() {
                 value={formData.slug}
                 onChange={e => setFormData(prev => ({ ...prev, slug: e.target.value.toUpperCase().replace(/\s+/g, '_') }))}
                 disabled={!!editingId}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:bg-gray-50 disabled:text-gray-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 disabled:bg-gray-50 disabled:text-gray-500"
                 placeholder="e.g., ICE_ENFORCEMENT"
               />
               {editingId && <p className="text-xs text-gray-500 mt-1">Slug cannot be changed after creation.</p>}
@@ -236,7 +236,7 @@ export default function POICategoriesPage() {
             <textarea
               value={formData.description}
               onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
               rows={2}
               placeholder="Brief description of this category..."
             />
@@ -256,7 +256,7 @@ export default function POICategoriesPage() {
                   type="text"
                   value={formData.color}
                   onChange={e => setFormData(prev => ({ ...prev, color: e.target.value }))}
-                  className="w-32 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="w-32 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 />
               </div>
             </div>
@@ -265,7 +265,7 @@ export default function POICategoriesPage() {
               <select
                 value={formData.icon}
                 onChange={e => setFormData(prev => ({ ...prev, icon: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
               >
                 {ICON_OPTIONS.map(option => (
                   <option key={option.value} value={option.value}>
@@ -279,7 +279,7 @@ export default function POICategoriesPage() {
           <div className="flex gap-3 pt-4 border-t border-gray-200">
             <button
               onClick={handleSave}
-              className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium"
+              className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium"
             >
               {isCreating ? 'Create Category' : 'Save Changes'}
             </button>
@@ -334,7 +334,7 @@ export default function POICategoriesPage() {
                   </div>
                 </td>
                 <td className="px-4 py-4 text-sm text-gray-600 max-w-xs truncate">
-                  {cat.description || <span className="text-gray-400">No description</span>}
+                  {cat.description || <span className="text-gray-500">No description</span>}
                 </td>
                 <td className="px-4 py-4">
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
@@ -357,7 +357,7 @@ export default function POICategoriesPage() {
                   <div className="flex justify-end gap-2">
                     <button
                       onClick={() => startEdit(cat)}
-                      className="text-sm text-teal-600 hover:text-teal-700"
+                      className="text-sm text-cyan-600 hover:text-cyan-700"
                     >
                       Edit
                     </button>

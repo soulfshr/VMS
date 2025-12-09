@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import CoverageMap from '@/components/maps/CoverageMap';
 import { useFeatures } from '@/hooks/useFeatures';
 
 function WelcomeModal({ onClose }: { onClose: () => void }) {
@@ -42,7 +41,7 @@ function WelcomeModal({ onClose }: { onClose: () => void }) {
           </p>
           <button
             onClick={onClose}
-            className="px-6 py-3 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 transition-colors"
+            className="px-6 py-3 bg-cyan-600 text-white font-semibold rounded-lg hover:bg-cyan-700 transition-colors"
           >
             Join the Movement
           </button>
@@ -55,28 +54,8 @@ function WelcomeModal({ onClose }: { onClose: () => void }) {
 export default function HomeClient() {
   const features = useFeatures();
   const [showModal, setShowModal] = useState(false);
-  const [zoneStats, setZoneStats] = useState<{ zoneCount: number; counties: string[] } | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    // Fetch zone stats
-    fetch('/api/public/zone-stats')
-      .then(res => res.json())
-      .then(data => setZoneStats(data))
-      .catch(err => console.error('Failed to fetch zone stats:', err));
-
-    // Check authentication status (for POI visibility)
-    fetch('/api/auth/session')
-      .then(res => res.json())
-      .then(data => {
-        if (data.user) {
-          setIsAuthenticated(true);
-        }
-      })
-      .catch(() => {
-        // Not authenticated, which is fine for the landing page
-      });
-
     // Check if user has seen the modal before
     const hasSeenModal = localStorage.getItem('vms_hasSeenWelcomeModal');
     if (!hasSeenModal) {
@@ -118,37 +97,36 @@ export default function HomeClient() {
         </div>
       )}
 
-      {/* Hero Section */}
-      <section className="bg-gradient-to-br from-teal-600 to-teal-800 text-white py-20">
+      {/* Hero Section - Split Layout */}
+      {/* Logo on white background */}
+      <section className="bg-white py-10">
+        <div className="container mx-auto px-4 flex justify-center">
+          <Image
+            src="/ripple-logo.png"
+            alt="RippleVMS - Volunteer Management System"
+            width={280}
+            height={232}
+            priority
+          />
+        </div>
+      </section>
+
+      {/* Tagline on blue gradient */}
+      <section className="bg-gradient-to-br from-cyan-600 to-cyan-800 text-white py-12">
         <div className="container mx-auto px-4 text-center">
-          <div className="flex justify-center mb-6">
-            <Image
-              src="/ripple-logo-perspective-animated.svg"
-              alt="RippleVMS"
-              width={160}
-              height={100}
-              className="rounded-xl"
-            />
-          </div>
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            RippleVMS
-          </h1>
-          <p className="text-xl md:text-2xl text-teal-100 mb-8 max-w-2xl mx-auto">
-            Volunteer Management System
-          </p>
-          <p className="text-lg text-teal-200 mb-10 max-w-3xl mx-auto">
+          <h1 className="text-xl md:text-2xl font-medium text-cyan-100 mb-6 max-w-2xl mx-auto">
             Coordinating community volunteers to monitor, document, and respond to immigration enforcement activities in North Carolina&apos;s Triangle region.
-          </p>
+          </h1>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="/login"
-              className="px-8 py-4 bg-white text-teal-700 font-semibold rounded-lg hover:bg-teal-50 transition-colors shadow-lg"
+              className="px-8 py-4 bg-white text-cyan-700 font-semibold rounded-lg hover:bg-cyan-50 transition-colors shadow-lg"
             >
               Login
             </Link>
             <Link
               href="/about"
-              className="px-8 py-4 bg-teal-700 text-white font-semibold rounded-lg hover:bg-teal-900 transition-colors border border-teal-500"
+              className="px-8 py-4 bg-cyan-700 text-white font-semibold rounded-lg hover:bg-cyan-900 transition-colors border border-cyan-500"
             >
               Learn More
             </Link>
@@ -165,7 +143,7 @@ export default function HomeClient() {
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {/* Step 1 */}
             <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200">
-              <div className="w-12 h-12 bg-teal-100 text-teal-700 rounded-full flex items-center justify-center text-xl font-bold mb-4">
+              <div className="w-12 h-12 bg-cyan-100 text-cyan-700 rounded-full flex items-center justify-center text-xl font-bold mb-4">
                 1
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-3">
@@ -178,7 +156,7 @@ export default function HomeClient() {
 
             {/* Step 2 */}
             <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200">
-              <div className="w-12 h-12 bg-teal-100 text-teal-700 rounded-full flex items-center justify-center text-xl font-bold mb-4">
+              <div className="w-12 h-12 bg-cyan-100 text-cyan-700 rounded-full flex items-center justify-center text-xl font-bold mb-4">
                 2
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-3">
@@ -191,7 +169,7 @@ export default function HomeClient() {
 
             {/* Step 3 */}
             <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200">
-              <div className="w-12 h-12 bg-teal-100 text-teal-700 rounded-full flex items-center justify-center text-xl font-bold mb-4">
+              <div className="w-12 h-12 bg-cyan-100 text-cyan-700 rounded-full flex items-center justify-center text-xl font-bold mb-4">
                 3
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-3">
@@ -275,7 +253,7 @@ export default function HomeClient() {
 
             {/* Coordination */}
             <div className="flex items-start gap-4 p-6 bg-white rounded-lg border border-gray-200">
-              <div className="w-10 h-10 bg-teal-100 text-teal-600 rounded-lg flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 bg-cyan-100 text-cyan-600 rounded-lg flex items-center justify-center flex-shrink-0">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
@@ -306,48 +284,18 @@ export default function HomeClient() {
         </div>
       </section>
 
-      {/* Coverage Area Section */}
-      <section className="py-16 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center text-gray-900 mb-4">
-            Our Coverage Area
-          </h2>
-          <p className="text-center text-gray-600 mb-8 max-w-2xl mx-auto">
-            {zoneStats && zoneStats.zoneCount > 0 ? (
-              <>
-                We operate across {zoneStats.zoneCount} zones
-                {zoneStats.counties.length > 0 && (
-                  <> in {zoneStats.counties.length === 1
-                    ? `${zoneStats.counties[0]} county`
-                    : zoneStats.counties.length === 2
-                    ? `${zoneStats.counties[0]} and ${zoneStats.counties[1]} counties`
-                    : `${zoneStats.counties.slice(0, -1).join(', ')}, and ${zoneStats.counties[zoneStats.counties.length - 1]} counties`
-                  }</>
-                )}
-                {' '}in North Carolina&apos;s Triangle region.
-              </>
-            ) : (
-              <>We operate across multiple zones in North Carolina&apos;s Triangle region.</>
-            )}
-          </p>
-          <div className="max-w-4xl mx-auto">
-            <CoverageMap height="480px" isAuthenticated={isAuthenticated} />
-          </div>
-        </div>
-      </section>
-
       {/* CTA Section */}
-      <section className="py-16 bg-teal-700 text-white">
+      <section className="py-16 bg-cyan-700 text-white">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold mb-4">
             Ready to Make a Difference?
           </h2>
-          <p className="text-teal-100 mb-8 max-w-2xl mx-auto">
+          <p className="text-cyan-100 mb-8 max-w-2xl mx-auto">
             Join our network of dedicated volunteers protecting immigrant communities in the Triangle.
           </p>
           <Link
             href="/login"
-            className="inline-block px-8 py-4 bg-white text-teal-700 font-semibold rounded-lg hover:bg-teal-50 transition-colors shadow-lg"
+            className="inline-block px-8 py-4 bg-white text-cyan-700 font-semibold rounded-lg hover:bg-cyan-50 transition-colors shadow-lg"
           >
             Get Started Today
           </Link>

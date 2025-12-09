@@ -1,0 +1,1613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weekly Schedule Redesign Options</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .tab-btn.active {
+      background-color: #0891b2;
+      color: white;
+    }
+
+    /* Option A: Heat map hover effect */
+    .heat-cell {
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .heat-cell:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 10;
+      position: relative;
+    }
+
+    /* Tooltip */
+    .tooltip {
+      visibility: hidden;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      position: absolute;
+      z-index: 50;
+    }
+    .heat-cell:hover .tooltip {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    /* Option C: Expandable rows */
+    .expandable-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
+    .expandable-content.expanded {
+      max-height: 200px;
+    }
+
+    /* Day pill navigation */
+    .day-pill {
+      transition: all 0.2s ease;
+    }
+    .day-pill:hover {
+      background-color: #ecfeff;
+    }
+    .day-pill.active {
+      background-color: #0891b2;
+      color: white;
+    }
+
+    /* Timeline bar tooltips */
+    .timeline-bar {
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .timeline-bar:hover {
+      transform: scaleY(1.15);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+      z-index: 20;
+    }
+    .timeline-tooltip {
+      visibility: hidden;
+      opacity: 0;
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1f2937;
+      color: white;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      width: 200px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+      transition: opacity 0.2s ease, visibility 0.2s ease;
+      z-index: 100;
+      pointer-events: none;
+    }
+    .timeline-tooltip::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 6px solid transparent;
+      border-top-color: #1f2937;
+    }
+    .timeline-bar:hover .timeline-tooltip {
+      visibility: visible;
+      opacity: 1;
+    }
+    /* Tooltip below variant for top rows */
+    .timeline-tooltip.below {
+      bottom: auto;
+      top: calc(100% + 8px);
+    }
+    .timeline-tooltip.below::after {
+      top: auto;
+      bottom: 100%;
+      border-top-color: transparent;
+      border-bottom-color: #1f2937;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+  <!-- Header -->
+  <div class="bg-white border-b border-gray-200 sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 py-4">
+      <h1 class="text-2xl font-bold text-gray-900 mb-4">Weekly Schedule Redesign Options</h1>
+
+      <!-- Tab Navigation -->
+      <div class="flex gap-2 flex-wrap">
+        <button onclick="showTab('current')" class="tab-btn px-4 py-2 rounded-lg border border-gray-300 font-medium text-sm hover:bg-gray-50">
+          Current Design
+        </button>
+        <button onclick="showTab('optionA')" class="tab-btn active px-4 py-2 rounded-lg border border-gray-300 font-medium text-sm hover:bg-gray-50">
+          Option A: Heat Map
+        </button>
+        <button onclick="showTab('optionB')" class="tab-btn px-4 py-2 rounded-lg border border-gray-300 font-medium text-sm hover:bg-gray-50">
+          Option B: Card View
+        </button>
+        <button onclick="showTab('optionC')" class="tab-btn px-4 py-2 rounded-lg border border-gray-300 font-medium text-sm hover:bg-gray-50">
+          Option C: Progressive Grid
+        </button>
+        <button onclick="showTab('optionD')" class="tab-btn px-4 py-2 rounded-lg border border-gray-300 font-medium text-sm hover:bg-gray-50">
+          Option D: Timeline
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto px-4 py-6">
+
+    <!-- ==================== CURRENT DESIGN ==================== -->
+    <div id="current" class="tab-content">
+      <div class="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+        <h2 class="font-semibold text-amber-800">Current Design</h2>
+        <p class="text-amber-700 text-sm mt-1">This replicates the existing layout for comparison. Notice the density of information in each cell.</p>
+      </div>
+
+      <!-- Controls -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div class="flex items-center gap-2">
+            <button class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">← Prev</button>
+            <button class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Today</button>
+            <button class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Next →</button>
+            <span class="ml-4 font-medium text-gray-900">Week of Dec 1 - Dec 7, 2025</span>
+          </div>
+          <div class="flex items-center gap-4">
+            <select class="px-3 py-2 border border-gray-300 rounded-lg">
+              <option>All Counties</option>
+            </select>
+            <button class="px-4 py-2 bg-cyan-600 text-white rounded-lg">+ Create Shift</button>
+          </div>
+        </div>
+        <div class="flex items-center gap-4 mt-4 pt-4 border-t text-sm">
+          <span class="text-gray-500 font-medium">Coverage:</span>
+          <div class="flex items-center gap-2"><div class="w-4 h-4 rounded bg-green-100 border border-green-300"></div><span>Full</span></div>
+          <div class="flex items-center gap-2"><div class="w-4 h-4 rounded bg-yellow-100 border border-yellow-300"></div><span>Partial</span></div>
+          <div class="flex items-center gap-2"><div class="w-4 h-4 rounded bg-gray-100 border border-gray-300"></div><span>None</span></div>
+        </div>
+      </div>
+
+      <!-- Current Grid -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full border-collapse">
+            <thead>
+              <tr class="bg-gray-100">
+                <th class="border-b border-r border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-600 min-w-[140px]">County / Time</th>
+                <th class="border-b border-r border-gray-200 px-4 py-3 text-center text-sm font-medium text-gray-600 min-w-[160px]"><div>Mon</div><div class="text-gray-500">Dec 1</div></th>
+                <th class="border-b border-r border-gray-200 px-4 py-3 text-center text-sm font-medium text-gray-600 min-w-[160px]"><div>Tue</div><div class="text-gray-500">Dec 2</div></th>
+                <th class="border-b border-r border-gray-200 px-4 py-3 text-center text-sm font-medium text-gray-600 min-w-[160px]"><div>Wed</div><div class="text-gray-500">Dec 3</div></th>
+                <th class="border-b border-r border-gray-200 px-4 py-3 text-center text-sm font-medium text-gray-600 min-w-[160px]"><div>Thu</div><div class="text-gray-500">Dec 4</div></th>
+                <th class="border-b border-r border-gray-200 px-4 py-3 text-center text-sm font-medium text-gray-600 min-w-[160px]"><div>Fri</div><div class="text-gray-500">Dec 5</div></th>
+                <th class="border-b border-gray-200 px-4 py-3 text-center text-sm font-medium text-gray-600 min-w-[160px]"><div>Sat</div><div class="text-gray-500">Dec 6</div></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="bg-gray-50">
+                <td colspan="7" class="border-b border-gray-200 px-4 py-2 font-semibold text-gray-800">Durham County</td>
+              </tr>
+              <tr>
+                <td class="border-b border-r border-gray-200 px-4 py-2 text-sm text-gray-600 bg-gray-50">11am - 3pm</td>
+                <td class="border-b border-r border-gray-200 px-3 py-2 text-sm bg-yellow-50 cursor-pointer hover:bg-yellow-100">
+                  <div class="space-y-1">
+                    <div class="flex items-center gap-1"><span class="text-xs">🎧</span><span class="text-gray-400">—</span></div>
+                    <div class="text-xs text-gray-600"><span class="font-medium">1:</span> Carlos <span class="text-gray-400 text-[10px]">+3</span></div>
+                    <div class="text-xs text-gray-600"><span class="font-medium">2:</span> James <span class="text-gray-400 text-[10px]">+2</span></div>
+                    <div class="text-xs text-gray-600"><span class="font-medium">3:</span> <span class="text-gray-400">—</span></div>
+                    <button class="text-xs text-cyan-600">+2 more</button>
+                    <div class="text-[10px] text-amber-600 font-medium">Need dispatcher</div>
+                    <div class="text-[10px] text-amber-600 font-medium">3 zones need leads</div>
+                  </div>
+                </td>
+                <td class="border-b border-r border-gray-200 px-3 py-2 text-sm bg-green-50 cursor-pointer hover:bg-green-100">
+                  <div class="space-y-1">
+                    <div class="flex items-center gap-1"><span class="text-xs">🎧</span><span class="font-medium text-gray-900">Daniel Martinez</span></div>
+                    <div class="text-xs text-gray-600"><span class="font-medium">1:</span> Carlos <span class="text-gray-400 text-[10px]">+1</span></div>
+                    <div class="text-xs text-gray-600"><span class="font-medium">2:</span> Sarah <span class="text-gray-400 text-[10px]">+2</span></div>
+                    <div class="text-xs text-gray-600"><span class="font-medium">3:</span> <span class="text-gray-400">—</span></div>
+                    <button class="text-xs text-cyan-600">+2 more</button>
+                    <div class="text-[10px] text-amber-600 font-medium">3 zones need leads</div>
+                  </div>
+                </td>
+                <td class="border-b border-r border-gray-200 px-3 py-2 text-sm bg-yellow-50 cursor-pointer hover:bg-yellow-100">
+                  <div class="space-y-1">
+                    <div class="flex items-center gap-1"><span class="text-xs">🎧</span><span class="text-gray-400">—</span></div>
+                    <div class="text-xs text-gray-600"><span class="font-medium">1:</span> Carlos <span class="text-gray-400 text-[10px]">+2</span></div>
+                    <div class="text-xs text-gray-600"><span class="font-medium">2:</span> <span class="text-gray-400">—</span></div>
+                    <div class="text-[10px] text-amber-600 font-medium">Need dispatcher</div>
+                    <div class="text-[10px] text-amber-600 font-medium">2 need leads</div>
+                  </div>
+                </td>
+                <td class="border-b border-r border-gray-200 px-3 py-2 text-sm bg-yellow-50 cursor-pointer hover:bg-yellow-100">
+                  <div class="space-y-1">
+                    <div class="flex items-center gap-1"><span class="text-xs">🎧</span><span class="text-gray-400">—</span></div>
+                    <div class="text-xs text-gray-600"><span class="font-medium">1:</span> Carlos <span class="text-gray-400 text-[10px]">+3</span></div>
+                    <div class="text-xs text-gray-600"><span class="font-medium">3:</span> <span class="text-gray-400">—</span> <span class="text-gray-400 text-[10px]">+2</span></div>
+                    <div class="text-[10px] text-amber-600 font-medium">Need dispatcher</div>
+                    <div class="text-[10px] text-amber-600 font-medium">3 need leads</div>
+                  </div>
+                </td>
+                <td class="border-b border-r border-gray-200 px-3 py-2 text-sm bg-yellow-50 cursor-pointer hover:bg-yellow-100">
+                  <div class="space-y-1">
+                    <div class="flex items-center gap-1"><span class="text-xs">🎧</span><span class="text-gray-400">—</span></div>
+                    <div class="text-xs text-gray-600"><span class="font-medium">1:</span> Carlos <span class="text-gray-400 text-[10px]">+4</span></div>
+                    <div class="text-xs text-gray-600"><span class="font-medium">2:</span> James <span class="text-gray-400 text-[10px]">+2</span></div>
+                    <div class="text-[10px] text-amber-600 font-medium">Need dispatcher</div>
+                  </div>
+                </td>
+                <td class="border-b border-gray-200 px-3 py-2 text-sm bg-yellow-50 cursor-pointer hover:bg-yellow-100">
+                  <div class="space-y-1">
+                    <div class="flex items-center gap-1"><span class="text-xs">🎧</span><span class="text-gray-400">—</span></div>
+                    <div class="text-xs text-gray-600"><span class="font-medium">1:</span> Carlos <span class="text-gray-400 text-[10px]">+3</span></div>
+                    <div class="text-xs text-gray-600"><span class="font-medium">2:</span> James <span class="text-gray-400 text-[10px]">+1</span></div>
+                    <div class="text-xs text-gray-600"><span class="font-medium">3:</span> <span class="text-gray-400">—</span></div>
+                    <div class="text-[10px] text-amber-600 font-medium">Need dispatcher</div>
+                    <div class="text-[10px] text-amber-600 font-medium">3 need leads</div>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td class="border-b border-r border-gray-200 px-4 py-2 text-sm text-gray-600 bg-gray-50">1pm - 5pm</td>
+                <td class="border-b border-r border-gray-200 px-3 py-2 text-sm bg-yellow-50">
+                  <div class="space-y-1">
+                    <div class="flex items-center gap-1"><span class="text-xs">🎧</span><span class="text-gray-400">—</span></div>
+                    <div class="text-xs text-gray-600"><span class="font-medium">1:</span> Carlos <span class="text-gray-400 text-[10px]">+3</span></div>
+                    <div class="text-[10px] text-amber-600 font-medium">Need dispatcher</div>
+                  </div>
+                </td>
+                <td class="border-b border-r border-gray-200 px-3 py-2 text-sm bg-yellow-50">
+                  <div class="space-y-1">
+                    <div class="flex items-center gap-1"><span class="text-xs">🎧</span><span class="text-gray-400">—</span></div>
+                    <div class="text-xs text-gray-600"><span class="font-medium">1:</span> Carlos <span class="text-gray-400 text-[10px]">+1</span></div>
+                    <div class="text-[10px] text-amber-600 font-medium">Need dispatcher</div>
+                  </div>
+                </td>
+                <td class="border-b border-r border-gray-200 px-3 py-2 text-sm bg-yellow-50">
+                  <div class="space-y-1">
+                    <div class="flex items-center gap-1"><span class="text-xs">🎧</span><span class="text-gray-400">—</span></div>
+                    <div class="text-xs text-gray-600"><span class="font-medium">1:</span> <span class="text-gray-400">—</span></div>
+                    <div class="text-[10px] text-amber-600 font-medium">Need dispatcher</div>
+                    <div class="text-[10px] text-amber-600 font-medium">1 need leads</div>
+                  </div>
+                </td>
+                <td class="border-b border-r border-gray-200 px-3 py-2 text-sm bg-yellow-50">
+                  <div class="space-y-1">
+                    <div class="flex items-center gap-1"><span class="text-xs">🎧</span><span class="text-gray-400">—</span></div>
+                    <div class="text-xs text-gray-600"><span class="font-medium">5:</span> <span class="text-gray-400">—</span></div>
+                    <div class="text-[10px] text-amber-600 font-medium">Need dispatcher</div>
+                    <div class="text-[10px] text-amber-600 font-medium">5 need leads</div>
+                  </div>
+                </td>
+                <td class="border-b border-r border-gray-200 px-3 py-2 text-sm bg-yellow-50">
+                  <div class="space-y-1">
+                    <div class="flex items-center gap-1"><span class="text-xs">🎧</span><span class="text-gray-400">—</span></div>
+                    <div class="text-xs text-gray-600"><span class="font-medium">4:</span> <span class="text-gray-400">—</span></div>
+                    <div class="text-[10px] text-amber-600 font-medium">Need dispatcher</div>
+                    <div class="text-[10px] text-amber-600 font-medium">4 need leads</div>
+                  </div>
+                </td>
+                <td class="border-b border-gray-200 px-3 py-2 text-sm bg-yellow-50">
+                  <div class="space-y-1">
+                    <div class="flex items-center gap-1"><span class="text-xs">🎧</span><span class="text-gray-400">—</span></div>
+                    <div class="text-xs text-gray-600"><span class="font-medium">1:</span> <span class="text-gray-400">—</span></div>
+                    <div class="text-[10px] text-amber-600 font-medium">Need dispatcher</div>
+                    <div class="text-[10px] text-amber-600 font-medium">1 need leads</div>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== OPTION A: HEAT MAP ==================== -->
+    <div id="optionA" class="tab-content active">
+      <div class="mb-4 p-4 bg-cyan-50 border border-cyan-200 rounded-lg">
+        <h2 class="font-semibold text-cyan-800">Option A: Condensed Heat Map</h2>
+        <p class="text-cyan-700 text-sm mt-1">Minimal cells with color-coded status and volunteer counts. <strong>Hover over cells</strong> to see detailed tooltips. Much more scannable at a glance.</p>
+      </div>
+
+      <!-- Compact Controls -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div class="flex items-center gap-2">
+            <button class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm">←</button>
+            <button class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm">Today</button>
+            <button class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm">→</button>
+            <span class="ml-2 font-medium text-gray-900">Dec 1 - 7, 2025</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2 text-xs text-gray-500">
+              <div class="w-3 h-3 rounded-full bg-green-500"></div><span>Full</span>
+              <div class="w-3 h-3 rounded-full bg-amber-400"></div><span>Partial</span>
+              <div class="w-3 h-3 rounded-full bg-gray-300"></div><span>None</span>
+            </div>
+            <select class="px-3 py-1.5 border border-gray-300 rounded-lg text-sm">
+              <option>All Counties</option>
+            </select>
+            <button class="px-3 py-1.5 bg-cyan-600 text-white rounded-lg text-sm">+ Shift</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Heat Map Grid -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full border-collapse">
+            <thead>
+              <tr class="bg-gray-50">
+                <th class="border-b border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-600 w-32"></th>
+                <th class="border-b border-gray-200 px-2 py-3 text-center text-xs font-medium text-gray-500 w-20">Mon<br><span class="text-gray-400">12/1</span></th>
+                <th class="border-b border-gray-200 px-2 py-3 text-center text-xs font-medium text-gray-500 w-20">Tue<br><span class="text-gray-400">12/2</span></th>
+                <th class="border-b border-gray-200 px-2 py-3 text-center text-xs font-medium text-gray-900 w-20 bg-cyan-50">Wed<br><span class="text-cyan-600">12/3</span></th>
+                <th class="border-b border-gray-200 px-2 py-3 text-center text-xs font-medium text-gray-500 w-20">Thu<br><span class="text-gray-400">12/4</span></th>
+                <th class="border-b border-gray-200 px-2 py-3 text-center text-xs font-medium text-gray-500 w-20">Fri<br><span class="text-gray-400">12/5</span></th>
+                <th class="border-b border-gray-200 px-2 py-3 text-center text-xs font-medium text-gray-500 w-20">Sat<br><span class="text-gray-400">12/6</span></th>
+                <th class="border-b border-gray-200 px-2 py-3 text-center text-xs font-medium text-gray-500 w-20">Sun<br><span class="text-gray-400">12/7</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Durham County -->
+              <tr>
+                <td colspan="8" class="bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-700 border-b border-gray-200">Durham County</td>
+              </tr>
+              <tr>
+                <td class="border-b border-gray-200 px-4 py-2 text-sm text-gray-600">11am - 3pm</td>
+                <td class="border-b border-gray-200 p-1.5">
+                  <div class="heat-cell bg-amber-100 border-2 border-amber-400 rounded-lg p-2 text-center cursor-pointer relative">
+                    <div class="text-sm font-bold text-amber-700">8</div>
+                    <div class="text-[10px] text-amber-600">3 zones</div>
+                    <!-- Tooltip -->
+                    <div class="tooltip absolute left-full ml-2 top-0 w-56 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-xl">
+                      <div class="font-semibold mb-2 text-amber-300">⚠ Needs Dispatcher</div>
+                      <div class="space-y-1.5">
+                        <div class="flex justify-between"><span>Zone 1:</span><span class="text-green-400">Carlos (Lead) +3</span></div>
+                        <div class="flex justify-between"><span>Zone 2:</span><span class="text-green-400">James (Lead) +2</span></div>
+                        <div class="flex justify-between"><span>Zone 3:</span><span class="text-amber-300">Need lead +2</span></div>
+                      </div>
+                      <div class="mt-2 pt-2 border-t border-gray-700 text-gray-400">Click to edit</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="border-b border-gray-200 p-1.5">
+                  <div class="heat-cell bg-green-100 border-2 border-green-500 rounded-lg p-2 text-center cursor-pointer relative">
+                    <div class="text-sm font-bold text-green-700">7</div>
+                    <div class="text-[10px] text-green-600">3 zones</div>
+                    <div class="tooltip absolute left-full ml-2 top-0 w-56 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-xl">
+                      <div class="font-semibold mb-2 text-green-400">✓ Fully Staffed</div>
+                      <div class="mb-2 pb-2 border-b border-gray-700">
+                        <span class="text-gray-400">Dispatcher:</span> Daniel Martinez
+                      </div>
+                      <div class="space-y-1.5">
+                        <div class="flex justify-between"><span>Zone 1:</span><span>Carlos +1</span></div>
+                        <div class="flex justify-between"><span>Zone 2:</span><span>Sarah +2</span></div>
+                        <div class="flex justify-between"><span>Zone 3:</span><span>James +1</span></div>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td class="border-b border-gray-200 p-1.5 bg-cyan-50/30">
+                  <div class="heat-cell bg-amber-100 border-2 border-amber-400 rounded-lg p-2 text-center cursor-pointer relative">
+                    <div class="text-sm font-bold text-amber-700">5</div>
+                    <div class="text-[10px] text-amber-600">2 zones</div>
+                    <div class="tooltip absolute left-full ml-2 top-0 w-56 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-xl">
+                      <div class="font-semibold mb-2 text-amber-300">⚠ 2 Gaps</div>
+                      <div class="mb-2 pb-2 border-b border-gray-700 text-amber-300">
+                        Need dispatcher
+                      </div>
+                      <div class="space-y-1.5">
+                        <div class="flex justify-between"><span>Zone 1:</span><span class="text-green-400">Carlos +2</span></div>
+                        <div class="flex justify-between"><span>Zone 2:</span><span class="text-amber-300">Need lead +2</span></div>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td class="border-b border-gray-200 p-1.5">
+                  <div class="heat-cell bg-amber-100 border-2 border-amber-400 rounded-lg p-2 text-center cursor-pointer relative">
+                    <div class="text-sm font-bold text-amber-700">4</div>
+                    <div class="text-[10px] text-amber-600">2 zones</div>
+                    <div class="tooltip absolute left-full ml-2 top-0 w-56 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-xl">
+                      <div class="font-semibold mb-2 text-amber-300">⚠ 3 Gaps</div>
+                      <div class="mb-2 pb-2 border-b border-gray-700 text-amber-300">Need dispatcher</div>
+                      <div class="space-y-1.5">
+                        <div class="flex justify-between"><span>Zone 1:</span><span class="text-green-400">Carlos +3</span></div>
+                        <div class="flex justify-between"><span>Zone 3:</span><span class="text-amber-300">Need lead +2</span></div>
+                      </div>
+                      <div class="mt-2 pt-2 border-t border-gray-700 text-gray-400">Click to edit</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="border-b border-gray-200 p-1.5">
+                  <div class="heat-cell bg-amber-100 border-2 border-amber-400 rounded-lg p-2 text-center cursor-pointer relative">
+                    <div class="text-sm font-bold text-amber-700">9</div>
+                    <div class="text-[10px] text-amber-600">2 zones</div>
+                    <div class="tooltip absolute left-full ml-2 top-0 w-56 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-xl">
+                      <div class="font-semibold mb-2 text-amber-300">⚠ 1 Gap</div>
+                      <div class="mb-2 pb-2 border-b border-gray-700 text-amber-300">Need dispatcher</div>
+                      <div class="space-y-1.5">
+                        <div class="flex justify-between"><span>Zone 1:</span><span class="text-green-400">Carlos +4</span></div>
+                        <div class="flex justify-between"><span>Zone 2:</span><span class="text-green-400">James +2</span></div>
+                      </div>
+                      <div class="mt-2 pt-2 border-t border-gray-700 text-gray-400">Click to edit</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="border-b border-gray-200 p-1.5">
+                  <div class="heat-cell bg-amber-100 border-2 border-amber-400 rounded-lg p-2 text-center cursor-pointer relative">
+                    <div class="text-sm font-bold text-amber-700">12</div>
+                    <div class="text-[10px] text-amber-600">3 zones</div>
+                    <div class="tooltip absolute left-full ml-2 top-0 w-56 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-xl">
+                      <div class="font-semibold mb-2 text-amber-300">⚠ 4 Gaps</div>
+                      <div class="mb-2 pb-2 border-b border-gray-700 text-amber-300">Need dispatcher</div>
+                      <div class="space-y-1.5">
+                        <div class="flex justify-between"><span>Zone 1:</span><span class="text-green-400">Carlos +3</span></div>
+                        <div class="flex justify-between"><span>Zone 2:</span><span class="text-green-400">James +1</span></div>
+                        <div class="flex justify-between"><span>Zone 3:</span><span class="text-amber-300">Need lead +3</span></div>
+                      </div>
+                      <div class="mt-2 pt-2 border-t border-gray-700 text-gray-400">Click to edit</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="border-b border-gray-200 p-1.5">
+                  <div class="heat-cell bg-gray-100 border border-gray-300 rounded-lg p-2 text-center">
+                    <div class="text-sm font-bold text-gray-400">—</div>
+                    <div class="text-[10px] text-gray-400">no shifts</div>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td class="border-b border-gray-200 px-4 py-2 text-sm text-gray-600">1pm - 5pm</td>
+                <td class="border-b border-gray-200 p-1.5">
+                  <div class="heat-cell bg-amber-100 border-2 border-amber-400 rounded-lg p-2 text-center cursor-pointer relative">
+                    <div class="text-sm font-bold text-amber-700">4</div>
+                    <div class="text-[10px] text-amber-600">1 zone</div>
+                    <div class="tooltip absolute left-full ml-2 top-0 w-56 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-xl">
+                      <div class="font-semibold mb-2 text-amber-300">⚠ 1 Gap</div>
+                      <div class="mb-2 pb-2 border-b border-gray-700 text-amber-300">Need dispatcher</div>
+                      <div class="space-y-1.5">
+                        <div class="flex justify-between"><span>Zone 1:</span><span class="text-green-400">Carlos +3</span></div>
+                      </div>
+                      <div class="mt-2 pt-2 border-t border-gray-700 text-gray-400">Click to edit</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="border-b border-gray-200 p-1.5">
+                  <div class="heat-cell bg-amber-100 border-2 border-amber-400 rounded-lg p-2 text-center cursor-pointer relative">
+                    <div class="text-sm font-bold text-amber-700">2</div>
+                    <div class="text-[10px] text-amber-600">1 zone</div>
+                    <div class="tooltip absolute left-full ml-2 top-0 w-56 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-xl">
+                      <div class="font-semibold mb-2 text-amber-300">⚠ 1 Gap</div>
+                      <div class="mb-2 pb-2 border-b border-gray-700 text-amber-300">Need dispatcher</div>
+                      <div class="space-y-1.5">
+                        <div class="flex justify-between"><span>Zone 1:</span><span class="text-green-400">Carlos +1</span></div>
+                      </div>
+                      <div class="mt-2 pt-2 border-t border-gray-700 text-gray-400">Click to edit</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="border-b border-gray-200 p-1.5 bg-cyan-50/30">
+                  <div class="heat-cell bg-red-100 border-2 border-red-400 rounded-lg p-2 text-center cursor-pointer relative">
+                    <div class="text-sm font-bold text-red-700">2</div>
+                    <div class="text-[10px] text-red-600">⚠ gaps</div>
+                    <div class="tooltip absolute left-full ml-2 top-0 w-56 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-xl">
+                      <div class="font-semibold mb-2 text-red-400">⚠ Critical - 2 Gaps</div>
+                      <div class="mb-2 pb-2 border-b border-gray-700 text-red-300">Need dispatcher</div>
+                      <div class="space-y-1.5">
+                        <div class="flex justify-between"><span>Zone 1:</span><span class="text-amber-300">Need lead +2</span></div>
+                      </div>
+                      <div class="mt-2 pt-2 border-t border-gray-700 text-gray-400">Click to edit</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="border-b border-gray-200 p-1.5">
+                  <div class="heat-cell bg-gray-100 border border-gray-300 rounded-lg p-2 text-center">
+                    <div class="text-sm font-bold text-gray-400">—</div>
+                  </div>
+                </td>
+                <td class="border-b border-gray-200 p-1.5">
+                  <div class="heat-cell bg-amber-100 border-2 border-amber-400 rounded-lg p-2 text-center cursor-pointer relative">
+                    <div class="text-sm font-bold text-amber-700">4</div>
+                    <div class="text-[10px] text-amber-600">1 zone</div>
+                    <div class="tooltip absolute left-full ml-2 top-0 w-56 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-xl">
+                      <div class="font-semibold mb-2 text-amber-300">⚠ 2 Gaps</div>
+                      <div class="mb-2 pb-2 border-b border-gray-700 text-amber-300">Need dispatcher</div>
+                      <div class="space-y-1.5">
+                        <div class="flex justify-between"><span>Zone 4:</span><span class="text-amber-300">Need lead +4</span></div>
+                      </div>
+                      <div class="mt-2 pt-2 border-t border-gray-700 text-gray-400">Click to edit</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="border-b border-gray-200 p-1.5">
+                  <div class="heat-cell bg-green-100 border-2 border-green-500 rounded-lg p-2 text-center cursor-pointer relative">
+                    <div class="text-sm font-bold text-green-700">6</div>
+                    <div class="text-[10px] text-green-600">1 zone</div>
+                    <div class="tooltip absolute left-full ml-2 top-0 w-56 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-xl">
+                      <div class="font-semibold mb-2 text-green-400">✓ Fully Staffed</div>
+                      <div class="mb-2 pb-2 border-b border-gray-700">
+                        <span class="text-gray-400">Dispatcher:</span> Maria Garcia
+                      </div>
+                      <div class="space-y-1.5">
+                        <div class="flex justify-between"><span>Zone 1:</span><span>Carlos +5</span></div>
+                      </div>
+                      <div class="mt-2 pt-2 border-t border-gray-700 text-gray-400">Click to edit</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="border-b border-gray-200 p-1.5">
+                  <div class="heat-cell bg-gray-100 border border-gray-300 rounded-lg p-2 text-center">
+                    <div class="text-sm font-bold text-gray-400">—</div>
+                  </div>
+                </td>
+              </tr>
+              <!-- Orange County -->
+              <tr>
+                <td colspan="8" class="bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-700 border-b border-gray-200">Orange County</td>
+              </tr>
+              <tr>
+                <td class="border-b border-gray-200 px-4 py-2 text-sm text-gray-600">11am - 3pm</td>
+                <td class="border-b border-gray-200 p-1.5">
+                  <div class="heat-cell bg-amber-100 border-2 border-amber-400 rounded-lg p-2 text-center cursor-pointer relative">
+                    <div class="text-sm font-bold text-amber-700">2</div>
+                    <div class="text-[10px] text-amber-600">1 zone</div>
+                    <div class="tooltip absolute left-full ml-2 top-0 w-56 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-xl">
+                      <div class="font-semibold mb-2 text-amber-300">⚠ 1 Gap</div>
+                      <div class="mb-2 pb-2 border-b border-gray-700 text-amber-300">Need dispatcher</div>
+                      <div class="space-y-1.5">
+                        <div class="flex justify-between"><span>Zone 1:</span><span class="text-green-400">Ana +1</span></div>
+                      </div>
+                      <div class="mt-2 pt-2 border-t border-gray-700 text-gray-400">Click to edit</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="border-b border-gray-200 p-1.5">
+                  <div class="heat-cell bg-gray-100 border border-gray-300 rounded-lg p-2 text-center">
+                    <div class="text-sm font-bold text-gray-400">—</div>
+                  </div>
+                </td>
+                <td class="border-b border-gray-200 p-1.5 bg-cyan-50/30">
+                  <div class="heat-cell bg-amber-100 border-2 border-amber-400 rounded-lg p-2 text-center cursor-pointer relative">
+                    <div class="text-sm font-bold text-amber-700">2</div>
+                    <div class="text-[10px] text-amber-600">1 zone</div>
+                    <div class="tooltip absolute left-full ml-2 top-0 w-56 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-xl">
+                      <div class="font-semibold mb-2 text-amber-300">⚠ 1 Gap</div>
+                      <div class="mb-2 pb-2 border-b border-gray-700 text-amber-300">Need dispatcher</div>
+                      <div class="space-y-1.5">
+                        <div class="flex justify-between"><span>Zone 1:</span><span class="text-green-400">Ana +1</span></div>
+                      </div>
+                      <div class="mt-2 pt-2 border-t border-gray-700 text-gray-400">Click to edit</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="border-b border-gray-200 p-1.5">
+                  <div class="heat-cell bg-gray-100 border border-gray-300 rounded-lg p-2 text-center">
+                    <div class="text-sm font-bold text-gray-400">—</div>
+                  </div>
+                </td>
+                <td class="border-b border-gray-200 p-1.5">
+                  <div class="heat-cell bg-amber-100 border-2 border-amber-400 rounded-lg p-2 text-center cursor-pointer relative">
+                    <div class="text-sm font-bold text-amber-700">2</div>
+                    <div class="text-[10px] text-amber-600">1 zone</div>
+                    <div class="tooltip absolute left-full ml-2 top-0 w-56 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-xl">
+                      <div class="font-semibold mb-2 text-amber-300">⚠ 1 Gap</div>
+                      <div class="mb-2 pb-2 border-b border-gray-700 text-amber-300">Need dispatcher</div>
+                      <div class="space-y-1.5">
+                        <div class="flex justify-between"><span>Zone 1:</span><span class="text-green-400">Ana +1</span></div>
+                      </div>
+                      <div class="mt-2 pt-2 border-t border-gray-700 text-gray-400">Click to edit</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="border-b border-gray-200 p-1.5">
+                  <div class="heat-cell bg-amber-100 border-2 border-amber-400 rounded-lg p-2 text-center cursor-pointer relative">
+                    <div class="text-sm font-bold text-amber-700">2</div>
+                    <div class="text-[10px] text-amber-600">1 zone</div>
+                    <div class="tooltip absolute left-full ml-2 top-0 w-56 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-xl">
+                      <div class="font-semibold mb-2 text-amber-300">⚠ 1 Gap</div>
+                      <div class="mb-2 pb-2 border-b border-gray-700 text-amber-300">Need dispatcher</div>
+                      <div class="space-y-1.5">
+                        <div class="flex justify-between"><span>Zone 1:</span><span class="text-green-400">Ana +1</span></div>
+                      </div>
+                      <div class="mt-2 pt-2 border-t border-gray-700 text-gray-400">Click to edit</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="border-b border-gray-200 p-1.5">
+                  <div class="heat-cell bg-gray-100 border border-gray-300 rounded-lg p-2 text-center">
+                    <div class="text-sm font-bold text-gray-400">—</div>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Summary Stats -->
+      <div class="mt-4 grid grid-cols-4 gap-4">
+        <div class="bg-white rounded-lg border border-gray-200 p-4 text-center">
+          <div class="text-2xl font-bold text-green-600">2</div>
+          <div class="text-xs text-gray-500">Fully Staffed</div>
+        </div>
+        <div class="bg-white rounded-lg border border-gray-200 p-4 text-center">
+          <div class="text-2xl font-bold text-amber-600">12</div>
+          <div class="text-xs text-gray-500">Partial Coverage</div>
+        </div>
+        <div class="bg-white rounded-lg border border-gray-200 p-4 text-center">
+          <div class="text-2xl font-bold text-red-600">1</div>
+          <div class="text-xs text-gray-500">Critical Gaps</div>
+        </div>
+        <div class="bg-white rounded-lg border border-gray-200 p-4 text-center">
+          <div class="text-2xl font-bold text-gray-600">52</div>
+          <div class="text-xs text-gray-500">Total Volunteers</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== OPTION B: CARD VIEW ==================== -->
+    <div id="optionB" class="tab-content">
+      <div class="mb-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+        <h2 class="font-semibold text-purple-800">Option B: Card-Based Daily View</h2>
+        <p class="text-purple-700 text-sm mt-1">Focus on one day at a time with detailed cards. Great for daily operations and mobile. <strong>Click the day pills</strong> to navigate between days.</p>
+      </div>
+
+      <!-- Day Navigation -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+        <div class="flex items-center justify-between">
+          <button class="p-2 hover:bg-gray-100 rounded-lg">
+            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          </button>
+
+          <div class="flex gap-1">
+            <button onclick="selectDay(this, 0)" class="day-pill px-3 py-2 rounded-lg text-sm font-medium text-gray-600 border border-gray-200">
+              <div>Mon</div>
+              <div class="text-xs text-gray-400">12/1</div>
+            </button>
+            <button onclick="selectDay(this, 1)" class="day-pill px-3 py-2 rounded-lg text-sm font-medium text-gray-600 border border-gray-200">
+              <div>Tue</div>
+              <div class="text-xs text-gray-400">12/2</div>
+            </button>
+            <button onclick="selectDay(this, 2)" class="day-pill active px-3 py-2 rounded-lg text-sm font-medium border border-transparent">
+              <div>Wed</div>
+              <div class="text-xs opacity-75">12/3</div>
+            </button>
+            <button onclick="selectDay(this, 3)" class="day-pill px-3 py-2 rounded-lg text-sm font-medium text-gray-600 border border-gray-200">
+              <div>Thu</div>
+              <div class="text-xs text-gray-400">12/4</div>
+            </button>
+            <button onclick="selectDay(this, 4)" class="day-pill px-3 py-2 rounded-lg text-sm font-medium text-gray-600 border border-gray-200">
+              <div>Fri</div>
+              <div class="text-xs text-gray-400">12/5</div>
+            </button>
+            <button onclick="selectDay(this, 5)" class="day-pill px-3 py-2 rounded-lg text-sm font-medium text-gray-600 border border-gray-200">
+              <div>Sat</div>
+              <div class="text-xs text-gray-400">12/6</div>
+            </button>
+            <button onclick="selectDay(this, 6)" class="day-pill px-3 py-2 rounded-lg text-sm font-medium text-gray-600 border border-gray-200">
+              <div>Sun</div>
+              <div class="text-xs text-gray-400">12/7</div>
+            </button>
+          </div>
+
+          <button class="p-2 hover:bg-gray-100 rounded-lg">
+            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+
+        <!-- Current Day Header -->
+        <div class="mt-4 pt-4 border-t border-gray-200 flex items-center justify-between">
+          <div>
+            <h2 class="text-xl font-bold text-gray-900">Wednesday, December 3</h2>
+            <p class="text-sm text-gray-500">2 time blocks across 2 counties</p>
+          </div>
+          <button class="px-4 py-2 bg-cyan-600 text-white rounded-lg text-sm font-medium">+ Create Shift</button>
+        </div>
+      </div>
+
+      <!-- Cards Grid -->
+      <div class="space-y-6">
+        <!-- Durham County -->
+        <div>
+          <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-blue-500"></span>
+            Durham County
+          </h3>
+
+          <div class="grid md:grid-cols-2 gap-4">
+            <!-- 11am - 3pm Card -->
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div class="bg-amber-50 border-b border-amber-200 px-4 py-3 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="text-lg font-semibold text-gray-900">11am - 3pm</span>
+                  <span class="px-2 py-0.5 bg-amber-200 text-amber-800 rounded-full text-xs font-medium">2 gaps</span>
+                </div>
+                <span class="text-sm text-gray-500">5 volunteers</span>
+              </div>
+
+              <div class="p-4 space-y-4">
+                <!-- Dispatcher Section -->
+                <div class="flex items-center justify-between p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                      <span class="text-lg">🎧</span>
+                    </div>
+                    <div>
+                      <div class="text-xs text-red-600 font-medium uppercase tracking-wide">Dispatcher</div>
+                      <div class="text-red-700 font-medium">Not Assigned</div>
+                    </div>
+                  </div>
+                  <button class="px-3 py-1.5 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700">
+                    Assign
+                  </button>
+                </div>
+
+                <!-- Zones -->
+                <div class="space-y-2">
+                  <div class="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div class="flex items-center gap-3">
+                      <div class="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center font-bold text-sm">1</div>
+                      <div>
+                        <div class="font-medium text-gray-900">Carlos Martinez</div>
+                        <div class="text-xs text-green-600">Zone Lead • +2 volunteers</div>
+                      </div>
+                    </div>
+                    <svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                  </div>
+
+                  <div class="flex items-center justify-between p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <div class="flex items-center gap-3">
+                      <div class="w-8 h-8 bg-amber-400 text-white rounded-full flex items-center justify-center font-bold text-sm">2</div>
+                      <div>
+                        <div class="font-medium text-amber-700">Need Zone Lead</div>
+                        <div class="text-xs text-amber-600">2 volunteers signed up</div>
+                      </div>
+                    </div>
+                    <button class="text-xs text-amber-700 font-medium hover:underline">Assign Lead</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="px-4 py-3 bg-gray-50 border-t border-gray-200">
+                <button class="w-full text-sm text-cyan-600 font-medium hover:text-cyan-700">
+                  View Full Roster →
+                </button>
+              </div>
+            </div>
+
+            <!-- 1pm - 5pm Card -->
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div class="bg-red-50 border-b border-red-200 px-4 py-3 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="text-lg font-semibold text-gray-900">1pm - 5pm</span>
+                  <span class="px-2 py-0.5 bg-red-200 text-red-800 rounded-full text-xs font-medium">Critical</span>
+                </div>
+                <span class="text-sm text-gray-500">2 volunteers</span>
+              </div>
+
+              <div class="p-4 space-y-4">
+                <div class="flex items-center justify-between p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                      <span class="text-lg">🎧</span>
+                    </div>
+                    <div>
+                      <div class="text-xs text-red-600 font-medium uppercase tracking-wide">Dispatcher</div>
+                      <div class="text-red-700 font-medium">Not Assigned</div>
+                    </div>
+                  </div>
+                  <button class="px-3 py-1.5 bg-red-600 text-white rounded-lg text-sm font-medium">Assign</button>
+                </div>
+
+                <div class="flex items-center justify-between p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-amber-400 text-white rounded-full flex items-center justify-center font-bold text-sm">1</div>
+                    <div>
+                      <div class="font-medium text-amber-700">Need Zone Lead</div>
+                      <div class="text-xs text-amber-600">2 volunteers signed up</div>
+                    </div>
+                  </div>
+                  <button class="text-xs text-amber-700 font-medium hover:underline">Assign Lead</button>
+                </div>
+              </div>
+
+              <div class="px-4 py-3 bg-gray-50 border-t border-gray-200">
+                <button class="w-full text-sm text-cyan-600 font-medium hover:text-cyan-700">
+                  View Full Roster →
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Orange County -->
+        <div>
+          <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-orange-500"></span>
+            Orange County
+          </h3>
+
+          <div class="grid md:grid-cols-2 gap-4">
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div class="bg-amber-50 border-b border-amber-200 px-4 py-3 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="text-lg font-semibold text-gray-900">11am - 3pm</span>
+                  <span class="px-2 py-0.5 bg-amber-200 text-amber-800 rounded-full text-xs font-medium">1 gap</span>
+                </div>
+                <span class="text-sm text-gray-500">2 volunteers</span>
+              </div>
+
+              <div class="p-4 space-y-4">
+                <div class="flex items-center justify-between p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                      <span class="text-lg">🎧</span>
+                    </div>
+                    <div>
+                      <div class="text-xs text-red-600 font-medium uppercase tracking-wide">Dispatcher</div>
+                      <div class="text-red-700 font-medium">Not Assigned</div>
+                    </div>
+                  </div>
+                  <button class="px-3 py-1.5 bg-red-600 text-white rounded-lg text-sm font-medium">Assign</button>
+                </div>
+
+                <div class="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center font-bold text-sm">1</div>
+                    <div>
+                      <div class="font-medium text-gray-900">Ana Rodriguez</div>
+                      <div class="text-xs text-green-600">Zone Lead • +1 volunteer</div>
+                    </div>
+                  </div>
+                  <svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                </div>
+              </div>
+
+              <div class="px-4 py-3 bg-gray-50 border-t border-gray-200">
+                <button class="w-full text-sm text-cyan-600 font-medium hover:text-cyan-700">
+                  View Full Roster →
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== OPTION C: PROGRESSIVE GRID ==================== -->
+    <div id="optionC" class="tab-content">
+      <div class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <h2 class="font-semibold text-blue-800">Option C: Progressive Disclosure Grid</h2>
+        <p class="text-blue-700 text-sm mt-1">Keeps the weekly grid but with much simpler cells. <strong>Click any cell</strong> to expand inline details. Best of both worlds: scannable overview + details on demand.</p>
+      </div>
+
+      <!-- Controls -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div class="flex items-center gap-2">
+            <button class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">← Prev</button>
+            <button class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Today</button>
+            <button class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">Next →</button>
+            <span class="ml-4 font-medium text-gray-900">Dec 1 - 7, 2025</span>
+          </div>
+          <div class="flex items-center gap-4">
+            <label class="flex items-center gap-2 text-sm text-gray-600">
+              <input type="checkbox" class="rounded border-gray-300" checked>
+              <span>Hide empty rows</span>
+            </label>
+            <select class="px-3 py-2 border border-gray-300 rounded-lg">
+              <option>All Counties</option>
+            </select>
+            <button class="px-4 py-2 bg-cyan-600 text-white rounded-lg">+ Create Shift</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Progressive Grid -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full border-collapse">
+            <thead>
+              <tr class="bg-gray-50">
+                <th class="border-b border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-600 w-36"></th>
+                <th class="border-b border-gray-200 px-3 py-3 text-center text-sm font-medium text-gray-600">
+                  <div>Mon</div><div class="text-xs text-gray-400">Dec 1</div>
+                </th>
+                <th class="border-b border-gray-200 px-3 py-3 text-center text-sm font-medium text-gray-600">
+                  <div>Tue</div><div class="text-xs text-gray-400">Dec 2</div>
+                </th>
+                <th class="border-b border-gray-200 px-3 py-3 text-center text-sm font-medium text-gray-900 bg-cyan-50">
+                  <div>Wed</div><div class="text-xs text-cyan-600">Dec 3</div>
+                </th>
+                <th class="border-b border-gray-200 px-3 py-3 text-center text-sm font-medium text-gray-600">
+                  <div>Thu</div><div class="text-xs text-gray-400">Dec 4</div>
+                </th>
+                <th class="border-b border-gray-200 px-3 py-3 text-center text-sm font-medium text-gray-600">
+                  <div>Fri</div><div class="text-xs text-gray-400">Dec 5</div>
+                </th>
+                <th class="border-b border-gray-200 px-3 py-3 text-center text-sm font-medium text-gray-600">
+                  <div>Sat</div><div class="text-xs text-gray-400">Dec 6</div>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Durham County Header -->
+              <tr>
+                <td colspan="7" class="bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-700 border-b border-gray-200">Durham County</td>
+              </tr>
+
+              <!-- 11am - 3pm Row -->
+              <tr class="group">
+                <td class="border-b border-gray-200 px-4 py-3 text-sm text-gray-600 bg-gray-50 font-medium">11am - 3pm</td>
+
+                <!-- Monday - Collapsed -->
+                <td onclick="toggleExpand(this)" class="border-b border-gray-200 p-2 cursor-pointer hover:bg-gray-50 transition-colors">
+                  <div class="bg-amber-50 border border-amber-200 rounded-lg p-2">
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center gap-1.5">
+                        <span class="text-amber-600">⚠</span>
+                        <span class="text-xs text-gray-400">🎧—</span>
+                      </div>
+                      <div class="text-xs font-medium text-gray-700">8 <span class="text-gray-400">vol</span></div>
+                    </div>
+                    <div class="text-[10px] text-amber-600 mt-1">Need dispatcher</div>
+                    <!-- Expanded content -->
+                    <div class="expandable-content mt-2 pt-2 border-t border-amber-200 space-y-1">
+                      <div class="text-xs flex justify-between"><span class="text-gray-500">Zone 1:</span><span class="text-gray-700">Carlos +3</span></div>
+                      <div class="text-xs flex justify-between"><span class="text-gray-500">Zone 2:</span><span class="text-gray-700">James +2</span></div>
+                      <div class="text-xs flex justify-between"><span class="text-gray-500">Zone 3:</span><span class="text-amber-600">Need lead</span></div>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Tuesday - Full Coverage -->
+                <td onclick="toggleExpand(this)" class="border-b border-gray-200 p-2 cursor-pointer hover:bg-gray-50 transition-colors">
+                  <div class="bg-green-50 border border-green-200 rounded-lg p-2">
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center gap-1.5">
+                        <span class="text-green-600">✓</span>
+                        <span class="text-xs text-gray-600">🎧 Daniel</span>
+                      </div>
+                      <div class="text-xs font-medium text-gray-700">7 <span class="text-gray-400">vol</span></div>
+                    </div>
+                    <div class="text-[10px] text-green-600 mt-1">Fully staffed</div>
+                    <div class="expandable-content mt-2 pt-2 border-t border-green-200 space-y-1">
+                      <div class="text-xs flex justify-between"><span class="text-gray-500">Zone 1:</span><span class="text-gray-700">Carlos +1</span></div>
+                      <div class="text-xs flex justify-between"><span class="text-gray-500">Zone 2:</span><span class="text-gray-700">Sarah +2</span></div>
+                      <div class="text-xs flex justify-between"><span class="text-gray-500">Zone 3:</span><span class="text-gray-700">James +1</span></div>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Wednesday (Today) -->
+                <td onclick="toggleExpand(this)" class="border-b border-gray-200 p-2 cursor-pointer bg-cyan-50/30 hover:bg-cyan-50 transition-colors">
+                  <div class="bg-amber-50 border border-amber-200 rounded-lg p-2">
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center gap-1.5">
+                        <span class="text-amber-600">⚠</span>
+                        <span class="text-xs text-gray-400">🎧—</span>
+                      </div>
+                      <div class="text-xs font-medium text-gray-700">5 <span class="text-gray-400">vol</span></div>
+                    </div>
+                    <div class="text-[10px] text-amber-600 mt-1">2 gaps</div>
+                    <div class="expandable-content mt-2 pt-2 border-t border-amber-200 space-y-1">
+                      <div class="text-xs flex justify-between"><span class="text-gray-500">Zone 1:</span><span class="text-gray-700">Carlos +2</span></div>
+                      <div class="text-xs flex justify-between"><span class="text-gray-500">Zone 2:</span><span class="text-amber-600">Need lead +2</span></div>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Thu-Sat similar pattern -->
+                <td onclick="toggleExpand(this)" class="border-b border-gray-200 p-2 cursor-pointer hover:bg-gray-50">
+                  <div class="bg-amber-50 border border-amber-200 rounded-lg p-2">
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center gap-1.5">
+                        <span class="text-amber-600">⚠</span>
+                        <span class="text-xs text-gray-400">🎧—</span>
+                      </div>
+                      <div class="text-xs font-medium text-gray-700">4 <span class="text-gray-400">vol</span></div>
+                    </div>
+                    <div class="text-[10px] text-amber-600 mt-1">3 gaps</div>
+                  </div>
+                </td>
+
+                <td onclick="toggleExpand(this)" class="border-b border-gray-200 p-2 cursor-pointer hover:bg-gray-50">
+                  <div class="bg-amber-50 border border-amber-200 rounded-lg p-2">
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center gap-1.5">
+                        <span class="text-amber-600">⚠</span>
+                        <span class="text-xs text-gray-400">🎧—</span>
+                      </div>
+                      <div class="text-xs font-medium text-gray-700">9 <span class="text-gray-400">vol</span></div>
+                    </div>
+                    <div class="text-[10px] text-amber-600 mt-1">1 gap</div>
+                  </div>
+                </td>
+
+                <td onclick="toggleExpand(this)" class="border-b border-gray-200 p-2 cursor-pointer hover:bg-gray-50">
+                  <div class="bg-amber-50 border border-amber-200 rounded-lg p-2">
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center gap-1.5">
+                        <span class="text-amber-600">⚠</span>
+                        <span class="text-xs text-gray-400">🎧—</span>
+                      </div>
+                      <div class="text-xs font-medium text-gray-700">12 <span class="text-gray-400">vol</span></div>
+                    </div>
+                    <div class="text-[10px] text-amber-600 mt-1">4 gaps</div>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- 1pm - 5pm Row -->
+              <tr>
+                <td class="border-b border-gray-200 px-4 py-3 text-sm text-gray-600 bg-gray-50 font-medium">1pm - 5pm</td>
+
+                <td onclick="toggleExpand(this)" class="border-b border-gray-200 p-2 cursor-pointer hover:bg-gray-50">
+                  <div class="bg-amber-50 border border-amber-200 rounded-lg p-2">
+                    <div class="flex items-center justify-between">
+                      <span class="text-amber-600 text-xs">⚠</span>
+                      <div class="text-xs font-medium text-gray-700">4</div>
+                    </div>
+                    <div class="expandable-content mt-2 pt-2 border-t border-amber-200 space-y-1">
+                      <div class="text-[10px] text-amber-600">Need dispatcher</div>
+                      <div class="text-xs flex justify-between"><span class="text-gray-500">Zone 1:</span><span class="text-gray-700">Carlos +3</span></div>
+                    </div>
+                  </div>
+                </td>
+
+                <td onclick="toggleExpand(this)" class="border-b border-gray-200 p-2 cursor-pointer hover:bg-gray-50">
+                  <div class="bg-amber-50 border border-amber-200 rounded-lg p-2">
+                    <div class="flex items-center justify-between">
+                      <span class="text-amber-600 text-xs">⚠</span>
+                      <div class="text-xs font-medium text-gray-700">2</div>
+                    </div>
+                    <div class="expandable-content mt-2 pt-2 border-t border-amber-200 space-y-1">
+                      <div class="text-[10px] text-amber-600">Need dispatcher</div>
+                      <div class="text-xs flex justify-between"><span class="text-gray-500">Zone 1:</span><span class="text-gray-700">Carlos +1</span></div>
+                    </div>
+                  </div>
+                </td>
+
+                <td onclick="toggleExpand(this)" class="border-b border-gray-200 p-2 cursor-pointer bg-cyan-50/30 hover:bg-cyan-50">
+                  <div class="bg-red-50 border border-red-300 rounded-lg p-2">
+                    <div class="flex items-center justify-between">
+                      <span class="text-red-600 text-xs font-medium">!</span>
+                      <div class="text-xs font-medium text-gray-700">2</div>
+                    </div>
+                    <div class="text-[10px] text-red-600 mt-0.5">Critical</div>
+                    <div class="expandable-content mt-2 pt-2 border-t border-red-200 space-y-1">
+                      <div class="text-[10px] text-red-600">Need dispatcher</div>
+                      <div class="text-xs flex justify-between"><span class="text-gray-500">Zone 1:</span><span class="text-red-600">Need lead +2</span></div>
+                    </div>
+                  </div>
+                </td>
+
+                <td class="border-b border-gray-200 p-2">
+                  <div class="bg-gray-50 border border-gray-200 rounded-lg p-2 text-center">
+                    <span class="text-xs text-gray-400">—</span>
+                  </div>
+                </td>
+
+                <td onclick="toggleExpand(this)" class="border-b border-gray-200 p-2 cursor-pointer hover:bg-gray-50">
+                  <div class="bg-amber-50 border border-amber-200 rounded-lg p-2">
+                    <div class="flex items-center justify-between">
+                      <span class="text-amber-600 text-xs">⚠</span>
+                      <div class="text-xs font-medium text-gray-700">4</div>
+                    </div>
+                    <div class="expandable-content mt-2 pt-2 border-t border-amber-200 space-y-1">
+                      <div class="text-[10px] text-amber-600">Need dispatcher</div>
+                      <div class="text-xs flex justify-between"><span class="text-gray-500">Zone 4:</span><span class="text-amber-600">Need lead +4</span></div>
+                    </div>
+                  </div>
+                </td>
+
+                <td onclick="toggleExpand(this)" class="border-b border-gray-200 p-2 cursor-pointer hover:bg-gray-50">
+                  <div class="bg-green-50 border border-green-200 rounded-lg p-2">
+                    <div class="flex items-center justify-between">
+                      <span class="text-green-600 text-xs">✓</span>
+                      <div class="text-xs font-medium text-gray-700">6</div>
+                    </div>
+                    <div class="expandable-content mt-2 pt-2 border-t border-green-200 space-y-1">
+                      <div class="text-[10px] text-green-600">🎧 Maria Garcia</div>
+                      <div class="text-xs flex justify-between"><span class="text-gray-500">Zone 1:</span><span class="text-gray-700">Carlos +5</span></div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Orange County Header -->
+              <tr>
+                <td colspan="7" class="bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-700 border-b border-gray-200">Orange County</td>
+              </tr>
+
+              <tr>
+                <td class="border-b border-gray-200 px-4 py-3 text-sm text-gray-600 bg-gray-50 font-medium">11am - 3pm</td>
+
+                <td onclick="toggleExpand(this)" class="border-b border-gray-200 p-2 cursor-pointer hover:bg-gray-50">
+                  <div class="bg-amber-50 border border-amber-200 rounded-lg p-2">
+                    <div class="flex items-center justify-between">
+                      <span class="text-amber-600 text-xs">⚠</span>
+                      <div class="text-xs font-medium text-gray-700">2</div>
+                    </div>
+                    <div class="expandable-content mt-2 pt-2 border-t border-amber-200 space-y-1">
+                      <div class="text-[10px] text-amber-600">Need dispatcher</div>
+                      <div class="text-xs flex justify-between"><span class="text-gray-500">Zone 1:</span><span class="text-gray-700">Ana +1</span></div>
+                    </div>
+                  </div>
+                </td>
+
+                <td class="border-b border-gray-200 p-2">
+                  <div class="bg-gray-50 border border-gray-200 rounded-lg p-2 text-center">
+                    <span class="text-xs text-gray-400">—</span>
+                  </div>
+                </td>
+
+                <td onclick="toggleExpand(this)" class="border-b border-gray-200 p-2 cursor-pointer bg-cyan-50/30 hover:bg-cyan-50">
+                  <div class="bg-amber-50 border border-amber-200 rounded-lg p-2">
+                    <div class="flex items-center justify-between">
+                      <span class="text-amber-600 text-xs">⚠</span>
+                      <div class="text-xs font-medium text-gray-700">2</div>
+                    </div>
+                    <div class="expandable-content mt-2 pt-2 border-t border-amber-200 space-y-1">
+                      <div class="text-[10px] text-amber-600">Need dispatcher</div>
+                      <div class="text-xs flex justify-between"><span class="text-gray-500">Zone 1:</span><span class="text-gray-700">Ana +1</span></div>
+                    </div>
+                  </div>
+                </td>
+
+                <td class="border-b border-gray-200 p-2">
+                  <div class="bg-gray-50 border border-gray-200 rounded-lg p-2 text-center">
+                    <span class="text-xs text-gray-400">—</span>
+                  </div>
+                </td>
+
+                <td onclick="toggleExpand(this)" class="border-b border-gray-200 p-2 cursor-pointer hover:bg-gray-50">
+                  <div class="bg-amber-50 border border-amber-200 rounded-lg p-2">
+                    <div class="flex items-center justify-between">
+                      <span class="text-amber-600 text-xs">⚠</span>
+                      <div class="text-xs font-medium text-gray-700">2</div>
+                    </div>
+                    <div class="expandable-content mt-2 pt-2 border-t border-amber-200 space-y-1">
+                      <div class="text-[10px] text-amber-600">Need dispatcher</div>
+                      <div class="text-xs flex justify-between"><span class="text-gray-500">Zone 1:</span><span class="text-gray-700">Ana +1</span></div>
+                    </div>
+                  </div>
+                </td>
+
+                <td onclick="toggleExpand(this)" class="border-b border-gray-200 p-2 cursor-pointer hover:bg-gray-50">
+                  <div class="bg-amber-50 border border-amber-200 rounded-lg p-2">
+                    <div class="flex items-center justify-between">
+                      <span class="text-amber-600 text-xs">⚠</span>
+                      <div class="text-xs font-medium text-gray-700">2</div>
+                    </div>
+                    <div class="expandable-content mt-2 pt-2 border-t border-amber-200 space-y-1">
+                      <div class="text-[10px] text-amber-600">Need dispatcher</div>
+                      <div class="text-xs flex justify-between"><span class="text-gray-500">Zone 1:</span><span class="text-gray-700">Ana +1</span></div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Quick Actions Bar -->
+      <div class="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <span class="text-amber-600 text-lg">⚠</span>
+            <div>
+              <div class="font-medium text-amber-800">11 gaps need attention this week</div>
+              <div class="text-sm text-amber-600">8 missing dispatchers • 3 zones need leads</div>
+            </div>
+          </div>
+          <button class="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700">
+            Fill Gaps →
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== OPTION D: TIMELINE VIEW ==================== -->
+    <div id="optionD" class="tab-content">
+      <div class="mb-4 p-4 bg-rose-50 border border-rose-200 rounded-lg">
+        <h2 class="font-semibold text-rose-800">Option D: Swimlane Timeline View</h2>
+        <p class="text-rose-700 text-sm mt-1">Horizontal timeline showing time blocks as bars. Great for visualizing shift overlaps and coverage duration. <strong>Hover over bars</strong> for details. Best for understanding time-based patterns.</p>
+      </div>
+
+      <!-- Day Navigation (same as Option B) -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+        <div class="flex items-center justify-between">
+          <button class="p-2 hover:bg-gray-100 rounded-lg">
+            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          </button>
+
+          <div class="flex gap-1">
+            <button onclick="selectDayD(this)" class="day-pill-d px-3 py-2 rounded-lg text-sm font-medium text-gray-600 border border-gray-200">
+              <div>Mon</div>
+              <div class="text-xs text-gray-400">12/1</div>
+            </button>
+            <button onclick="selectDayD(this)" class="day-pill-d px-3 py-2 rounded-lg text-sm font-medium text-gray-600 border border-gray-200">
+              <div>Tue</div>
+              <div class="text-xs text-gray-400">12/2</div>
+            </button>
+            <button onclick="selectDayD(this)" class="day-pill-d active px-3 py-2 rounded-lg text-sm font-medium border border-transparent bg-cyan-600 text-white">
+              <div>Wed</div>
+              <div class="text-xs opacity-75">12/3</div>
+            </button>
+            <button onclick="selectDayD(this)" class="day-pill-d px-3 py-2 rounded-lg text-sm font-medium text-gray-600 border border-gray-200">
+              <div>Thu</div>
+              <div class="text-xs text-gray-400">12/4</div>
+            </button>
+            <button onclick="selectDayD(this)" class="day-pill-d px-3 py-2 rounded-lg text-sm font-medium text-gray-600 border border-gray-200">
+              <div>Fri</div>
+              <div class="text-xs text-gray-400">12/5</div>
+            </button>
+            <button onclick="selectDayD(this)" class="day-pill-d px-3 py-2 rounded-lg text-sm font-medium text-gray-600 border border-gray-200">
+              <div>Sat</div>
+              <div class="text-xs text-gray-400">12/6</div>
+            </button>
+            <button onclick="selectDayD(this)" class="day-pill-d px-3 py-2 rounded-lg text-sm font-medium text-gray-600 border border-gray-200">
+              <div>Sun</div>
+              <div class="text-xs text-gray-400">12/7</div>
+            </button>
+          </div>
+
+          <button class="p-2 hover:bg-gray-100 rounded-lg">
+            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+
+        <div class="mt-4 pt-4 border-t border-gray-200 flex items-center justify-between">
+          <div>
+            <h2 class="text-xl font-bold text-gray-900">Wednesday, December 3</h2>
+            <p class="text-sm text-gray-500">7 volunteers across 2 counties</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2 text-xs">
+              <div class="w-3 h-3 rounded bg-green-500"></div><span class="text-gray-600">Staffed</span>
+              <div class="w-3 h-3 rounded bg-amber-400"></div><span class="text-gray-600">Gap</span>
+              <div class="w-3 h-3 rounded bg-red-400"></div><span class="text-gray-600">Critical</span>
+            </div>
+            <button class="px-4 py-2 bg-cyan-600 text-white rounded-lg text-sm font-medium">+ Create Shift</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Timeline Grid -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <!-- Time header -->
+        <div class="border-b border-gray-200 bg-gray-50">
+          <div class="flex">
+            <div class="w-40 shrink-0 px-4 py-2 border-r border-gray-200"></div>
+            <div class="flex-1 flex">
+              <div class="flex-1 text-center text-xs text-gray-500 py-2 border-r border-gray-100">6am</div>
+              <div class="flex-1 text-center text-xs text-gray-500 py-2 border-r border-gray-100">8am</div>
+              <div class="flex-1 text-center text-xs text-gray-500 py-2 border-r border-gray-100">10am</div>
+              <div class="flex-1 text-center text-xs text-gray-500 py-2 border-r border-gray-100">12pm</div>
+              <div class="flex-1 text-center text-xs text-gray-500 py-2 border-r border-gray-100">2pm</div>
+              <div class="flex-1 text-center text-xs text-gray-500 py-2 border-r border-gray-100">4pm</div>
+              <div class="flex-1 text-center text-xs text-gray-500 py-2 border-r border-gray-100">6pm</div>
+              <div class="flex-1 text-center text-xs text-gray-500 py-2">8pm</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Durham County -->
+        <div class="border-b border-gray-200">
+          <div class="bg-gray-100 px-4 py-2 font-semibold text-gray-700 text-sm border-b border-gray-200">
+            Durham County
+          </div>
+
+          <!-- Dispatcher Row -->
+          <div class="flex border-b border-gray-100 hover:bg-gray-50">
+            <div class="w-40 shrink-0 px-4 py-3 border-r border-gray-200 flex items-center gap-2">
+              <span>🎧</span>
+              <span class="text-sm font-medium text-gray-700">Dispatcher</span>
+            </div>
+            <div class="flex-1 relative py-2 px-1" style="background: repeating-linear-gradient(90deg, transparent, transparent calc(12.5% - 1px), #f3f4f6 calc(12.5% - 1px), #f3f4f6 12.5%);">
+              <!-- 11am-3pm gap (no dispatcher) -->
+              <div class="timeline-bar absolute top-2 bottom-2 rounded-md bg-amber-200 border-2 border-dashed border-amber-400 flex items-center justify-center cursor-pointer"
+                   style="left: calc(41.67%); width: calc(33.33% - 4px);">
+                <span class="text-xs font-medium text-amber-700">Need Dispatcher</span>
+                <div class="timeline-tooltip below">
+                  <div class="font-semibold text-amber-300 mb-1">Missing Dispatcher</div>
+                  <div class="text-gray-300 text-[10px]">11:00 AM - 3:00 PM</div>
+                  <div class="mt-2 pt-2 border-t border-gray-600 text-white">Click to assign</div>
+                </div>
+              </div>
+              <!-- 1pm-5pm gap (no dispatcher) -->
+              <div class="timeline-bar absolute top-2 bottom-2 rounded-md bg-red-200 border-2 border-dashed border-red-400 flex items-center justify-center cursor-pointer"
+                   style="left: calc(58.33%); width: calc(33.33% - 4px);">
+                <span class="text-xs font-medium text-red-700">Need Dispatcher</span>
+                <div class="timeline-tooltip below">
+                  <div class="font-semibold text-red-300 mb-1">Critical Gap</div>
+                  <div class="text-gray-300 text-[10px]">1:00 PM - 5:00 PM</div>
+                  <div class="text-red-300 text-[10px] mt-1">No dispatcher for active shift</div>
+                  <div class="mt-2 pt-2 border-t border-gray-600 text-white">Click to assign</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Zone 1 Row -->
+          <div class="flex border-b border-gray-100 hover:bg-gray-50">
+            <div class="w-40 shrink-0 px-4 py-3 border-r border-gray-200">
+              <div class="flex items-center gap-2">
+                <div class="w-6 h-6 rounded-full bg-blue-500 text-white text-xs font-bold flex items-center justify-center">1</div>
+                <span class="text-sm text-gray-700">Zone 1</span>
+              </div>
+            </div>
+            <div class="flex-1 relative py-2 px-1" style="background: repeating-linear-gradient(90deg, transparent, transparent calc(12.5% - 1px), #f3f4f6 calc(12.5% - 1px), #f3f4f6 12.5%);">
+              <!-- 11am-3pm shift -->
+              <div class="timeline-bar absolute top-2 bottom-2 rounded-md bg-green-500 shadow-sm flex items-center px-3 cursor-pointer"
+                   style="left: calc(41.67%); width: calc(33.33% - 4px);">
+                <div class="flex items-center gap-2 text-white">
+                  <div class="w-5 h-5 rounded-full bg-white/30 flex items-center justify-center text-[10px] font-bold">CL</div>
+                  <div>
+                    <div class="text-xs font-semibold">Carlos</div>
+                    <div class="text-[10px] opacity-80">Lead • +2</div>
+                  </div>
+                </div>
+                <div class="timeline-tooltip">
+                  <div class="font-semibold text-green-300 mb-1">Zone 1 - Fully Staffed</div>
+                  <div class="text-gray-300 text-[10px]">11:00 AM - 3:00 PM</div>
+                  <div class="mt-2 space-y-1 text-[11px]">
+                    <div><span class="text-green-300">Lead:</span> Carlos Martinez</div>
+                    <div><span class="text-gray-400">Volunteers:</span> James, Sarah</div>
+                  </div>
+                  <div class="mt-2 pt-2 border-t border-gray-600 text-white">Click to view roster</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Zone 2 Row -->
+          <div class="flex border-b border-gray-100 hover:bg-gray-50">
+            <div class="w-40 shrink-0 px-4 py-3 border-r border-gray-200">
+              <div class="flex items-center gap-2">
+                <div class="w-6 h-6 rounded-full bg-purple-500 text-white text-xs font-bold flex items-center justify-center">2</div>
+                <span class="text-sm text-gray-700">Zone 2</span>
+              </div>
+            </div>
+            <div class="flex-1 relative py-2 px-1" style="background: repeating-linear-gradient(90deg, transparent, transparent calc(12.5% - 1px), #f3f4f6 calc(12.5% - 1px), #f3f4f6 12.5%);">
+              <!-- 11am-3pm shift - needs lead -->
+              <div class="timeline-bar absolute top-2 bottom-2 rounded-md bg-amber-400 shadow-sm flex items-center px-3 cursor-pointer"
+                   style="left: calc(41.67%); width: calc(33.33% - 4px);">
+                <div class="flex items-center gap-2 text-amber-900">
+                  <div class="w-5 h-5 rounded-full bg-white/50 flex items-center justify-center text-[10px]">?</div>
+                  <div>
+                    <div class="text-xs font-semibold">Need Lead</div>
+                    <div class="text-[10px] opacity-80">2 volunteers</div>
+                  </div>
+                </div>
+                <div class="timeline-tooltip">
+                  <div class="font-semibold text-amber-300 mb-1">Zone 2 - Needs Lead</div>
+                  <div class="text-gray-300 text-[10px]">11:00 AM - 3:00 PM</div>
+                  <div class="mt-2 space-y-1 text-[11px]">
+                    <div class="text-amber-300">No zone lead assigned</div>
+                    <div><span class="text-gray-400">Volunteers:</span> Mike, Lisa</div>
+                  </div>
+                  <div class="mt-2 pt-2 border-t border-gray-600 text-white">Click to assign lead</div>
+                </div>
+              </div>
+              <!-- 1pm-5pm shift - needs lead -->
+              <div class="timeline-bar absolute top-2 bottom-2 rounded-md bg-red-400 shadow-sm flex items-center px-3 cursor-pointer"
+                   style="left: calc(58.33%); width: calc(33.33% - 4px);">
+                <div class="flex items-center gap-2 text-red-900">
+                  <div class="w-5 h-5 rounded-full bg-white/50 flex items-center justify-center text-[10px]">!</div>
+                  <div>
+                    <div class="text-xs font-semibold">Critical</div>
+                    <div class="text-[10px] opacity-80">2 vol, no lead</div>
+                  </div>
+                </div>
+                <div class="timeline-tooltip">
+                  <div class="font-semibold text-red-300 mb-1">Zone 2 - Critical</div>
+                  <div class="text-gray-300 text-[10px]">1:00 PM - 5:00 PM</div>
+                  <div class="mt-2 space-y-1 text-[11px]">
+                    <div class="text-red-300">No lead + No dispatcher!</div>
+                    <div><span class="text-gray-400">Volunteers:</span> Tom, Alex</div>
+                  </div>
+                  <div class="mt-2 pt-2 border-t border-gray-600 text-white">Click to assign lead</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Orange County -->
+        <div>
+          <div class="bg-gray-100 px-4 py-2 font-semibold text-gray-700 text-sm border-b border-gray-200">
+            Orange County
+          </div>
+
+          <!-- Dispatcher Row -->
+          <div class="flex border-b border-gray-100 hover:bg-gray-50">
+            <div class="w-40 shrink-0 px-4 py-3 border-r border-gray-200 flex items-center gap-2">
+              <span>🎧</span>
+              <span class="text-sm font-medium text-gray-700">Dispatcher</span>
+            </div>
+            <div class="flex-1 relative py-2 px-1" style="background: repeating-linear-gradient(90deg, transparent, transparent calc(12.5% - 1px), #f3f4f6 calc(12.5% - 1px), #f3f4f6 12.5%);">
+              <!-- 11am-3pm gap -->
+              <div class="timeline-bar absolute top-2 bottom-2 rounded-md bg-amber-200 border-2 border-dashed border-amber-400 flex items-center justify-center cursor-pointer"
+                   style="left: calc(41.67%); width: calc(33.33% - 4px);">
+                <span class="text-xs font-medium text-amber-700">Need Dispatcher</span>
+                <div class="timeline-tooltip below">
+                  <div class="font-semibold text-amber-300 mb-1">Missing Dispatcher</div>
+                  <div class="text-gray-300 text-[10px]">11:00 AM - 3:00 PM</div>
+                  <div class="mt-2 pt-2 border-t border-gray-600 text-white">Click to assign</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Zone 1 Row -->
+          <div class="flex hover:bg-gray-50">
+            <div class="w-40 shrink-0 px-4 py-3 border-r border-gray-200">
+              <div class="flex items-center gap-2">
+                <div class="w-6 h-6 rounded-full bg-orange-500 text-white text-xs font-bold flex items-center justify-center">1</div>
+                <span class="text-sm text-gray-700">Zone 1</span>
+              </div>
+            </div>
+            <div class="flex-1 relative py-2 px-1" style="background: repeating-linear-gradient(90deg, transparent, transparent calc(12.5% - 1px), #f3f4f6 calc(12.5% - 1px), #f3f4f6 12.5%);">
+              <!-- 11am-3pm shift -->
+              <div class="timeline-bar absolute top-2 bottom-2 rounded-md bg-green-500 shadow-sm flex items-center px-3 cursor-pointer"
+                   style="left: calc(41.67%); width: calc(33.33% - 4px);">
+                <div class="flex items-center gap-2 text-white">
+                  <div class="w-5 h-5 rounded-full bg-white/30 flex items-center justify-center text-[10px] font-bold">AR</div>
+                  <div>
+                    <div class="text-xs font-semibold">Ana</div>
+                    <div class="text-[10px] opacity-80">Lead • +1</div>
+                  </div>
+                </div>
+                <div class="timeline-tooltip">
+                  <div class="font-semibold text-green-300 mb-1">Zone 1 - Fully Staffed</div>
+                  <div class="text-gray-300 text-[10px]">11:00 AM - 3:00 PM</div>
+                  <div class="mt-2 space-y-1 text-[11px]">
+                    <div><span class="text-green-300">Lead:</span> Ana Rodriguez</div>
+                    <div><span class="text-gray-400">Volunteers:</span> David</div>
+                  </div>
+                  <div class="mt-2 pt-2 border-t border-gray-600 text-white">Click to view roster</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Timeline Legend & Actions -->
+      <div class="mt-4 flex gap-4">
+        <div class="flex-1 bg-white rounded-lg border border-gray-200 p-4">
+          <h3 class="text-sm font-semibold text-gray-700 mb-3">Quick Stats</h3>
+          <div class="grid grid-cols-3 gap-4">
+            <div class="text-center">
+              <div class="text-2xl font-bold text-gray-900">7</div>
+              <div class="text-xs text-gray-500">Total Hours Coverage</div>
+            </div>
+            <div class="text-center">
+              <div class="text-2xl font-bold text-amber-600">3</div>
+              <div class="text-xs text-gray-500">Gaps to Fill</div>
+            </div>
+            <div class="text-center">
+              <div class="text-2xl font-bold text-green-600">4</div>
+              <div class="text-xs text-gray-500">Positions Filled</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-center gap-4">
+          <div class="flex-1">
+            <div class="font-medium text-amber-800">3 gaps on this day</div>
+            <div class="text-sm text-amber-600">2 dispatchers • 1 zone lead</div>
+          </div>
+          <button class="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 whitespace-nowrap">
+            Fill Gaps →
+          </button>
+        </div>
+      </div>
+
+      <!-- Week Overview Mini-map -->
+      <div class="mt-4 bg-white rounded-lg border border-gray-200 p-4">
+        <h3 class="text-sm font-semibold text-gray-700 mb-3">Week at a Glance</h3>
+        <div class="flex gap-2">
+          <div class="flex-1 text-center">
+            <div class="text-xs text-gray-500 mb-1">Mon</div>
+            <div class="h-8 rounded bg-amber-200 flex items-center justify-center">
+              <span class="text-xs font-medium text-amber-700">12</span>
+            </div>
+          </div>
+          <div class="flex-1 text-center">
+            <div class="text-xs text-gray-500 mb-1">Tue</div>
+            <div class="h-8 rounded bg-green-200 flex items-center justify-center">
+              <span class="text-xs font-medium text-green-700">7</span>
+            </div>
+          </div>
+          <div class="flex-1 text-center">
+            <div class="text-xs text-gray-500 mb-1">Wed</div>
+            <div class="h-8 rounded bg-amber-300 border-2 border-cyan-500 flex items-center justify-center">
+              <span class="text-xs font-medium text-amber-700">7</span>
+            </div>
+          </div>
+          <div class="flex-1 text-center">
+            <div class="text-xs text-gray-500 mb-1">Thu</div>
+            <div class="h-8 rounded bg-amber-200 flex items-center justify-center">
+              <span class="text-xs font-medium text-amber-700">4</span>
+            </div>
+          </div>
+          <div class="flex-1 text-center">
+            <div class="text-xs text-gray-500 mb-1">Fri</div>
+            <div class="h-8 rounded bg-amber-200 flex items-center justify-center">
+              <span class="text-xs font-medium text-amber-700">11</span>
+            </div>
+          </div>
+          <div class="flex-1 text-center">
+            <div class="text-xs text-gray-500 mb-1">Sat</div>
+            <div class="h-8 rounded bg-amber-200 flex items-center justify-center">
+              <span class="text-xs font-medium text-amber-700">14</span>
+            </div>
+          </div>
+          <div class="flex-1 text-center">
+            <div class="text-xs text-gray-500 mb-1">Sun</div>
+            <div class="h-8 rounded bg-gray-100 flex items-center justify-center">
+              <span class="text-xs font-medium text-gray-400">—</span>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center justify-center gap-4 mt-3 text-xs text-gray-500">
+          <div class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-green-200"></div> Full</div>
+          <div class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-amber-200"></div> Partial</div>
+          <div class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-gray-100"></div> None</div>
+          <div class="flex items-center gap-1"><div class="w-3 h-3 rounded border-2 border-cyan-500"></div> Selected</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    function showTab(tabId) {
+      // Hide all tabs
+      document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+
+      // Show selected tab
+      document.getElementById(tabId).classList.add('active');
+      event.target.classList.add('active');
+    }
+
+    function selectDay(btn, dayIndex) {
+      document.querySelectorAll('.day-pill').forEach(pill => {
+        pill.classList.remove('active');
+      });
+      btn.classList.add('active');
+    }
+
+    function selectDayD(btn) {
+      document.querySelectorAll('.day-pill-d').forEach(pill => {
+        pill.classList.remove('active', 'bg-cyan-600', 'text-white');
+        pill.classList.add('text-gray-600', 'border-gray-200');
+      });
+      btn.classList.add('active', 'bg-cyan-600', 'text-white');
+      btn.classList.remove('text-gray-600', 'border-gray-200');
+    }
+
+    function toggleExpand(cell) {
+      const expandable = cell.querySelector('.expandable-content');
+      if (expandable) {
+        expandable.classList.toggle('expanded');
+      }
+    }
+  </script>
+</body>
+</html>

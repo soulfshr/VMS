@@ -11,17 +11,29 @@ interface Zone {
   county: string | null;
 }
 
+interface ShiftType {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  color: string;
+  defaultMinVolunteers: number;
+  defaultIdealVolunteers: number;
+  defaultMaxVolunteers: number;
+}
+
 export default function CreateShiftPage() {
   const router = useRouter();
   const [user, setUser] = useState<DevUser | null>(null);
   const [zones, setZones] = useState<Zone[]>([]);
+  const [shiftTypes, setShiftTypes] = useState<ShiftType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Form state
   const [formData, setFormData] = useState({
-    type: 'PATROL',
+    type: '',  // Will be set when shift types are loaded
     title: '',
     description: '',
     date: '',
@@ -46,8 +58,9 @@ export default function CreateShiftPage() {
     Promise.all([
       fetch('/api/auth/session').then(res => res.json()),
       fetch('/api/zones').then(res => res.json()),
+      fetch('/api/shift-types').then(res => res.json()),
     ])
-      .then(([sessionData, zonesData]) => {
+      .then(([sessionData, zonesData, shiftTypesData]) => {
         if (!sessionData.user) {
           router.push('/login');
           return;
@@ -60,7 +73,21 @@ export default function CreateShiftPage() {
         setUser(sessionData.user);
         if (Array.isArray(zonesData)) {
           setZones(zonesData);
-          if (zonesData.length > 0) {
+        }
+        if (Array.isArray(shiftTypesData)) {
+          setShiftTypes(shiftTypesData);
+          // Set default values from the first shift type
+          const firstType = shiftTypesData[0];
+          if (firstType) {
+            setFormData(prev => ({
+              ...prev,
+              type: firstType.slug,
+              zoneId: zonesData[0]?.id || '',
+              minVolunteers: firstType.defaultMinVolunteers,
+              idealVolunteers: firstType.defaultIdealVolunteers,
+              maxVolunteers: firstType.defaultMaxVolunteers,
+            }));
+          } else if (zonesData[0]) {
             setFormData(prev => ({ ...prev, zoneId: zonesData[0].id }));
           }
         }
@@ -142,6 +169,18 @@ export default function CreateShiftPage() {
         ...prev,
         [name]: target.checked,
       }));
+    } else if (name === 'type') {
+      // When shift type changes, update the volunteer counts from the shift type defaults
+      const selectedType = shiftTypes.find(st => st.slug === value);
+      setFormData(prev => ({
+        ...prev,
+        type: value,
+        ...(selectedType && {
+          minVolunteers: selectedType.defaultMinVolunteers,
+          idealVolunteers: selectedType.defaultIdealVolunteers,
+          maxVolunteers: selectedType.defaultMaxVolunteers,
+        }),
+      }));
     } else {
       setFormData(prev => ({
         ...prev,
@@ -164,7 +203,7 @@ export default function CreateShiftPage() {
   if (isLoading) {
     return (
       <div className="min-h-[calc(100vh-200px)] flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full" />
+        <div className="animate-spin w-8 h-8 border-4 border-cyan-600 border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -176,7 +215,7 @@ export default function CreateShiftPage() {
       <div className="container mx-auto px-4 max-w-2xl">
         {/* Header */}
         <div className="mb-8">
-          <Link href="/shifts" className="text-teal-600 hover:text-teal-700 text-sm mb-2 inline-block">
+          <Link href="/shifts" className="text-cyan-600 hover:text-cyan-700 text-sm mb-2 inline-block">
             ← Back to Shifts
           </Link>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Create New Shift</h1>
@@ -197,12 +236,14 @@ export default function CreateShiftPage() {
               name="type"
               value={formData.type}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
               required
             >
-              <option value="PATROL">Patrol</option>
-              <option value="COLLECTION">Collection (Intel)</option>
-              <option value="ON_CALL_FIELD_SUPPORT">On-Call Field Support</option>
+              {shiftTypes.map((st) => (
+                <option key={st.id} value={st.slug}>
+                  {st.name}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -215,7 +256,7 @@ export default function CreateShiftPage() {
               value={formData.title}
               onChange={handleChange}
               placeholder="e.g., Morning Patrol, Evening Collection"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
               required
             />
           </div>
@@ -229,7 +270,7 @@ export default function CreateShiftPage() {
               onChange={handleChange}
               rows={3}
               placeholder="Additional details about this shift..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
             />
           </div>
 
@@ -243,7 +284,7 @@ export default function CreateShiftPage() {
                 value={formData.date}
                 onChange={handleChange}
                 min={new Date().toISOString().split('T')[0]}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 required
               />
             </div>
@@ -254,7 +295,7 @@ export default function CreateShiftPage() {
                 name="startTime"
                 value={formData.startTime}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 required
               />
             </div>
@@ -265,7 +306,7 @@ export default function CreateShiftPage() {
                 name="endTime"
                 value={formData.endTime}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 required
               />
             </div>
@@ -279,7 +320,7 @@ export default function CreateShiftPage() {
                 name="repeatEnabled"
                 checked={formData.repeatEnabled}
                 onChange={handleChange}
-                className="w-4 h-4 text-teal-600 rounded focus:ring-teal-500"
+                className="w-4 h-4 text-cyan-600 rounded focus:ring-cyan-500"
               />
               <span className="font-medium text-gray-700">Repeat this shift</span>
             </label>
@@ -293,7 +334,7 @@ export default function CreateShiftPage() {
                     name="repeatFrequency"
                     value={formData.repeatFrequency}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                   >
                     <option value="daily">Daily</option>
                     <option value="weekly">Weekly (same day each week)</option>
@@ -313,7 +354,7 @@ export default function CreateShiftPage() {
                           onClick={() => handleDayToggle(index)}
                           className={`w-10 h-10 rounded-full text-sm font-medium transition-colors ${
                             formData.repeatDays.includes(index)
-                              ? 'bg-teal-600 text-white'
+                              ? 'bg-cyan-600 text-white'
                               : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
                           }`}
                         >
@@ -335,7 +376,7 @@ export default function CreateShiftPage() {
                         value="count"
                         checked={formData.repeatEndType === 'count'}
                         onChange={handleChange}
-                        className="w-4 h-4 text-teal-600 focus:ring-teal-500"
+                        className="w-4 h-4 text-cyan-600 focus:ring-cyan-500"
                       />
                       <span className="text-gray-700">Number of occurrences</span>
                     </label>
@@ -346,7 +387,7 @@ export default function CreateShiftPage() {
                         value="date"
                         checked={formData.repeatEndType === 'date'}
                         onChange={handleChange}
-                        className="w-4 h-4 text-teal-600 focus:ring-teal-500"
+                        className="w-4 h-4 text-cyan-600 focus:ring-cyan-500"
                       />
                       <span className="text-gray-700">End date</span>
                     </label>
@@ -365,7 +406,7 @@ export default function CreateShiftPage() {
                       onChange={handleChange}
                       min={2}
                       max={52}
-                      className="w-32 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      className="w-32 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                     />
                   </div>
                 )}
@@ -379,7 +420,7 @@ export default function CreateShiftPage() {
                       value={formData.repeatEndDate}
                       onChange={handleChange}
                       min={formData.date || new Date().toISOString().split('T')[0]}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                     />
                   </div>
                 )}
@@ -394,7 +435,7 @@ export default function CreateShiftPage() {
               name="zoneId"
               value={formData.zoneId}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
               required
             >
               {zones.map((zone) => (
@@ -414,7 +455,7 @@ export default function CreateShiftPage() {
               value={formData.meetingLocation}
               onChange={handleChange}
               placeholder="e.g., Corner of Main St and 1st Ave"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
             />
           </div>
 
@@ -428,7 +469,7 @@ export default function CreateShiftPage() {
                 value={formData.minVolunteers}
                 onChange={handleChange}
                 min={1}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
               />
             </div>
             <div>
@@ -439,7 +480,7 @@ export default function CreateShiftPage() {
                 value={formData.idealVolunteers}
                 onChange={handleChange}
                 min={1}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
               />
             </div>
             <div>
@@ -450,7 +491,7 @@ export default function CreateShiftPage() {
                 value={formData.maxVolunteers}
                 onChange={handleChange}
                 min={1}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
               />
             </div>
           </div>
@@ -462,7 +503,7 @@ export default function CreateShiftPage() {
               name="status"
               value={formData.status}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
             >
               <option value="DRAFT">Draft (not visible to volunteers)</option>
               <option value="PUBLISHED">Published (open for signups)</option>
@@ -474,7 +515,7 @@ export default function CreateShiftPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 py-3 px-4 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium disabled:opacity-50"
+              className="flex-1 py-3 px-4 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium disabled:opacity-50"
             >
               {isSubmitting ? 'Creating...' : 'Create Shift'}
             </button>

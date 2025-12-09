@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 import CoverageMap from './maps/CoverageMap';
 
 interface ZoneMapModalProps {
@@ -9,6 +10,8 @@ interface ZoneMapModalProps {
 }
 
 export default function ZoneMapModal({ isOpen, onClose }: ZoneMapModalProps) {
+  const focusTrapRef = useFocusTrap(isOpen);
+
   // Close on escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -37,15 +40,22 @@ export default function ZoneMapModal({ isOpen, onClose }: ZoneMapModalProps) {
       />
 
       {/* Modal */}
-      <div className="relative bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+      <div
+        ref={focusTrapRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="zone-map-modal-title"
+        className="relative bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden"
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">Zone Coverage Map</h2>
+          <h2 id="zone-map-modal-title" className="text-xl font-semibold text-gray-900">Zone Coverage Map</h2>
           <button
             onClick={onClose}
+            aria-label="Close modal"
             className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>

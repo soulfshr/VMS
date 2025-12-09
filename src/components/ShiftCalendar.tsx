@@ -93,7 +93,7 @@ export default function ShiftCalendar({
   if (!mounted) {
     return (
       <div className="h-[700px] flex items-center justify-center bg-gray-50 rounded-lg">
-        <div className="animate-spin w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full" />
+        <div className="animate-spin w-8 h-8 border-4 border-cyan-600 border-t-transparent rounded-full" />
       </div>
     );
   }

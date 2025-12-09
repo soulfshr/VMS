@@ -9,10 +9,10 @@ export default function Footer() {
           {/* Left side - RippleVMS */}
           <div className="flex items-center gap-3">
             <Image
-              src="/ripple-logo-perspective-animated.svg"
+              src="/ripple-logo.png"
               alt="RippleVMS"
-              width={40}
-              height={25}
+              width={48}
+              height={40}
             />
             <span className="text-sm text-gray-400">
               RippleVMS - Volunteer Management System

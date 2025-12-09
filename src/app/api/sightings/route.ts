@@ -3,9 +3,17 @@ import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { SightingStatus } from '@/generated/prisma/enums';
 import { sendSightingNotificationToDispatchers } from '@/lib/email';
+import { checkRateLimitAsync, getClientIp, RATE_LIMITS, rateLimitResponse } from '@/lib/rate-limit';
 
 // POST /api/sightings - Create a new ICE sighting report (PUBLIC - no auth required)
 export async function POST(request: NextRequest) {
+  // Rate limiting for public endpoint
+  const clientIp = getClientIp(request);
+  const rateLimit = await checkRateLimitAsync(`sighting:${clientIp}`, RATE_LIMITS.sighting);
+  if (!rateLimit.success) {
+    return rateLimitResponse(rateLimit);
+  }
+
   try {
     const body = await request.json();
 

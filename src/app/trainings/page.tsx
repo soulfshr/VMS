@@ -188,6 +188,7 @@ export default function TrainingsPage() {
       hour: 'numeric',
       minute: '2-digit',
       hour12: true,
+      timeZone: 'America/New_York',
     };
     return `${start.toLocaleTimeString('en-US', formatOpts)} - ${end.toLocaleTimeString('en-US', formatOpts)}`;
   };
@@ -265,7 +266,7 @@ export default function TrainingsPage() {
   if (isLoading) {
     return (
       <div className="min-h-[calc(100vh-200px)] flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full" />
+        <div className="animate-spin w-8 h-8 border-4 border-cyan-600 border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -287,7 +288,7 @@ export default function TrainingsPage() {
             {canCreateTraining && (
               <Link
                 href="/trainings/create"
-                className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium"
+                className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium"
               >
                 + Schedule Training
               </Link>
@@ -325,7 +326,7 @@ export default function TrainingsPage() {
                 return pendingCount > 0 ? (
                   <button
                     onClick={() => setShowConfirmModal(true)}
-                    className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium"
+                    className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium"
                   >
                     Confirm {pendingCount} Pending
                   </button>
@@ -350,7 +351,7 @@ export default function TrainingsPage() {
                 <select
                   value={filterType}
                   onChange={(e) => setFilterType(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 >
                   <option value="all">All Types</option>
                   {trainingTypes.map((tt) => (
@@ -365,7 +366,7 @@ export default function TrainingsPage() {
                 <select
                   value={filterZone}
                   onChange={(e) => setFilterZone(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 >
                   <option value="all">All Zones</option>
                   {zones.map((zone) => (
@@ -382,7 +383,7 @@ export default function TrainingsPage() {
                 onClick={() => setViewMode('list')}
                 className={`px-3 py-2 text-sm font-medium transition-colors ${
                   viewMode === 'list'
-                    ? 'bg-teal-600 text-white'
+                    ? 'bg-cyan-600 text-white'
                     : 'bg-white text-gray-700 hover:bg-gray-50'
                 }`}
                 title="List View"
@@ -395,7 +396,7 @@ export default function TrainingsPage() {
                 onClick={() => setViewMode('cards')}
                 className={`px-3 py-2 text-sm font-medium transition-colors ${
                   viewMode === 'cards'
-                    ? 'bg-teal-600 text-white'
+                    ? 'bg-cyan-600 text-white'
                     : 'bg-white text-gray-700 hover:bg-gray-50'
                 }`}
                 title="Card View"
@@ -457,7 +458,7 @@ export default function TrainingsPage() {
                       <td className="px-4 py-3">
                         <Link
                           href={`/trainings/${training.id}`}
-                          className="text-sm font-medium text-gray-900 hover:text-teal-600 transition-colors"
+                          className="text-sm font-medium text-gray-900 hover:text-cyan-600 transition-colors"
                         >
                           {training.title}
                         </Link>
@@ -490,7 +491,7 @@ export default function TrainingsPage() {
                         ) : training.userRsvpStatus ? (
                           <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
                             training.userRsvpStatus === 'CONFIRMED'
-                              ? 'bg-teal-100 text-teal-700'
+                              ? 'bg-cyan-100 text-cyan-700'
                               : 'bg-yellow-100 text-yellow-700'
                           }`}>
                             {training.userRsvpStatus === 'CONFIRMED' ? 'Confirmed' : 'Pending'}
@@ -514,7 +515,7 @@ export default function TrainingsPage() {
                           <button
                             onClick={() => handleRsvp(training.id)}
                             disabled={rsvpingTrainingId === training.id}
-                            className="text-xs px-3 py-1 bg-teal-600 text-white rounded hover:bg-teal-700 transition-colors disabled:opacity-50"
+                            className="text-xs px-3 py-1 bg-cyan-600 text-white rounded hover:bg-cyan-700 transition-colors disabled:opacity-50"
                           >
                             {rsvpingTrainingId === training.id ? '...' : 'Sign Up'}
                           </button>
@@ -522,7 +523,7 @@ export default function TrainingsPage() {
                         {canCreateTraining && training.status !== 'CANCELLED' && (
                           <Link
                             href={`/trainings/${training.id}/roster`}
-                            className="ml-2 text-xs text-teal-600 hover:text-teal-700"
+                            className="ml-2 text-xs text-cyan-600 hover:text-cyan-700"
                           >
                             Roster{training.pendingCount > 0 && ` (${training.pendingCount})`}
                           </Link>
@@ -575,7 +576,7 @@ export default function TrainingsPage() {
                   </div>
 
                   <Link href={`/trainings/${training.id}`} className="block group">
-                    <h3 className="font-semibold text-gray-900 mb-1 group-hover:text-teal-600 transition-colors">
+                    <h3 className="font-semibold text-gray-900 mb-1 group-hover:text-cyan-600 transition-colors">
                       {training.title}
                     </h3>
                   </Link>
@@ -595,7 +596,7 @@ export default function TrainingsPage() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <span>{formatTime(training.startTime, training.endTime)}</span>
-                    <span className="text-gray-400">({formatDuration(training.startTime, training.endTime)})</span>
+                    <span className="text-gray-500">({formatDuration(training.startTime, training.endTime)})</span>
                   </div>
 
                   {(training.location || training.meetingLink) && (
@@ -617,7 +618,7 @@ export default function TrainingsPage() {
                     <div className="space-y-2">
                       <div className={`text-center py-2 px-4 rounded-lg text-sm font-medium ${
                         training.userRsvpStatus === 'CONFIRMED'
-                          ? 'bg-teal-100 text-teal-700'
+                          ? 'bg-cyan-100 text-cyan-700'
                           : 'bg-yellow-100 text-yellow-700'
                       }`}>
                         {training.userRsvpStatus === 'CONFIRMED' ? 'Confirmed' : 'Pending Confirmation'}
@@ -634,7 +635,7 @@ export default function TrainingsPage() {
                     <button
                       onClick={() => handleRsvp(training.id)}
                       disabled={rsvpingTrainingId === training.id}
-                      className="w-full py-2 px-4 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium disabled:opacity-50"
+                      className="w-full py-2 px-4 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors text-sm font-medium disabled:opacity-50"
                     >
                       {rsvpingTrainingId === training.id ? 'Signing up...' : 'Sign Up'}
                     </button>
@@ -648,7 +649,7 @@ export default function TrainingsPage() {
                   {canCreateTraining && training.status !== 'CANCELLED' && (
                     <Link
                       href={`/trainings/${training.id}/roster`}
-                      className="block text-center text-sm text-teal-600 hover:text-teal-700 mt-2"
+                      className="block text-center text-sm text-cyan-600 hover:text-cyan-700 mt-2"
                     >
                       Manage Roster {training.pendingCount > 0 && `(${training.pendingCount} pending)`}
                     </Link>
@@ -663,7 +664,7 @@ export default function TrainingsPage() {
             {canCreateTraining && (
               <Link
                 href="/trainings/create"
-                className="inline-block px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium"
+                className="inline-block px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium"
               >
                 Schedule First Training
               </Link>
@@ -729,7 +730,7 @@ export default function TrainingsPage() {
                   .filter(t => isTrainingSelected(t.id))
                   .reduce((sum, t) => sum + t.pendingCount, 0);
                 return pendingCount > 0 ? (
-                  <span className="block mt-2 font-medium text-teal-700">
+                  <span className="block mt-2 font-medium text-cyan-700">
                     {pendingCount} pending RSVP{pendingCount > 1 ? 's' : ''} will be confirmed.
                   </span>
                 ) : null;
@@ -751,7 +752,7 @@ export default function TrainingsPage() {
               <button
                 onClick={handleConfirmRsvps}
                 disabled={isConfirming}
-                className="flex-1 py-2 px-4 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium disabled:opacity-50"
+                className="flex-1 py-2 px-4 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium disabled:opacity-50"
               >
                 {isConfirming ? 'Confirming...' : 'Confirm All'}
               </button>

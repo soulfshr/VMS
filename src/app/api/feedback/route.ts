@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendFeedbackEmail } from '@/lib/email';
 import { getDbUser } from '@/lib/user';
+import { checkRateLimitAsync, getClientIp, RATE_LIMITS, rateLimitResponse } from '@/lib/rate-limit';
 
 // POST /api/feedback - Submit user feedback
 export async function POST(request: NextRequest) {
+  // Rate limiting for public endpoint
+  const clientIp = getClientIp(request);
+  const rateLimit = await checkRateLimitAsync(`feedback:${clientIp}`, RATE_LIMITS.feedback);
+  if (!rateLimit.success) {
+    return rateLimitResponse(rateLimit);
+  }
+
   try {
     const body = await request.json();
     const { category, message, url, userAgent } = body;

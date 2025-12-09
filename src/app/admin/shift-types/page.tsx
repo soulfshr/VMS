@@ -254,7 +254,7 @@ export default function ShiftTypesPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full" />
+        <div className="animate-spin w-8 h-8 border-4 border-cyan-600 border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -269,7 +269,7 @@ export default function ShiftTypesPage() {
         {!isCreating && !editingId && (
           <button
             onClick={startCreate}
-            className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium"
+            className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium"
           >
             + Add Shift Type
           </button>
@@ -302,7 +302,7 @@ export default function ShiftTypesPage() {
                 type="text"
                 value={formData.name}
                 onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 placeholder="e.g., Patrol"
               />
             </div>
@@ -313,7 +313,7 @@ export default function ShiftTypesPage() {
                 value={formData.slug}
                 onChange={e => setFormData(prev => ({ ...prev, slug: e.target.value.toUpperCase() }))}
                 disabled={!!editingId}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:bg-gray-50 disabled:text-gray-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 disabled:bg-gray-50 disabled:text-gray-500"
                 placeholder="e.g., PATROL"
               />
               {editingId && <p className="text-xs text-gray-500 mt-1">Slug is a database label and not visible in the main app. It cannot be changed after creation.</p>}
@@ -325,7 +325,7 @@ export default function ShiftTypesPage() {
             <textarea
               value={formData.description}
               onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
               rows={2}
               placeholder="Brief description of this shift type..."
             />
@@ -345,7 +345,7 @@ export default function ShiftTypesPage() {
                   type="text"
                   value={formData.color}
                   onChange={e => setFormData(prev => ({ ...prev, color: e.target.value }))}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 />
               </div>
             </div>
@@ -356,7 +356,7 @@ export default function ShiftTypesPage() {
                 min="1"
                 value={formData.defaultMinVolunteers}
                 onChange={e => setFormData(prev => ({ ...prev, defaultMinVolunteers: parseInt(e.target.value) || 1 }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
               />
             </div>
             <div>
@@ -366,7 +366,7 @@ export default function ShiftTypesPage() {
                 min="1"
                 value={formData.defaultIdealVolunteers}
                 onChange={e => setFormData(prev => ({ ...prev, defaultIdealVolunteers: parseInt(e.target.value) || 2 }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
               />
             </div>
             <div>
@@ -376,7 +376,7 @@ export default function ShiftTypesPage() {
                 min="1"
                 value={formData.defaultMaxVolunteers}
                 onChange={e => setFormData(prev => ({ ...prev, defaultMaxVolunteers: parseInt(e.target.value) || 4 }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
               />
             </div>
           </div>
@@ -389,7 +389,7 @@ export default function ShiftTypesPage() {
                 type="button"
                 onClick={addQualifiedRoleRequirement}
                 disabled={qualifiedRoles.length === 0}
-                className="text-sm text-teal-600 hover:text-teal-700 disabled:text-gray-400"
+                className="text-sm text-cyan-600 hover:text-cyan-700 disabled:text-gray-400"
               >
                 + Add Qualified Role
               </button>
@@ -407,7 +407,7 @@ export default function ShiftTypesPage() {
                     <select
                       value={qr.qualifiedRoleId}
                       onChange={e => updateQualifiedRoleRequirement(index, 'qualifiedRoleId', e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
                     >
                       {qualifiedRoles.map(role => (
                         <option key={role.id} value={role.id}>{role.name}</option>
@@ -420,7 +420,7 @@ export default function ShiftTypesPage() {
                         min="0"
                         value={qr.minRequired}
                         onChange={e => updateQualifiedRoleRequirement(index, 'minRequired', parseInt(e.target.value) || 0)}
-                        className="w-16 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                        className="w-16 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
                       />
                     </div>
                     <div className="flex items-center gap-2">
@@ -431,7 +431,7 @@ export default function ShiftTypesPage() {
                         value={qr.maxAllowed ?? ''}
                         onChange={e => updateQualifiedRoleRequirement(index, 'maxAllowed', e.target.value ? parseInt(e.target.value) : null)}
                         placeholder="∞"
-                        className="w-16 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                        className="w-16 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
                       />
                     </div>
                     <button
@@ -450,7 +450,7 @@ export default function ShiftTypesPage() {
           <div className="flex gap-3 pt-4 border-t border-gray-200">
             <button
               onClick={handleSave}
-              className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium"
+              className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium"
             >
               {isCreating ? 'Create Shift Type' : 'Save Changes'}
             </button>
@@ -527,7 +527,7 @@ export default function ShiftTypesPage() {
                       })}
                     </div>
                   ) : (
-                    <span className="text-sm text-gray-400">None</span>
+                    <span className="text-sm text-gray-500">None</span>
                   )}
                 </td>
                 <td className="px-4 py-4 text-sm text-gray-600">
@@ -552,7 +552,7 @@ export default function ShiftTypesPage() {
                   <div className="flex justify-end gap-2">
                     <button
                       onClick={() => startEdit(st)}
-                      className="text-sm text-teal-600 hover:text-teal-700"
+                      className="text-sm text-cyan-600 hover:text-cyan-700"
                     >
                       Edit
                     </button>

@@ -64,10 +64,10 @@ export default function ResetPasswordClient() {
         <div className="container mx-auto px-4 max-w-md">
           <div className="text-center mb-8">
             <Image
-              src="/ripple-logo-perspective-animated.svg"
+              src="/ripple-logo.png"
               alt="RippleVMS"
-              width={120}
-              height={75}
+              width={150}
+              height={124}
               className="mx-auto mb-4"
             />
           </div>
@@ -93,7 +93,7 @@ export default function ResetPasswordClient() {
             </p>
             <Link
               href="/forgot-password"
-              className="inline-block px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+              className="inline-block px-6 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors"
             >
               Request New Link
             </Link>
@@ -127,9 +127,9 @@ export default function ResetPasswordClient() {
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           {isSuccess ? (
             <div className="text-center py-4">
-              <div className="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-cyan-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg
-                  className="w-8 h-8 text-teal-600"
+                  className="w-8 h-8 text-cyan-600"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -150,14 +150,15 @@ export default function ResetPasswordClient() {
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
               {error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
+                <div role="alert" id="password-error" className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
                   {error}
                 </div>
               )}
 
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                  New Password
+                  New Password <span aria-hidden="true">*</span>
+                  <span className="sr-only">(required)</span>
                 </label>
                 <input
                   id="password"
@@ -165,16 +166,21 @@ export default function ResetPasswordClient() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  aria-required="true"
+                  aria-invalid={error?.includes('Password') ? true : undefined}
+                  aria-describedby={error ? 'password-error password-hint' : 'password-hint'}
                   minLength={8}
                   autoComplete="new-password"
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-colors"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition-colors"
                   placeholder="At least 8 characters"
                 />
+                <p id="password-hint" className="mt-1 text-xs text-gray-500">Must be at least 8 characters</p>
               </div>
 
               <div>
                 <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                  Confirm Password
+                  Confirm Password <span aria-hidden="true">*</span>
+                  <span className="sr-only">(required)</span>
                 </label>
                 <input
                   id="confirmPassword"
@@ -182,8 +188,11 @@ export default function ResetPasswordClient() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
+                  aria-required="true"
+                  aria-invalid={error?.includes('match') ? true : undefined}
+                  aria-describedby={error?.includes('match') ? 'password-error' : undefined}
                   autoComplete="new-password"
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-colors"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition-colors"
                   placeholder="Confirm your password"
                 />
               </div>
@@ -191,7 +200,7 @@ export default function ResetPasswordClient() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-3 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full py-3 bg-cyan-600 text-white font-semibold rounded-lg hover:bg-cyan-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isLoading ? (
                   <>

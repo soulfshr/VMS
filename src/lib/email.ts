@@ -2,6 +2,8 @@ import { SESClient, SendEmailCommand, SendRawEmailCommand } from '@aws-sdk/clien
 import icalGenerator from 'ical-generator';
 import crypto from 'crypto';
 import { prisma } from '@/lib/db';
+import { escapeHtml, escapeHtmlPreserveBreaks } from '@/lib/html-escape';
+import { logger } from '@/lib/logger';
 
 // Organization timezone - used for formatting dates in emails
 // This ensures consistent display regardless of server timezone (UTC on Vercel)
@@ -198,9 +200,6 @@ async function sendEmailWithCalendar(params: {
   const { to, subject, html, fromName, fromAddress, replyTo, calendarContent, unsubscribeToken } = params;
 
   const boundary = `----=_Part_${Date.now()}_${Math.random().toString(36).substring(2)}`;
-  const unsubscribeUrl = unsubscribeToken
-    ? `${APP_URL}/api/unsubscribe?token=${unsubscribeToken}`
-    : `${APP_URL}/profile`;
 
   // RFC 2047 encode the from name for proper display in email clients
   const encodedFromName = fromName
@@ -212,22 +211,26 @@ async function sendEmailWithCalendar(params: {
 
   console.log('[Email] Sending calendar email with From:', fromHeader);
 
+  // Normalize HTML: remove all newlines and extra whitespace to create single-line HTML
+  // This avoids MIME line ending issues while keeping the email readable
+  const normalizedHtml = html.replace(/\s+/g, ' ').trim();
+
   // Build raw MIME message
+  // Note: List-Unsubscribe headers removed as they can cause MIME parsing issues
+  // Unsubscribe link is included in the email footer instead
   const rawMessage = [
     fromHeader,
     `To: ${to}`,
     `Reply-To: ${replyTo || REPLY_TO_EMAIL}`,
     `Subject: ${subject}`,
     `MIME-Version: 1.0`,
-    `List-Unsubscribe: <${unsubscribeUrl}>`,
-    `List-Unsubscribe-Post: List-Unsubscribe=One-Click`,
     `Content-Type: multipart/mixed; boundary="${boundary}"`,
     '',
     `--${boundary}`,
     `Content-Type: text/html; charset=UTF-8`,
     `Content-Transfer-Encoding: 7bit`,
     '',
-    html,
+    normalizedHtml,
     '',
     `--${boundary}`,
     `Content-Type: text/calendar; charset=UTF-8; method=REQUEST`,
@@ -292,32 +295,32 @@ export async function sendShiftSignupEmail(params: ShiftEmailParams): Promise<vo
       unsubscribeToken,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #0d9488;">Shift Signup Received</h2>
-          <p>Hi ${volunteerName},</p>
+          <h2 style="color: #0891b2;">Shift Signup Received</h2>
+          <p>Hi ${escapeHtml(volunteerName)},</p>
           <p>Thank you for signing up! Your request has been received and is pending confirmation.</p>
 
           <div style="background: #f3f4f6; padding: 16px; border-radius: 8px; margin: 20px 0;">
             <h3 style="margin-top: 0; color: #374151;">Shift Details</h3>
-            <p style="margin: 8px 0;"><strong>Shift:</strong> ${shiftTitle}</p>
-            <p style="margin: 8px 0;"><strong>Type:</strong> ${shiftType}</p>
-            <p style="margin: 8px 0;"><strong>Zone:</strong> ${zoneName}</p>
-            <p style="margin: 8px 0;"><strong>Date:</strong> ${dateStr}</p>
-            <p style="margin: 8px 0;"><strong>Time:</strong> ${startStr} - ${endStr}</p>
+            <p style="margin: 8px 0;"><strong>Shift:</strong> ${escapeHtml(shiftTitle)}</p>
+            <p style="margin: 8px 0;"><strong>Type:</strong> ${escapeHtml(shiftType)}</p>
+            <p style="margin: 8px 0;"><strong>Zone:</strong> ${escapeHtml(zoneName)}</p>
+            <p style="margin: 8px 0;"><strong>Date:</strong> ${escapeHtml(dateStr)}</p>
+            <p style="margin: 8px 0;"><strong>Time:</strong> ${escapeHtml(startStr)} - ${escapeHtml(endStr)}</p>
           </div>
 
           <p>A coordinator will review and confirm your signup. You'll receive another email with a calendar invite once confirmed.</p>
 
           <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
-            Thank you for volunteering with ${branding.orgName}!
+            Thank you for volunteering with ${escapeHtml(branding.orgName)}!
           </p>
 
           ${getEmailFooter(unsubscribeToken, branding)}
         </div>
       `,
     });
-    console.log(`[Email] Signup email sent to ${to}`);
+    logger.email('Signup email sent', { to }).catch(() => {});
   } catch (error) {
-    console.error('[Email] Failed to send signup email:', error);
+    logger.error('EMAIL', 'Failed to send signup email', { to, error: error instanceof Error ? error.message : 'Unknown' }).catch(() => {});
   }
 }
 
@@ -361,23 +364,23 @@ export async function sendShiftConfirmationEmail(params: ShiftEmailParams): Prom
       calendarContent: calendar.toString(),
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #0d9488;">Your Shift is Confirmed!</h2>
-          <p>Hi ${volunteerName},</p>
+          <h2 style="color: #0891b2;">Your Shift is Confirmed!</h2>
+          <p>Hi ${escapeHtml(volunteerName)},</p>
           <p>Great news! Your shift has been confirmed.</p>
 
-          <div style="background: #d1fae5; padding: 16px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #0d9488;">
+          <div style="background: #cffafe; padding: 16px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #0891b2;">
             <h3 style="margin-top: 0; color: #065f46;">Confirmed Shift</h3>
-            <p style="margin: 8px 0;"><strong>Shift:</strong> ${shiftTitle}</p>
-            <p style="margin: 8px 0;"><strong>Type:</strong> ${shiftType}</p>
-            <p style="margin: 8px 0;"><strong>Zone:</strong> ${zoneName}</p>
-            <p style="margin: 8px 0;"><strong>Date:</strong> ${dateStr}</p>
-            <p style="margin: 8px 0;"><strong>Time:</strong> ${startStr} - ${endStr}</p>
+            <p style="margin: 8px 0;"><strong>Shift:</strong> ${escapeHtml(shiftTitle)}</p>
+            <p style="margin: 8px 0;"><strong>Type:</strong> ${escapeHtml(shiftType)}</p>
+            <p style="margin: 8px 0;"><strong>Zone:</strong> ${escapeHtml(zoneName)}</p>
+            <p style="margin: 8px 0;"><strong>Date:</strong> ${escapeHtml(dateStr)}</p>
+            <p style="margin: 8px 0;"><strong>Time:</strong> ${escapeHtml(startStr)} - ${escapeHtml(endStr)}</p>
           </div>
 
           <p><strong>A calendar invite is attached to this email.</strong> Add it to your calendar so you don't forget!</p>
 
           <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
-            Thank you for volunteering with ${branding.orgName}!<br>
+            Thank you for volunteering with ${escapeHtml(branding.orgName)}!<br>
             If you need to cancel, please do so as soon as possible.
           </p>
 
@@ -385,9 +388,9 @@ export async function sendShiftConfirmationEmail(params: ShiftEmailParams): Prom
         </div>
       `,
     });
-    console.log(`[Email] Confirmation email with calendar invite sent to ${to}`);
+    logger.email('Confirmation email with calendar invite sent', { to }).catch(() => {});
   } catch (error) {
-    console.error('[Email] Failed to send confirmation email:', error);
+    logger.error('EMAIL', 'Failed to send confirmation email', { to, error: error instanceof Error ? error.message : 'Unknown' }).catch(() => {});
   }
 }
 
@@ -419,16 +422,16 @@ export async function sendShiftCancellationEmail(params: Omit<ShiftEmailParams, 
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #dc2626;">Shift Cancellation Confirmed</h2>
-          <p>Hi ${volunteerName},</p>
+          <p>Hi ${escapeHtml(volunteerName)},</p>
           <p>Your shift signup has been cancelled.</p>
 
           <div style="background: #fef2f2; padding: 16px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #dc2626;">
             <h3 style="margin-top: 0; color: #991b1b;">Cancelled Shift</h3>
-            <p style="margin: 8px 0;"><strong>Shift:</strong> ${shiftTitle}</p>
-            <p style="margin: 8px 0;"><strong>Type:</strong> ${shiftType}</p>
-            <p style="margin: 8px 0;"><strong>Zone:</strong> ${zoneName}</p>
-            <p style="margin: 8px 0;"><strong>Date:</strong> ${dateStr}</p>
-            <p style="margin: 8px 0;"><strong>Time:</strong> ${startStr} - ${endStr}</p>
+            <p style="margin: 8px 0;"><strong>Shift:</strong> ${escapeHtml(shiftTitle)}</p>
+            <p style="margin: 8px 0;"><strong>Type:</strong> ${escapeHtml(shiftType)}</p>
+            <p style="margin: 8px 0;"><strong>Zone:</strong> ${escapeHtml(zoneName)}</p>
+            <p style="margin: 8px 0;"><strong>Date:</strong> ${escapeHtml(dateStr)}</p>
+            <p style="margin: 8px 0;"><strong>Time:</strong> ${escapeHtml(startStr)} - ${escapeHtml(endStr)}</p>
           </div>
 
           <p>If you'd like to sign up for a different shift, please visit the VMS to browse available shifts.</p>
@@ -441,9 +444,9 @@ export async function sendShiftCancellationEmail(params: Omit<ShiftEmailParams, 
         </div>
       `,
     });
-    console.log(`[Email] Cancellation email sent to ${to}`);
+    logger.email('Cancellation email sent', { to }).catch(() => {});
   } catch (error) {
-    console.error('[Email] Failed to send cancellation email:', error);
+    logger.error('EMAIL', 'Failed to send cancellation email', { to, error: error instanceof Error ? error.message : 'Unknown' }).catch(() => {});
   }
 }
 
@@ -488,17 +491,17 @@ export async function sendShiftCancelledByCoordinatorEmail(params: ShiftCancelle
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #dc2626;">Shift Has Been Cancelled</h2>
-          <p>Hi ${volunteerName},</p>
+          <p>Hi ${escapeHtml(volunteerName)},</p>
           <p>We're sorry to inform you that a shift you were signed up for has been cancelled by a coordinator.</p>
 
           <div style="background: #fef2f2; padding: 16px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #dc2626;">
             <h3 style="margin-top: 0; color: #991b1b;">Cancelled Shift</h3>
-            <p style="margin: 8px 0;"><strong>Shift:</strong> ${shiftTitle}</p>
-            <p style="margin: 8px 0;"><strong>Type:</strong> ${shiftType}</p>
-            <p style="margin: 8px 0;"><strong>Zone:</strong> ${zoneName}</p>
-            <p style="margin: 8px 0;"><strong>Date:</strong> ${dateStr}</p>
-            <p style="margin: 8px 0;"><strong>Time:</strong> ${startStr} - ${endStr}</p>
-            ${reason ? `<p style="margin: 8px 0;"><strong>Reason:</strong> ${reason}</p>` : ''}
+            <p style="margin: 8px 0;"><strong>Shift:</strong> ${escapeHtml(shiftTitle)}</p>
+            <p style="margin: 8px 0;"><strong>Type:</strong> ${escapeHtml(shiftType)}</p>
+            <p style="margin: 8px 0;"><strong>Zone:</strong> ${escapeHtml(zoneName)}</p>
+            <p style="margin: 8px 0;"><strong>Date:</strong> ${escapeHtml(dateStr)}</p>
+            <p style="margin: 8px 0;"><strong>Time:</strong> ${escapeHtml(startStr)} - ${escapeHtml(endStr)}</p>
+            ${reason ? `<p style="margin: 8px 0;"><strong>Reason:</strong> ${escapeHtml(reason)}</p>` : ''}
           </div>
 
           <p>Please check the VMS for other available shifts you can sign up for.</p>
@@ -511,9 +514,9 @@ export async function sendShiftCancelledByCoordinatorEmail(params: ShiftCancelle
         </div>
       `,
     });
-    console.log(`[Email] Shift cancelled notification sent to ${to}`);
+    logger.email('Shift cancelled notification sent', { to }).catch(() => {});
   } catch (error) {
-    console.error('[Email] Failed to send shift cancelled email:', error);
+    logger.error('EMAIL', 'Failed to send shift cancelled email', { to, error: error instanceof Error ? error.message : 'Unknown' }).catch(() => {});
   }
 }
 
@@ -571,17 +574,17 @@ export async function sendShiftInviteEmail(params: ShiftInviteParams): Promise<v
       calendarContent: calendar.toString(),
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #0d9488;">You've Been Added to a Shift!</h2>
-          <p>Hi ${volunteerName},</p>
-          <p>${coordinatorName} has added you to a volunteer shift. You are confirmed and ready to go!</p>
+          <h2 style="color: #0891b2;">You've Been Added to a Shift!</h2>
+          <p>Hi ${escapeHtml(volunteerName)},</p>
+          <p>${escapeHtml(coordinatorName)} has added you to a volunteer shift. You are confirmed and ready to go!</p>
 
-          <div style="background: #d1fae5; padding: 16px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #0d9488;">
+          <div style="background: #cffafe; padding: 16px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #0891b2;">
             <h3 style="margin-top: 0; color: #065f46;">Your Shift</h3>
-            <p style="margin: 8px 0;"><strong>Shift:</strong> ${shiftTitle}</p>
-            <p style="margin: 8px 0;"><strong>Type:</strong> ${shiftType}</p>
-            <p style="margin: 8px 0;"><strong>Zone:</strong> ${zoneName}</p>
-            <p style="margin: 8px 0;"><strong>Date:</strong> ${dateStr}</p>
-            <p style="margin: 8px 0;"><strong>Time:</strong> ${startStr} - ${endStr}</p>
+            <p style="margin: 8px 0;"><strong>Shift:</strong> ${escapeHtml(shiftTitle)}</p>
+            <p style="margin: 8px 0;"><strong>Type:</strong> ${escapeHtml(shiftType)}</p>
+            <p style="margin: 8px 0;"><strong>Zone:</strong> ${escapeHtml(zoneName)}</p>
+            <p style="margin: 8px 0;"><strong>Date:</strong> ${escapeHtml(dateStr)}</p>
+            <p style="margin: 8px 0;"><strong>Time:</strong> ${escapeHtml(startStr)} - ${escapeHtml(endStr)}</p>
           </div>
 
           <p><strong>A calendar invite is attached to this email.</strong> Add it to your calendar so you don't forget!</p>
@@ -589,16 +592,16 @@ export async function sendShiftInviteEmail(params: ShiftInviteParams): Promise<v
           <p>If you cannot attend this shift, please log into the VMS and cancel your signup, or contact your coordinator.</p>
 
           <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
-            Thank you for volunteering with ${branding.orgName}!
+            Thank you for volunteering with ${escapeHtml(branding.orgName)}!
           </p>
 
           ${getEmailFooter(unsubscribeToken, branding)}
         </div>
       `,
     });
-    console.log(`[Email] Shift invite email with calendar invite sent to ${to}`);
+    logger.email('Shift invite email with calendar invite sent', { to }).catch(() => {});
   } catch (error) {
-    console.error('[Email] Failed to send invite email:', error);
+    logger.error('EMAIL', 'Failed to send invite email', { to, error: error instanceof Error ? error.message : 'Unknown' }).catch(() => {});
   }
 }
 
@@ -628,15 +631,13 @@ export async function sendBlastEmail(params: BlastEmailParams): Promise<{ succes
 
   const { to, recipientName, subject, body, unsubscribeToken } = params;
 
-  // Replace variables in body
+  // Replace variables in body (escape user content first)
   const processedBody = body
-    .replace(/\{\{volunteerName\}\}/g, recipientName)
-    .replace(/\{\{organizationName\}\}/g, branding.orgName);
+    .replace(/\{\{volunteerName\}\}/g, escapeHtml(recipientName))
+    .replace(/\{\{organizationName\}\}/g, escapeHtml(branding.orgName));
 
-  // Convert newlines to <br> for HTML, collapsing multiple blank lines
-  const htmlBody = processedBody
-    .replace(/\n{3,}/g, '\n\n')
-    .replace(/\n/g, '<br>');
+  // The body content is admin-authored, but we still escape and preserve line breaks
+  const htmlBody = escapeHtmlPreserveBreaks(processedBody);
 
   try {
     await sendEmail({
@@ -648,12 +649,12 @@ export async function sendBlastEmail(params: BlastEmailParams): Promise<{ succes
       unsubscribeToken,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; font-size: 14px; line-height: 1.5;">
-          <div style="background: #0d9488; color: white; padding: 12px 20px; border-radius: 8px 8px 0 0;">
-            <h2 style="margin: 0; font-size: 18px;">${branding.orgName}</h2>
+          <div style="background: #0891b2; color: white; padding: 12px 20px; border-radius: 8px 8px 0 0;">
+            <h2 style="margin: 0; font-size: 18px;">${escapeHtml(branding.orgName)}</h2>
           </div>
 
           <div style="border: 1px solid #e5e7eb; border-top: none; padding: 16px 20px; border-radius: 0 0 8px 8px;">
-            <p style="margin: 0 0 12px 0;">Hi ${recipientName},</p>
+            <p style="margin: 0 0 12px 0;">Hi ${escapeHtml(recipientName)},</p>
 
             <div style="margin: 0;">
               ${htmlBody}
@@ -666,7 +667,7 @@ export async function sendBlastEmail(params: BlastEmailParams): Promise<{ succes
     });
     return { success: true };
   } catch (error) {
-    console.error(`[Email] Failed to send blast email to ${to}:`, error);
+    logger.error('EMAIL', 'Failed to send blast email', { to, error: error instanceof Error ? error.message : 'Unknown' }).catch(() => {});
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
@@ -724,12 +725,12 @@ export function generateShiftListHtml(shifts: ShiftForListing[], showAllZones = 
       timeZone: ORG_TIMEZONE,
     });
     const spotsLeft = shift.maxVolunteers - shift.confirmedCount;
-    const spotsBg = spotsLeft <= 2 ? '#fef3c7' : '#d1fae5';
+    const spotsBg = spotsLeft <= 2 ? '#fef3c7' : '#cffafe';
 
-    return `<tr><td style="padding: 6px 10px; border-bottom: 1px solid #e5e7eb; font-size: 13px;">${dateStr}</td><td style="padding: 6px 10px; border-bottom: 1px solid #e5e7eb; font-size: 13px;">${startStr} - ${endStr}</td><td style="padding: 6px 10px; border-bottom: 1px solid #e5e7eb; font-size: 13px;">${shift.zone.name}</td><td style="padding: 6px 10px; border-bottom: 1px solid #e5e7eb; font-size: 13px;">${shift.title}</td><td style="padding: 6px 10px; border-bottom: 1px solid #e5e7eb; text-align: center;"><span style="background: ${spotsBg}; padding: 2px 6px; border-radius: 10px; font-weight: 600; font-size: 12px;">${spotsLeft}</span></td></tr>`;
+    return `<tr><td style="padding: 6px 10px; border-bottom: 1px solid #e5e7eb; font-size: 13px;">${escapeHtml(dateStr)}</td><td style="padding: 6px 10px; border-bottom: 1px solid #e5e7eb; font-size: 13px;">${escapeHtml(startStr)} - ${escapeHtml(endStr)}</td><td style="padding: 6px 10px; border-bottom: 1px solid #e5e7eb; font-size: 13px;">${escapeHtml(shift.zone.name)}</td><td style="padding: 6px 10px; border-bottom: 1px solid #e5e7eb; font-size: 13px;">${escapeHtml(shift.title)}</td><td style="padding: 6px 10px; border-bottom: 1px solid #e5e7eb; text-align: center;"><span style="background: ${spotsBg}; padding: 2px 6px; border-radius: 10px; font-weight: 600; font-size: 12px;">${spotsLeft}</span></td></tr>`;
   }).join('');
 
-  return `<div style="margin: 16px 0 8px 0;"><h3 style="color: #0d9488; margin: 0 0 8px 0; font-size: 16px;">${headerText}</h3><table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);"><thead><tr style="background: #f3f4f6;"><th style="padding: 8px 10px; text-align: left; font-weight: 600; color: #374151; border-bottom: 2px solid #e5e7eb; font-size: 13px;">Date</th><th style="padding: 8px 10px; text-align: left; font-weight: 600; color: #374151; border-bottom: 2px solid #e5e7eb; font-size: 13px;">Time</th><th style="padding: 8px 10px; text-align: left; font-weight: 600; color: #374151; border-bottom: 2px solid #e5e7eb; font-size: 13px;">Zone</th><th style="padding: 8px 10px; text-align: left; font-weight: 600; color: #374151; border-bottom: 2px solid #e5e7eb; font-size: 13px;">Shift</th><th style="padding: 8px 10px; text-align: center; font-weight: 600; color: #374151; border-bottom: 2px solid #e5e7eb; font-size: 13px;">Spots</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  return `<div style="margin: 16px 0 8px 0;"><h3 style="color: #0891b2; margin: 0 0 8px 0; font-size: 16px;">${headerText}</h3><table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);"><thead><tr style="background: #f3f4f6;"><th style="padding: 8px 10px; text-align: left; font-weight: 600; color: #374151; border-bottom: 2px solid #e5e7eb; font-size: 13px;">Date</th><th style="padding: 8px 10px; text-align: left; font-weight: 600; color: #374151; border-bottom: 2px solid #e5e7eb; font-size: 13px;">Time</th><th style="padding: 8px 10px; text-align: left; font-weight: 600; color: #374151; border-bottom: 2px solid #e5e7eb; font-size: 13px;">Zone</th><th style="padding: 8px 10px; text-align: left; font-weight: 600; color: #374151; border-bottom: 2px solid #e5e7eb; font-size: 13px;">Shift</th><th style="padding: 8px 10px; text-align: center; font-weight: 600; color: #374151; border-bottom: 2px solid #e5e7eb; font-size: 13px;">Spots</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
 // ============================================
@@ -782,10 +783,10 @@ export function generateTrainingListHtml(trainings: TrainingForListing[]): strin
       timeZone: ORG_TIMEZONE,
     });
     const spotsLeft = training.maxAttendees - training.confirmedCount;
-    const spotsBg = spotsLeft <= 3 ? '#fef3c7' : '#d1fae5';
+    const spotsBg = spotsLeft <= 3 ? '#fef3c7' : '#cffafe';
     const locationStr = training.meetingLink ? 'Virtual' : (training.location || 'TBD');
 
-    return `<tr><td style="padding: 6px 10px; border-bottom: 1px solid #e5e7eb; font-size: 13px;">${dateStr}</td><td style="padding: 6px 10px; border-bottom: 1px solid #e5e7eb; font-size: 13px;">${startStr} - ${endStr}</td><td style="padding: 6px 10px; border-bottom: 1px solid #e5e7eb; font-size: 13px;">${training.trainingType.name}</td><td style="padding: 6px 10px; border-bottom: 1px solid #e5e7eb; font-size: 13px;">${training.title}</td><td style="padding: 6px 10px; border-bottom: 1px solid #e5e7eb; font-size: 13px;">${locationStr}</td><td style="padding: 6px 10px; border-bottom: 1px solid #e5e7eb; text-align: center;"><span style="background: ${spotsBg}; padding: 2px 6px; border-radius: 10px; font-weight: 600; font-size: 12px;">${spotsLeft}</span></td></tr>`;
+    return `<tr><td style="padding: 6px 10px; border-bottom: 1px solid #e5e7eb; font-size: 13px;">${escapeHtml(dateStr)}</td><td style="padding: 6px 10px; border-bottom: 1px solid #e5e7eb; font-size: 13px;">${escapeHtml(startStr)} - ${escapeHtml(endStr)}</td><td style="padding: 6px 10px; border-bottom: 1px solid #e5e7eb; font-size: 13px;">${escapeHtml(training.trainingType.name)}</td><td style="padding: 6px 10px; border-bottom: 1px solid #e5e7eb; font-size: 13px;">${escapeHtml(training.title)}</td><td style="padding: 6px 10px; border-bottom: 1px solid #e5e7eb; font-size: 13px;">${escapeHtml(locationStr)}</td><td style="padding: 6px 10px; border-bottom: 1px solid #e5e7eb; text-align: center;"><span style="background: ${spotsBg}; padding: 2px 6px; border-radius: 10px; font-weight: 600; font-size: 12px;">${spotsLeft}</span></td></tr>`;
   }).join('');
 
   return `<div style="margin: 16px 0 8px 0;"><h3 style="color: #8b5cf6; margin: 0 0 8px 0; font-size: 16px;">📚 Upcoming Trainings</h3><table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);"><thead><tr style="background: #f3f4f6;"><th style="padding: 8px 10px; text-align: left; font-weight: 600; color: #374151; border-bottom: 2px solid #e5e7eb; font-size: 13px;">Date</th><th style="padding: 8px 10px; text-align: left; font-weight: 600; color: #374151; border-bottom: 2px solid #e5e7eb; font-size: 13px;">Time</th><th style="padding: 8px 10px; text-align: left; font-weight: 600; color: #374141; border-bottom: 2px solid #e5e7eb; font-size: 13px;">Type</th><th style="padding: 8px 10px; text-align: left; font-weight: 600; color: #374151; border-bottom: 2px solid #e5e7eb; font-size: 13px;">Title</th><th style="padding: 8px 10px; text-align: left; font-weight: 600; color: #374151; border-bottom: 2px solid #e5e7eb; font-size: 13px;">Location</th><th style="padding: 8px 10px; text-align: center; font-weight: 600; color: #374151; border-bottom: 2px solid #e5e7eb; font-size: 13px;">Spots</th></tr></thead><tbody>${rows}</tbody></table></div>`;
@@ -825,18 +826,18 @@ export async function sendPasswordResetEmail(params: PasswordResetParams): Promi
       replyTo: branding.emailReplyTo,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background: #0d9488; color: white; padding: 16px 24px; border-radius: 8px 8px 0 0;">
+          <div style="background: #0891b2; color: white; padding: 16px 24px; border-radius: 8px 8px 0 0;">
             <h2 style="margin: 0;">${branding.orgName}</h2>
           </div>
 
           <div style="border: 1px solid #e5e7eb; border-top: none; padding: 24px; border-radius: 0 0 8px 8px;">
             <h2 style="color: #374151; margin-top: 0;">Reset Your Password</h2>
-            <p>Hi ${userName},</p>
+            <p>Hi ${escapeHtml(userName)},</p>
             <p>We received a request to reset your password. Click the button below to set a new password:</p>
 
             <div style="text-align: center; margin: 32px 0;">
               <a href="${resetUrl}"
-                 style="display: inline-block; background: #0d9488; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
+                 style="display: inline-block; background: #0891b2; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
                 Reset Password
               </a>
             </div>
@@ -847,7 +848,7 @@ export async function sendPasswordResetEmail(params: PasswordResetParams): Promi
 
             <p style="color: #9ca3af; font-size: 12px; margin-top: 32px;">
               If the button doesn't work, copy and paste this link into your browser:<br>
-              <a href="${resetUrl}" style="color: #0d9488; word-break: break-all;">${resetUrl}</a>
+              <a href="${resetUrl}" style="color: #0891b2; word-break: break-all;">${resetUrl}</a>
             </p>
 
             ${getEmailFooter(undefined, branding)}
@@ -855,10 +856,10 @@ export async function sendPasswordResetEmail(params: PasswordResetParams): Promi
         </div>
       `,
     });
-    console.log(`[Email] Password reset email sent to ${to}`);
+    logger.email('Password reset email sent', { to }).catch(() => {});
     return true;
   } catch (error) {
-    console.error('[Email] Failed to send password reset email:', error);
+    logger.error('EMAIL', 'Failed to send password reset email', { to, error: error instanceof Error ? error.message : 'Unknown' }).catch(() => {});
     return false;
   }
 }
@@ -877,13 +878,24 @@ interface FeedbackEmailParams {
 }
 
 /**
- * Send feedback email to the admin
+ * Send feedback email to the configured recipient (Developer settings)
  */
 export async function sendFeedbackEmail(params: FeedbackEmailParams): Promise<void> {
   const branding = await getBranding();
 
   if (!isEmailConfigured(branding)) {
     console.log('[Email] SES not configured, skipping feedback email');
+    return;
+  }
+
+  // Get feedback email from organization settings
+  const settings = await prisma.organizationSettings.findFirst({
+    select: { feedbackEmail: true }
+  });
+
+  const feedbackRecipient = settings?.feedbackEmail;
+  if (!feedbackRecipient) {
+    console.log('[Email] No feedback email configured, skipping feedback email. Configure in Developer console.');
     return;
   }
 
@@ -903,38 +915,38 @@ export async function sendFeedbackEmail(params: FeedbackEmailParams): Promise<vo
 
   try {
     await sendEmail({
-      to: 'joshcottrell@gmail.com',
+      to: feedbackRecipient,
       subject: `[VMS Feedback] ${categoryLabel}${userName ? ` from ${userName}` : ''}`,
       fromName: branding.emailFromName,
       fromAddress: branding.emailFromAddress,
       replyTo: userEmail || branding.emailReplyTo,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background: #0d9488; color: white; padding: 16px 24px; border-radius: 8px 8px 0 0;">
-            <h2 style="margin: 0;">VMS Feedback: ${categoryLabel}</h2>
-            ${userName || userEmail ? `<p style="margin: 8px 0 0 0; font-size: 14px; opacity: 0.9;">From: ${userName || 'Anonymous'}${userEmail ? ` &lt;${userEmail}&gt;` : ''}</p>` : '<p style="margin: 8px 0 0 0; font-size: 14px; opacity: 0.9;">From: Anonymous (not logged in)</p>'}
+          <div style="background: #0891b2; color: white; padding: 16px 24px; border-radius: 8px 8px 0 0;">
+            <h2 style="margin: 0;">VMS Feedback: ${escapeHtml(categoryLabel)}</h2>
+            ${userName || userEmail ? `<p style="margin: 8px 0 0 0; font-size: 14px; opacity: 0.9;">From: ${escapeHtml(userName || 'Anonymous')}${userEmail ? ` &lt;${escapeHtml(userEmail)}&gt;` : ''}</p>` : '<p style="margin: 8px 0 0 0; font-size: 14px; opacity: 0.9;">From: Anonymous (not logged in)</p>'}
           </div>
 
           <div style="border: 1px solid #e5e7eb; border-top: none; padding: 24px; border-radius: 0 0 8px 8px;">
             <div style="background: #f3f4f6; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
               <h3 style="margin-top: 0; color: #374151;">Message</h3>
-              <p style="margin: 0; white-space: pre-wrap;">${message}</p>
+              <p style="margin: 0; white-space: pre-wrap;">${escapeHtmlPreserveBreaks(message)}</p>
             </div>
 
             <div style="color: #6b7280; font-size: 14px;">
               <h4 style="color: #374151; margin-bottom: 8px;">Details</h4>
-              <p style="margin: 4px 0;"><strong>Category:</strong> ${categoryLabel}</p>
-              <p style="margin: 4px 0;"><strong>Submitted:</strong> ${timestamp}</p>
-              ${url ? `<p style="margin: 4px 0;"><strong>Page:</strong> <a href="${url}">${url}</a></p>` : ''}
-              ${userAgent ? `<p style="margin: 4px 0;"><strong>Browser:</strong> ${userAgent}</p>` : ''}
+              <p style="margin: 4px 0;"><strong>Category:</strong> ${escapeHtml(categoryLabel)}</p>
+              <p style="margin: 4px 0;"><strong>Submitted:</strong> ${escapeHtml(timestamp)}</p>
+              ${url ? `<p style="margin: 4px 0;"><strong>Page:</strong> <a href="${escapeHtml(url)}">${escapeHtml(url)}</a></p>` : ''}
+              ${userAgent ? `<p style="margin: 4px 0;"><strong>Browser:</strong> ${escapeHtml(userAgent)}</p>` : ''}
             </div>
           </div>
         </div>
       `,
     });
-    console.log('[Email] Feedback email sent to joshcottrell@gmail.com');
+    logger.email('Feedback email sent', { to: feedbackRecipient, category }).catch(() => {});
   } catch (error) {
-    console.error('[Email] Failed to send feedback email:', error);
+    logger.error('EMAIL', 'Failed to send feedback email', { error: error instanceof Error ? error.message : 'Unknown' }).catch(() => {});
     throw error; // Re-throw so the API can return an error
   }
 }
@@ -1006,28 +1018,28 @@ export async function sendSightingNotificationToDispatchers(
             </div>
 
             <div style="border: 1px solid #e5e7eb; border-top: none; padding: 24px; border-radius: 0 0 8px 8px;">
-              <p>Hi ${dispatcher.name},</p>
+              <p>Hi ${escapeHtml(dispatcher.name)},</p>
               <p>A new ICE sighting has been reported and needs your attention.</p>
 
               <div style="background: #fef2f2; padding: 16px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #dc2626;">
                 <h3 style="margin-top: 0; color: #991b1b;">S.A.L.U.T.E. Report</h3>
-                <p style="margin: 8px 0;"><strong style="color: #dc2626;">S</strong> Size/Strength: ${size}</p>
-                <p style="margin: 8px 0;"><strong style="color: #dc2626;">A</strong> Activity: ${activity}</p>
-                <p style="margin: 8px 0;"><strong style="color: #dc2626;">L</strong> Location: ${location}</p>
-                <p style="margin: 8px 0;"><strong style="color: #dc2626;">U</strong> Uniform: ${uniform}</p>
-                <p style="margin: 8px 0;"><strong style="color: #dc2626;">T</strong> Time: ${dateStr} at ${timeStr}</p>
-                <p style="margin: 8px 0;"><strong style="color: #dc2626;">E</strong> Equipment: ${equipment}</p>
-                ${hasMedia ? '<p style="margin: 8px 0; color: #0d9488;">📷 Photos/videos attached to this report</p>' : ''}
-                ${reporterName ? `<p style="margin: 8px 0; color: #6b7280;">Reporter: ${reporterName}</p>` : ''}
+                <p style="margin: 8px 0;"><strong style="color: #dc2626;">S</strong> Size/Strength: ${escapeHtml(size)}</p>
+                <p style="margin: 8px 0;"><strong style="color: #dc2626;">A</strong> Activity: ${escapeHtml(activity)}</p>
+                <p style="margin: 8px 0;"><strong style="color: #dc2626;">L</strong> Location: ${escapeHtml(location)}</p>
+                <p style="margin: 8px 0;"><strong style="color: #dc2626;">U</strong> Uniform: ${escapeHtml(uniform)}</p>
+                <p style="margin: 8px 0;"><strong style="color: #dc2626;">T</strong> Time: ${escapeHtml(dateStr)} at ${escapeHtml(timeStr)}</p>
+                <p style="margin: 8px 0;"><strong style="color: #dc2626;">E</strong> Equipment: ${escapeHtml(equipment)}</p>
+                ${hasMedia ? '<p style="margin: 8px 0; color: #0891b2;">📷 Photos/videos attached to this report</p>' : ''}
+                ${reporterName ? `<p style="margin: 8px 0; color: #6b7280;">Reporter: ${escapeHtml(reporterName)}</p>` : ''}
               </div>
 
-              <a href="${vmsUrl}/sightings/${sightingId}"
+              <a href="${vmsUrl}/sightings/${escapeHtml(sightingId)}"
                  style="display: inline-block; background: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; margin-top: 16px;">
                 View Full Report
               </a>
 
               <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
-                This is an automated notification from ${branding.orgName}.<br>
+                This is an automated notification from ${escapeHtml(branding.orgName)}.<br>
                 Please review and update the status as you respond to this sighting.
               </p>
 
@@ -1036,9 +1048,9 @@ export async function sendSightingNotificationToDispatchers(
           </div>
         `,
       });
-      console.log(`[Email] Sighting notification sent to ${dispatcher.email}`);
+      logger.email('Sighting notification sent', { to: dispatcher.email, sightingId }).catch(() => {});
     } catch (error) {
-      console.error(`[Email] Failed to send sighting notification to ${dispatcher.email}:`, error);
+      logger.error('EMAIL', 'Failed to send sighting notification', { to: dispatcher.email, sightingId, error: error instanceof Error ? error.message : 'Unknown' }).catch(() => {});
     }
   }
 }

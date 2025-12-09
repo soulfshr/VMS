@@ -3,7 +3,9 @@ import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { Role } from '@/generated/prisma/enums';
 
-// PATCH /api/volunteers/[id] - Update a volunteer (Admin only)
+// PATCH /api/volunteers/[id] - Update a volunteer
+// - ADMINISTRATOR: Can update all fields
+// - COORDINATOR, DISPATCHER: Can only update qualifiedRoleIds
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -14,13 +16,29 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Only admins can update volunteer roles
-    if (user.role !== 'ADMINISTRATOR') {
+    const isAdmin = user.role === 'ADMINISTRATOR';
+    const canEditQualifications = ['ADMINISTRATOR', 'COORDINATOR', 'DISPATCHER'].includes(user.role);
+
+    // Must be admin, coordinator, or dispatcher
+    if (!canEditQualifications) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const { id } = await params;
     const body = await request.json();
+
+    // Non-admins can only update qualifiedRoleIds
+    if (!isAdmin) {
+      const allowedFields = ['qualifiedRoleIds'];
+      const providedFields = Object.keys(body);
+      const disallowedFields = providedFields.filter(f => !allowedFields.includes(f));
+      if (disallowedFields.length > 0) {
+        return NextResponse.json(
+          { error: `Only administrators can update: ${disallowedFields.join(', ')}` },
+          { status: 403 }
+        );
+      }
+    }
 
     // Find the volunteer
     const volunteer = await prisma.user.findUnique({
@@ -80,6 +98,42 @@ export async function PATCH(
 
     if (body.otherLanguages !== undefined) {
       updateData.otherLanguages = body.otherLanguages;
+    }
+
+    // Handle zones update
+    if (body.zoneIds !== undefined) {
+      if (!Array.isArray(body.zoneIds)) {
+        return NextResponse.json({ error: 'zoneIds must be an array' }, { status: 400 });
+      }
+
+      // Validate that all zone IDs exist
+      if (body.zoneIds.length > 0) {
+        const existingZones = await prisma.zone.findMany({
+          where: { id: { in: body.zoneIds }, isActive: true },
+          select: { id: true },
+        });
+        const existingIds = new Set(existingZones.map(z => z.id));
+        const invalidIds = body.zoneIds.filter((zId: string) => !existingIds.has(zId));
+        if (invalidIds.length > 0) {
+          return NextResponse.json({ error: `Invalid zone IDs: ${invalidIds.join(', ')}` }, { status: 400 });
+        }
+      }
+
+      // Remove existing zone assignments
+      await prisma.userZone.deleteMany({
+        where: { userId: id },
+      });
+
+      // Add new zone assignments (first one is primary)
+      for (let i = 0; i < body.zoneIds.length; i++) {
+        await prisma.userZone.create({
+          data: {
+            userId: id,
+            zoneId: body.zoneIds[i],
+            isPrimary: i === 0,
+          },
+        });
+      }
     }
 
     // Handle qualified roles update
@@ -168,8 +222,8 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Only coordinators and admins can view volunteer details
-    if (!['COORDINATOR', 'ADMINISTRATOR'].includes(user.role)) {
+    // Coordinators, dispatchers, and admins can view volunteer details
+    if (!['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR'].includes(user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -185,6 +239,18 @@ export async function GET(
                 id: true,
                 name: true,
                 county: true,
+              },
+            },
+          },
+        },
+        userQualifications: {
+          include: {
+            qualifiedRole: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+                color: true,
               },
             },
           },
@@ -253,6 +319,7 @@ export async function GET(
         county: uz.zone.county,
         isPrimary: uz.isPrimary,
       })),
+      qualifiedRoles: volunteer.userQualifications.map(uq => uq.qualifiedRole),
       completedTrainings: volunteer.trainingAttendances.map(ta => ({
         id: ta.session.trainingType.id,
         name: ta.session.trainingType.name,

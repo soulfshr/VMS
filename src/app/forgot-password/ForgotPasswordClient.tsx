@@ -56,9 +56,9 @@ export default function ForgotPasswordClient() {
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           {isSubmitted ? (
             <div className="text-center py-4">
-              <div className="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-cyan-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg
-                  className="w-8 h-8 text-teal-600"
+                  className="w-8 h-8 text-cyan-600"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -77,7 +77,7 @@ export default function ForgotPasswordClient() {
               </p>
               <Link
                 href="/login"
-                className="text-teal-600 hover:text-teal-700 font-medium"
+                className="text-cyan-600 hover:text-cyan-700 font-medium"
               >
                 Back to login
               </Link>
@@ -95,7 +95,7 @@ export default function ForgotPasswordClient() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   autoComplete="email"
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-colors"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition-colors"
                   placeholder="you@example.com"
                 />
               </div>
@@ -103,7 +103,7 @@ export default function ForgotPasswordClient() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-3 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full py-3 bg-cyan-600 text-white font-semibold rounded-lg hover:bg-cyan-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isLoading ? (
                   <>

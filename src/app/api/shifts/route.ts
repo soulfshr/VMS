@@ -12,14 +12,32 @@ export async function GET(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams;
     const type = searchParams.get('type');
+    const typeConfigId = searchParams.get('typeConfigId');
     const zoneId = searchParams.get('zoneId');
     const status = searchParams.get('status') || 'PUBLISHED';
     const includeMyShifts = searchParams.get('myShifts') === 'true';
 
+    // Check scheduling mode - in SIMPLE mode, only show shifts to qualified users
+    const settings = await prisma.organizationSettings.findFirst();
+    const schedulingMode = settings?.schedulingMode || 'SIMPLE';
+
+    // In SIMPLE mode, only DISPATCHER or ZONE_LEAD qualified users (or admins) can see shifts
+    const isAdmin = ['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role);
+    const hasLeadQualification = user.qualifications?.some(q =>
+      q === 'DISPATCHER' || q === 'ZONE_LEAD'
+    );
+
+    // If SIMPLE mode and user is not admin and doesn't have lead qualifications,
+    // only show shifts they're already signed up for
+    const simpleRestricted = schedulingMode === 'SIMPLE' && !isAdmin && !hasLeadQualification;
+
     // Build filter conditions
     const where: Record<string, unknown> = {};
 
-    if (type && type !== 'all') {
+    // Support both old enum filter and new typeConfigId filter
+    if (typeConfigId && typeConfigId !== 'all') {
+      where.typeConfigId = typeConfigId;
+    } else if (type && type !== 'all') {
       where.type = type;
     }
 
@@ -38,10 +56,26 @@ export async function GET(request: NextRequest) {
       };
     }
 
+    // In SIMPLE mode with restricted access, only show shifts user is signed up for
+    if (simpleRestricted) {
+      where.volunteers = {
+        some: {
+          userId: user.id,
+        },
+      };
+    }
+
     const shifts = await prisma.shift.findMany({
       where,
       include: {
         zone: true,
+        typeConfig: {
+          select: {
+            id: true,
+            name: true,
+            color: true,
+          },
+        },
         volunteers: {
           include: {
             user: {
@@ -200,6 +234,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Look up the ShiftTypeConfig by slug to get its ID
+    const typeConfig = await prisma.shiftTypeConfig.findFirst({
+      where: { slug: type },
+    });
+    const typeConfigId = typeConfig?.id || null;
+
     const baseDate = new Date(date);
     const baseStartTime = new Date(startTime);
     const baseEndTime = new Date(endTime);
@@ -223,6 +263,7 @@ export async function POST(request: NextRequest) {
 
         return {
           type,
+          typeConfigId,
           title,
           description,
           date: shiftDate,
@@ -253,6 +294,7 @@ export async function POST(request: NextRequest) {
     const shift = await prisma.shift.create({
       data: {
         type,
+        typeConfigId,
         title,
         description,
         date: baseDate,

@@ -187,7 +187,7 @@ export default function ProfilePage() {
   if (isLoading) {
     return (
       <div className="min-h-[calc(100vh-200px)] flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full" />
+        <div className="animate-spin w-8 h-8 border-4 border-cyan-600 border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -198,7 +198,7 @@ export default function ProfilePage() {
     ADMINISTRATOR: 'bg-purple-100 text-purple-700',
     COORDINATOR: 'bg-blue-100 text-blue-700',
     DISPATCHER: 'bg-orange-100 text-orange-700',
-    VOLUNTEER: 'bg-teal-100 text-teal-700',
+    VOLUNTEER: 'bg-cyan-100 text-cyan-700',
   };
 
   return (
@@ -223,7 +223,7 @@ export default function ProfilePage() {
         {saveMessage && (
           <div className={`mb-6 p-4 rounded-lg ${
             saveMessage.type === 'success'
-              ? 'bg-teal-50 border border-teal-200 text-teal-700'
+              ? 'bg-cyan-50 border border-cyan-200 text-cyan-700'
               : 'bg-red-50 border border-red-200 text-red-700'
           }`}>
             {saveMessage.text}
@@ -234,7 +234,7 @@ export default function ProfilePage() {
           {/* Profile Card */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-xl border border-gray-200 p-6 text-center">
-              <div className="w-24 h-24 bg-teal-600 text-white rounded-full flex items-center justify-center text-3xl font-bold mx-auto mb-4">
+              <div className="w-24 h-24 bg-cyan-600 text-white rounded-full flex items-center justify-center text-3xl font-bold mx-auto mb-4">
                 {user.name.charAt(0)}
               </div>
               <h2 className="text-xl font-semibold text-gray-900">{user.name}</h2>
@@ -267,13 +267,13 @@ export default function ProfilePage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone or Signal Handle</label>
                   <input
-                    type="tel"
+                    type="text"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    placeholder="(919) 555-0000"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    placeholder="(919) 555-0000 or @signal_handle"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                   />
                 </div>
                 <div>
@@ -281,7 +281,7 @@ export default function ProfilePage() {
                   <select
                     value={primaryLanguage}
                     onChange={(e) => setPrimaryLanguage(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                   >
                     <option value="English">English</option>
                     <option value="Spanish">Spanish</option>
@@ -302,7 +302,7 @@ export default function ProfilePage() {
                     type="checkbox"
                     checked={emailNotifications}
                     onChange={(e) => setEmailNotifications(e.target.checked)}
-                    className="mt-1 w-5 h-5 text-teal-600 rounded border-gray-300 focus:ring-teal-500"
+                    className="mt-1 w-5 h-5 text-cyan-600 rounded border-gray-300 focus:ring-cyan-500"
                   />
                   <div>
                     <span className="font-medium text-gray-900">Email Notifications</span>
@@ -351,7 +351,7 @@ export default function ProfilePage() {
                                   onClick={() => toggleAvailability(dayIndex, slot.startTime)}
                                   className={`w-8 h-8 rounded transition-colors ${
                                     isSelected
-                                      ? 'bg-teal-600 text-white'
+                                      ? 'bg-cyan-600 text-white'
                                       : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
                                   }`}
                                 >
@@ -393,9 +393,9 @@ export default function ProfilePage() {
                         }}
                         className={`px-3 py-1 rounded-full text-sm transition-colors ${
                           isPrimary
-                            ? 'bg-teal-600 text-white ring-2 ring-teal-300'
+                            ? 'bg-cyan-600 text-white ring-2 ring-cyan-300'
                             : isSelected
-                            ? 'bg-teal-100 text-teal-700 hover:bg-teal-200'
+                            ? 'bg-cyan-100 text-cyan-700 hover:bg-cyan-200'
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                         }`}
                       >
@@ -416,7 +416,7 @@ export default function ProfilePage() {
               <button
                 onClick={handleSave}
                 disabled={isSaving}
-                className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium disabled:opacity-50"
+                className="px-6 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium disabled:opacity-50"
               >
                 {isSaving ? 'Saving...' : 'Save Changes'}
               </button>

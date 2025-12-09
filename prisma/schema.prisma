@@ -19,6 +19,7 @@ enum Role {
   COORDINATOR
   DISPATCHER
   ADMINISTRATOR
+  DEVELOPER
 }
 
 enum ShiftType {
@@ -169,6 +170,20 @@ model OrganizationSettings {
   featureTrainings  Boolean?  // Override for NEXT_PUBLIC_FEATURE_TRAININGS
   featureSightings  Boolean?  // Override for NEXT_PUBLIC_FEATURE_SIGHTINGS
 
+  // Dispatcher scheduling mode
+  // REGIONAL = one dispatcher covers all counties per time block (low activity)
+  // COUNTY = one dispatcher per county per time block (medium activity)
+  // ZONE = dispatcher per time block cell (high activity - current default)
+  dispatcherSchedulingMode  String  @default("ZONE")
+
+  // Volunteer scheduling mode
+  // SIMPLE = Only show Regional Lead, Dispatcher, Zone Lead (hide volunteer counts and restrict shift visibility)
+  // FULL = Show all volunteers with self-signup
+  schedulingMode            String  @default("SIMPLE")
+
+  // Developer-only settings
+  feedbackEmail     String?   // Email address for receiving user feedback (Developer configurable)
+
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
@@ -269,6 +284,7 @@ model User {
   passwordSetAt       DateTime?             // When password was last set
   resetToken          String?   @unique     // Password reset token (UUID)
   resetTokenExpiresAt DateTime?             // Token expiration time
+  lastLoginAt         DateTime?             // Last successful login timestamp
 
   // Relationships
   zones             UserZone[]
@@ -289,6 +305,10 @@ model User {
 
   // POI relationships
   createdPOIs          PointOfInterest[]     @relation("POICreatedBy")
+
+  // Regional Lead relationships
+  regionalLeadAssignments        RegionalLeadAssignment[] @relation("RegionalLeadAssignments")
+  regionalLeadAssignmentsCreated RegionalLeadAssignment[] @relation("RegionalLeadAssignmentsCreated")
 
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
@@ -534,6 +554,9 @@ model Shift {
 
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
+
+  @@index([date, status])
+  @@index([zoneId])
 }
 
 model ShiftVolunteer {
@@ -597,6 +620,33 @@ model DispatcherAssignment {
 
   @@unique([userId, county, date, startTime])  // One assignment per user/county/time
   @@index([county, date])
+}
+
+// ============================================
+// REGIONAL LEAD ASSIGNMENTS
+// ============================================
+
+model RegionalLeadAssignment {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation("RegionalLeadAssignments", fields: [userId], references: [id], onDelete: Cascade)
+
+  // Day-level assignment (no time blocks - covers entire day)
+  date        DateTime @db.Date
+
+  // Primary vs backup designation
+  isPrimary   Boolean  @default(false)
+  notes       String?
+
+  // Audit
+  createdById String?
+  createdBy   User?    @relation("RegionalLeadAssignmentsCreated", fields: [createdById], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, date])  // One user can only be assigned once per day
+  @@index([date])
 }
 
 // ============================================
@@ -753,4 +803,76 @@ model PointOfInterest {
   @@index([categoryId])
   @@index([zoneId])
   @@index([isActive])
+}
+
+// ============================================
+// SYSTEM MONITORING & LOGGING
+// ============================================
+
+enum LogSeverity {
+  DEBUG
+  INFO
+  WARN
+  ERROR
+  CRITICAL
+}
+
+enum LogCategory {
+  AUTH           // Login, logout, password reset
+  EMAIL          // Email delivery (sent, failed)
+  RSVP           // Shift/training signups
+  SIGHTING       // ICE sighting reports
+  ADMIN          // Admin actions (settings, user mgmt)
+  SYSTEM         // System health, errors
+  RATE_LIMIT     // Rate limit violations
+  API            // API errors and performance
+}
+
+// Main system log table - stores important operational events
+model SystemLog {
+  id          String      @id @default(cuid())
+  severity    LogSeverity
+  category    LogCategory
+  message     String
+  metadata    Json?       // Flexible JSON for additional context
+
+  // Context
+  userId      String?     // User who triggered the event (if applicable)
+  endpoint    String?     // API endpoint (if API-related)
+  ipAddress   String?     // Client IP for security events
+
+  // Performance
+  durationMs  Int?        // Request duration for API calls
+
+  createdAt   DateTime    @default(now())
+
+  @@index([createdAt])
+  @@index([severity])
+  @@index([category])
+  @@index([userId])
+}
+
+// Health check results for system monitoring
+model HealthCheck {
+  id          String    @id @default(cuid())
+  service     String    // "database", "email", "redis"
+  status      String    // "healthy", "degraded", "down"
+  responseMs  Int       // Response time in milliseconds
+  error       String?   // Error message if status != healthy
+  checkedAt   DateTime  @default(now())
+
+  @@index([checkedAt])
+  @@index([service])
+}
+
+// Alert state for cooldown tracking
+model AlertState {
+  id              String    @id @default(cuid())
+  alertType       String    @unique  // "email_failure", "db_error", etc.
+  lastTriggeredAt DateTime?
+  triggerCount    Int       @default(0)
+  cooldownUntil   DateTime? // Don't alert again until this time
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 }

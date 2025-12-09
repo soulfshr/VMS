@@ -46,6 +46,7 @@ interface Volunteer {
   isActive: boolean;
   isVerified: boolean;
   createdAt: string;
+  lastLoginAt?: string | null;  // Only available for developers
   qualifiedRoles: QualifiedRole[];
   zones: Zone[];
   completedTrainings: Training[];
@@ -68,6 +69,24 @@ interface ImportResult {
   total: number;
 }
 
+// Field definitions for volunteer import with column mapping
+interface ImportFieldDefinition {
+  key: string;
+  label: string;
+  required: boolean;
+  description: string;
+}
+
+const IMPORT_FIELD_DEFINITIONS: ImportFieldDefinition[] = [
+  { key: 'name', label: 'Name', required: true, description: 'Full name of the volunteer' },
+  { key: 'email', label: 'Email', required: true, description: 'Email address (must be unique)' },
+  { key: 'phone', label: 'Phone or Signal Handle', required: false, description: 'Phone number or Signal handle' },
+  { key: 'role', label: 'User Type', required: false, description: 'User type: VOLUNTEER, COORDINATOR, DISPATCHER, ADMINISTRATOR' },
+  { key: 'primaryLanguage', label: 'Primary Language', required: false, description: 'Primary language (default: English)' },
+  { key: 'zones', label: 'Zones', required: false, description: 'Zone names (semicolon-separated)' },
+  { key: 'qualifications', label: 'Qualifications', required: false, description: 'Qualifications (semicolon-separated)' },
+];
+
 export default function VolunteersPage() {
   const router = useRouter();
   const [user, setUser] = useState<DevUser | null>(null);
@@ -84,7 +103,11 @@ export default function VolunteersPage() {
 
   // Import modal state
   const [showImportModal, setShowImportModal] = useState(false);
+  const [importStep, setImportStep] = useState<'upload' | 'mapping' | 'importing' | 'results'>('upload');
   const [importData, setImportData] = useState<string>('');
+  const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
+  const [csvRows, setCsvRows] = useState<string[][]>([]);
+  const [columnMapping, setColumnMapping] = useState<Record<string, string>>({});
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -99,6 +122,7 @@ export default function VolunteersPage() {
     role: 'VOLUNTEER',
     zoneId: '',
     primaryLanguage: 'English',
+    qualifiedRoleIds: [] as string[],
   });
   const [addVolunteerError, setAddVolunteerError] = useState<string | null>(null);
 
@@ -106,6 +130,23 @@ export default function VolunteersPage() {
   const [showBulkActionModal, setShowBulkActionModal] = useState(false);
   const [bulkAction, setBulkAction] = useState<'activate' | 'deactivate' | 'delete' | null>(null);
   const [isBulkActioning, setIsBulkActioning] = useState(false);
+
+  // Bulk edit state
+  const [showBulkEditModal, setShowBulkEditModal] = useState(false);
+  const [isBulkEditing, setIsBulkEditing] = useState(false);
+  const [bulkEditForm, setBulkEditForm] = useState<{
+    role: string;
+    addQualifiedRoles: string[];
+    removeQualifiedRoles: string[];
+    addZones: string[];
+    removeZones: string[];
+  }>({
+    role: '',
+    addQualifiedRoles: [],
+    removeQualifiedRoles: [],
+    addZones: [],
+    removeZones: [],
+  });
 
   // Multi-select with shift+click support
   const volunteers = data?.volunteers ?? [];
@@ -128,7 +169,7 @@ export default function VolunteersPage() {
       .then(data => {
         if (!data.user) {
           router.push('/login');
-        } else if (!['COORDINATOR', 'ADMINISTRATOR'].includes(data.user.role)) {
+        } else if (!['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR', 'DEVELOPER'].includes(data.user.role)) {
           router.push('/dashboard');
         } else {
           setUser(data.user);
@@ -252,7 +293,7 @@ export default function VolunteersPage() {
 
   // Handle qualified role toggle
   const handleQualifiedRoleToggle = async (volunteerId: string, qualifiedRoleId: string, currentRoles: QualifiedRole[]) => {
-    if (!user || user.role !== 'ADMINISTRATOR') return;
+    if (!user || !['ADMINISTRATOR', 'COORDINATOR', 'DISPATCHER'].includes(user.role)) return;
 
     setUpdatingQualifications(volunteerId);
     const currentIds = currentRoles.map(r => r.id);
@@ -290,36 +331,103 @@ export default function VolunteersPage() {
     }
   };
 
-  // Parse CSV data
-  const parseCSV = (csvText: string) => {
-    const lines = csvText.trim().split('\n');
-    if (lines.length < 2) return [];
+  // Parse CSV text into headers and rows (handles quoted fields)
+  const parseCSVRaw = (csvText: string): { headers: string[]; rows: string[][] } => {
+    const lines = csvText.split(/\r?\n/).filter(line => line.trim());
+    if (lines.length === 0) return { headers: [], rows: [] };
 
-    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+    const parseRow = (line: string): string[] => {
+      const result: string[] = [];
+      let current = '';
+      let inQuotes = false;
+
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+          if (inQuotes && line[i + 1] === '"') {
+            current += '"';
+            i++;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (char === ',' && !inQuotes) {
+          result.push(current.trim());
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      result.push(current.trim());
+      return result;
+    };
+
+    const headers = parseRow(lines[0]);
+    const rows = lines.slice(1).map(parseRow);
+
+    return { headers, rows };
+  };
+
+  // Auto-map columns based on common header variations
+  const autoMapColumns = (headers: string[]): Record<string, string> => {
+    const mapping: Record<string, string> = {};
+    const headerLower = headers.map(h => h.toLowerCase().replace(/[\s_-]/g, ''));
+
+    IMPORT_FIELD_DEFINITIONS.forEach(field => {
+      const fieldLower = field.key.toLowerCase();
+      const labelLower = field.label.toLowerCase().replace(/[\s_-]/g, '');
+
+      // Try to find matching header
+      const matchIndex = headerLower.findIndex(h => {
+        // Exact matches
+        if (h === fieldLower || h === labelLower) return true;
+        // Common variations
+        if (field.key === 'name' && (h === 'fullname' || h === 'volunteername')) return true;
+        if (field.key === 'email' && (h === 'emailaddress' || h === 'mail')) return true;
+        if (field.key === 'phone' && (h === 'phonenumber' || h === 'signal' || h === 'signalhandle')) return true;
+        if (field.key === 'primaryLanguage' && (h === 'language' || h === 'lang')) return true;
+        if (field.key === 'zones' && (h === 'zone' || h === 'area')) return true;
+        if (field.key === 'qualifications' && (h === 'qualification' || h === 'quals')) return true;
+        return false;
+      });
+
+      if (matchIndex !== -1) {
+        mapping[field.key] = headers[matchIndex];
+      }
+    });
+
+    return mapping;
+  };
+
+  // Parse CSV data using column mapping
+  const parseCSVWithMapping = (headers: string[], rows: string[][], mapping: Record<string, string>) => {
     const volunteers = [];
 
-    for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(',').map(v => v.trim());
+    for (let i = 0; i < rows.length; i++) {
+      const values = rows[i];
       const volunteer: Record<string, string | string[]> = {};
 
-      headers.forEach((header, idx) => {
-        const value = values[idx] || '';
-        // Map common header variations
-        if (header === 'name' || header === 'full name' || header === 'fullname') {
-          volunteer.name = value;
-        } else if (header === 'email' || header === 'email address') {
-          volunteer.email = value;
-        } else if (header === 'phone' || header === 'phone number') {
-          volunteer.phone = value;
-        } else if (header === 'role') {
-          volunteer.role = value.toUpperCase();
-        } else if (header === 'language' || header === 'primary language' || header === 'primarylanguage') {
-          volunteer.primaryLanguage = value;
-        } else if (header === 'zones' || header === 'zone') {
-          volunteer.zones = value.split(';').map(z => z.trim()).filter(Boolean);
-        } else if (header === 'qualifications' || header === 'qualification') {
-          // Parse qualifications - semicolon separated, e.g., "VERIFIER;ZONE_LEAD"
-          volunteer.qualifications = value.split(';').map(q => q.trim().toUpperCase()).filter(Boolean);
+      IMPORT_FIELD_DEFINITIONS.forEach(field => {
+        const csvColumn = mapping[field.key];
+        if (csvColumn) {
+          const colIndex = headers.indexOf(csvColumn);
+          const value = colIndex !== -1 ? (values[colIndex] || '') : '';
+
+          if (field.key === 'zones') {
+            // Support both semicolons and colons as separators
+            volunteer.zones = value.split(/[;:]/).map(z => z.trim()).filter(Boolean);
+          } else if (field.key === 'qualifications') {
+            // Support both semicolons and colons as separators, fix common typos
+            volunteer.qualifications = value.split(/[;:]/).map(q => {
+              const upper = q.trim().toUpperCase();
+              // Fix common typos
+              if (upper === 'DIPSATCHER') return 'DISPATCHER';
+              return upper;
+            }).filter(Boolean);
+          } else if (field.key === 'role') {
+            volunteer.role = value.toUpperCase();
+          } else {
+            volunteer[field.key] = value;
+          }
         }
       });
 
@@ -331,7 +439,14 @@ export default function VolunteersPage() {
     return volunteers;
   };
 
-  // Handle file upload
+  // Legacy parse function for backward compatibility
+  const parseCSV = (csvText: string) => {
+    const { headers, rows } = parseCSVRaw(csvText);
+    const mapping = autoMapColumns(headers);
+    return parseCSVWithMapping(headers, rows, mapping);
+  };
+
+  // Handle file upload and proceed to mapping step
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -340,25 +455,50 @@ export default function VolunteersPage() {
     reader.onload = (event) => {
       const text = event.target?.result as string;
       setImportData(text);
+      proceedToMapping(text);
     };
     reader.readAsText(file);
   };
 
-  // Handle bulk import
+  // Process CSV and proceed to column mapping step
+  const proceedToMapping = (csvText: string) => {
+    const { headers, rows } = parseCSVRaw(csvText);
+
+    if (headers.length === 0 || rows.length === 0) {
+      alert('No valid data found in the CSV file');
+      return;
+    }
+
+    setCsvHeaders(headers);
+    setCsvRows(rows);
+
+    // Auto-map columns
+    const autoMapping = autoMapColumns(headers);
+    setColumnMapping(autoMapping);
+
+    setImportStep('mapping');
+  };
+
+  // Handle bulk import using column mapping
   const handleImport = async () => {
-    if (!importData.trim()) {
-      alert('Please paste CSV data or upload a file');
+    // Validate required mappings
+    const requiredFields = IMPORT_FIELD_DEFINITIONS.filter(f => f.required);
+    const missingFields = requiredFields.filter(f => !columnMapping[f.key]);
+    if (missingFields.length > 0) {
+      alert(`Please map these required columns: ${missingFields.map(f => f.label).join(', ')}`);
       return;
     }
 
     setImporting(true);
+    setImportStep('importing');
     setImportResult(null);
 
     try {
-      const volunteers = parseCSV(importData);
+      const volunteers = parseCSVWithMapping(csvHeaders, csvRows, columnMapping);
       if (volunteers.length === 0) {
         alert('No valid volunteers found in the CSV data');
         setImporting(false);
+        setImportStep('mapping');
         return;
       }
 
@@ -370,6 +510,7 @@ export default function VolunteersPage() {
 
       const result = await res.json();
       setImportResult(result);
+      setImportStep('results');
 
       if (result.created > 0 || result.updated > 0) {
         fetchVolunteers();
@@ -377,6 +518,7 @@ export default function VolunteersPage() {
     } catch (error) {
       console.error('Error importing volunteers:', error);
       alert('Failed to import volunteers');
+      setImportStep('mapping');
     } finally {
       setImporting(false);
     }
@@ -385,7 +527,11 @@ export default function VolunteersPage() {
   // Close import modal and reset
   const closeImportModal = () => {
     setShowImportModal(false);
+    setImportStep('upload');
     setImportData('');
+    setCsvHeaders([]);
+    setCsvRows([]);
+    setColumnMapping({});
     setImportResult(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -406,6 +552,7 @@ export default function VolunteersPage() {
         role: addVolunteerForm.role,
         primaryLanguage: addVolunteerForm.primaryLanguage,
         zones: addVolunteerForm.zoneId ? [data?.zones.find(z => z.id === addVolunteerForm.zoneId)?.name || ''] : [],
+        qualifications: addVolunteerForm.qualifiedRoleIds.map(id => data?.qualifiedRoles.find(qr => qr.id === id)?.slug || '').filter(Boolean),
       };
 
       const res = await fetch('/api/volunteers', {
@@ -433,6 +580,7 @@ export default function VolunteersPage() {
         role: 'VOLUNTEER',
         zoneId: '',
         primaryLanguage: 'English',
+        qualifiedRoleIds: [],
       });
       fetchVolunteers();
     } catch (error) {
@@ -451,6 +599,7 @@ export default function VolunteersPage() {
       role: 'VOLUNTEER',
       zoneId: '',
       primaryLanguage: 'English',
+      qualifiedRoleIds: [],
     });
     setAddVolunteerError(null);
   };
@@ -504,15 +653,124 @@ export default function VolunteersPage() {
     setShowBulkActionModal(true);
   };
 
+  // Bulk edit handler
+  const handleBulkEdit = async () => {
+    if (selectedCount === 0) return;
+
+    // Check if any changes were made
+    const hasChanges = bulkEditForm.role ||
+      bulkEditForm.addQualifiedRoles.length > 0 ||
+      bulkEditForm.removeQualifiedRoles.length > 0 ||
+      bulkEditForm.addZones.length > 0 ||
+      bulkEditForm.removeZones.length > 0;
+
+    if (!hasChanges) {
+      alert('Please select at least one change to apply');
+      return;
+    }
+
+    setIsBulkEditing(true);
+    try {
+      const selectedIds = Array.from(selectedVolunteers);
+
+      // Process each selected volunteer
+      const updates = selectedIds.map(async (id) => {
+        const volunteer = volunteers.find(v => v.id === id);
+        if (!volunteer) return;
+
+        const updateData: Record<string, unknown> = {};
+
+        // Update role if specified
+        if (bulkEditForm.role) {
+          updateData.role = bulkEditForm.role;
+        }
+
+        // Update qualified roles if specified
+        if (bulkEditForm.addQualifiedRoles.length > 0 || bulkEditForm.removeQualifiedRoles.length > 0) {
+          const currentIds = volunteer.qualifiedRoles.map(r => r.id);
+          let newIds = [...currentIds];
+
+          // Add new roles
+          bulkEditForm.addQualifiedRoles.forEach(roleId => {
+            if (!newIds.includes(roleId)) {
+              newIds.push(roleId);
+            }
+          });
+
+          // Remove roles
+          newIds = newIds.filter(id => !bulkEditForm.removeQualifiedRoles.includes(id));
+
+          updateData.qualifiedRoleIds = newIds;
+        }
+
+        // Update zones if specified
+        if (bulkEditForm.addZones.length > 0 || bulkEditForm.removeZones.length > 0) {
+          const currentZoneIds = volunteer.zones.map(z => z.id);
+          let newZoneIds = [...currentZoneIds];
+
+          // Add new zones
+          bulkEditForm.addZones.forEach(zoneId => {
+            if (!newZoneIds.includes(zoneId)) {
+              newZoneIds.push(zoneId);
+            }
+          });
+
+          // Remove zones
+          newZoneIds = newZoneIds.filter(id => !bulkEditForm.removeZones.includes(id));
+
+          updateData.zoneIds = newZoneIds;
+        }
+
+        if (Object.keys(updateData).length > 0) {
+          await fetch(`/api/volunteers/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updateData),
+          });
+        }
+      });
+
+      await Promise.all(updates);
+
+      // Refresh data and clear selection
+      await fetchVolunteers();
+      clearSelection();
+      setShowBulkEditModal(false);
+      resetBulkEditForm();
+    } catch (error) {
+      console.error('Bulk edit failed:', error);
+      alert('Failed to update some volunteers');
+    } finally {
+      setIsBulkEditing(false);
+    }
+  };
+
+  const resetBulkEditForm = () => {
+    setBulkEditForm({
+      role: '',
+      addQualifiedRoles: [],
+      removeQualifiedRoles: [],
+      addZones: [],
+      removeZones: [],
+    });
+  };
+
+  const openBulkEditModal = () => {
+    resetBulkEditForm();
+    setShowBulkEditModal(true);
+  };
+
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-600"></div>
       </div>
     );
   }
 
   const isAdmin = user.role === 'ADMINISTRATOR';
+  const isDeveloper = user.role === 'DEVELOPER';
+  const canEditQualifications = ['ADMINISTRATOR', 'COORDINATOR', 'DISPATCHER'].includes(user.role);
 
   return (
     <>
@@ -539,7 +797,7 @@ export default function VolunteersPage() {
             <div className="mt-4 md:mt-0 flex gap-3">
               <button
                 onClick={() => setShowAddModal(true)}
-                className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors flex items-center gap-2"
+                className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors flex items-center gap-2"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -548,7 +806,7 @@ export default function VolunteersPage() {
               </button>
               <button
                 onClick={() => setShowImportModal(true)}
-                className="px-4 py-2 border border-teal-600 text-teal-600 rounded-lg hover:bg-teal-50 transition-colors flex items-center gap-2"
+                className="px-4 py-2 border border-cyan-600 text-cyan-600 rounded-lg hover:bg-cyan-50 transition-colors flex items-center gap-2"
                 data-tour="bulk-import"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -571,7 +829,7 @@ export default function VolunteersPage() {
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search by name, email, or phone..."
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
               />
             </div>
 
@@ -581,7 +839,7 @@ export default function VolunteersPage() {
               <select
                 value={zoneFilter}
                 onChange={e => setZoneFilter(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
               >
                 <option value="all">All Zones</option>
                 {data?.zones.map(zone => (
@@ -598,7 +856,7 @@ export default function VolunteersPage() {
               <select
                 value={roleFilter}
                 onChange={e => setRoleFilter(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
               >
                 <option value="all">All User Types</option>
                 <option value="VOLUNTEER">Volunteer</option>
@@ -614,7 +872,7 @@ export default function VolunteersPage() {
               <select
                 value={statusFilter}
                 onChange={e => setStatusFilter(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
               >
                 <option value="all">All</option>
                 <option value="active">Active</option>
@@ -628,7 +886,7 @@ export default function VolunteersPage() {
         {data && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-              <p className="text-3xl font-bold text-teal-600">{data.total}</p>
+              <p className="text-3xl font-bold text-cyan-600">{data.total}</p>
               <p className="text-sm text-gray-600">Total Volunteers</p>
             </div>
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
@@ -652,9 +910,9 @@ export default function VolunteersPage() {
           </div>
         )}
 
-        {/* Selection Toolbar (Admin only) */}
+        {/* Selection Toolbar (Admin only) - Sticky when scrolling */}
         {isAdmin && selectedCount > 0 && (
-          <div className="bg-gray-50 border border-gray-300 rounded-lg p-4 mb-6 flex items-center justify-between">
+          <div className="bg-gray-50 border border-gray-300 rounded-lg p-4 mb-6 flex items-center justify-between sticky top-[100px] z-30 shadow-md">
             <div className="flex items-center gap-4">
               <span className="font-medium text-gray-700">
                 {selectedCount} volunteer{selectedCount > 1 ? 's' : ''} selected
@@ -669,22 +927,31 @@ export default function VolunteersPage() {
             </div>
             <div className="flex items-center gap-3">
               <button
+                onClick={openBulkEditModal}
+                className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium text-sm flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Edit Selected
+              </button>
+              <button
                 onClick={() => openBulkActionModal('activate')}
                 className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-sm"
               >
-                Activate Selected
+                Activate
               </button>
               <button
                 onClick={() => openBulkActionModal('deactivate')}
                 className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors font-medium text-sm"
               >
-                Deactivate Selected
+                Deactivate
               </button>
               <button
                 onClick={() => openBulkActionModal('delete')}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium text-sm"
               >
-                Delete Selected
+                Delete
               </button>
             </div>
           </div>
@@ -693,7 +960,7 @@ export default function VolunteersPage() {
         {/* Volunteer List */}
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-600"></div>
           </div>
         ) : data && data.volunteers.length > 0 ? (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden" data-tour="volunteer-row">
@@ -713,7 +980,7 @@ export default function VolunteersPage() {
                               selectAll();
                             }
                           }}
-                          className="w-4 h-4 text-teal-600 rounded focus:ring-teal-500 cursor-pointer"
+                          className="w-4 h-4 text-cyan-600 rounded focus:ring-cyan-500 cursor-pointer"
                           title="Select all"
                         />
                       </th>
@@ -722,7 +989,7 @@ export default function VolunteersPage() {
                       Volunteer
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Contact
+                      Email & Signal
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       User Type
@@ -739,6 +1006,11 @@ export default function VolunteersPage() {
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
                     </th>
+                    {isDeveloper && (
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Last Login
+                      </th>
+                    )}
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -746,7 +1018,7 @@ export default function VolunteersPage() {
                     <>
                       <tr
                         key={volunteer.id}
-                        className={`hover:bg-gray-50 cursor-pointer ${!volunteer.isActive ? 'opacity-60' : ''} ${isVolunteerSelected(volunteer.id) ? 'bg-teal-50' : ''}`}
+                        className={`hover:bg-gray-50 cursor-pointer ${!volunteer.isActive ? 'opacity-60' : ''} ${isVolunteerSelected(volunteer.id) ? 'bg-cyan-50' : ''}`}
                         onClick={() => setExpandedVolunteer(expandedVolunteer === volunteer.id ? null : volunteer.id)}
                       >
                         {isAdmin && (
@@ -756,13 +1028,13 @@ export default function VolunteersPage() {
                               checked={isVolunteerSelected(volunteer.id)}
                               onClick={(e) => toggleVolunteerSelection(volunteer.id, e)}
                               onChange={() => {}} // Controlled by onClick for shift+click support
-                              className="w-4 h-4 text-teal-600 rounded focus:ring-teal-500 cursor-pointer"
+                              className="w-4 h-4 text-cyan-600 rounded focus:ring-cyan-500 cursor-pointer"
                             />
                           </td>
                         )}
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
-                            <div className="w-10 h-10 rounded-full bg-teal-600 text-white flex items-center justify-center text-sm font-medium">
+                            <div className="w-10 h-10 rounded-full bg-cyan-600 text-white flex items-center justify-center text-sm font-medium">
                               {volunteer.name.charAt(0)}
                             </div>
                             <div className="ml-4">
@@ -807,7 +1079,7 @@ export default function VolunteersPage() {
                                   key={zone.id}
                                   className={`px-2 py-0.5 rounded text-xs ${
                                     zone.isPrimary
-                                      ? 'bg-teal-100 text-teal-800 font-medium'
+                                      ? 'bg-cyan-100 text-cyan-800 font-medium'
                                       : 'bg-gray-100 text-gray-700'
                                   }`}
                                 >
@@ -815,12 +1087,12 @@ export default function VolunteersPage() {
                                 </span>
                               ))
                             ) : (
-                              <span className="text-gray-400 text-sm">No zones</span>
+                              <span className="text-gray-500 text-sm">No zones</span>
                             )}
                           </div>
                         </td>
                         <td className="px-6 py-4" onClick={e => e.stopPropagation()}>
-                          {isAdmin && editingQualifications === volunteer.id ? (
+                          {canEditQualifications && editingQualifications === volunteer.id ? (
                             <div className="space-y-2">
                               {(data?.qualifiedRoles || []).map(qr => (
                                 <label key={qr.id} className="flex items-center gap-2 cursor-pointer">
@@ -829,7 +1101,7 @@ export default function VolunteersPage() {
                                     checked={(volunteer.qualifiedRoles || []).some(r => r.id === qr.id)}
                                     onChange={() => handleQualifiedRoleToggle(volunteer.id, qr.id, volunteer.qualifiedRoles || [])}
                                     disabled={updatingQualifications === volunteer.id}
-                                    className="w-4 h-4 text-teal-600 rounded focus:ring-teal-500"
+                                    className="w-4 h-4 text-cyan-600 rounded focus:ring-cyan-500"
                                   />
                                   <span
                                     className="px-2 py-0.5 rounded text-xs"
@@ -865,12 +1137,12 @@ export default function VolunteersPage() {
                                   </span>
                                 ))
                               ) : (
-                                <span className="text-gray-400 text-sm">None</span>
+                                <span className="text-gray-500 text-sm">None</span>
                               )}
-                              {isAdmin && (
+                              {canEditQualifications && (
                                 <button
                                   onClick={() => setEditingQualifications(volunteer.id)}
-                                  className="ml-1 text-gray-400 hover:text-teal-600"
+                                  className="ml-1 text-gray-400 hover:text-cyan-600"
                                   title="Edit qualified roles"
                                 >
                                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -909,11 +1181,25 @@ export default function VolunteersPage() {
                             </span>
                           )}
                         </td>
+                        {isDeveloper && (
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {volunteer.lastLoginAt
+                              ? new Date(volunteer.lastLoginAt).toLocaleDateString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  year: 'numeric',
+                                  hour: 'numeric',
+                                  minute: '2-digit',
+                                })
+                              : <span className="text-gray-500">Never</span>
+                            }
+                          </td>
+                        )}
                       </tr>
                       {/* Expanded Details */}
                       {expandedVolunteer === volunteer.id && (
                         <tr key={`${volunteer.id}-details`}>
-                          <td colSpan={isAdmin ? 8 : 7} className="px-6 py-4 bg-gray-50">
+                          <td colSpan={isAdmin ? 8 : (isDeveloper ? 8 : 7)} className="px-6 py-4 bg-gray-50">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                               {/* Upcoming Shifts */}
                               <div>
@@ -924,7 +1210,7 @@ export default function VolunteersPage() {
                                       <li key={shift.id} className="text-sm">
                                         <Link
                                           href={`/shifts/${shift.id}`}
-                                          className="text-teal-600 hover:text-teal-800"
+                                          className="text-cyan-600 hover:text-cyan-800"
                                           onClick={e => e.stopPropagation()}
                                         >
                                           {shift.title}
@@ -941,7 +1227,7 @@ export default function VolunteersPage() {
                                     ))}
                                   </ul>
                                 ) : (
-                                  <p className="text-sm text-gray-400">No upcoming shifts</p>
+                                  <p className="text-sm text-gray-500">No upcoming shifts</p>
                                 )}
                               </div>
 
@@ -1006,7 +1292,7 @@ export default function VolunteersPage() {
       {/* Import Modal */}
       {showImportModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-gray-900">Import Volunteers</h2>
@@ -1020,22 +1306,48 @@ export default function VolunteersPage() {
                 </button>
               </div>
 
-              {!importResult ? (
+              {/* Progress indicator */}
+              <div className="mb-6">
+                <div className="flex items-center gap-2">
+                  {['Upload', 'Map Columns', 'Import'].map((stepName, i) => {
+                    const stepKeys = ['upload', 'mapping', 'importing'];
+                    const currentIndex = stepKeys.indexOf(importStep);
+                    const isActive = i === currentIndex || (importStep === 'results' && i === 2);
+                    const isComplete = i < currentIndex || importStep === 'results';
+                    return (
+                      <div key={stepName} className="flex items-center">
+                        {i > 0 && <div className={`w-8 h-0.5 ${isComplete || isActive ? 'bg-cyan-600' : 'bg-gray-200'}`} />}
+                        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium ${
+                          isActive ? 'bg-cyan-600 text-white' : isComplete ? 'bg-cyan-100 text-cyan-700' : 'bg-gray-200 text-gray-500'
+                        }`}>
+                          {isComplete && !isActive ? '✓' : i + 1}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <span className="ml-3 text-sm text-gray-600">
+                    {importStep === 'upload' && 'Upload CSV'}
+                    {importStep === 'mapping' && 'Map Columns'}
+                    {importStep === 'importing' && 'Importing...'}
+                    {importStep === 'results' && 'Complete'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Step 1: Upload */}
+              {importStep === 'upload' && (
                 <>
                   <div className="mb-4">
                     <p className="text-sm text-gray-600 mb-2">
-                      Upload a CSV file or paste CSV data. Required columns: <strong>name</strong>, <strong>email</strong>
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      Optional columns: phone, role (VOLUNTEER/COORDINATOR/DISPATCHER/ADMINISTRATOR), primaryLanguage, zones (semicolon-separated), qualifications (VERIFIER/ZONE_LEAD/DISPATCHER, semicolon-separated)
+                      Upload a CSV file or paste CSV data. You&apos;ll be able to map columns in the next step.
                     </p>
                   </div>
 
                   {/* Download Template */}
-                  <div className="mb-4 p-3 bg-teal-50 rounded-lg flex items-center justify-between">
+                  <div className="mb-4 p-3 bg-cyan-50 rounded-lg flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-teal-800">Need a template?</p>
-                      <p className="text-xs text-teal-600">Download a CSV template with example data</p>
+                      <p className="text-sm font-medium text-cyan-800">Need a template?</p>
+                      <p className="text-xs text-cyan-600">Download a CSV template with example data</p>
                     </div>
                     <button
                       onClick={() => {
@@ -1055,7 +1367,7 @@ Michael Chen,michael.chen@example.com,919-555-7890,VOLUNTEER,Mandarin,Wake Zone 
                         document.body.removeChild(a);
                         URL.revokeObjectURL(url);
                       }}
-                      className="px-3 py-1.5 bg-teal-600 text-white text-sm rounded-lg hover:bg-teal-700 flex items-center gap-1"
+                      className="px-3 py-1.5 bg-cyan-600 text-white text-sm rounded-lg hover:bg-cyan-700 flex items-center gap-1"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -1072,7 +1384,7 @@ Michael Chen,michael.chen@example.com,919-555-7890,VOLUNTEER,Mandarin,Wake Zone 
                       type="file"
                       accept=".csv"
                       onChange={handleFileUpload}
-                      className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100"
+                      className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-cyan-50 file:text-cyan-700 hover:file:bg-cyan-100"
                     />
                   </div>
 
@@ -1085,19 +1397,10 @@ Michael Chen,michael.chen@example.com,919-555-7890,VOLUNTEER,Mandarin,Wake Zone 
                       placeholder={`name,email,phone,role,primaryLanguage,zones
 John Doe,john@example.com,555-1234,VOLUNTEER,English,Zone 1;Zone 2
 Jane Smith,jane@example.com,555-5678,COORDINATOR,Spanish,Zone 3`}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 font-mono text-sm"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 font-mono text-sm"
                       rows={8}
                     />
                   </div>
-
-                  {/* Preview count */}
-                  {importData && (
-                    <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                      <p className="text-sm text-gray-600">
-                        Found <strong>{parseCSV(importData).length}</strong> volunteers to import
-                      </p>
-                    </div>
-                  )}
 
                   <div className="flex gap-3">
                     <button
@@ -1107,17 +1410,111 @@ Jane Smith,jane@example.com,555-5678,COORDINATOR,Spanish,Zone 3`}
                       Cancel
                     </button>
                     <button
-                      onClick={handleImport}
-                      disabled={importing || !importData.trim()}
-                      className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={() => proceedToMapping(importData)}
+                      disabled={!importData.trim()}
+                      className="flex-1 px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {importing ? 'Importing...' : 'Import Volunteers'}
+                      Continue to Mapping →
                     </button>
                   </div>
                 </>
-              ) : (
+              )}
+
+              {/* Step 2: Column Mapping */}
+              {importStep === 'mapping' && (
                 <>
-                  {/* Import Results */}
+                  <div className="mb-4">
+                    <p className="text-sm text-gray-600">
+                      Match your CSV columns to the volunteer fields. Required fields are marked with *.
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Found {csvRows.length} rows with {csvHeaders.length} columns
+                    </p>
+                  </div>
+
+                  {/* Column mapping grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                    {IMPORT_FIELD_DEFINITIONS.map(field => (
+                      <div key={field.key} className="flex flex-col gap-1">
+                        <label className="text-sm font-medium text-gray-700">
+                          {field.label}
+                          {field.required && <span className="text-red-500 ml-1">*</span>}
+                        </label>
+                        <select
+                          value={columnMapping[field.key] || ''}
+                          onChange={(e) => setColumnMapping(prev => ({
+                            ...prev,
+                            [field.key]: e.target.value,
+                          }))}
+                          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                        >
+                          <option value="">-- Select column --</option>
+                          {csvHeaders.map(header => (
+                            <option key={header} value={header}>{header}</option>
+                          ))}
+                        </select>
+                        <span className="text-xs text-gray-500">{field.description}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Preview of first few rows */}
+                  <div className="mb-4">
+                    <h3 className="text-sm font-medium text-gray-700 mb-2">Data Preview (first 3 rows)</h3>
+                    <div className="bg-gray-50 rounded-lg p-3 overflow-x-auto">
+                      <table className="w-full text-xs">
+                        <thead>
+                          <tr className="text-left text-gray-500">
+                            {csvHeaders.map(h => (
+                              <th key={h} className="pb-2 pr-4 whitespace-nowrap font-medium">{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody className="text-gray-700 font-mono">
+                          {csvRows.slice(0, 3).map((row, i) => (
+                            <tr key={i} className="border-t border-gray-200">
+                              {row.map((cell, j) => (
+                                <td key={j} className="py-1 pr-4 whitespace-nowrap max-w-[150px] truncate">
+                                  {cell || <span className="text-gray-300">—</span>}
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setImportStep('upload')}
+                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                    >
+                      ← Back
+                    </button>
+                    <button
+                      onClick={handleImport}
+                      disabled={!columnMapping.name || !columnMapping.email}
+                      className="flex-1 px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Import {csvRows.length} Volunteers
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {/* Step 3: Importing */}
+              {importStep === 'importing' && (
+                <div className="py-8 text-center">
+                  <div className="animate-spin w-12 h-12 border-4 border-cyan-600 border-t-transparent rounded-full mx-auto mb-4" />
+                  <p className="text-gray-600">Importing volunteers...</p>
+                  <p className="text-sm text-gray-500 mt-1">This may take a moment</p>
+                </div>
+              )}
+
+              {/* Step 4: Results */}
+              {importStep === 'results' && importResult && (
+                <>
                   <div className="space-y-4">
                     <div className="grid grid-cols-3 gap-4">
                       <div className="bg-green-50 rounded-lg p-4 text-center">
@@ -1149,7 +1546,7 @@ Jane Smith,jane@example.com,555-5678,COORDINATOR,Spanish,Zone 3`}
 
                     <button
                       onClick={closeImportModal}
-                      className="w-full px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700"
+                      className="w-full px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700"
                     >
                       Done
                     </button>
@@ -1246,7 +1643,7 @@ Jane Smith,jane@example.com,555-5678,COORDINATOR,Spanish,Zone 3`}
                     required
                     value={addVolunteerForm.name}
                     onChange={(e) => setAddVolunteerForm(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                     placeholder="John Doe"
                   />
                 </div>
@@ -1261,22 +1658,22 @@ Jane Smith,jane@example.com,555-5678,COORDINATOR,Spanish,Zone 3`}
                     required
                     value={addVolunteerForm.email}
                     onChange={(e) => setAddVolunteerForm(prev => ({ ...prev, email: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                     placeholder="john@example.com"
                   />
                 </div>
 
-                {/* Phone */}
+                {/* Phone or Signal */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone Number
+                    Phone or Signal Handle
                   </label>
                   <input
-                    type="tel"
+                    type="text"
                     value={addVolunteerForm.phone}
                     onChange={(e) => setAddVolunteerForm(prev => ({ ...prev, phone: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                    placeholder="919-555-1234"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                    placeholder="919-555-1234 or @signal_handle"
                   />
                 </div>
 
@@ -1288,7 +1685,7 @@ Jane Smith,jane@example.com,555-5678,COORDINATOR,Spanish,Zone 3`}
                   <select
                     value={addVolunteerForm.role}
                     onChange={(e) => setAddVolunteerForm(prev => ({ ...prev, role: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                   >
                     <option value="VOLUNTEER">Volunteer</option>
                     <option value="COORDINATOR">Coordinator</option>
@@ -1305,7 +1702,7 @@ Jane Smith,jane@example.com,555-5678,COORDINATOR,Spanish,Zone 3`}
                   <select
                     value={addVolunteerForm.zoneId}
                     onChange={(e) => setAddVolunteerForm(prev => ({ ...prev, zoneId: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                   >
                     <option value="">No zone assigned</option>
                     {data?.zones.map(zone => (
@@ -1324,7 +1721,7 @@ Jane Smith,jane@example.com,555-5678,COORDINATOR,Spanish,Zone 3`}
                   <select
                     value={addVolunteerForm.primaryLanguage}
                     onChange={(e) => setAddVolunteerForm(prev => ({ ...prev, primaryLanguage: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                   >
                     <option value="English">English</option>
                     <option value="Spanish">Spanish</option>
@@ -1334,6 +1731,49 @@ Jane Smith,jane@example.com,555-5678,COORDINATOR,Spanish,Zone 3`}
                     <option value="Arabic">Arabic</option>
                     <option value="Other">Other</option>
                   </select>
+                </div>
+
+                {/* Qualifications */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Qualifications
+                  </label>
+                  <p className="text-xs text-gray-500 mb-2">
+                    Select the shift positions this volunteer is qualified for.
+                  </p>
+                  <div className="space-y-2 max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-3">
+                    {(data?.qualifiedRoles || []).map(qr => (
+                      <label key={qr.id} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={addVolunteerForm.qualifiedRoleIds.includes(qr.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setAddVolunteerForm(prev => ({
+                                ...prev,
+                                qualifiedRoleIds: [...prev.qualifiedRoleIds, qr.id]
+                              }));
+                            } else {
+                              setAddVolunteerForm(prev => ({
+                                ...prev,
+                                qualifiedRoleIds: prev.qualifiedRoleIds.filter(id => id !== qr.id)
+                              }));
+                            }
+                          }}
+                          className="rounded border-gray-300 text-cyan-600 focus:ring-cyan-500"
+                        />
+                        <span
+                          className="px-2 py-0.5 rounded text-xs font-medium"
+                          style={{
+                            backgroundColor: qr.color ? `${qr.color}20` : '#e5e7eb',
+                            color: qr.color || '#374151'
+                          }}
+                        >
+                          {qr.name}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Submit buttons */}
@@ -1348,12 +1788,282 @@ Jane Smith,jane@example.com,555-5678,COORDINATOR,Spanish,Zone 3`}
                   <button
                     type="submit"
                     disabled={addingVolunteer}
-                    className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {addingVolunteer ? 'Adding...' : 'Add Volunteer'}
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Edit Modal */}
+      {showBulkEditModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold text-gray-900">
+                  Edit {selectedCount} Volunteer{selectedCount > 1 ? 's' : ''}
+                </h2>
+                <button
+                  onClick={() => setShowBulkEditModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <p className="text-sm text-gray-600 mb-6">
+                Select the changes you want to apply to all selected volunteers. Leave fields empty to keep their current values.
+              </p>
+
+              <div className="space-y-6">
+                {/* User Type */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Change User Type
+                  </label>
+                  <select
+                    value={bulkEditForm.role}
+                    onChange={(e) => setBulkEditForm(prev => ({ ...prev, role: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  >
+                    <option value="">-- No change --</option>
+                    <option value="VOLUNTEER">Volunteer</option>
+                    <option value="COORDINATOR">Coordinator</option>
+                    <option value="DISPATCHER">Dispatcher</option>
+                    <option value="ADMINISTRATOR">Administrator</option>
+                  </select>
+                </div>
+
+                {/* Qualified Roles - Add */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Add Qualified Roles
+                  </label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    {(data?.qualifiedRoles || []).map(qr => (
+                      <label
+                        key={qr.id}
+                        className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
+                          bulkEditForm.addQualifiedRoles.includes(qr.id)
+                            ? 'bg-cyan-50 border-2 border-cyan-500'
+                            : 'bg-gray-50 border border-gray-200 hover:bg-gray-100'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={bulkEditForm.addQualifiedRoles.includes(qr.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setBulkEditForm(prev => ({
+                                ...prev,
+                                addQualifiedRoles: [...prev.addQualifiedRoles, qr.id],
+                                removeQualifiedRoles: prev.removeQualifiedRoles.filter(id => id !== qr.id),
+                              }));
+                            } else {
+                              setBulkEditForm(prev => ({
+                                ...prev,
+                                addQualifiedRoles: prev.addQualifiedRoles.filter(id => id !== qr.id),
+                              }));
+                            }
+                          }}
+                          className="w-4 h-4 text-cyan-600 rounded focus:ring-cyan-500"
+                        />
+                        <span
+                          className="text-sm font-medium"
+                          style={{ color: qr.color }}
+                        >
+                          {qr.name}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Qualified Roles - Remove */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Remove Qualified Roles
+                  </label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    {(data?.qualifiedRoles || []).map(qr => (
+                      <label
+                        key={qr.id}
+                        className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
+                          bulkEditForm.removeQualifiedRoles.includes(qr.id)
+                            ? 'bg-red-50 border-2 border-red-500'
+                            : 'bg-gray-50 border border-gray-200 hover:bg-gray-100'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={bulkEditForm.removeQualifiedRoles.includes(qr.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setBulkEditForm(prev => ({
+                                ...prev,
+                                removeQualifiedRoles: [...prev.removeQualifiedRoles, qr.id],
+                                addQualifiedRoles: prev.addQualifiedRoles.filter(id => id !== qr.id),
+                              }));
+                            } else {
+                              setBulkEditForm(prev => ({
+                                ...prev,
+                                removeQualifiedRoles: prev.removeQualifiedRoles.filter(id => id !== qr.id),
+                              }));
+                            }
+                          }}
+                          className="w-4 h-4 text-red-600 rounded focus:ring-red-500"
+                        />
+                        <span
+                          className="text-sm font-medium"
+                          style={{ color: qr.color }}
+                        >
+                          {qr.name}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Zones - Add */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Add Zones
+                  </label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-40 overflow-y-auto">
+                    {(data?.zones || []).map(zone => (
+                      <label
+                        key={zone.id}
+                        className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
+                          bulkEditForm.addZones.includes(zone.id)
+                            ? 'bg-cyan-50 border-2 border-cyan-500'
+                            : 'bg-gray-50 border border-gray-200 hover:bg-gray-100'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={bulkEditForm.addZones.includes(zone.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setBulkEditForm(prev => ({
+                                ...prev,
+                                addZones: [...prev.addZones, zone.id],
+                                removeZones: prev.removeZones.filter(id => id !== zone.id),
+                              }));
+                            } else {
+                              setBulkEditForm(prev => ({
+                                ...prev,
+                                addZones: prev.addZones.filter(id => id !== zone.id),
+                              }));
+                            }
+                          }}
+                          className="w-4 h-4 text-cyan-600 rounded focus:ring-cyan-500"
+                        />
+                        <span className="text-sm text-gray-700">{zone.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Zones - Remove */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Remove Zones
+                  </label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-40 overflow-y-auto">
+                    {(data?.zones || []).map(zone => (
+                      <label
+                        key={zone.id}
+                        className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
+                          bulkEditForm.removeZones.includes(zone.id)
+                            ? 'bg-red-50 border-2 border-red-500'
+                            : 'bg-gray-50 border border-gray-200 hover:bg-gray-100'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={bulkEditForm.removeZones.includes(zone.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setBulkEditForm(prev => ({
+                                ...prev,
+                                removeZones: [...prev.removeZones, zone.id],
+                                addZones: prev.addZones.filter(id => id !== zone.id),
+                              }));
+                            } else {
+                              setBulkEditForm(prev => ({
+                                ...prev,
+                                removeZones: prev.removeZones.filter(id => id !== zone.id),
+                              }));
+                            }
+                          }}
+                          className="w-4 h-4 text-red-600 rounded focus:ring-red-500"
+                        />
+                        <span className="text-sm text-gray-700">{zone.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Summary of changes */}
+                {(bulkEditForm.role || bulkEditForm.addQualifiedRoles.length > 0 || bulkEditForm.removeQualifiedRoles.length > 0 || bulkEditForm.addZones.length > 0 || bulkEditForm.removeZones.length > 0) && (
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h3 className="text-sm font-medium text-gray-700 mb-2">Changes to Apply:</h3>
+                    <ul className="text-sm text-gray-600 space-y-1">
+                      {bulkEditForm.role && (
+                        <li>• Set user type to: <span className="font-medium">{bulkEditForm.role}</span></li>
+                      )}
+                      {bulkEditForm.addQualifiedRoles.length > 0 && (
+                        <li>• Add qualified roles: <span className="font-medium text-cyan-600">
+                          {bulkEditForm.addQualifiedRoles.map(id => data?.qualifiedRoles.find(qr => qr.id === id)?.name).join(', ')}
+                        </span></li>
+                      )}
+                      {bulkEditForm.removeQualifiedRoles.length > 0 && (
+                        <li>• Remove qualified roles: <span className="font-medium text-red-600">
+                          {bulkEditForm.removeQualifiedRoles.map(id => data?.qualifiedRoles.find(qr => qr.id === id)?.name).join(', ')}
+                        </span></li>
+                      )}
+                      {bulkEditForm.addZones.length > 0 && (
+                        <li>• Add zones: <span className="font-medium text-cyan-600">
+                          {bulkEditForm.addZones.map(id => data?.zones.find(z => z.id === id)?.name).join(', ')}
+                        </span></li>
+                      )}
+                      {bulkEditForm.removeZones.length > 0 && (
+                        <li>• Remove zones: <span className="font-medium text-red-600">
+                          {bulkEditForm.removeZones.map(id => data?.zones.find(z => z.id === id)?.name).join(', ')}
+                        </span></li>
+                      )}
+                    </ul>
+                  </div>
+                )}
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={() => {
+                    setShowBulkEditModal(false);
+                    resetBulkEditForm();
+                  }}
+                  disabled={isBulkEditing}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleBulkEdit}
+                  disabled={isBulkEditing || (!bulkEditForm.role && bulkEditForm.addQualifiedRoles.length === 0 && bulkEditForm.removeQualifiedRoles.length === 0 && bulkEditForm.addZones.length === 0 && bulkEditForm.removeZones.length === 0)}
+                  className="flex-1 px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isBulkEditing ? 'Applying Changes...' : `Apply to ${selectedCount} Volunteer${selectedCount > 1 ? 's' : ''}`}
+                </button>
+              </div>
             </div>
           </div>
         </div>

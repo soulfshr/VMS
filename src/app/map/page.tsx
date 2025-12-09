@@ -18,7 +18,7 @@ export default function MapPage() {
   if (status === 'loading') {
     return (
       <div className="flex items-center justify-center h-[calc(100vh-200px)]">
-        <div className="animate-spin w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full" />
+        <div className="animate-spin w-8 h-8 border-4 border-cyan-600 border-t-transparent rounded-full" />
       </div>
     );
   }

@@ -37,7 +37,7 @@ const createStep = (
   disableBeacon: true,
   styles: {
     options: {
-      primaryColor: '#0d9488', // teal-600
+      primaryColor: '#0d9488', // cyan-600
     },
   },
 });

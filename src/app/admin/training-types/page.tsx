@@ -201,7 +201,7 @@ export default function TrainingTypesPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full" />
+        <div className="animate-spin w-8 h-8 border-4 border-cyan-600 border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -216,7 +216,7 @@ export default function TrainingTypesPage() {
         {!isCreating && !editingId && (
           <button
             onClick={startCreate}
-            className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium"
+            className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium"
           >
             + Add Training Type
           </button>
@@ -249,7 +249,7 @@ export default function TrainingTypesPage() {
                 type="text"
                 value={formData.name}
                 onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 placeholder="e.g., Dispatcher"
               />
             </div>
@@ -260,7 +260,7 @@ export default function TrainingTypesPage() {
                 value={formData.slug}
                 onChange={e => setFormData(prev => ({ ...prev, slug: e.target.value.toUpperCase() }))}
                 disabled={!!editingId}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:bg-gray-50 disabled:text-gray-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 disabled:bg-gray-50 disabled:text-gray-500"
                 placeholder="e.g., DISPATCHER"
               />
               {editingId && <p className="text-xs text-gray-500 mt-1">Slug is a database label and not visible in the main app. It cannot be changed after creation.</p>}
@@ -272,7 +272,7 @@ export default function TrainingTypesPage() {
             <textarea
               value={formData.description}
               onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
               rows={2}
               placeholder="Brief description of this training type..."
             />
@@ -292,7 +292,7 @@ export default function TrainingTypesPage() {
                   type="text"
                   value={formData.color}
                   onChange={e => setFormData(prev => ({ ...prev, color: e.target.value }))}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 />
               </div>
             </div>
@@ -304,7 +304,7 @@ export default function TrainingTypesPage() {
                 step="15"
                 value={formData.defaultDuration}
                 onChange={e => setFormData(prev => ({ ...prev, defaultDuration: parseInt(e.target.value) || 60 }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
               />
             </div>
             <div>
@@ -314,7 +314,7 @@ export default function TrainingTypesPage() {
                 min="1"
                 value={formData.defaultCapacity}
                 onChange={e => setFormData(prev => ({ ...prev, defaultCapacity: parseInt(e.target.value) || 10 }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
               />
             </div>
             <div>
@@ -325,7 +325,7 @@ export default function TrainingTypesPage() {
                 value={formData.expiresAfterDays ?? ''}
                 onChange={e => setFormData(prev => ({ ...prev, expiresAfterDays: e.target.value ? parseInt(e.target.value) : null }))}
                 placeholder="Never"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
               />
             </div>
           </div>
@@ -335,7 +335,7 @@ export default function TrainingTypesPage() {
             <select
               value={formData.grantsQualifiedRoleId}
               onChange={e => setFormData(prev => ({ ...prev, grantsQualifiedRoleId: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
             >
               <option value="">None (no qualified role granted)</option>
               {qualifiedRoles.map(role => (
@@ -350,7 +350,7 @@ export default function TrainingTypesPage() {
           <div className="flex gap-3 pt-4 border-t border-gray-200">
             <button
               onClick={handleSave}
-              className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium"
+              className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium"
             >
               {isCreating ? 'Create Training Type' : 'Save Changes'}
             </button>
@@ -425,7 +425,7 @@ export default function TrainingTypesPage() {
                       {tt.grantsQualifiedRole.name}
                     </span>
                   ) : (
-                    <span className="text-sm text-gray-400">None</span>
+                    <span className="text-sm text-gray-500">None</span>
                   )}
                 </td>
                 <td className="px-4 py-4 text-sm text-gray-600">
@@ -447,7 +447,7 @@ export default function TrainingTypesPage() {
                   <div className="flex justify-end gap-2">
                     <button
                       onClick={() => startEdit(tt)}
-                      className="text-sm text-teal-600 hover:text-teal-700"
+                      className="text-sm text-cyan-600 hover:text-cyan-700"
                     >
                       Edit
                     </button>

@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RippleVMS - Feature Overview</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1a1a2e;
+      color: #333;
+    }
+
+    .slide {
+      min-height: 100vh;
+      padding: 60px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
+      border-bottom: 4px solid #0891b2;
+      page-break-after: always;
+    }
+
+    .slide.title-slide {
+      background: linear-gradient(135deg, #0891b2 0%, #0369a1 50%, #1e3a5f 100%);
+      color: white;
+      text-align: center;
+    }
+
+    .slide.section-slide {
+      background: linear-gradient(135deg, #0e7490 0%, #0891b2 100%);
+      color: white;
+      text-align: center;
+    }
+
+    .logo {
+      width: 120px;
+      height: 100px;
+      margin: 0 auto 30px;
+      background: white;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+    }
+
+    h1 {
+      font-size: 56px;
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+
+    h2 {
+      font-size: 42px;
+      font-weight: 600;
+      margin-bottom: 30px;
+      color: #0891b2;
+    }
+
+    .title-slide h2, .section-slide h2 {
+      color: rgba(255,255,255,0.9);
+      font-size: 28px;
+      font-weight: 400;
+    }
+
+    h3 {
+      font-size: 28px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: #0e7490;
+    }
+
+    p {
+      font-size: 24px;
+      line-height: 1.6;
+      color: #4b5563;
+      margin-bottom: 15px;
+    }
+
+    ul {
+      font-size: 22px;
+      line-height: 1.8;
+      margin-left: 40px;
+      color: #374151;
+    }
+
+    li {
+      margin-bottom: 12px;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 30px;
+      margin-top: 30px;
+    }
+
+    .feature-card {
+      background: white;
+      border-radius: 16px;
+      padding: 30px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      border-left: 4px solid #0891b2;
+    }
+
+    .feature-card h4 {
+      font-size: 22px;
+      color: #0e7490;
+      margin-bottom: 12px;
+    }
+
+    .feature-card p {
+      font-size: 18px;
+      margin-bottom: 0;
+    }
+
+    .icon {
+      font-size: 48px;
+      margin-bottom: 15px;
+    }
+
+    .highlight {
+      background: #ecfeff;
+      border-radius: 12px;
+      padding: 25px 30px;
+      margin: 20px 0;
+      border-left: 4px solid #0891b2;
+    }
+
+    .highlight p {
+      margin-bottom: 0;
+      font-size: 20px;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 30px;
+      margin-top: 40px;
+    }
+
+    .stat-card {
+      background: white;
+      border-radius: 16px;
+      padding: 30px;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+
+    .stat-card .number {
+      font-size: 48px;
+      font-weight: 700;
+      color: #0891b2;
+    }
+
+    .stat-card .label {
+      font-size: 18px;
+      color: #6b7280;
+      margin-top: 8px;
+    }
+
+    .two-column {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 50px;
+      align-items: start;
+    }
+
+    .role-badge {
+      display: inline-block;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 16px;
+      font-weight: 600;
+      margin-right: 10px;
+      margin-bottom: 10px;
+    }
+
+    .role-volunteer { background: #dbeafe; color: #1e40af; }
+    .role-coordinator { background: #fef3c7; color: #92400e; }
+    .role-dispatcher { background: #fee2e2; color: #991b1b; }
+    .role-admin { background: #e0e7ff; color: #3730a3; }
+
+    .footer {
+      margin-top: auto;
+      padding-top: 40px;
+      font-size: 16px;
+      color: #9ca3af;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .title-slide .footer, .section-slide .footer {
+      color: rgba(255,255,255,0.6);
+    }
+
+    .screenshot-placeholder {
+      background: #f3f4f6;
+      border: 2px dashed #d1d5db;
+      border-radius: 12px;
+      padding: 60px;
+      text-align: center;
+      color: #9ca3af;
+      font-size: 18px;
+    }
+
+    @media print {
+      .slide {
+        page-break-after: always;
+        min-height: 100vh;
+      }
+    }
+
+    .nav {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      display: flex;
+      gap: 10px;
+      z-index: 100;
+    }
+
+    .nav button {
+      padding: 12px 20px;
+      background: #0891b2;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    .nav button:hover {
+      background: #0e7490;
+    }
+
+    @media print {
+      .nav { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Navigation -->
+<div class="nav">
+  <button onclick="prevSlide()">Previous</button>
+  <button onclick="nextSlide()">Next</button>
+</div>
+
+<!-- Slide 1: Title -->
+<div class="slide title-slide" id="slide1">
+  <div class="logo">
+    <img src="/ripple-logo.png" alt="RippleVMS" style="width: 80px; height: auto;">
+  </div>
+  <h1>RippleVMS</h1>
+  <h2>Volunteer Management System for Community Rapid Response</h2>
+  <p style="color: rgba(255,255,255,0.8); margin-top: 40px;">Feature Overview Presentation</p>
+  <div class="footer">
+    <span>nc.ripple-vms.com</span>
+    <span>December 2025</span>
+  </div>
+</div>
+
+<!-- Slide 2: What is RippleVMS -->
+<div class="slide" id="slide2">
+  <h2>What is RippleVMS?</h2>
+  <p>A purpose-built volunteer management system designed for community rapid response networks coordinating mutual aid and community protection efforts.</p>
+
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="icon">📅</div>
+      <h4>Shift Scheduling</h4>
+      <p>Create, manage, and fill volunteer shifts across multiple zones and time slots</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">🗺️</div>
+      <h4>Zone-Based Coverage</h4>
+      <p>Organize volunteers by geographic zones with interactive mapping</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">📱</div>
+      <h4>Mobile-First Design</h4>
+      <p>Fully responsive for volunteers working in the field</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">🔔</div>
+      <h4>Real-Time Alerts</h4>
+      <p>Community sighting reports with instant notifications</p>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>RippleVMS Feature Overview</span>
+    <span>2 / 14</span>
+  </div>
+</div>
+
+<!-- Slide 3: User Roles -->
+<div class="slide" id="slide3">
+  <h2>Role-Based Access Control</h2>
+  <p>Four distinct user roles with appropriate permissions:</p>
+
+  <div class="two-column" style="margin-top: 40px;">
+    <div>
+      <h3><span class="role-badge role-volunteer">Volunteer</span></h3>
+      <ul>
+        <li>Browse and sign up for shifts</li>
+        <li>View personal dashboard</li>
+        <li>Access zone maps and POIs</li>
+        <li>Submit community sighting reports</li>
+      </ul>
+
+      <h3 style="margin-top: 30px;"><span class="role-badge role-coordinator">Coordinator</span></h3>
+      <ul>
+        <li>Create and manage shifts</li>
+        <li>Confirm volunteer RSVPs</li>
+        <li>Send email blasts</li>
+        <li>Manage zone mapping</li>
+      </ul>
+    </div>
+    <div>
+      <h3><span class="role-badge role-dispatcher">Dispatcher</span></h3>
+      <ul>
+        <li>Handle incoming sighting reports</li>
+        <li>Coordinate field responses</li>
+        <li>View all zone activity</li>
+        <li>Time-block based assignments</li>
+      </ul>
+
+      <h3 style="margin-top: 30px;"><span class="role-badge role-admin">Administrator</span></h3>
+      <ul>
+        <li>Full system configuration</li>
+        <li>User management</li>
+        <li>Zone and shift type setup</li>
+        <li>Qualified roles management</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>RippleVMS Feature Overview</span>
+    <span>3 / 14</span>
+  </div>
+</div>
+
+<!-- Slide 4: Section - Volunteer Experience -->
+<div class="slide section-slide" id="slide4">
+  <h1>Volunteer Experience</h1>
+  <h2>Intuitive tools for community members</h2>
+</div>
+
+<!-- Slide 5: Dashboard -->
+<div class="slide" id="slide5">
+  <h2>Personalized Dashboard</h2>
+
+  <div class="two-column">
+    <div>
+      <p>Each volunteer sees a personalized dashboard showing:</p>
+      <ul>
+        <li><strong>Upcoming Shifts</strong> - Quick view of scheduled commitments</li>
+        <li><strong>Hours This Month</strong> - Track volunteer contributions</li>
+        <li><strong>Zone Activity</strong> - Recent sightings in assigned zones</li>
+        <li><strong>Quick Actions</strong> - One-click access to common tasks</li>
+      </ul>
+
+      <div class="highlight">
+        <p><strong>Cancelled Shift Notifications:</strong> When shifts are cancelled, volunteers see them clearly marked with a red "Cancelled" badge and can dismiss them from their dashboard.</p>
+      </div>
+    </div>
+    <div>
+      <div class="screenshot-placeholder">
+        Dashboard Screenshot<br><br>
+        <em>Visit /dashboard to see live</em>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>RippleVMS Feature Overview</span>
+    <span>5 / 14</span>
+  </div>
+</div>
+
+<!-- Slide 6: Shift Signup -->
+<div class="slide" id="slide6">
+  <h2>Shift Browsing & Signup</h2>
+
+  <div class="two-column">
+    <div>
+      <p>Volunteers can easily find and sign up for shifts:</p>
+      <ul>
+        <li><strong>Filter by Zone</strong> - Find shifts in your coverage area</li>
+        <li><strong>Filter by Type</strong> - Patrol, Collection, On-Call</li>
+        <li><strong>List or Card View</strong> - Choose your preferred layout</li>
+        <li><strong>One-Click Signup</strong> - Instant RSVP with confirmation</li>
+        <li><strong>Calendar View</strong> - Week-at-a-glance scheduling</li>
+      </ul>
+
+      <div class="highlight">
+        <p><strong>Automatic Notifications:</strong> Confirmation emails with calendar invites are sent automatically upon signup.</p>
+      </div>
+    </div>
+    <div>
+      <div class="screenshot-placeholder">
+        Shifts Page Screenshot<br><br>
+        <em>Visit /shifts to see live</em>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>RippleVMS Feature Overview</span>
+    <span>6 / 14</span>
+  </div>
+</div>
+
+<!-- Slide 7: Interactive Map -->
+<div class="slide" id="slide7">
+  <h2>Interactive Coverage Map</h2>
+
+  <div class="two-column">
+    <div>
+      <p>Comprehensive mapping features for field operations:</p>
+      <ul>
+        <li><strong>Zone Boundaries</strong> - Color-coded coverage areas</li>
+        <li><strong>Points of Interest</strong> - Key locations marked on map</li>
+        <li><strong>Category Filtering</strong> - Schools, safe spaces, enforcement locations</li>
+        <li><strong>Click for Details</strong> - Address, phone, notes for each POI</li>
+      </ul>
+
+      <h3 style="margin-top: 30px;">POI Categories</h3>
+      <ul>
+        <li>Enforcement Locations</li>
+        <li>Schools & Educational Facilities</li>
+        <li>Safe Spaces & Resources</li>
+        <li>Community Partners</li>
+      </ul>
+    </div>
+    <div>
+      <div class="screenshot-placeholder">
+        Map Screenshot<br><br>
+        <em>Visit /map to see live</em>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>RippleVMS Feature Overview</span>
+    <span>7 / 14</span>
+  </div>
+</div>
+
+<!-- Slide 8: Section - Coordinator Tools -->
+<div class="slide section-slide" id="slide8">
+  <h1>Coordinator Tools</h1>
+  <h2>Efficient management for team leaders</h2>
+</div>
+
+<!-- Slide 9: Shift Management -->
+<div class="slide" id="slide9">
+  <h2>Shift Creation & Management</h2>
+
+  <div class="feature-grid">
+    <div class="feature-card">
+      <h4>Quick Shift Creation</h4>
+      <p>Create shifts in under a minute with intuitive forms. Set zone, time, volunteer limits, and special requirements.</p>
+    </div>
+    <div class="feature-card">
+      <h4>Roster Management</h4>
+      <p>View who's signed up, confirm pending RSVPs, and manage volunteer assignments for each shift.</p>
+    </div>
+    <div class="feature-card">
+      <h4>Bulk Actions</h4>
+      <p>Select multiple shifts with "Select All" checkbox. Confirm pending RSVPs or cancel shifts in bulk.</p>
+    </div>
+    <div class="feature-card">
+      <h4>Cancellation Workflow</h4>
+      <p>Cancel shifts with automatic email notifications to all affected volunteers. Optional cancellation reason.</p>
+    </div>
+  </div>
+
+  <div class="highlight" style="margin-top: 30px;">
+    <p><strong>Shift+Click Selection:</strong> Hold Shift and click to select a range of shifts for bulk operations.</p>
+  </div>
+
+  <div class="footer">
+    <span>RippleVMS Feature Overview</span>
+    <span>9 / 14</span>
+  </div>
+</div>
+
+<!-- Slide 10: Coordinator Console -->
+<div class="slide" id="slide10">
+  <h2>Coordinator Console</h2>
+
+  <div class="two-column">
+    <div>
+      <h3>Email Blast</h3>
+      <ul>
+        <li>Send targeted communications</li>
+        <li>Filter by zone or role</li>
+        <li>Multiple template types</li>
+        <li>Preview before sending</li>
+        <li>Select specific shifts to notify</li>
+      </ul>
+
+      <h3 style="margin-top: 30px;">Mapping Management</h3>
+      <ul>
+        <li>Create and edit zones</li>
+        <li>Draw zone boundaries</li>
+        <li>Manage Points of Interest</li>
+        <li>Organize POI categories</li>
+      </ul>
+    </div>
+    <div>
+      <div class="screenshot-placeholder">
+        Coordinator Console Screenshot<br><br>
+        <em>Visit /coordinator to see live</em>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>RippleVMS Feature Overview</span>
+    <span>10 / 14</span>
+  </div>
+</div>
+
+<!-- Slide 11: Weekly Schedule -->
+<div class="slide" id="slide11">
+  <h2>Weekly Schedule View</h2>
+
+  <div class="two-column">
+    <div>
+      <p>Bird's-eye view of coverage for coordinators and dispatchers:</p>
+      <ul>
+        <li><strong>Regional Lead Row</strong> - Daily coordination assignments</li>
+        <li><strong>Dispatcher Coverage</strong> - Time-block assignments by county</li>
+        <li><strong>Zone Shifts</strong> - All shifts organized by day</li>
+        <li><strong>Coverage Indicators</strong> - Visual gaps identification</li>
+      </ul>
+
+      <div class="highlight">
+        <p><strong>Quick Navigation:</strong> Click any cell to view details or make assignments. Navigate weeks with arrow buttons.</p>
+      </div>
+    </div>
+    <div>
+      <div class="screenshot-placeholder">
+        Schedule Screenshot<br><br>
+        <em>Visit /schedule to see live</em>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>RippleVMS Feature Overview</span>
+    <span>11 / 14</span>
+  </div>
+</div>
+
+<!-- Slide 12: Section - Admin Features -->
+<div class="slide section-slide" id="slide12">
+  <h1>Administration</h1>
+  <h2>Full system control and configuration</h2>
+</div>
+
+<!-- Slide 13: Admin Panel -->
+<div class="slide" id="slide13">
+  <h2>Admin Configuration</h2>
+
+  <div class="feature-grid">
+    <div class="feature-card">
+      <h4>Zone Management</h4>
+      <p>Create zones, assign counties, set colors, draw boundaries on the map, add Signal group links.</p>
+    </div>
+    <div class="feature-card">
+      <h4>Shift Types</h4>
+      <p>Configure shift types (Patrol, Collection, On-Call) with custom colors and default settings.</p>
+    </div>
+    <div class="feature-card">
+      <h4>Qualified Roles</h4>
+      <p>Define special roles like Verifier, Zone Lead, Dispatcher that volunteers can earn through training.</p>
+    </div>
+    <div class="feature-card">
+      <h4>User Management</h4>
+      <p>View all volunteers, update roles, assign zones, manage qualifications and training status.</p>
+    </div>
+    <div class="feature-card">
+      <h4>Training Types</h4>
+      <p>Set up training categories and requirements for volunteer certification.</p>
+    </div>
+    <div class="feature-card">
+      <h4>System Settings</h4>
+      <p>Configure organization name, feature flags, and system-wide preferences.</p>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>RippleVMS Feature Overview</span>
+    <span>13 / 14</span>
+  </div>
+</div>
+
+<!-- Slide 14: Community Reporting -->
+<div class="slide" id="slide14">
+  <h2>Community Sighting Reports</h2>
+
+  <div class="two-column">
+    <div>
+      <p>Anonymous public reporting system for community safety:</p>
+      <ul>
+        <li><strong>No Login Required</strong> - Anyone can submit</li>
+        <li><strong>S.A.L.U.T.E. Format</strong> - Standardized reporting</li>
+        <li><strong>Location Picker</strong> - Map-based address selection</li>
+        <li><strong>Media Upload</strong> - Attach photos if available</li>
+        <li><strong>Instant Dispatch</strong> - Reports go to on-duty dispatchers</li>
+      </ul>
+
+      <div class="highlight">
+        <p><strong>S.A.L.U.T.E.</strong><br>
+        Size - Activity - Location - Uniform - Time - Equipment</p>
+      </div>
+    </div>
+    <div>
+      <div class="screenshot-placeholder">
+        Report Form Screenshot<br><br>
+        <em>Visit /report to see live</em>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>RippleVMS Feature Overview</span>
+    <span>14 / 14</span>
+  </div>
+</div>
+
+<!-- Slide 15: Closing -->
+<div class="slide title-slide" id="slide15">
+  <div class="logo">
+    <img src="/ripple-logo.png" alt="RippleVMS" style="width: 80px; height: auto;">
+  </div>
+  <h1>RippleVMS</h1>
+  <h2>Purpose-built for community rapid response coordination</h2>
+
+  <div style="margin-top: 50px;">
+    <p style="color: white; font-size: 28px;">Live Demo: <strong>nc.ripple-vms.com</strong></p>
+  </div>
+
+  <div class="footer">
+    <span></span>
+    <span>Questions?</span>
+  </div>
+</div>
+
+<script>
+  let currentSlide = 1;
+  const totalSlides = 15;
+
+  function showSlide(n) {
+    if (n < 1) n = totalSlides;
+    if (n > totalSlides) n = 1;
+    currentSlide = n;
+
+    const slide = document.getElementById('slide' + n);
+    if (slide) {
+      slide.scrollIntoView({ behavior: 'smooth' });
+    }
+  }
+
+  function nextSlide() {
+    showSlide(currentSlide + 1);
+  }
+
+  function prevSlide() {
+    showSlide(currentSlide - 1);
+  }
+
+  // Keyboard navigation
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
+      e.preventDefault();
+      nextSlide();
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      prevSlide();
+    }
+  });
+</script>
+
+</body>
+</html>

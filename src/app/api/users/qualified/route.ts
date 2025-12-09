@@ -24,18 +24,29 @@ export async function GET(request: NextRequest) {
     const qualification = role as Qualification; // DISPATCHER or ZONE_LEAD
     const trainingTypeSlug = role === 'DISPATCHER' ? 'DISPATCHER' : 'ZONE_LEAD';
 
-    // Find users who have the qualification (either in qualifications array OR via training)
+    // Find users who have the qualification (via userQualifications OR old qualifications array OR training)
     const qualifiedUsers = await prisma.user.findMany({
       where: {
         isActive: true,
         OR: [
-          // Method 1: Has qualification in qualifications array (manually assigned or earned)
+          // Method 1: Has qualification via NEW userQualifications table (preferred)
+          {
+            userQualifications: {
+              some: {
+                qualifiedRole: {
+                  slug: role,
+                  isActive: true,
+                },
+              },
+            },
+          },
+          // Method 2: Has qualification in OLD qualifications array (legacy/deprecated)
           {
             qualifications: {
               has: qualification,
             },
           },
-          // Method 2: Has completed the required training (legacy support)
+          // Method 3: Has completed the required training (legacy support)
           {
             trainingAttendances: {
               some: {
@@ -49,8 +60,9 @@ export async function GET(request: NextRequest) {
             },
           },
         ],
-        // Optionally filter by county (users who have zones in this county)
-        ...(county
+        // Optionally filter by county for ZONE_LEAD only
+        // Dispatchers don't need zone affiliation - they can cover any area
+        ...(county && role === 'ZONE_LEAD'
           ? {
               zones: {
                 some: {

@@ -12,7 +12,7 @@ export default function PrivacyPolicyPage() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 md:p-12">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Privacy Policy</h1>
           <p className="text-gray-500 mb-8">RippleVMS - Volunteer Management System</p>
-          <p className="text-sm text-gray-400 mb-8">Last Updated: December 4, 2024</p>
+          <p className="text-sm text-gray-500 mb-8">Last Updated: December 7, 2025</p>
 
           <div className="prose prose-gray max-w-none">
             <hr className="my-6" />
@@ -128,6 +128,11 @@ export default function PrivacyPolicyPage() {
                     <td className="px-4 py-2 border-b">Zone boundary display</td>
                     <td className="px-4 py-2 border-b">Zone boundary coordinates (public)</td>
                   </tr>
+                  <tr>
+                    <td className="px-4 py-2 border-b"><strong>Upstash Redis</strong></td>
+                    <td className="px-4 py-2 border-b">Rate limiting</td>
+                    <td className="px-4 py-2 border-b">IP addresses (temporary, for abuse prevention)</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -145,13 +150,48 @@ export default function PrivacyPolicyPage() {
             <hr className="my-6" />
 
             <h2 className="text-xl font-semibold text-gray-900 mt-8 mb-4">Data Security</h2>
-            <p className="text-gray-600 mb-2">We implement appropriate technical and organizational measures to protect your personal information, including:</p>
+            <p className="text-gray-600 mb-4">We implement comprehensive technical and organizational measures to protect your personal information. Our security practices meet or exceed industry standards for protecting sensitive data.</p>
+
+            <h3 className="text-lg font-medium text-gray-800 mt-6 mb-3">Encryption Standards</h3>
             <ul className="list-disc list-inside text-gray-600 mb-4 space-y-1">
-              <li><strong>Encryption in Transit:</strong> All data transmitted between your browser and our servers is encrypted using TLS/HTTPS</li>
-              <li><strong>Encryption at Rest:</strong> Database data is encrypted at rest</li>
-              <li><strong>Secure Authentication:</strong> We use NextAuth.js for secure session management</li>
-              <li><strong>Access Controls:</strong> Role-based access ensures users can only view information appropriate to their role</li>
-              <li><strong>Password Security:</strong> Passwords are hashed using bcrypt with appropriate salt rounds</li>
+              <li><strong>Encryption in Transit:</strong> All data transmitted between your browser and our servers is encrypted using TLS 1.2 or higher with strong cipher suites. We enforce HTTPS on all connections and use HSTS (HTTP Strict Transport Security) to prevent downgrade attacks.</li>
+              <li><strong>Encryption at Rest:</strong> All database data is encrypted at rest using AES-256 encryption. Our database provider (Neon) implements transparent data encryption (TDE) for all stored data, including backups.</li>
+              <li><strong>Password Security:</strong> User passwords are never stored in plain text. We use bcrypt with a cost factor of 12 for password hashing, making brute-force attacks computationally infeasible.</li>
+              <li><strong>Token Security:</strong> Sensitive tokens (password reset, email verification) are cryptographically hashed using SHA-256 before storage and expire after a limited time window.</li>
+            </ul>
+
+            <h3 className="text-lg font-medium text-gray-800 mt-6 mb-3">Infrastructure Security</h3>
+            <ul className="list-disc list-inside text-gray-600 mb-4 space-y-1">
+              <li><strong>Secure Hosting:</strong> Our application is hosted on Vercel, which maintains SOC 2 Type II compliance and implements enterprise-grade security controls including network isolation and DDoS protection.</li>
+              <li><strong>Database Security:</strong> Our PostgreSQL database is hosted on Neon, which provides SOC 2 Type II certified infrastructure with automatic failover, point-in-time recovery, and encrypted connections.</li>
+              <li><strong>Environment Isolation:</strong> Development, staging, and production environments are fully isolated with separate databases and credentials to prevent accidental data exposure.</li>
+              <li><strong>Secrets Management:</strong> All sensitive credentials and API keys are stored as encrypted environment variables, never in source code.</li>
+            </ul>
+
+            <h3 className="text-lg font-medium text-gray-800 mt-6 mb-3">Application Security</h3>
+            <ul className="list-disc list-inside text-gray-600 mb-4 space-y-1">
+              <li><strong>Secure Authentication:</strong> We use industry-standard authentication protocols with secure, HTTP-only session cookies that cannot be accessed by client-side scripts.</li>
+              <li><strong>Access Controls:</strong> Role-based access control (RBAC) ensures users can only view and modify information appropriate to their assigned role (Volunteer, Coordinator, Dispatcher, Administrator).</li>
+              <li><strong>Input Validation:</strong> All user inputs are validated and sanitized to prevent SQL injection, cross-site scripting (XSS), and other injection attacks.</li>
+              <li><strong>Rate Limiting:</strong> We implement rate limiting on authentication endpoints and public forms to prevent brute-force attacks and abuse.</li>
+              <li><strong>Security Headers:</strong> We implement comprehensive security headers including Content Security Policy (CSP), X-Frame-Options, X-Content-Type-Options, and Referrer-Policy.</li>
+              <li><strong>CSRF Protection:</strong> Cross-site request forgery protection is implemented on all state-changing operations.</li>
+            </ul>
+
+            <h3 className="text-lg font-medium text-gray-800 mt-6 mb-3">Monitoring and Incident Response</h3>
+            <ul className="list-disc list-inside text-gray-600 mb-4 space-y-1">
+              <li><strong>Security Logging:</strong> We maintain security logs for authentication events, access attempts, and administrative actions.</li>
+              <li><strong>Anomaly Detection:</strong> Unusual patterns of access or failed authentication attempts trigger alerts for review.</li>
+              <li><strong>Incident Response:</strong> We have procedures in place to respond to security incidents, including notification of affected users when required by law.</li>
+              <li><strong>Regular Updates:</strong> We keep all software dependencies updated to address known security vulnerabilities.</li>
+            </ul>
+
+            <h3 className="text-lg font-medium text-gray-800 mt-6 mb-3">Third-Party Security Compliance</h3>
+            <p className="text-gray-600 mb-2">Our infrastructure providers maintain the following security certifications:</p>
+            <ul className="list-disc list-inside text-gray-600 mb-4 space-y-1">
+              <li><strong>Vercel:</strong> SOC 2 Type II, GDPR compliant</li>
+              <li><strong>Neon (Database):</strong> SOC 2 Type II certified</li>
+              <li><strong>Amazon SES (Email):</strong> SOC 1/2/3, ISO 27001, PCI DSS compliant</li>
             </ul>
 
             <hr className="my-6" />
@@ -225,8 +265,8 @@ export default function PrivacyPolicyPage() {
             </p>
             <p className="text-gray-600 mb-4">
               <strong>RippleVMS</strong><br />
-              Email: <a href="mailto:triangle.dispatch.group@gmail.com" className="text-teal-600 hover:underline">triangle.dispatch.group@gmail.com</a><br />
-              Website: <a href="https://nc.ripple-vms.com" className="text-teal-600 hover:underline">nc.ripple-vms.com</a>
+              Email: <a href="mailto:triangle.dispatch.group@gmail.com" className="text-cyan-600 hover:underline">triangle.dispatch.group@gmail.com</a><br />
+              Website: <a href="https://nc.ripple-vms.com" className="text-cyan-600 hover:underline">nc.ripple-vms.com</a>
             </p>
 
             <hr className="my-6" />

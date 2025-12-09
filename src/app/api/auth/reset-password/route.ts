@@ -1,8 +1,26 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
+import { checkRateLimitAsync, getClientIp, RATE_LIMITS, rateLimitResponse } from '@/lib/rate-limit';
+import { validatePassword } from '@/lib/password';
 
-export async function POST(request: Request) {
+/**
+ * Hash a reset token using SHA-256
+ * The database stores hashed tokens, so we hash the incoming token to compare
+ */
+function hashToken(token: string): string {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
+export async function POST(request: NextRequest) {
+  // Rate limiting
+  const clientIp = getClientIp(request);
+  const rateLimit = await checkRateLimitAsync(`resetPassword:${clientIp}`, RATE_LIMITS.resetPassword);
+  if (!rateLimit.success) {
+    return rateLimitResponse(rateLimit);
+  }
+
   try {
     const { token, password } = await request.json();
 
@@ -13,16 +31,21 @@ export async function POST(request: Request) {
       );
     }
 
-    if (password.length < 8) {
+    // Validate password strength
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.valid) {
       return NextResponse.json(
-        { error: 'Password must be at least 8 characters' },
+        { error: passwordValidation.errors[0], errors: passwordValidation.errors },
         { status: 400 }
       );
     }
 
-    // Find user by reset token
+    // Hash the incoming token to match against stored hash
+    const hashedToken = hashToken(token);
+
+    // Find user by hashed reset token
     const user = await prisma.user.findUnique({
-      where: { resetToken: token },
+      where: { resetToken: hashedToken },
     });
 
     if (!user) {

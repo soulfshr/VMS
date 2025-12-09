@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { uploadToS3 } from '@/lib/s3';
 import { prisma } from '@/lib/db';
+import { checkRateLimitAsync, getClientIp, RATE_LIMITS, rateLimitResponse } from '@/lib/rate-limit';
 
 // Get upload settings from database
 async function getUploadSettings() {
@@ -13,6 +14,13 @@ async function getUploadSettings() {
 
 // POST /api/upload - Upload a file to S3 (PUBLIC - no auth required for sighting reports)
 export async function POST(request: NextRequest) {
+  // Rate limiting
+  const clientIp = getClientIp(request);
+  const rateLimit = await checkRateLimitAsync(`upload:${clientIp}`, RATE_LIMITS.upload);
+  if (!rateLimit.success) {
+    return rateLimitResponse(rateLimit);
+  }
+
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File | null;

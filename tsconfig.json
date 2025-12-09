@@ -38,6 +38,11 @@
   ],
   "exclude": [
     "node_modules",
-    "prisma"
+    "prisma",
+    "vitest.config.ts",
+    "vitest.setup.ts",
+    "playwright.config.ts",
+    "__tests__",
+    "e2e"
   ]
 }

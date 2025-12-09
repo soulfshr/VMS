@@ -236,7 +236,7 @@ export default function POIsPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full" />
+        <div className="animate-spin w-8 h-8 border-4 border-cyan-600 border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -253,7 +253,7 @@ export default function POIsPage() {
         {!isCreating && !editingId && (
           <button
             onClick={startCreate}
-            className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium"
+            className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium"
           >
             + Add POI
           </button>
@@ -286,7 +286,7 @@ export default function POIsPage() {
                 type="text"
                 value={formData.name}
                 onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 placeholder="e.g., Stewart Detention Center"
               />
             </div>
@@ -295,7 +295,7 @@ export default function POIsPage() {
               <select
                 value={formData.categoryId}
                 onChange={e => setFormData(prev => ({ ...prev, categoryId: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
               >
                 <option value="">Select a category</option>
                 {categories.map(cat => (
@@ -312,7 +312,7 @@ export default function POIsPage() {
             <textarea
               value={formData.description}
               onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
               rows={2}
               placeholder="Brief description of this location..."
             />
@@ -342,7 +342,7 @@ export default function POIsPage() {
               <select
                 value={formData.zoneId}
                 onChange={e => setFormData(prev => ({ ...prev, zoneId: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
               >
                 <option value="">No zone assigned</option>
                 {zones.map(zone => (
@@ -358,7 +358,7 @@ export default function POIsPage() {
                 type="tel"
                 value={formData.phone}
                 onChange={e => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 placeholder="e.g., (555) 123-4567"
               />
             </div>
@@ -370,7 +370,7 @@ export default function POIsPage() {
               type="url"
               value={formData.website}
               onChange={e => setFormData(prev => ({ ...prev, website: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
               placeholder="e.g., https://example.com"
             />
           </div>
@@ -380,7 +380,7 @@ export default function POIsPage() {
             <textarea
               value={formData.notes}
               onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
               rows={2}
               placeholder="Notes for coordinators (not shown to volunteers)..."
             />
@@ -390,7 +390,7 @@ export default function POIsPage() {
           <div className="flex gap-3 pt-4 border-t border-gray-200">
             <button
               onClick={handleSave}
-              className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium"
+              className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium"
             >
               {isCreating ? 'Create POI' : 'Save Changes'}
             </button>
@@ -414,7 +414,7 @@ export default function POIsPage() {
                 type="text"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 placeholder="Search POIs..."
               />
             </div>
@@ -423,7 +423,7 @@ export default function POIsPage() {
               <select
                 value={filterCategory}
                 onChange={e => setFilterCategory(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
               >
                 <option value="all">All Categories</option>
                 {categories.map(cat => (
@@ -438,7 +438,7 @@ export default function POIsPage() {
               <select
                 value={filterZone}
                 onChange={e => setFilterZone(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
               >
                 <option value="all">All Zones</option>
                 <option value="none">No Zone</option>
@@ -454,7 +454,7 @@ export default function POIsPage() {
               <select
                 value={filterStatus}
                 onChange={e => setFilterStatus(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
               >
                 <option value="active">Active</option>
                 <option value="inactive">Archived</option>
@@ -508,7 +508,7 @@ export default function POIsPage() {
                   </div>
                 </td>
                 <td className="px-4 py-4 text-sm text-gray-600">
-                  {poi.zone?.name || <span className="text-gray-400">None</span>}
+                  {poi.zone?.name || <span className="text-gray-500">None</span>}
                 </td>
                 <td className="px-4 py-4">
                   <button
@@ -526,7 +526,7 @@ export default function POIsPage() {
                   <div className="flex justify-end gap-2">
                     <button
                       onClick={() => startEdit(poi)}
-                      className="text-sm text-teal-600 hover:text-teal-700"
+                      className="text-sm text-cyan-600 hover:text-cyan-700"
                     >
                       Edit
                     </button>

@@ -8,6 +8,13 @@ import { useSession, signOut } from 'next-auth/react';
 import HelpButton from '@/components/onboarding/HelpButton';
 import { useFeatures } from '@/hooks/useFeatures';
 
+// Environment detection
+const vercelEnv = process.env.NEXT_PUBLIC_VERCEL_ENV;
+const isDevEnvironment = vercelEnv !== 'production';
+const envLabel = vercelEnv === 'preview' ? 'DEV/PREVIEW' :
+                 vercelEnv === 'development' ? 'LOCAL DEV' :
+                 process.env.NODE_ENV === 'development' ? 'LOCAL DEV' : null;
+
 export default function Header() {
   const features = useFeatures();
   const pathname = usePathname();
@@ -16,10 +23,31 @@ export default function Header() {
   const [mounted, setMounted] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [showWelcome, setShowWelcome] = useState(false);
+  const [envMismatch, setEnvMismatch] = useState<'dev-serving-prod' | 'prod-serving-dev' | null>(null);
 
   // Mark component as mounted after hydration
   useEffect(() => {
     setMounted(true);
+
+    // CRITICAL: Detect environment/URL mismatch
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      const isDevUrl = hostname.includes('dev-') || hostname.includes('preview') || hostname === 'localhost';
+      const isProdUrl = hostname === 'nc.ripple-vms.com' || hostname === 'ripple-vms.com';
+      const isProdEnv = vercelEnv === 'production';
+      const isDevEnv = vercelEnv === 'preview' || vercelEnv === 'development';
+
+      // Dev URL serving prod data
+      if (isDevUrl && isProdEnv) {
+        setEnvMismatch('dev-serving-prod');
+        console.error('🚨 CRITICAL: Dev URL is serving production environment! This may expose production data.');
+      }
+      // Prod URL serving dev data
+      if (isProdUrl && isDevEnv) {
+        setEnvMismatch('prod-serving-dev');
+        console.error('🚨 CRITICAL: Production URL is serving dev/preview environment! Users may see test data.');
+      }
+    }
   }, []);
 
   const user = session?.user;
@@ -32,22 +60,37 @@ export default function Header() {
   const isActive = (path: string) => pathname === path;
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+    <>
+      {/* CRITICAL: Environment mismatch warning */}
+      {envMismatch === 'dev-serving-prod' && (
+        <div className="bg-red-600 text-white text-center py-2 text-sm font-bold sticky top-0 z-[60] animate-pulse">
+          🚨 CRITICAL: Dev URL is serving PRODUCTION DATA! Contact admin immediately! 🚨
+        </div>
+      )}
+      {envMismatch === 'prod-serving-dev' && (
+        <div className="bg-red-600 text-white text-center py-2 text-sm font-bold sticky top-0 z-[60] animate-pulse">
+          🚨 CRITICAL: Production URL is serving DEV/TEST DATA! Contact admin immediately! 🚨
+        </div>
+      )}
+      {/* Environment Banner - Only shown in non-production (when no mismatch) */}
+      {!envMismatch && isDevEnvironment && envLabel && (
+        <div className="bg-orange-500 text-white text-center py-1 text-sm font-bold sticky top-0 z-[60]">
+          ⚠️ {envLabel} ENVIRONMENT - NOT PRODUCTION ⚠️
+        </div>
+      )}
+      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center h-24">
-          {/* Logo & Title */}
-          <Link href="/" className="flex items-center gap-1 hover:opacity-90 transition-opacity">
+          {/* Logo - links to dashboard when logged in, home when not */}
+          <Link href={user ? "/dashboard" : "/"} className="hover:opacity-90 transition-opacity">
             <Image
-              src="/ripple-logo-perspective-animated.svg"
+              src="/ripple-logo.png"
               alt="RippleVMS"
               width={200}
-              height={120}
-              style={{ width: '100px', height: '60px' }}
+              height={166}
+              style={{ width: '90px', height: '75px' }}
               priority
             />
-            <span className="font-semibold text-gray-900 text-xl hidden sm:inline">
-              RippleVMS
-            </span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -63,7 +106,7 @@ export default function Header() {
                   href="/dashboard"
                   className={`text-sm font-medium transition-colors ${
                     isActive('/dashboard')
-                      ? 'text-teal-700'
+                      ? 'text-cyan-700'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
@@ -73,7 +116,7 @@ export default function Header() {
                   href="/map"
                   className={`text-sm font-medium transition-colors ${
                     isActive('/map')
-                      ? 'text-teal-700'
+                      ? 'text-cyan-700'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
@@ -83,7 +126,7 @@ export default function Header() {
                   href="/shifts"
                   className={`text-sm font-medium transition-colors ${
                     pathname.startsWith('/shifts')
-                      ? 'text-teal-700'
+                      ? 'text-cyan-700'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
@@ -94,7 +137,7 @@ export default function Header() {
                     href="/trainings"
                     className={`text-sm font-medium transition-colors ${
                       pathname.startsWith('/trainings')
-                        ? 'text-teal-700'
+                        ? 'text-cyan-700'
                         : 'text-gray-600 hover:text-gray-900'
                     }`}
                   >
@@ -105,29 +148,41 @@ export default function Header() {
                   href="/schedule"
                   className={`text-sm font-medium transition-colors ${
                     pathname.startsWith('/schedule')
-                      ? 'text-teal-700'
+                      ? 'text-cyan-700'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
                   Schedule
                 </Link>
-                {['COORDINATOR', 'ADMINISTRATOR'].includes(user.role) && (
+                {['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role) && (
                   <Link
                     href="/volunteers"
                     className={`text-sm font-medium transition-colors ${
                       pathname.startsWith('/volunteers')
-                        ? 'text-teal-700'
+                        ? 'text-cyan-700'
                         : 'text-gray-600 hover:text-gray-900'
                     }`}
                   >
                     Volunteers
                   </Link>
                 )}
+                {['COORDINATOR', 'ADMINISTRATOR'].includes(user.role) && (
+                  <Link
+                    href="/coordinator"
+                    className={`text-sm font-medium transition-colors ${
+                      pathname.startsWith('/coordinator')
+                        ? 'text-cyan-700'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Coordinator
+                  </Link>
+                )}
                 <Link
                   href="/profile"
                   className={`text-sm font-medium transition-colors ${
                     isActive('/profile')
-                      ? 'text-teal-700'
+                      ? 'text-cyan-700'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
@@ -146,11 +201,23 @@ export default function Header() {
                     href="/admin"
                     className={`text-sm font-medium transition-colors ${
                       pathname.startsWith('/admin')
-                        ? 'text-teal-700'
+                        ? 'text-cyan-700'
                         : 'text-gray-600 hover:text-gray-900'
                     }`}
                   >
                     Admin
+                  </Link>
+                )}
+                {user.role === 'DEVELOPER' && (
+                  <Link
+                    href="/developer"
+                    className={`text-sm font-medium transition-colors ${
+                      pathname.startsWith('/developer')
+                        ? 'text-purple-700'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Developer
                   </Link>
                 )}
 
@@ -164,9 +231,12 @@ export default function Header() {
                 <div className="relative">
                   <button
                     onClick={() => setIsMenuOpen(!isMenuOpen)}
+                    aria-expanded={isMenuOpen}
+                    aria-haspopup="menu"
+                    aria-label="User menu"
                     className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
                   >
-                    <div className="w-8 h-8 rounded-full bg-teal-600 text-white flex items-center justify-center text-sm font-medium">
+                    <div className="w-8 h-8 rounded-full bg-cyan-600 text-white flex items-center justify-center text-sm font-medium">
                       {user.name.charAt(0)}
                     </div>
                     <span className="text-sm font-medium text-gray-700">{user.name}</span>
@@ -175,6 +245,7 @@ export default function Header() {
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
+                      aria-hidden="true"
                     >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
@@ -205,7 +276,7 @@ export default function Header() {
                   href="/about"
                   className={`text-sm font-medium transition-colors ${
                     isActive('/about')
-                      ? 'text-teal-700'
+                      ? 'text-cyan-700'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
@@ -213,7 +284,7 @@ export default function Header() {
                 </Link>
                 <Link
                   href="/login"
-                  className="px-4 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 transition-colors"
+                  className="px-4 py-2 bg-cyan-600 text-white text-sm font-medium rounded-lg hover:bg-cyan-700 transition-colors"
                 >
                   Login
                 </Link>
@@ -224,9 +295,11 @@ export default function Header() {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
+            aria-expanded={isMenuOpen}
+            aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
             className="md:hidden p-2 text-gray-600 hover:text-gray-900"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               {isMenuOpen ? (
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               ) : (
@@ -282,13 +355,22 @@ export default function Header() {
                 >
                   Schedule
                 </Link>
-                {['COORDINATOR', 'ADMINISTRATOR'].includes(user.role) && (
+                {['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role) && (
                   <Link
                     href="/volunteers"
                     className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Volunteers
+                  </Link>
+                )}
+                {['COORDINATOR', 'ADMINISTRATOR'].includes(user.role) && (
+                  <Link
+                    href="/coordinator"
+                    className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Coordinator Console
                   </Link>
                 )}
                 <Link
@@ -316,6 +398,15 @@ export default function Header() {
                     Admin
                   </Link>
                 )}
+                {user.role === 'DEVELOPER' && (
+                  <Link
+                    href="/developer"
+                    className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Developer
+                  </Link>
+                )}
                 <button
                   onClick={handleLogout}
                   className="w-full text-left px-2 py-2 text-red-600 hover:bg-red-50 rounded-lg"
@@ -334,7 +425,7 @@ export default function Header() {
                 </Link>
                 <Link
                   href="/login"
-                  className="block px-2 py-2 bg-teal-600 text-white text-center rounded-lg hover:bg-teal-700"
+                  className="block px-2 py-2 bg-cyan-600 text-white text-center rounded-lg hover:bg-cyan-700"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Login
@@ -345,5 +436,6 @@ export default function Header() {
         )}
       </div>
     </header>
+    </>
   );
 }

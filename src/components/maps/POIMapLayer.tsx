@@ -110,7 +110,7 @@ export default function POIMapLayer({ pois, visibleCategories }: POIMapLayerProp
               {selectedPOI.phone && (
                 <a
                   href={`tel:${selectedPOI.phone}`}
-                  className="text-xs text-teal-600 hover:text-teal-700"
+                  className="text-xs text-cyan-600 hover:text-cyan-700"
                 >
                   {selectedPOI.phone}
                 </a>
@@ -120,7 +120,7 @@ export default function POIMapLayer({ pois, visibleCategories }: POIMapLayerProp
                   href={selectedPOI.website}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-teal-600 hover:text-teal-700"
+                  className="text-xs text-cyan-600 hover:text-cyan-700"
                 >
                   Website
                 </a>

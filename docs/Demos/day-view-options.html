@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Day View Design Options</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .tab-btn.active {
+      background-color: #0891b2;
+      color: white;
+    }
+
+    /* Timeline now indicator */
+    .now-line {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: #ef4444;
+      z-index: 10;
+    }
+    .now-line::before {
+      content: 'NOW';
+      position: absolute;
+      top: -20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 10px;
+      font-weight: bold;
+      color: #ef4444;
+      background: white;
+      padding: 2px 6px;
+      border-radius: 4px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+
+    /* Swipe hint animation */
+    @keyframes swipeHint {
+      0%, 100% { transform: translateX(0); opacity: 0.5; }
+      50% { transform: translateX(10px); opacity: 1; }
+    }
+    .swipe-hint {
+      animation: swipeHint 2s ease-in-out infinite;
+    }
+
+    /* Pulse animation for critical items */
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+    .pulse {
+      animation: pulse 2s ease-in-out infinite;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+  <!-- Header -->
+  <div class="bg-white border-b border-gray-200 sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 py-4">
+      <h1 class="text-2xl font-bold text-gray-900 mb-4">Day View Design Options</h1>
+
+      <!-- Tab Navigation -->
+      <div class="flex gap-2 flex-wrap">
+        <button onclick="showTab('conceptA')" class="tab-btn active px-4 py-2 rounded-lg border border-gray-300 font-medium text-sm hover:bg-gray-50">
+          A: Timeline
+        </button>
+        <button onclick="showTab('conceptB')" class="tab-btn px-4 py-2 rounded-lg border border-gray-300 font-medium text-sm hover:bg-gray-50">
+          B: Shift Cards
+        </button>
+        <button onclick="showTab('conceptC')" class="tab-btn px-4 py-2 rounded-lg border border-gray-300 font-medium text-sm hover:bg-gray-50">
+          C: Agenda List
+        </button>
+        <button onclick="showTab('conceptD')" class="tab-btn px-4 py-2 rounded-lg border border-gray-300 font-medium text-sm hover:bg-gray-50">
+          D: Dashboard
+        </button>
+        <button onclick="showTab('conceptE')" class="tab-btn px-4 py-2 rounded-lg border border-gray-300 font-medium text-sm hover:bg-gray-50">
+          E: Mobile
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto px-4 py-6">
+
+    <!-- ==================== CONCEPT A: TIMELINE ==================== -->
+    <div id="conceptA" class="tab-content active">
+      <div class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <h2 class="font-semibold text-blue-800">Concept A: Timeline with Live Tracker</h2>
+        <p class="text-blue-700 text-sm mt-1">Horizontal timeline showing all shifts as bars with a real-time "NOW" indicator. Best for dispatchers monitoring live operations.</p>
+      </div>
+
+      <!-- Header Bar -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-4">
+            <button class="p-2 hover:bg-gray-100 rounded-lg">
+              <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </button>
+            <div>
+              <h2 class="text-xl font-bold text-gray-900">Wednesday, December 3, 2025</h2>
+              <p class="text-sm text-gray-500">7 volunteers • 3 gaps to fill • 2 counties active</p>
+            </div>
+            <button class="p-2 hover:bg-gray-100 rounded-lg">
+              <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            </button>
+          </div>
+          <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2 text-sm">
+              <span class="text-gray-500">☀️ 52°F Clear</span>
+            </div>
+            <button class="px-4 py-2 bg-cyan-600 text-white rounded-lg text-sm font-medium">+ Create Shift</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Timeline Grid -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <!-- Time Header -->
+        <div class="border-b border-gray-200 bg-gray-50">
+          <div class="flex">
+            <div class="w-32 shrink-0 px-4 py-3 border-r border-gray-200 font-medium text-sm text-gray-600">County</div>
+            <div class="flex-1 relative">
+              <div class="flex">
+                <div class="flex-1 text-center text-xs text-gray-500 py-3 border-r border-gray-100">6am</div>
+                <div class="flex-1 text-center text-xs text-gray-500 py-3 border-r border-gray-100">8am</div>
+                <div class="flex-1 text-center text-xs text-gray-500 py-3 border-r border-gray-100">10am</div>
+                <div class="flex-1 text-center text-xs text-gray-500 py-3 border-r border-gray-100">12pm</div>
+                <div class="flex-1 text-center text-xs text-gray-500 py-3 border-r border-gray-100">2pm</div>
+                <div class="flex-1 text-center text-xs text-gray-500 py-3 border-r border-gray-100">4pm</div>
+                <div class="flex-1 text-center text-xs text-gray-500 py-3 border-r border-gray-100">6pm</div>
+                <div class="flex-1 text-center text-xs text-gray-500 py-3">8pm</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Durham County -->
+        <div class="border-b border-gray-200">
+          <div class="flex items-center bg-gray-100 border-b border-gray-200">
+            <div class="w-32 shrink-0 px-4 py-2 font-semibold text-gray-700 text-sm">Durham</div>
+            <div class="flex-1 py-2 px-2 text-xs text-gray-500">5 volunteers • 2 gaps</div>
+          </div>
+
+          <!-- Dispatcher Lane -->
+          <div class="flex border-b border-gray-100">
+            <div class="w-32 shrink-0 px-4 py-3 border-r border-gray-200 flex items-center gap-2 bg-gray-50">
+              <span>🎧</span>
+              <span class="text-xs text-gray-600">Dispatcher</span>
+            </div>
+            <div class="flex-1 relative py-2" style="background: repeating-linear-gradient(90deg, transparent, transparent calc(12.5% - 1px), #f3f4f6 calc(12.5% - 1px), #f3f4f6 12.5%);">
+              <!-- NOW indicator -->
+              <div class="now-line" style="left: 56%;"></div>
+              <!-- 11am-3pm gap -->
+              <div class="absolute top-2 bottom-2 rounded bg-amber-200 border-2 border-dashed border-amber-400 flex items-center justify-center cursor-pointer hover:bg-amber-300 transition-colors"
+                   style="left: calc(31.25% + 4px); width: calc(25% - 8px);">
+                <span class="text-xs font-medium text-amber-700">Need Dispatcher</span>
+              </div>
+              <!-- 1pm-5pm gap -->
+              <div class="absolute top-2 bottom-2 rounded bg-red-200 border-2 border-dashed border-red-400 flex items-center justify-center cursor-pointer hover:bg-red-300 transition-colors pulse"
+                   style="left: calc(43.75% + 4px); width: calc(25% - 8px);">
+                <span class="text-xs font-medium text-red-700">Need Dispatcher</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Zone 1 Lane -->
+          <div class="flex border-b border-gray-100">
+            <div class="w-32 shrink-0 px-4 py-3 border-r border-gray-200 flex items-center gap-2 bg-gray-50">
+              <div class="w-5 h-5 rounded-full bg-blue-500 text-white text-[10px] font-bold flex items-center justify-center">1</div>
+              <span class="text-xs text-gray-600">Zone 1</span>
+            </div>
+            <div class="flex-1 relative py-2" style="background: repeating-linear-gradient(90deg, transparent, transparent calc(12.5% - 1px), #f3f4f6 calc(12.5% - 1px), #f3f4f6 12.5%);">
+              <div class="now-line" style="left: 56%;"></div>
+              <!-- 11am-3pm shift -->
+              <div class="absolute top-2 bottom-2 rounded bg-green-500 flex items-center px-3 cursor-pointer hover:bg-green-600 transition-colors shadow-sm"
+                   style="left: calc(31.25% + 4px); width: calc(25% - 8px);">
+                <div class="flex items-center gap-2 text-white">
+                  <div class="w-6 h-6 rounded-full bg-white/30 flex items-center justify-center text-[10px] font-bold">CM</div>
+                  <div>
+                    <div class="text-xs font-semibold">Carlos M.</div>
+                    <div class="text-[10px] opacity-80">Lead • +2</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Zone 2 Lane -->
+          <div class="flex">
+            <div class="w-32 shrink-0 px-4 py-3 border-r border-gray-200 flex items-center gap-2 bg-gray-50">
+              <div class="w-5 h-5 rounded-full bg-purple-500 text-white text-[10px] font-bold flex items-center justify-center">2</div>
+              <span class="text-xs text-gray-600">Zone 2</span>
+            </div>
+            <div class="flex-1 relative py-2" style="background: repeating-linear-gradient(90deg, transparent, transparent calc(12.5% - 1px), #f3f4f6 calc(12.5% - 1px), #f3f4f6 12.5%);">
+              <div class="now-line" style="left: 56%;"></div>
+              <!-- 11am-3pm shift - needs lead -->
+              <div class="absolute top-2 bottom-2 rounded bg-amber-400 flex items-center px-3 cursor-pointer hover:bg-amber-500 transition-colors shadow-sm"
+                   style="left: calc(31.25% + 4px); width: calc(25% - 8px);">
+                <div class="flex items-center gap-2 text-amber-900">
+                  <div class="w-6 h-6 rounded-full bg-white/50 flex items-center justify-center text-[10px]">?</div>
+                  <div>
+                    <div class="text-xs font-semibold">Need Lead</div>
+                    <div class="text-[10px] opacity-80">2 volunteers</div>
+                  </div>
+                </div>
+              </div>
+              <!-- 1pm-5pm shift - needs lead -->
+              <div class="absolute top-2 bottom-2 rounded bg-red-400 flex items-center px-3 cursor-pointer hover:bg-red-500 transition-colors shadow-sm pulse"
+                   style="left: calc(43.75% + 4px); width: calc(25% - 8px);">
+                <div class="flex items-center gap-2 text-red-900">
+                  <div class="w-6 h-6 rounded-full bg-white/50 flex items-center justify-center text-[10px]">!</div>
+                  <div>
+                    <div class="text-xs font-semibold">Critical</div>
+                    <div class="text-[10px] opacity-80">2 vol, no lead</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Orange County -->
+        <div>
+          <div class="flex items-center bg-gray-100 border-b border-gray-200">
+            <div class="w-32 shrink-0 px-4 py-2 font-semibold text-gray-700 text-sm">Orange</div>
+            <div class="flex-1 py-2 px-2 text-xs text-gray-500">2 volunteers • 1 gap</div>
+          </div>
+
+          <!-- Dispatcher Lane -->
+          <div class="flex border-b border-gray-100">
+            <div class="w-32 shrink-0 px-4 py-3 border-r border-gray-200 flex items-center gap-2 bg-gray-50">
+              <span>🎧</span>
+              <span class="text-xs text-gray-600">Dispatcher</span>
+            </div>
+            <div class="flex-1 relative py-2" style="background: repeating-linear-gradient(90deg, transparent, transparent calc(12.5% - 1px), #f3f4f6 calc(12.5% - 1px), #f3f4f6 12.5%);">
+              <div class="now-line" style="left: 56%;"></div>
+              <!-- 11am-3pm gap -->
+              <div class="absolute top-2 bottom-2 rounded bg-amber-200 border-2 border-dashed border-amber-400 flex items-center justify-center cursor-pointer hover:bg-amber-300 transition-colors"
+                   style="left: calc(31.25% + 4px); width: calc(25% - 8px);">
+                <span class="text-xs font-medium text-amber-700">Need Dispatcher</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Zone 1 Lane -->
+          <div class="flex">
+            <div class="w-32 shrink-0 px-4 py-3 border-r border-gray-200 flex items-center gap-2 bg-gray-50">
+              <div class="w-5 h-5 rounded-full bg-orange-500 text-white text-[10px] font-bold flex items-center justify-center">1</div>
+              <span class="text-xs text-gray-600">Zone 1</span>
+            </div>
+            <div class="flex-1 relative py-2" style="background: repeating-linear-gradient(90deg, transparent, transparent calc(12.5% - 1px), #f3f4f6 calc(12.5% - 1px), #f3f4f6 12.5%);">
+              <div class="now-line" style="left: 56%;"></div>
+              <!-- 11am-3pm shift -->
+              <div class="absolute top-2 bottom-2 rounded bg-green-500 flex items-center px-3 cursor-pointer hover:bg-green-600 transition-colors shadow-sm"
+                   style="left: calc(31.25% + 4px); width: calc(25% - 8px);">
+                <div class="flex items-center gap-2 text-white">
+                  <div class="w-6 h-6 rounded-full bg-white/30 flex items-center justify-center text-[10px] font-bold">AR</div>
+                  <div>
+                    <div class="text-xs font-semibold">Ana R.</div>
+                    <div class="text-[10px] opacity-80">Lead • +1</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Legend -->
+      <div class="mt-4 bg-white rounded-lg border border-gray-200 p-4">
+        <div class="flex items-center gap-6 text-xs">
+          <span class="text-gray-500 font-medium">Legend:</span>
+          <div class="flex items-center gap-2"><div class="w-4 h-3 rounded bg-green-500"></div><span>Fully Staffed</span></div>
+          <div class="flex items-center gap-2"><div class="w-4 h-3 rounded bg-amber-400"></div><span>Needs Lead</span></div>
+          <div class="flex items-center gap-2"><div class="w-4 h-3 rounded bg-amber-200 border-2 border-dashed border-amber-400"></div><span>Need Dispatcher</span></div>
+          <div class="flex items-center gap-2"><div class="w-4 h-3 rounded bg-red-400"></div><span>Critical</span></div>
+          <div class="flex items-center gap-2"><div class="w-0.5 h-4 bg-red-500"></div><span>Current Time</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== CONCEPT B: SHIFT CARDS ==================== -->
+    <div id="conceptB" class="tab-content">
+      <div class="mb-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+        <h2 class="font-semibold text-purple-800">Concept B: Shift Cards by Time Block</h2>
+        <p class="text-purple-700 text-sm mt-1">Time blocks displayed as cards side-by-side. Easy to compare shifts and take action. Good for morning briefings.</p>
+      </div>
+
+      <!-- Header -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-4">
+            <button class="p-2 hover:bg-gray-100 rounded-lg border border-gray-200">←</button>
+            <h2 class="text-xl font-bold text-gray-900">Wednesday, December 3</h2>
+            <button class="p-2 hover:bg-gray-100 rounded-lg border border-gray-200">→</button>
+          </div>
+          <div class="flex items-center gap-3">
+            <button class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">Send Reminders</button>
+            <button class="px-4 py-2 bg-cyan-600 text-white rounded-lg text-sm">+ Create Shift</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cards Grid -->
+      <div class="grid md:grid-cols-2 gap-6">
+        <!-- 11am - 3pm Card -->
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div class="bg-amber-50 border-b border-amber-200 px-5 py-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="text-lg font-bold text-gray-900">11:00 AM - 3:00 PM</h3>
+                <p class="text-sm text-gray-500">4 hours • 5 volunteers</p>
+              </div>
+              <span class="px-3 py-1 bg-amber-200 text-amber-800 rounded-full text-sm font-medium">2 gaps</span>
+            </div>
+          </div>
+
+          <div class="p-5 space-y-4">
+            <!-- Durham -->
+            <div>
+              <h4 class="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                Durham County
+              </h4>
+
+              <!-- Dispatcher -->
+              <div class="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <span class="text-xl">🎧</span>
+                  <div>
+                    <div class="text-xs text-amber-600 font-medium">DISPATCHER</div>
+                    <div class="text-amber-700 font-medium">Not Assigned</div>
+                  </div>
+                </div>
+                <button class="px-3 py-1.5 bg-amber-600 text-white rounded-lg text-xs font-medium hover:bg-amber-700">
+                  Assign
+                </button>
+              </div>
+
+              <!-- Zones -->
+              <div class="space-y-2">
+                <div class="p-3 bg-green-50 border border-green-200 rounded-lg flex items-center justify-between">
+                  <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-green-500 text-white font-bold text-sm flex items-center justify-center">1</div>
+                    <div>
+                      <div class="font-medium text-gray-900">Carlos Martinez</div>
+                      <div class="text-xs text-green-600">Zone Lead • +2 volunteers</div>
+                    </div>
+                  </div>
+                  <div class="flex gap-1">
+                    <button class="p-2 hover:bg-green-100 rounded-lg" title="Call">📞</button>
+                    <button class="p-2 hover:bg-green-100 rounded-lg" title="Message">💬</button>
+                  </div>
+                </div>
+
+                <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center justify-between">
+                  <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-amber-400 text-white font-bold text-sm flex items-center justify-center">2</div>
+                    <div>
+                      <div class="font-medium text-amber-700">Need Zone Lead</div>
+                      <div class="text-xs text-amber-600">2 volunteers signed up</div>
+                    </div>
+                  </div>
+                  <button class="px-3 py-1.5 bg-amber-600 text-white rounded-lg text-xs font-medium hover:bg-amber-700">
+                    Assign Lead
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Orange -->
+            <div class="pt-4 border-t border-gray-200">
+              <h4 class="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-orange-500"></span>
+                Orange County
+              </h4>
+
+              <div class="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <span class="text-xl">🎧</span>
+                  <div>
+                    <div class="text-xs text-amber-600 font-medium">DISPATCHER</div>
+                    <div class="text-amber-700 font-medium">Not Assigned</div>
+                  </div>
+                </div>
+                <button class="px-3 py-1.5 bg-amber-600 text-white rounded-lg text-xs font-medium">Assign</button>
+              </div>
+
+              <div class="p-3 bg-green-50 border border-green-200 rounded-lg flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-full bg-green-500 text-white font-bold text-sm flex items-center justify-center">1</div>
+                  <div>
+                    <div class="font-medium text-gray-900">Ana Rodriguez</div>
+                    <div class="text-xs text-green-600">Zone Lead • +1 volunteer</div>
+                  </div>
+                </div>
+                <div class="flex gap-1">
+                  <button class="p-2 hover:bg-green-100 rounded-lg">📞</button>
+                  <button class="p-2 hover:bg-green-100 rounded-lg">💬</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 1pm - 5pm Card -->
+        <div class="bg-white rounded-xl border-2 border-red-300 shadow-sm overflow-hidden">
+          <div class="bg-red-50 border-b border-red-200 px-5 py-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="text-lg font-bold text-gray-900">1:00 PM - 5:00 PM</h3>
+                <p class="text-sm text-gray-500">4 hours • 2 volunteers</p>
+              </div>
+              <span class="px-3 py-1 bg-red-200 text-red-800 rounded-full text-sm font-medium pulse">CRITICAL</span>
+            </div>
+          </div>
+
+          <div class="p-5">
+            <h4 class="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+              Durham County
+            </h4>
+
+            <!-- Dispatcher -->
+            <div class="mb-3 p-3 bg-red-50 border border-red-300 rounded-lg flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <span class="text-xl">🎧</span>
+                <div>
+                  <div class="text-xs text-red-600 font-medium">DISPATCHER</div>
+                  <div class="text-red-700 font-medium">Not Assigned</div>
+                </div>
+              </div>
+              <button class="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-medium hover:bg-red-700">
+                Assign Now
+              </button>
+            </div>
+
+            <div class="p-3 bg-red-50 border border-red-300 rounded-lg flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-red-400 text-white font-bold text-sm flex items-center justify-center">2</div>
+                <div>
+                  <div class="font-medium text-red-700">Need Zone Lead</div>
+                  <div class="text-xs text-red-600">2 volunteers, no leadership</div>
+                </div>
+              </div>
+              <button class="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-medium hover:bg-red-700">
+                Assign Lead
+              </button>
+            </div>
+
+            <div class="mt-4 p-3 bg-red-100 border border-red-300 rounded-lg">
+              <div class="flex items-center gap-2 text-red-700 text-sm">
+                <span>⚠️</span>
+                <span class="font-medium">This shift starts in 13 minutes and has no dispatcher or zone lead!</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== CONCEPT C: AGENDA LIST ==================== -->
+    <div id="conceptC" class="tab-content">
+      <div class="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+        <h2 class="font-semibold text-green-800">Concept C: Agenda / List View</h2>
+        <p class="text-green-700 text-sm mt-1">Sequential list showing all details. Easy to scan, printable, and shows every volunteer name. Best for briefings and documentation.</p>
+      </div>
+
+      <!-- Header -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-4">
+            <button class="p-2 hover:bg-gray-100 rounded-lg border border-gray-200">←</button>
+            <div>
+              <h2 class="text-xl font-bold text-gray-900">📅 Wednesday, December 3, 2025</h2>
+              <p class="text-sm text-gray-500">7 volunteers • 3 gaps • 2 counties</p>
+            </div>
+            <button class="p-2 hover:bg-gray-100 rounded-lg border border-gray-200">→</button>
+          </div>
+          <div class="flex items-center gap-2">
+            <button class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 flex items-center gap-2">
+              <span>📧</span> Send Reminders
+            </button>
+            <button class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 flex items-center gap-2">
+              <span>📄</span> Export PDF
+            </button>
+            <button class="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 flex items-center gap-2">
+              <span>🖨️</span> Print
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Agenda Content -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <!-- 11:00 AM Section -->
+        <div class="border-b border-gray-200">
+          <div class="bg-gray-100 px-6 py-3 flex items-center gap-3">
+            <div class="text-lg font-bold text-gray-700">11:00 AM</div>
+            <div class="flex-1 h-px bg-gray-300"></div>
+          </div>
+
+          <!-- Durham 11am-3pm -->
+          <div class="p-6 border-b border-gray-100">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-semibold text-gray-900 flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-blue-500"></span>
+                Durham County — 11:00 AM to 3:00 PM
+              </h3>
+              <span class="px-2 py-1 bg-amber-100 text-amber-700 rounded text-xs font-medium">2 gaps</span>
+            </div>
+
+            <div class="space-y-4">
+              <!-- Dispatcher -->
+              <div class="flex items-start gap-4">
+                <div class="w-24 text-right">
+                  <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Dispatcher</span>
+                </div>
+                <div class="flex-1 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <span class="text-amber-600">⚠️</span>
+                    <span class="text-amber-700 font-medium">Not assigned</span>
+                  </div>
+                  <button class="text-sm text-amber-700 font-medium hover:underline">[Assign Dispatcher]</button>
+                </div>
+              </div>
+
+              <!-- Zone 1 -->
+              <div class="flex items-start gap-4">
+                <div class="w-24 text-right">
+                  <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Zone 1</span>
+                  <div class="text-xs text-green-600">✅ Lead</div>
+                </div>
+                <div class="flex-1 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <div class="font-medium text-gray-900">Carlos Martinez <span class="text-green-600 text-sm">(Lead)</span></div>
+                  <div class="text-sm text-gray-600 mt-1">
+                    <span class="inline-block mr-3">• James Wilson</span>
+                    <span class="inline-block">• Sarah Chen</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Zone 2 -->
+              <div class="flex items-start gap-4">
+                <div class="w-24 text-right">
+                  <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Zone 2</span>
+                  <div class="text-xs text-amber-600">⚠️ Need Lead</div>
+                </div>
+                <div class="flex-1 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <div class="font-medium text-amber-700 mb-2">Zone Lead Needed</div>
+                  <div class="text-sm text-gray-600 space-y-1">
+                    <div class="flex items-center justify-between">
+                      <span>• Mike Johnson</span>
+                      <button class="text-xs text-amber-700 font-medium hover:underline">[Make Lead]</button>
+                    </div>
+                    <div class="flex items-center justify-between">
+                      <span>• Lisa Park</span>
+                      <button class="text-xs text-amber-700 font-medium hover:underline">[Make Lead]</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Orange 11am-3pm -->
+          <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-semibold text-gray-900 flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-orange-500"></span>
+                Orange County — 11:00 AM to 3:00 PM
+              </h3>
+              <span class="px-2 py-1 bg-amber-100 text-amber-700 rounded text-xs font-medium">1 gap</span>
+            </div>
+
+            <div class="space-y-4">
+              <!-- Dispatcher -->
+              <div class="flex items-start gap-4">
+                <div class="w-24 text-right">
+                  <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Dispatcher</span>
+                </div>
+                <div class="flex-1 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <span class="text-amber-600">⚠️</span>
+                    <span class="text-amber-700 font-medium">Not assigned</span>
+                  </div>
+                  <button class="text-sm text-amber-700 font-medium hover:underline">[Assign Dispatcher]</button>
+                </div>
+              </div>
+
+              <!-- Zone 1 -->
+              <div class="flex items-start gap-4">
+                <div class="w-24 text-right">
+                  <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Zone 1</span>
+                  <div class="text-xs text-green-600">✅ Lead</div>
+                </div>
+                <div class="flex-1 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <div class="font-medium text-gray-900">Ana Rodriguez <span class="text-green-600 text-sm">(Lead)</span></div>
+                  <div class="text-sm text-gray-600 mt-1">
+                    <span class="inline-block">• David Kim</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 1:00 PM Section -->
+        <div>
+          <div class="bg-gray-100 px-6 py-3 flex items-center gap-3">
+            <div class="text-lg font-bold text-gray-700">1:00 PM</div>
+            <div class="flex-1 h-px bg-gray-300"></div>
+            <span class="px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-medium pulse">⚠️ CRITICAL</span>
+          </div>
+
+          <!-- Durham 1pm-5pm -->
+          <div class="p-6 bg-red-50/30">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-semibold text-gray-900 flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-blue-500"></span>
+                Durham County — 1:00 PM to 5:00 PM
+              </h3>
+              <span class="px-2 py-1 bg-red-200 text-red-700 rounded text-xs font-medium">CRITICAL</span>
+            </div>
+
+            <div class="mb-4 p-3 bg-red-100 border border-red-300 rounded-lg text-red-700 text-sm">
+              ⚠️ <strong>This shift has no dispatcher and no zone lead.</strong> Starts in 13 minutes!
+            </div>
+
+            <div class="space-y-4">
+              <!-- Dispatcher -->
+              <div class="flex items-start gap-4">
+                <div class="w-24 text-right">
+                  <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Dispatcher</span>
+                </div>
+                <div class="flex-1 p-3 bg-red-100 border border-red-300 rounded-lg flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <span class="text-red-600">🔴</span>
+                    <span class="text-red-700 font-medium">Not assigned</span>
+                  </div>
+                  <button class="px-3 py-1 bg-red-600 text-white rounded text-sm font-medium hover:bg-red-700">[Assign Now]</button>
+                </div>
+              </div>
+
+              <!-- Zone 2 -->
+              <div class="flex items-start gap-4">
+                <div class="w-24 text-right">
+                  <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Zone 2</span>
+                  <div class="text-xs text-red-600">🔴 Need Lead</div>
+                </div>
+                <div class="flex-1 p-3 bg-red-100 border border-red-300 rounded-lg">
+                  <div class="font-medium text-red-700 mb-2">Zone Lead Needed Urgently</div>
+                  <div class="text-sm text-gray-600 space-y-1">
+                    <div class="flex items-center justify-between">
+                      <span>• Tom Baker</span>
+                      <button class="px-2 py-0.5 bg-red-600 text-white rounded text-xs font-medium">[Make Lead]</button>
+                    </div>
+                    <div class="flex items-center justify-between">
+                      <span>• Alex Turner</span>
+                      <button class="px-2 py-0.5 bg-red-600 text-white rounded text-xs font-medium">[Make Lead]</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== CONCEPT D: DASHBOARD ==================== -->
+    <div id="conceptD" class="tab-content">
+      <div class="mb-4 p-4 bg-rose-50 border border-rose-200 rounded-lg">
+        <h2 class="font-semibold text-rose-800">Concept D: Operations Dashboard</h2>
+        <p class="text-rose-700 text-sm mt-1">Multi-panel dashboard with live status, gaps to fill, and quick actions. Best for day-of operations management.</p>
+      </div>
+
+      <!-- Header -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-4">
+            <div>
+              <h2 class="text-xl font-bold text-gray-900">Wednesday, December 3, 2025</h2>
+              <p class="text-sm text-gray-500">Operations Dashboard • Last updated: 1:47 PM</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-sm text-gray-500">☀️ 52°F Clear</span>
+            <button class="px-4 py-2 border border-red-300 text-red-700 rounded-lg text-sm font-medium hover:bg-red-50">
+              📞 Emergency Contacts
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-12 gap-6">
+        <!-- Left Column - Stats & Timeline -->
+        <div class="col-span-4 space-y-6">
+          <!-- Quick Stats -->
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <h3 class="font-semibold text-gray-700 mb-4">Quick Stats</h3>
+            <div class="grid grid-cols-3 gap-4">
+              <div class="text-center">
+                <div class="text-3xl font-bold text-gray-900">7</div>
+                <div class="text-xs text-gray-500">Volunteers</div>
+              </div>
+              <div class="text-center">
+                <div class="text-3xl font-bold text-red-600">3</div>
+                <div class="text-xs text-gray-500">Gaps</div>
+              </div>
+              <div class="text-center">
+                <div class="text-3xl font-bold text-cyan-600">2</div>
+                <div class="text-xs text-gray-500">Counties</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mini Timeline -->
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <h3 class="font-semibold text-gray-700 mb-4">Today's Timeline</h3>
+            <div class="relative">
+              <div class="flex items-center justify-between text-xs text-gray-400 mb-2">
+                <span>6am</span><span>12pm</span><span>6pm</span>
+              </div>
+              <div class="h-8 bg-gray-100 rounded-lg relative overflow-hidden">
+                <!-- Shifts bar -->
+                <div class="absolute top-1 bottom-1 bg-amber-300 rounded" style="left: 31%; width: 38%;"></div>
+                <!-- Now indicator -->
+                <div class="absolute top-0 bottom-0 w-0.5 bg-red-500" style="left: 56%;"></div>
+              </div>
+              <div class="mt-2 text-center">
+                <span class="text-xs text-red-600 font-medium">▼ NOW 1:47 PM</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Weather & Conditions -->
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <h3 class="font-semibold text-gray-700 mb-3">Conditions</h3>
+            <div class="flex items-center gap-4">
+              <div class="text-4xl">☀️</div>
+              <div>
+                <div class="text-2xl font-bold text-gray-900">52°F</div>
+                <div class="text-sm text-gray-500">Clear skies</div>
+                <div class="text-xs text-green-600 mt-1">Good patrol conditions</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Middle Column - Gaps to Fill -->
+        <div class="col-span-4">
+          <div class="bg-white rounded-lg shadow-sm border-2 border-amber-300 p-4 h-full">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-semibold text-gray-700">🚨 Gaps to Fill</h3>
+              <span class="px-2 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-medium">3 open</span>
+            </div>
+
+            <div class="space-y-3">
+              <!-- Critical Gap -->
+              <div class="p-3 bg-red-50 border border-red-200 rounded-lg">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs font-medium text-red-600 uppercase">Critical • Starts in 13 min</span>
+                </div>
+                <div class="font-medium text-gray-900 mb-1">🎧 Durham Dispatcher</div>
+                <div class="text-xs text-gray-500 mb-2">1:00 PM - 5:00 PM</div>
+                <button class="w-full py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700">
+                  Find Dispatcher
+                </button>
+              </div>
+
+              <!-- Gap 2 -->
+              <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <div class="font-medium text-gray-900 mb-1">🎧 Durham Dispatcher</div>
+                <div class="text-xs text-gray-500 mb-2">11:00 AM - 3:00 PM • In progress</div>
+                <button class="w-full py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700">
+                  Find Dispatcher
+                </button>
+              </div>
+
+              <!-- Gap 3 -->
+              <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <div class="font-medium text-gray-900 mb-1">🎧 Orange Dispatcher</div>
+                <div class="text-xs text-gray-500 mb-2">11:00 AM - 3:00 PM • In progress</div>
+                <button class="w-full py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700">
+                  Find Dispatcher
+                </button>
+              </div>
+
+              <!-- Gap 4 -->
+              <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <div class="font-medium text-gray-900 mb-1">👤 Durham Zone 2 Lead</div>
+                <div class="text-xs text-gray-500 mb-2">11:00 AM - 3:00 PM • In progress</div>
+                <button class="w-full py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700">
+                  Assign Lead
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column - Active & Upcoming -->
+        <div class="col-span-4 space-y-6">
+          <!-- Active Shifts -->
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-semibold text-gray-700">🟢 Active Now</h3>
+            </div>
+
+            <div class="space-y-3">
+              <div class="p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="font-medium text-gray-900">Durham Zone 1</span>
+                  <span class="text-xs text-green-600 font-medium">IN PROGRESS</span>
+                </div>
+                <div class="text-sm text-gray-600">Carlos M. +2 • 11am-3pm</div>
+                <button class="mt-2 text-xs text-cyan-600 font-medium hover:underline">View Details →</button>
+              </div>
+
+              <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="font-medium text-gray-900">Durham Zone 2</span>
+                  <span class="text-xs text-amber-600 font-medium">NEEDS LEAD</span>
+                </div>
+                <div class="text-sm text-gray-600">2 volunteers • 11am-3pm</div>
+                <button class="mt-2 text-xs text-cyan-600 font-medium hover:underline">View Details →</button>
+              </div>
+
+              <div class="p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="font-medium text-gray-900">Orange Zone 1</span>
+                  <span class="text-xs text-green-600 font-medium">IN PROGRESS</span>
+                </div>
+                <div class="text-sm text-gray-600">Ana R. +1 • 11am-3pm</div>
+                <button class="mt-2 text-xs text-cyan-600 font-medium hover:underline">View Details →</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Coming Up -->
+          <div class="bg-white rounded-lg shadow-sm border-2 border-red-300 p-4">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-semibold text-gray-700">⏰ Coming Up</h3>
+            </div>
+
+            <div class="p-3 bg-red-50 border border-red-200 rounded-lg">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-medium text-gray-900">Durham 1pm-5pm</span>
+                <span class="text-xs text-red-600 font-medium pulse">IN 13 MIN</span>
+              </div>
+              <div class="text-sm text-red-600 mb-2">⚠️ No dispatcher, no zone lead</div>
+              <button class="w-full py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700">
+                View & Fix →
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== CONCEPT E: MOBILE ==================== -->
+    <div id="conceptE" class="tab-content">
+      <div class="mb-4 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+        <h2 class="font-semibold text-indigo-800">Concept E: Mobile-First Swipeable</h2>
+        <p class="text-indigo-700 text-sm mt-1">Touch-friendly design optimized for phones. Swipe between time blocks. Best for volunteers and field coordinators.</p>
+      </div>
+
+      <!-- Mobile Frame -->
+      <div class="flex justify-center">
+        <div class="w-[375px] bg-gray-900 rounded-[3rem] p-3 shadow-2xl">
+          <div class="bg-white rounded-[2.5rem] overflow-hidden" style="height: 812px;">
+            <!-- Status Bar -->
+            <div class="bg-gray-100 px-6 py-2 flex items-center justify-between text-xs">
+              <span class="font-medium">9:41</span>
+              <div class="flex items-center gap-1">
+                <span>📶</span>
+                <span>🔋</span>
+              </div>
+            </div>
+
+            <!-- App Header -->
+            <div class="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+              <button class="text-cyan-600 font-medium">← Wed, Dec 3</button>
+              <button class="p-2">
+                <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Time Block Selector -->
+            <div class="bg-gray-50 border-b border-gray-200 px-4 py-3">
+              <div class="bg-white rounded-xl p-1 flex shadow-sm border border-gray-200">
+                <button class="flex-1 py-2 px-3 bg-cyan-600 text-white rounded-lg text-sm font-medium">
+                  11am - 3pm
+                </button>
+                <button class="flex-1 py-2 px-3 text-gray-600 text-sm font-medium relative">
+                  1pm - 5pm
+                  <span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
+                </button>
+              </div>
+              <div class="flex items-center justify-center gap-2 mt-2">
+                <span class="w-2 h-2 rounded-full bg-cyan-600"></span>
+                <span class="w-2 h-2 rounded-full bg-gray-300"></span>
+              </div>
+            </div>
+
+            <!-- Content -->
+            <div class="overflow-y-auto" style="height: calc(812px - 140px);">
+              <div class="p-4 space-y-4">
+                <!-- Durham Section -->
+                <div>
+                  <h3 class="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-blue-500"></span>
+                    DURHAM
+                  </h3>
+
+                  <!-- Dispatcher Card -->
+                  <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-3">
+                    <div class="flex items-center justify-between mb-3">
+                      <div class="flex items-center gap-2">
+                        <span class="text-2xl">🎧</span>
+                        <span class="font-medium text-amber-700">Need Dispatcher</span>
+                      </div>
+                    </div>
+                    <button class="w-full py-3 bg-amber-600 text-white rounded-xl font-medium text-sm">
+                      TAP TO ASSIGN
+                    </button>
+                  </div>
+
+                  <!-- Zone 1 Card -->
+                  <div class="bg-green-50 border border-green-200 rounded-xl p-4 mb-3">
+                    <div class="flex items-center justify-between mb-2">
+                      <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-green-500 text-white font-bold flex items-center justify-center">1</div>
+                        <div>
+                          <div class="font-medium text-gray-900">Carlos Martinez</div>
+                          <div class="text-xs text-green-600">Zone Lead • +2 more</div>
+                        </div>
+                      </div>
+                      <span class="text-green-600 text-xl">✓</span>
+                    </div>
+                    <div class="flex gap-2 mt-3">
+                      <button class="flex-1 py-2.5 bg-green-600 text-white rounded-xl font-medium text-sm flex items-center justify-center gap-2">
+                        📞 Call
+                      </button>
+                      <button class="flex-1 py-2.5 bg-green-600 text-white rounded-xl font-medium text-sm flex items-center justify-center gap-2">
+                        💬 Text
+                      </button>
+                      <button class="flex-1 py-2.5 border border-green-300 text-green-700 rounded-xl font-medium text-sm">
+                        Details
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Zone 2 Card -->
+                  <div class="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                    <div class="flex items-center justify-between mb-2">
+                      <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-amber-400 text-white font-bold flex items-center justify-center">2</div>
+                        <div>
+                          <div class="font-medium text-amber-700">Need Zone Lead</div>
+                          <div class="text-xs text-amber-600">2 volunteers signed up</div>
+                        </div>
+                      </div>
+                      <span class="text-amber-500 text-xl">⚠</span>
+                    </div>
+                    <button class="w-full py-3 bg-amber-600 text-white rounded-xl font-medium text-sm mt-2">
+                      ASSIGN LEAD
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Orange Section -->
+                <div>
+                  <h3 class="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-orange-500"></span>
+                    ORANGE
+                  </h3>
+
+                  <!-- Dispatcher Card -->
+                  <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-3">
+                    <div class="flex items-center justify-between mb-3">
+                      <div class="flex items-center gap-2">
+                        <span class="text-2xl">🎧</span>
+                        <span class="font-medium text-amber-700">Need Dispatcher</span>
+                      </div>
+                    </div>
+                    <button class="w-full py-3 bg-amber-600 text-white rounded-xl font-medium text-sm">
+                      TAP TO ASSIGN
+                    </button>
+                  </div>
+
+                  <!-- Zone 1 Card -->
+                  <div class="bg-green-50 border border-green-200 rounded-xl p-4">
+                    <div class="flex items-center justify-between mb-2">
+                      <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-green-500 text-white font-bold flex items-center justify-center">1</div>
+                        <div>
+                          <div class="font-medium text-gray-900">Ana Rodriguez</div>
+                          <div class="text-xs text-green-600">Zone Lead • +1 more</div>
+                        </div>
+                      </div>
+                      <span class="text-green-600 text-xl">✓</span>
+                    </div>
+                    <div class="flex gap-2 mt-3">
+                      <button class="flex-1 py-2.5 bg-green-600 text-white rounded-xl font-medium text-sm flex items-center justify-center gap-2">
+                        📞 Call
+                      </button>
+                      <button class="flex-1 py-2.5 bg-green-600 text-white rounded-xl font-medium text-sm flex items-center justify-center gap-2">
+                        💬 Text
+                      </button>
+                      <button class="flex-1 py-2.5 border border-green-300 text-green-700 rounded-xl font-medium text-sm">
+                        Details
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Swipe Hint -->
+                <div class="text-center py-4 text-gray-400 text-sm flex items-center justify-center gap-2">
+                  <span>Swipe for 1pm-5pm</span>
+                  <span class="swipe-hint">→</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    function showTab(tabId) {
+      // Hide all tabs
+      document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+
+      // Show selected tab
+      document.getElementById(tabId).classList.add('active');
+      event.target.classList.add('active');
+    }
+  </script>
+</body>
+</html>

@@ -15,7 +15,7 @@ const ShiftCalendar = dynamic(
     ssr: false,
     loading: () => (
       <div className="h-[700px] flex items-center justify-center bg-gray-50 rounded-lg">
-        <div className="animate-spin w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full" />
+        <div className="animate-spin w-8 h-8 border-4 border-cyan-600 border-t-transparent rounded-full" />
       </div>
     ),
   }
@@ -145,7 +145,7 @@ export default function ShiftCalendarPage() {
   if (isLoading) {
     return (
       <div className="min-h-[calc(100vh-200px)] flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full" />
+        <div className="animate-spin w-8 h-8 border-4 border-cyan-600 border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -171,7 +171,7 @@ export default function ShiftCalendarPage() {
             {['COORDINATOR', 'ADMINISTRATOR'].includes(user.role) && (
               <Link
                 href="/shifts/create"
-                className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium"
+                className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium"
               >
                 + Create Shift
               </Link>
@@ -187,7 +187,7 @@ export default function ShiftCalendarPage() {
               <select
                 value={filterType}
                 onChange={(e) => setFilterType(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
               >
                 <option value="all">All Types</option>
                 <option value="PATROL">Patrol</option>
@@ -200,7 +200,7 @@ export default function ShiftCalendarPage() {
               <select
                 value={filterZone}
                 onChange={(e) => setFilterZone(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
               >
                 <option value="all">All Zones</option>
                 {zones.map((zone) => (
@@ -215,7 +215,7 @@ export default function ShiftCalendarPage() {
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
               >
                 <option value="all">All Statuses</option>
                 <option value="PUBLISHED">Published</option>

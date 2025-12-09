@@ -149,7 +149,7 @@ export default function TrainingDetailPage() {
     return (
       <div className="container mx-auto px-4 py-8">
         <p className="text-red-600">Training not found</p>
-        <Link href="/trainings" className="text-teal-600 hover:underline">
+        <Link href="/trainings" className="text-cyan-600 hover:underline">
           ← Back to trainings
         </Link>
       </div>
@@ -169,6 +169,7 @@ export default function TrainingDetailPage() {
     return new Date(dateStr).toLocaleTimeString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
+      timeZone: 'America/New_York',
     });
   };
 
@@ -211,7 +212,7 @@ export default function TrainingDetailPage() {
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       {/* Back link */}
-      <Link href="/trainings" className="text-teal-600 hover:underline mb-4 inline-block">
+      <Link href="/trainings" className="text-cyan-600 hover:underline mb-4 inline-block">
         ← Back to trainings
       </Link>
 
@@ -259,7 +260,7 @@ export default function TrainingDetailPage() {
                   href={training.meetingLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-teal-600 hover:underline"
+                  className="text-cyan-600 hover:underline"
                 >
                   Join Meeting
                 </a>
@@ -296,7 +297,7 @@ export default function TrainingDetailPage() {
             {training.userRsvpStatus === null && training.spotsLeft > 0 && (
               <button
                 onClick={handleRsvp}
-                className="bg-teal-600 text-white px-6 py-2 rounded-lg hover:bg-teal-700 transition-colors"
+                className="bg-cyan-600 text-white px-6 py-2 rounded-lg hover:bg-cyan-700 transition-colors"
               >
                 Sign Up for this Training
               </button>
@@ -342,7 +343,7 @@ export default function TrainingDetailPage() {
             <h2 className="text-xl font-bold text-gray-900">Training Roster</h2>
             <Link
               href={`/trainings/${training.id}/roster`}
-              className="text-teal-600 hover:underline text-sm"
+              className="text-cyan-600 hover:underline text-sm"
             >
               Open Full Roster View →
             </Link>

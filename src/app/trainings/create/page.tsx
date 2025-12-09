@@ -211,7 +211,7 @@ export default function CreateTrainingPage() {
   if (isLoading) {
     return (
       <div className="min-h-[calc(100vh-200px)] flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full" />
+        <div className="animate-spin w-8 h-8 border-4 border-cyan-600 border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -229,7 +229,7 @@ export default function CreateTrainingPage() {
             </p>
             <Link
               href="/admin/training-types"
-              className="inline-block px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium"
+              className="inline-block px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium"
             >
               Manage Training Types
             </Link>
@@ -244,7 +244,7 @@ export default function CreateTrainingPage() {
       <div className="container mx-auto px-4 max-w-2xl">
         {/* Header */}
         <div className="mb-8">
-          <Link href="/trainings" className="text-teal-600 hover:text-teal-700 text-sm mb-2 inline-block">
+          <Link href="/trainings" className="text-cyan-600 hover:text-cyan-700 text-sm mb-2 inline-block">
             ← Back to Trainings
           </Link>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Schedule Training</h1>
@@ -265,7 +265,7 @@ export default function CreateTrainingPage() {
               name="trainingTypeId"
               value={formData.trainingTypeId}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
               required
             >
               {trainingTypes.map((tt) => (
@@ -290,7 +290,7 @@ export default function CreateTrainingPage() {
               value={formData.title}
               onChange={handleChange}
               placeholder={`e.g., ${selectedType?.name || 'Training'} Session - December`}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
               required
             />
           </div>
@@ -304,7 +304,7 @@ export default function CreateTrainingPage() {
               onChange={handleChange}
               rows={3}
               placeholder="Additional details about this training session..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
             />
           </div>
 
@@ -318,7 +318,7 @@ export default function CreateTrainingPage() {
                 value={formData.date}
                 onChange={handleChange}
                 min={new Date().toISOString().split('T')[0]}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 required
               />
             </div>
@@ -329,7 +329,7 @@ export default function CreateTrainingPage() {
                 name="startTime"
                 value={formData.startTime}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 required
               />
             </div>
@@ -340,7 +340,7 @@ export default function CreateTrainingPage() {
                 name="endTime"
                 value={formData.endTime}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 required
               />
               {selectedType && (
@@ -358,7 +358,7 @@ export default function CreateTrainingPage() {
               name="zoneId"
               value={formData.zoneId}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
             >
               <option value="">All zones / Not zone-specific</option>
               {zones.map((zone) => (
@@ -378,7 +378,7 @@ export default function CreateTrainingPage() {
               value={formData.location}
               onChange={handleChange}
               placeholder="e.g., Community Center, 123 Main St"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
             />
           </div>
 
@@ -391,7 +391,7 @@ export default function CreateTrainingPage() {
               value={formData.meetingLink}
               onChange={handleChange}
               placeholder="e.g., https://zoom.us/j/..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
             />
             <p className="text-xs text-gray-500 mt-1">
               Provide either location, meeting link, or both for hybrid trainings
@@ -408,7 +408,7 @@ export default function CreateTrainingPage() {
                 value={formData.minAttendees}
                 onChange={handleChange}
                 min={1}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
               />
             </div>
             <div>
@@ -419,7 +419,7 @@ export default function CreateTrainingPage() {
                 value={formData.maxAttendees}
                 onChange={handleChange}
                 min={1}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
               />
             </div>
           </div>
@@ -431,7 +431,7 @@ export default function CreateTrainingPage() {
               name="status"
               value={formData.status}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
             >
               <option value="DRAFT">Draft (not visible to volunteers)</option>
               <option value="PUBLISHED">Published (open for signups)</option>
@@ -443,7 +443,7 @@ export default function CreateTrainingPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 py-3 px-4 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium disabled:opacity-50"
+              className="flex-1 py-3 px-4 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium disabled:opacity-50"
             >
               {isSubmitting ? 'Creating...' : 'Schedule Training'}
             </button>

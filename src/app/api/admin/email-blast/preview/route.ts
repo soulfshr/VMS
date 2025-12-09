@@ -34,9 +34,19 @@ export async function POST(request: NextRequest) {
       emailNotifications: true, // Respect opt-out preference
     };
 
-    // Filter by roles
+    // Filter by roles - always exclude DEVELOPER users from email blasts
     if (filters.roles && filters.roles.length > 0) {
-      where.role = { in: filters.roles as Role[] };
+      // Filter out DEVELOPER from the selected roles
+      const filteredRoles = filters.roles.filter(r => r !== 'DEVELOPER');
+      if (filteredRoles.length > 0) {
+        where.role = { in: filteredRoles as Role[] };
+      } else {
+        // If only DEVELOPER was selected, return no results
+        where.role = { in: [] };
+      }
+    } else {
+      // No role filter - exclude DEVELOPER by default
+      where.role = { not: 'DEVELOPER' };
     }
 
     // Filter by qualifications

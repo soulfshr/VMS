@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 320" width="400" height="320">
+  <defs>
+    <!-- Main gradient from blue to teal/green -->
+    <linearGradient id="mainGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0891b2"/>
+      <stop offset="50%" style="stop-color:#14b8a6"/>
+      <stop offset="100%" style="stop-color:#22c55e"/>
+    </linearGradient>
+
+    <!-- Vertical gradient for droplet -->
+    <linearGradient id="dropletGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#14b8a6"/>
+      <stop offset="100%" style="stop-color:#0891b2"/>
+    </linearGradient>
+
+    <!-- Text gradient -->
+    <linearGradient id="textGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#0369a1"/>
+      <stop offset="100%" style="stop-color:#14b8a6"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Water Droplet -->
+  <path d="M200 10
+           C200 10 220 40 220 60
+           C220 75 212 85 200 85
+           C188 85 180 75 180 60
+           C180 40 200 10 200 10 Z"
+        fill="url(#dropletGradient)"/>
+
+  <!-- Ripple Circles (ellipses) -->
+  <ellipse cx="200" cy="120" rx="25" ry="10" fill="none" stroke="url(#mainGradient)" stroke-width="2.5"/>
+  <ellipse cx="200" cy="120" rx="50" ry="20" fill="none" stroke="url(#mainGradient)" stroke-width="2.5"/>
+  <ellipse cx="200" cy="120" rx="80" ry="32" fill="none" stroke="url(#mainGradient)" stroke-width="2.5"/>
+  <ellipse cx="200" cy="120" rx="115" ry="46" fill="none" stroke="url(#mainGradient)" stroke-width="3"/>
+  <ellipse cx="200" cy="125" rx="150" ry="60" fill="none" stroke="url(#mainGradient)" stroke-width="3"/>
+
+  <!-- Three Human Figures -->
+  <!-- Center figure -->
+  <circle cx="200" cy="115" r="8" fill="url(#mainGradient)"/>
+  <path d="M200 125
+           C200 125 200 145 200 155
+           M185 135 C190 130 200 125 200 125 C200 125 210 130 215 135
+           M188 170 L200 155 L212 170"
+        fill="none" stroke="url(#mainGradient)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Left figure -->
+  <circle cx="155" cy="125" r="7" fill="url(#mainGradient)"/>
+  <path d="M155 133
+           C155 133 155 150 155 158
+           M142 142 C147 137 155 133 155 133 C155 133 163 137 168 142
+           M145 172 L155 158 L165 172"
+        fill="none" stroke="url(#mainGradient)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Right figure -->
+  <circle cx="245" cy="125" r="7" fill="url(#mainGradient)"/>
+  <path d="M245 133
+           C245 133 245 150 245 158
+           M232 142 C237 137 245 133 245 133 C245 133 253 137 258 142
+           M235 172 L245 158 L255 172"
+        fill="none" stroke="url(#mainGradient)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- RippleVMS Text -->
+  <text x="200" y="240" text-anchor="middle" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="url(#textGradient)">
+    RippleVMS
+  </text>
+
+  <!-- Tagline -->
+  <text x="200" y="275" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#0891b2">
+    Community Response. Collective Impact.
+  </text>
+</svg>
