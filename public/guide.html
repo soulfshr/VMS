@@ -172,12 +172,13 @@
               <div class="flex items-center gap-3 mb-3">
                 <span class="px-3 py-1 bg-orange-600 text-white text-sm font-medium rounded-full">Dispatcher</span>
               </div>
-              <p class="text-gray-600 mb-3">Handles real-time coordination during active monitoring and manages ICE sighting reports.</p>
+              <p class="text-gray-600 mb-3">Has full coordinator access plus handles real-time coordination and ICE sighting management.</p>
               <ul class="text-sm text-gray-600 space-y-1">
-                <li class="flex items-center gap-2"><span class="text-orange-500">&#10003;</span> Everything Volunteers can do, plus:</li>
+                <li class="flex items-center gap-2"><span class="text-orange-500">&#10003;</span> Everything Coordinators can do, plus:</li>
+                <li class="flex items-center gap-2"><span class="text-orange-500">&#10003;</span> Create and manage shifts and trainings</li>
+                <li class="flex items-center gap-2"><span class="text-orange-500">&#10003;</span> Access Coordinator Console</li>
                 <li class="flex items-center gap-2"><span class="text-orange-500">&#10003;</span> View schedule dashboard with dispatcher assignments</li>
-                <li class="flex items-center gap-2"><span class="text-orange-500">&#10003;</span> See all active shifts across zones</li>
-                <li class="flex items-center gap-2"><span class="text-orange-500">&#10003;</span> Coordinate field responses</li>
+                <li class="flex items-center gap-2"><span class="text-orange-500">&#10003;</span> Coordinate field responses in real-time</li>
                 <li class="flex items-center gap-2"><span class="text-orange-500">&#10003;</span> Receive and manage ICE sighting reports</li>
                 <li class="flex items-center gap-2"><span class="text-orange-500">&#10003;</span> Update sighting status (verify, respond, close)</li>
                 <li class="flex items-center gap-2"><span class="text-orange-500">&#10003;</span> View sightings on map</li>
@@ -247,8 +248,12 @@
               <strong>Schedule</strong> - Weekly schedule view
             </div>
             <div class="flex items-center gap-2 text-sm">
+              <span class="w-2 h-2 bg-orange-500 rounded-full"></span>
+              <strong>Sightings</strong> - ICE sighting management (Dispatchers/Coordinators/Admins)
+            </div>
+            <div class="flex items-center gap-2 text-sm">
               <span class="w-2 h-2 bg-blue-500 rounded-full"></span>
-              <strong>Volunteers</strong> - Directory (Coordinators/Admins)
+              <strong>Volunteers</strong> - Directory (Dispatchers/Coordinators/Admins)
             </div>
             <div class="flex items-center gap-2 text-sm">
               <span class="w-2 h-2 bg-cyan-500 rounded-full"></span>
@@ -276,15 +281,11 @@
               </ul>
             </div>
             <div class="p-4 bg-blue-50 rounded-lg">
-              <h3 class="font-semibold text-blue-900 mb-2">Coordinators Also See:</h3>
+              <h3 class="font-semibold text-blue-900 mb-2">Coordinators/Dispatchers Also See:</h3>
               <ul class="text-sm text-gray-600 space-y-1">
+                <li><strong>ICE Sightings Widget</strong> - Recent sightings with quick status updates</li>
                 <li><strong>Pending RSVPs</strong> - Volunteer RSVPs awaiting confirmation</li>
                 <li><strong>Zone Statistics</strong> - Volunteer counts and coverage</li>
-              </ul>
-            </div>
-            <div class="p-4 bg-orange-50 rounded-lg">
-              <h3 class="font-semibold text-orange-900 mb-2">Dispatchers Also See:</h3>
-              <ul class="text-sm text-gray-600 space-y-1">
                 <li><strong>Active Shifts</strong> - Currently running shifts across all zones</li>
                 <li><strong>On-Call Volunteers</strong> - Available responders</li>
               </ul>
@@ -356,8 +357,8 @@
             <p class="text-sm text-gray-600">For immediate reports, community members can also call the hotline: <strong>336-543-0353</strong></p>
           </div>
 
-          <h3 class="text-lg font-semibold text-gray-900 mb-3">Viewing Sightings (Dispatchers)</h3>
-          <p class="text-gray-600 mb-4">Dispatchers can view and manage all sighting reports from the <strong>Sightings</strong> page:</p>
+          <h3 class="text-lg font-semibold text-gray-900 mb-3">Viewing Sightings (Dispatchers/Coordinators)</h3>
+          <p class="text-gray-600 mb-4">Dispatchers and Coordinators can view and manage all sighting reports from the <strong>Sightings</strong> page:</p>
           <ul class="list-disc list-inside text-gray-600 mb-6 space-y-1">
             <li><strong>List View</strong> - Browse all sightings with filters</li>
             <li><strong>Map View</strong> - See sightings plotted on a map with color-coded status markers</li>
@@ -399,7 +400,7 @@
           </div>
 
           <div class="p-4 bg-orange-50 border border-orange-200 rounded-lg">
-            <h4 class="font-semibold text-orange-900 mb-2">Managing Sightings (Dispatchers)</h4>
+            <h4 class="font-semibold text-orange-900 mb-2">Managing Sightings (Dispatchers/Coordinators)</h4>
             <ol class="list-decimal list-inside text-sm text-gray-600 space-y-1">
               <li>Click on a sighting to view full SALUTE details and any photos</li>
               <li>View the location on the embedded map</li>
@@ -490,7 +491,7 @@
           </div>
 
           <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg mb-6">
-            <h4 class="font-semibold text-blue-900 mb-2">Creating Shifts (Coordinators/Admins)</h4>
+            <h4 class="font-semibold text-blue-900 mb-2">Creating Shifts (Dispatchers/Coordinators/Admins)</h4>
             <ol class="list-decimal list-inside text-sm text-gray-600 space-y-1">
               <li>Navigate to <strong>Shifts</strong></li>
               <li>Click <strong>"Create Shift"</strong></li>
@@ -500,7 +501,7 @@
           </div>
 
           <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg mb-6">
-            <h4 class="font-semibold text-blue-900 mb-2">Managing Shift Rosters (Coordinators/Admins)</h4>
+            <h4 class="font-semibold text-blue-900 mb-2">Managing Shift Rosters (Dispatchers/Coordinators/Admins)</h4>
             <ol class="list-decimal list-inside text-sm text-gray-600 space-y-1">
               <li>Click on any shift to view details</li>
               <li>Click <strong>"View Roster"</strong> or the roster icon</li>
@@ -520,7 +521,7 @@
           </div>
 
           <div class="p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
-            <h4 class="font-semibold text-indigo-900 mb-2">Bulk Shift Operations (Coordinators/Admins)</h4>
+            <h4 class="font-semibold text-indigo-900 mb-2">Bulk Shift Operations (Dispatchers/Coordinators/Admins)</h4>
             <p class="text-sm text-gray-600 mb-3">Manage multiple shifts at once using the multi-select feature:</p>
 
             <h5 class="font-medium text-indigo-800 mb-2">Selecting Shifts:</h5>
@@ -608,7 +609,7 @@
 
           <h3 class="text-lg font-semibold text-gray-900 mb-3">Training Completion</h3>
           <ol class="list-decimal list-inside text-gray-600 space-y-2">
-            <li>A coordinator marks your attendance as confirmed</li>
+            <li>A coordinator or dispatcher marks your attendance as confirmed</li>
             <li>The training appears in your profile under "Completed Trainings"</li>
             <li>If the training grants a Qualified Role (e.g., Verifier, Zone Lead), you automatically receive that qualification</li>
             <li>You may now be eligible for shifts requiring that training or qualified role</li>
@@ -682,7 +683,7 @@
         <!-- Volunteers -->
         <section id="volunteers" class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
           <h2 class="text-2xl font-bold text-gray-900 mb-2">Volunteers</h2>
-          <p class="text-sm text-blue-600 mb-6">Available to Coordinators and Administrators only.</p>
+          <p class="text-sm text-blue-600 mb-6">Available to Dispatchers, Coordinators, and Administrators.</p>
 
           <p class="text-gray-600 mb-6">The Volunteers page is your directory of all registered volunteers.</p>
 
@@ -858,9 +859,9 @@ John Doe,john@example.com,(919) 555-0100,VOLUNTEER,"Durham 1;Durham 2",English</
         <!-- Email Blasts -->
         <section id="email-blasts" class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
           <h2 class="text-2xl font-bold text-gray-900 mb-2">Email Blasts</h2>
-          <p class="text-sm text-blue-600 mb-6">Available to Coordinators and Administrators.</p>
+          <p class="text-sm text-blue-600 mb-6">Available to Dispatchers, Coordinators, and Administrators.</p>
 
-          <p class="text-gray-600 mb-6">The Email Blast feature allows you to send bulk communications to volunteers. Access it from <strong>Dashboard → Send Email Blast</strong> or through the admin section.</p>
+          <p class="text-gray-600 mb-6">The Email Blast feature allows you to send bulk communications to volunteers. Access it from <strong>Dashboard → Send Email Blast</strong> or via the <strong>Coordinator Console</strong>.</p>
 
           <h3 class="text-lg font-semibold text-gray-900 mb-3">Email Templates</h3>
           <div class="overflow-x-auto mb-6">
