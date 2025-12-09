@@ -55,7 +55,7 @@ function formatDate(date: Date): string {
 
 async function main() {
   console.log('🗓️  Schedule Demo Seeder\n');
-  console.log('Connecting to:', DATABASE_URL.replace(/:[^:@]+@/, ':***@'));
+  console.log('Connecting to:', DATABASE_URL!.replace(/:[^:@]+@/, ':***@'));
 
   const weekStart = getWeekStart();
   const weekDates = getWeekDates(weekStart);
