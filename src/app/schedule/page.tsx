@@ -517,15 +517,15 @@ export default function SchedulePage() {
                                       dispatcher: regionalDisp?.dispatcher || null,
                                       backupDispatchers: regionalDisp?.backupDispatchers || [],
                                       zones: [],
-                                      coverage: 'none',
+                                      coverage: regionalDisp?.coverage || 'none',
                                       gaps: { needsDispatcher: !regionalDisp?.dispatcher, zonesNeedingLeads: [] },
                                     };
                                     handleCellClick(syntheticCell);
                                   }
                                 }}
-                                className={`border-b border-r border-cyan-200 px-3 py-2 text-sm ${
-                                  canEdit ? 'cursor-pointer hover:bg-cyan-100' : ''
-                                }`}
+                                className={`border-b border-r px-3 py-2 text-sm ${
+                                  regionalDisp?.coverage === 'full' ? 'bg-green-100 border-green-200' : 'bg-gray-100 border-gray-200'
+                                } ${canEdit ? 'cursor-pointer hover:bg-opacity-80' : ''}`}
                               >
                                 {regionalDisp?.dispatcher ? (
                                   <div className="space-y-1">
@@ -607,15 +607,15 @@ export default function SchedulePage() {
                                           dispatcher: countyDisp?.dispatcher || null,
                                           backupDispatchers: countyDisp?.backupDispatchers || [],
                                           zones: [],
-                                          coverage: 'none',
+                                          coverage: countyDisp?.coverage || 'none',
                                           gaps: { needsDispatcher: !countyDisp?.dispatcher, zonesNeedingLeads: [] },
                                         };
                                         handleCellClick(syntheticCell);
                                       }
                                     }}
-                                    className={`border-b border-r border-cyan-200 px-3 py-2 text-sm ${
-                                      canEdit ? 'cursor-pointer hover:bg-cyan-100' : ''
-                                    }`}
+                                    className={`border-b border-r px-3 py-2 text-sm ${
+                                      countyDisp?.coverage === 'full' ? 'bg-green-100 border-green-200' : 'bg-gray-100 border-gray-200'
+                                    } ${canEdit ? 'cursor-pointer hover:bg-opacity-80' : ''}`}
                                   >
                                     {countyDisp?.dispatcher ? (
                                       <div className="space-y-1">

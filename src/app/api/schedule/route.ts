@@ -425,19 +425,35 @@ export async function GET(request: NextRequest) {
             }
           }
 
-          // Calculate coverage
+          // Calculate coverage based on dispatcher scheduling mode
           let coverage: 'full' | 'partial' | 'none' = 'none';
           const hasDispatcher = !!primaryDispatcher;
           const zonesWithShifts = zoneDataList.filter(z => z.shifts.length > 0);
           const zonesNeedingLeads = zonesWithShifts
             .filter(z => z.zoneLeads.length === 0)
             .map(z => z.zoneName);
+          const zonesWithLeads = zonesWithShifts.filter(z => z.zoneLeads.length > 0);
           const allZonesHaveLeads = zonesWithShifts.length > 0 && zonesNeedingLeads.length === 0;
 
-          if (hasDispatcher && allZonesHaveLeads) {
-            coverage = 'full';
-          } else if (hasDispatcher || zonesWithShifts.length > 0) {
-            coverage = 'partial';
+          if (dispatcherSchedulingMode === 'ZONE') {
+            // ZONE mode: Cell coverage = dispatcher + zone leads
+            if (hasDispatcher && allZonesHaveLeads) {
+              coverage = 'full';
+            } else if (hasDispatcher || zonesWithShifts.length > 0) {
+              coverage = 'partial';
+            }
+          } else {
+            // COUNTY/REGIONAL mode: Cell coverage = zone leads only (dispatcher shown in separate row)
+            if (zonesWithShifts.length > 0) {
+              if (allZonesHaveLeads) {
+                coverage = 'full';
+              } else if (zonesWithLeads.length > 0) {
+                coverage = 'partial';
+              } else {
+                // Has shifts but no zone leads
+                coverage = 'none';
+              }
+            }
           }
 
           // Track gaps for display
@@ -512,6 +528,7 @@ export async function GET(request: NextRequest) {
         assignmentId: string;
         notes: string | null;
       }>;
+      coverage: 'full' | 'none';
     }> = [];
 
     // Only populate if in REGIONAL mode
@@ -545,6 +562,7 @@ export async function GET(request: NextRequest) {
               assignmentId: d.assignment.id,
               notes: d.assignment.notes,
             })),
+            coverage: primaryDispatcher ? 'full' : 'none',
           });
         }
       }
@@ -569,6 +587,7 @@ export async function GET(request: NextRequest) {
         assignmentId: string;
         notes: string | null;
       }>;
+      coverage: 'full' | 'none';
     }> = [];
 
     // Only populate if in COUNTY mode
@@ -605,6 +624,7 @@ export async function GET(request: NextRequest) {
                 assignmentId: d.assignment.id,
                 notes: d.assignment.notes,
               })),
+              coverage: primaryDispatcher ? 'full' : 'none',
             });
           }
         }
