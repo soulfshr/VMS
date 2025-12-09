@@ -6,7 +6,7 @@ import { getDbUser } from '@/lib/user';
 export async function GET(request: NextRequest) {
   try {
     const user = await getDbUser();
-    if (!user || !['ADMINISTRATOR', 'COORDINATOR'].includes(user.role)) {
+    if (!user || !['ADMINISTRATOR', 'COORDINATOR', 'DISPATCHER'].includes(user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

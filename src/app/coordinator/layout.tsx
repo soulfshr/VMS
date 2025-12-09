@@ -29,8 +29,8 @@ export default function CoordinatorLayout({
           router.push('/login');
           return;
         }
-        // Coordinators and Administrators can access
-        if (!['ADMINISTRATOR', 'COORDINATOR'].includes(data.user.role)) {
+        // Coordinators, Dispatchers, and Administrators can access
+        if (!['ADMINISTRATOR', 'COORDINATOR', 'DISPATCHER'].includes(data.user.role)) {
           router.push('/dashboard');
           return;
         }

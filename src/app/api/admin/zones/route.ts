@@ -9,8 +9,8 @@ export async function GET() {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    // Allow coordinators to read zones (for email blast filtering)
-    if (!['ADMINISTRATOR', 'COORDINATOR'].includes(user.role)) {
+    // Allow coordinators and dispatchers to read zones (for email blast filtering)
+    if (!['ADMINISTRATOR', 'COORDINATOR', 'DISPATCHER'].includes(user.role)) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 

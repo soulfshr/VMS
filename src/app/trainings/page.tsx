@@ -273,7 +273,7 @@ export default function TrainingsPage() {
 
   if (!user) return null;
 
-  const canCreateTraining = user.role === 'COORDINATOR' || user.role === 'ADMINISTRATOR';
+  const canCreateTraining = user.role === 'COORDINATOR' || user.role === 'DISPATCHER' || user.role === 'ADMINISTRATOR';
 
   return (
     <div className="min-h-[calc(100vh-200px)] bg-gray-50 py-8">

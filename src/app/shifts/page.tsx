@@ -727,7 +727,7 @@ function ShiftsPageContent() {
 
   if (!user) return null;
 
-  const canCreateShift = user.role === 'COORDINATOR' || user.role === 'ADMINISTRATOR';
+  const canCreateShift = user.role === 'COORDINATOR' || user.role === 'DISPATCHER' || user.role === 'ADMINISTRATOR';
 
   // Filter shifts by pending RSVPs if enabled
   const filteredShifts = filterPendingOnly

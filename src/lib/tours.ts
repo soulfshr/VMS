@@ -305,9 +305,9 @@ export function filterStepsForRole(steps: TourStep[], role: string): TourStep[] 
       return false;
     }
 
-    // Coordinator-only targets
+    // Leadership targets (Coordinator/Dispatcher)
     if (coordinatorTargets.includes(target) &&
-        role !== 'COORDINATOR' && role !== 'ADMINISTRATOR') {
+        role !== 'COORDINATOR' && role !== 'DISPATCHER' && role !== 'ADMINISTRATOR') {
       return false;
     }
 

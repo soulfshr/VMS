@@ -319,8 +319,10 @@ export default function DashboardClient() {
   }
 
   const { upcomingShifts, availableZoneShifts, volunteerStats, coordinatorStats, zoneStats, orgStats } = dashboardData;
-  const isCoordinator = sessionUser.role === 'COORDINATOR' || sessionUser.role === 'ADMINISTRATOR';
-  const isDispatcher = sessionUser.role === 'DISPATCHER' || sessionUser.role === 'ADMINISTRATOR';
+  // Harmonize COORDINATOR and DISPATCHER - both have leadership access
+  const isLeader = sessionUser.role === 'COORDINATOR' || sessionUser.role === 'DISPATCHER' || sessionUser.role === 'ADMINISTRATOR';
+  const isCoordinator = isLeader; // For backward compatibility
+  const isDispatcher = isLeader;  // For backward compatibility
 
   return (
     <>

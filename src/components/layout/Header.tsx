@@ -122,6 +122,18 @@ export default function Header() {
                 >
                   Map
                 </Link>
+                {features.sightings && ['DISPATCHER', 'COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role) && (
+                  <Link
+                    href="/sightings"
+                    className={`text-sm font-medium transition-colors ${
+                      pathname.startsWith('/sightings')
+                        ? 'text-cyan-700'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Sightings
+                  </Link>
+                )}
                 <Link
                   href="/shifts"
                   className={`text-sm font-medium transition-colors ${
@@ -166,7 +178,7 @@ export default function Header() {
                     Volunteers
                   </Link>
                 )}
-                {['COORDINATOR', 'ADMINISTRATOR'].includes(user.role) && (
+                {['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR'].includes(user.role) && (
                   <Link
                     href="/coordinator"
                     className={`text-sm font-medium transition-colors ${
@@ -332,6 +344,15 @@ export default function Header() {
                 >
                   Map
                 </Link>
+                {features.sightings && ['DISPATCHER', 'COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role) && (
+                  <Link
+                    href="/sightings"
+                    className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Sightings
+                  </Link>
+                )}
                 <Link
                   href="/shifts"
                   className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
@@ -364,7 +385,7 @@ export default function Header() {
                     Volunteers
                   </Link>
                 )}
-                {['COORDINATOR', 'ADMINISTRATOR'].includes(user.role) && (
+                {['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR'].includes(user.role) && (
                   <Link
                     href="/coordinator"
                     className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
