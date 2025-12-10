@@ -12,7 +12,7 @@ This document tracks user feedback for triage and resolution.
 - **Location:** Guided tour modal (Coverage Legend step, 3 of 5)
 - **Issue:** Text in "Back" and "Next" buttons appears blurry
 - **Screenshot:** Shows tour step with buttons that have blurry text
-- **Status:** Open
+- **Status:** Resolved
 - **Priority:** Low (cosmetic)
 - **Notes:** May be related to font rendering, button styling, or tour library CSS
 
@@ -20,7 +20,10 @@ This document tracks user feedback for triage and resolution.
 
 ## Resolved Issues
 
-(None yet)
+### 1. Blurry button text in guided tour
+- **Date Resolved:** 2024-12-10
+- **Fix:** Added CSS font smoothing and GPU acceleration to tour buttons
+- **Commit:** ad9cd6a
 
 ---
 
