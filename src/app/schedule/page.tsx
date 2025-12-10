@@ -401,7 +401,7 @@ export default function SchedulePage() {
           <div className="bg-white rounded-lg shadow-sm border border-gray-200" data-tour="schedule-grid">
             <div className="overflow-x-auto rounded-lg">
               <table className="w-full border-collapse">
-                <thead className="sticky top-[140px] z-20">
+                <thead>
                   <tr className="bg-gray-100">
                     <th className="border-b border-r border-gray-200 px-2 py-3 text-left text-sm font-medium text-gray-600 min-w-[100px] w-[100px] sticky left-0 z-20 bg-gray-100 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">
                       County / Time
@@ -409,7 +409,7 @@ export default function SchedulePage() {
                     {weekDates.map(date => (
                       <th
                         key={date.toISOString()}
-                        className="border-b border-r border-gray-200 px-2 py-3 text-center text-sm font-medium text-gray-600 min-w-[120px] bg-gray-100"
+                        className="border-b border-r border-gray-200 px-2 py-3 text-center text-sm font-medium text-gray-600 min-w-[120px]"
                       >
                         <div>{date.toLocaleDateString('en-US', { weekday: 'short' })}</div>
                         <div className="text-gray-500">
