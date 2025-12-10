@@ -18,6 +18,18 @@ This document tracks user feedback for triage and resolution.
 
 ---
 
+## Feature Requests
+
+### 1. Active training with videos and quizzes
+- **Date Requested:** 2024-12-10
+- **Requester:** User
+- **Description:** Add interactive training modules with video content, quizzes, and progress tracking
+- **Status:** Backlog
+- **Priority:** Medium
+- **Notes:** Could include onboarding videos, role-specific training, certification quizzes
+
+---
+
 ## Resolved Issues
 
 ### 1. Blurry button text in guided tour
