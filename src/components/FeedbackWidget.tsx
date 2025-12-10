@@ -163,6 +163,13 @@ export default function FeedbackWidget() {
                       <option value="question">Question</option>
                       <option value="other">Other</option>
                     </select>
+                    {category && (
+                      <p className="mt-1 text-xs text-gray-500">
+                        {['bug', 'feature'].includes(category)
+                          ? '→ This will be sent to the development team'
+                          : '→ This will be sent to coordinators'}
+                      </p>
+                    )}
                   </div>
 
                   <div>

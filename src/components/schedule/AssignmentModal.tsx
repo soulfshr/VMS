@@ -207,33 +207,42 @@ export default function AssignmentModal({ cell, zones: _zones, onClose, onSave, 
     }
   };
 
-  const handleAddZoneLead = async (shiftId: string) => {
-    const userId = selectedZoneLeads[shiftId];
-    if (!userId) return;
+  const handleSaveAllZoneLeads = async () => {
+    // Get all shift IDs that have a zone lead selected
+    const shiftsToUpdate = Object.entries(selectedZoneLeads).filter(([, userId]) => userId);
+    if (shiftsToUpdate.length === 0) return;
 
-    setAddingZoneLead(shiftId);
+    setAddingZoneLead('all');
     setError(null);
-    try {
-      const res = await fetch(`/api/shifts/${shiftId}/add-volunteer`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          volunteerId: userId,
-          isZoneLead: true,
-        }),
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Failed to add zone lead');
+    const errors: string[] = [];
+
+    for (const [shiftId, userId] of shiftsToUpdate) {
+      try {
+        const res = await fetch(`/api/shifts/${shiftId}/add-volunteer`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            volunteerId: userId,
+            isZoneLead: true,
+          }),
+        });
+        if (!res.ok) {
+          const data = await res.json();
+          errors.push(data.error || `Failed to add zone lead to shift`);
+        }
+      } catch (err) {
+        errors.push((err as Error).message);
       }
-      // Clear selection and refresh
-      setSelectedZoneLeads(prev => ({ ...prev, [shiftId]: '' }));
-      onSave();
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setAddingZoneLead(null);
     }
+
+    if (errors.length > 0) {
+      setError(errors.join('; '));
+    }
+
+    // Clear all selections and refresh
+    setSelectedZoneLeads({});
+    setAddingZoneLead(null);
+    onSave();
   };
 
   const formatDate = (dateStr: string) => {
@@ -478,29 +487,20 @@ export default function AssignmentModal({ cell, zones: _zones, onClose, onSave, 
                         <label className="block text-xs font-medium text-gray-700 mb-1">
                           Assign Zone Lead
                         </label>
-                        <div className="flex gap-2">
-                          <select
-                            value={selectedZoneLeads[shift.id] || ''}
-                            onChange={e => setSelectedZoneLeads(prev => ({ ...prev, [shift.id]: e.target.value }))}
-                            className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-                          >
-                            <option value="">-- Select zone lead --</option>
-                            {qualifiedZoneLeads
-                              .filter(zl => !allVolunteers.some(v => v.id === zl.id))
-                              .map(user => (
-                                <option key={user.id} value={user.id}>
-                                  {user.name}
-                                </option>
-                              ))}
-                          </select>
-                          <button
-                            onClick={() => handleAddZoneLead(shift.id)}
-                            disabled={!selectedZoneLeads[shift.id] || addingZoneLead === shift.id}
-                            className="px-3 py-1.5 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {addingZoneLead === shift.id ? 'Adding...' : 'Add'}
-                          </button>
-                        </div>
+                        <select
+                          value={selectedZoneLeads[shift.id] || ''}
+                          onChange={e => setSelectedZoneLeads(prev => ({ ...prev, [shift.id]: e.target.value }))}
+                          className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                        >
+                          <option value="">-- Select zone lead --</option>
+                          {qualifiedZoneLeads
+                            .filter(zl => !allVolunteers.some(v => v.id === zl.id))
+                            .map(user => (
+                              <option key={user.id} value={user.id}>
+                                {user.name}
+                              </option>
+                            ))}
+                        </select>
                       </div>
 
                       {/* View Full Roster Link */}
@@ -515,6 +515,19 @@ export default function AssignmentModal({ cell, zones: _zones, onClose, onSave, 
                     </div>
                   );
                 })}
+              </div>
+            )}
+
+            {/* Save Zone Leads Button */}
+            {Object.values(selectedZoneLeads).some(v => v) && (
+              <div className="mt-4 flex justify-end">
+                <button
+                  onClick={handleSaveAllZoneLeads}
+                  disabled={addingZoneLead === 'all'}
+                  className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {addingZoneLead === 'all' ? 'Saving...' : 'Save Zone Leads'}
+                </button>
               </div>
             )}
           </div>

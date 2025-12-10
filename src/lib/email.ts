@@ -878,24 +878,15 @@ interface FeedbackEmailParams {
 }
 
 /**
- * Send feedback email to the configured recipient (Developer settings)
+ * Send feedback email - routes to developers or coordinators based on category
+ * Developer categories (bug, feature) -> feedbackEmail setting
+ * Coordinator categories (suggestion, question, other) -> all active coordinators
  */
 export async function sendFeedbackEmail(params: FeedbackEmailParams): Promise<void> {
   const branding = await getBranding();
 
   if (!isEmailConfigured(branding)) {
     console.log('[Email] SES not configured, skipping feedback email');
-    return;
-  }
-
-  // Get feedback email from organization settings
-  const settings = await prisma.organizationSettings.findFirst({
-    select: { feedbackEmail: true }
-  });
-
-  const feedbackRecipient = settings?.feedbackEmail;
-  if (!feedbackRecipient) {
-    console.log('[Email] No feedback email configured, skipping feedback email. Configure in Developer console.');
     return;
   }
 
@@ -913,38 +904,88 @@ export async function sendFeedbackEmail(params: FeedbackEmailParams): Promise<vo
 
   const categoryLabel = categoryLabels[category] || category;
 
-  try {
-    await sendEmail({
-      to: feedbackRecipient,
-      subject: `[VMS Feedback] ${categoryLabel}${userName ? ` from ${userName}` : ''}`,
-      fromName: branding.emailFromName,
-      fromAddress: branding.emailFromAddress,
-      replyTo: userEmail || branding.emailReplyTo,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background: #0891b2; color: white; padding: 16px 24px; border-radius: 8px 8px 0 0;">
-            <h2 style="margin: 0;">VMS Feedback: ${escapeHtml(categoryLabel)}</h2>
-            ${userName || userEmail ? `<p style="margin: 8px 0 0 0; font-size: 14px; opacity: 0.9;">From: ${escapeHtml(userName || 'Anonymous')}${userEmail ? ` &lt;${escapeHtml(userEmail)}&gt;` : ''}</p>` : '<p style="margin: 8px 0 0 0; font-size: 14px; opacity: 0.9;">From: Anonymous (not logged in)</p>'}
-          </div>
+  // Determine recipients based on category
+  const developerCategories = ['bug', 'feature'];
+  const isDevFeedback = developerCategories.includes(category);
 
-          <div style="border: 1px solid #e5e7eb; border-top: none; padding: 24px; border-radius: 0 0 8px 8px;">
-            <div style="background: #f3f4f6; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
-              <h3 style="margin-top: 0; color: #374151;">Message</h3>
-              <p style="margin: 0; white-space: pre-wrap;">${escapeHtmlPreserveBreaks(message)}</p>
-            </div>
+  let recipients: string[] = [];
 
-            <div style="color: #6b7280; font-size: 14px;">
-              <h4 style="color: #374151; margin-bottom: 8px;">Details</h4>
-              <p style="margin: 4px 0;"><strong>Category:</strong> ${escapeHtml(categoryLabel)}</p>
-              <p style="margin: 4px 0;"><strong>Submitted:</strong> ${escapeHtml(timestamp)}</p>
-              ${url ? `<p style="margin: 4px 0;"><strong>Page:</strong> <a href="${escapeHtml(url)}">${escapeHtml(url)}</a></p>` : ''}
-              ${userAgent ? `<p style="margin: 4px 0;"><strong>Browser:</strong> ${escapeHtml(userAgent)}</p>` : ''}
-            </div>
-          </div>
-        </div>
-      `,
+  if (isDevFeedback) {
+    // Developer feedback -> feedbackEmail setting
+    const settings = await prisma.organizationSettings.findFirst({
+      select: { feedbackEmail: true }
     });
-    logger.email('Feedback email sent', { to: feedbackRecipient, category }).catch(() => {});
+
+    if (settings?.feedbackEmail) {
+      recipients = [settings.feedbackEmail];
+    } else {
+      console.log('[Email] No feedback email configured for developer feedback. Configure in Developer console.');
+      return;
+    }
+  } else {
+    // Coordinator feedback -> all active coordinators
+    const coordinators = await prisma.user.findMany({
+      where: {
+        role: 'COORDINATOR',
+        isActive: true,
+      },
+      select: { email: true }
+    });
+
+    recipients = coordinators.map(c => c.email);
+
+    if (recipients.length === 0) {
+      console.log('[Email] No active coordinators found for feedback. Feedback not sent.');
+      return;
+    }
+  }
+
+  // Build email HTML
+  const headerColor = isDevFeedback ? '#7c3aed' : '#0891b2'; // Purple for dev, cyan for coordinator
+  const headerTitle = isDevFeedback ? `Developer Feedback: ${escapeHtml(categoryLabel)}` : `Volunteer Feedback: ${escapeHtml(categoryLabel)}`;
+
+  const emailHtml = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="background: ${headerColor}; color: white; padding: 16px 24px; border-radius: 8px 8px 0 0;">
+        <h2 style="margin: 0;">${headerTitle}</h2>
+        ${userName || userEmail ? `<p style="margin: 8px 0 0 0; font-size: 14px; opacity: 0.9;">From: ${escapeHtml(userName || 'Anonymous')}${userEmail ? ` &lt;${escapeHtml(userEmail)}&gt;` : ''}</p>` : '<p style="margin: 8px 0 0 0; font-size: 14px; opacity: 0.9;">From: Anonymous (not logged in)</p>'}
+      </div>
+
+      <div style="border: 1px solid #e5e7eb; border-top: none; padding: 24px; border-radius: 0 0 8px 8px;">
+        <div style="background: #f3f4f6; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+          <h3 style="margin-top: 0; color: #374151;">Message</h3>
+          <p style="margin: 0; white-space: pre-wrap;">${escapeHtmlPreserveBreaks(message)}</p>
+        </div>
+
+        <div style="color: #6b7280; font-size: 14px;">
+          <h4 style="color: #374151; margin-bottom: 8px;">Details</h4>
+          <p style="margin: 4px 0;"><strong>Category:</strong> ${escapeHtml(categoryLabel)}</p>
+          <p style="margin: 4px 0;"><strong>Submitted:</strong> ${escapeHtml(timestamp)}</p>
+          ${url ? `<p style="margin: 4px 0;"><strong>Page:</strong> <a href="${escapeHtml(url)}">${escapeHtml(url)}</a></p>` : ''}
+          ${userAgent ? `<p style="margin: 4px 0;"><strong>Browser:</strong> ${escapeHtml(userAgent)}</p>` : ''}
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Send to all recipients
+  const subject = isDevFeedback
+    ? `[RippleVMS] ${categoryLabel}${userName ? ` from ${userName}` : ''}`
+    : `[RippleVMS] Volunteer Feedback: ${categoryLabel}${userName ? ` from ${userName}` : ''}`;
+
+  try {
+    // Send email to each recipient
+    for (const recipient of recipients) {
+      await sendEmail({
+        to: recipient,
+        subject,
+        fromName: branding.emailFromName,
+        fromAddress: branding.emailFromAddress,
+        replyTo: userEmail || branding.emailReplyTo,
+        html: emailHtml,
+      });
+    }
+    logger.email('Feedback email sent', { to: recipients.join(', '), category, isDevFeedback }).catch(() => {});
   } catch (error) {
     logger.error('EMAIL', 'Failed to send feedback email', { error: error instanceof Error ? error.message : 'Unknown' }).catch(() => {});
     throw error; // Re-throw so the API can return an error

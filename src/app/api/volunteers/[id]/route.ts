@@ -63,6 +63,7 @@ export async function PATCH(
       isActive?: boolean;
       isVerified?: boolean;
       name?: string;
+      email?: string;
       phone?: string | null;
       primaryLanguage?: string;
       otherLanguages?: string[];
@@ -86,6 +87,25 @@ export async function PATCH(
 
     if (body.name !== undefined) {
       updateData.name = body.name;
+    }
+
+    if (body.email !== undefined) {
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(body.email)) {
+        return NextResponse.json({ error: 'Invalid email format' }, { status: 400 });
+      }
+      // Check if email is already taken by another user
+      const existingUser = await prisma.user.findFirst({
+        where: {
+          email: body.email,
+          id: { not: id },
+        },
+      });
+      if (existingUser) {
+        return NextResponse.json({ error: 'Email is already in use by another user' }, { status: 400 });
+      }
+      updateData.email = body.email;
     }
 
     if (body.phone !== undefined) {

@@ -131,6 +131,19 @@ export default function VolunteersPage() {
   const [bulkAction, setBulkAction] = useState<'activate' | 'deactivate' | 'delete' | null>(null);
   const [isBulkActioning, setIsBulkActioning] = useState(false);
 
+  // Edit volunteer modal state (for single volunteer editing)
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingVolunteerId, setEditingVolunteerId] = useState<string | null>(null);
+  const [editVolunteerForm, setEditVolunteerForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    primaryLanguage: 'English',
+    otherLanguages: [] as string[],
+  });
+  const [editVolunteerError, setEditVolunteerError] = useState<string | null>(null);
+  const [savingVolunteerEdit, setSavingVolunteerEdit] = useState(false);
+
   // Bulk edit state
   const [showBulkEditModal, setShowBulkEditModal] = useState(false);
   const [isBulkEditing, setIsBulkEditing] = useState(false);
@@ -651,6 +664,87 @@ export default function VolunteersPage() {
   const openBulkActionModal = (action: 'activate' | 'deactivate' | 'delete') => {
     setBulkAction(action);
     setShowBulkActionModal(true);
+  };
+
+  // Open edit modal for a single volunteer
+  const openEditModal = (volunteer: Volunteer) => {
+    setEditingVolunteerId(volunteer.id);
+    setEditVolunteerForm({
+      name: volunteer.name,
+      email: volunteer.email,
+      phone: volunteer.phone || '',
+      primaryLanguage: volunteer.primaryLanguage,
+      otherLanguages: volunteer.otherLanguages || [],
+    });
+    setEditVolunteerError(null);
+    setShowEditModal(true);
+  };
+
+  // Close edit modal
+  const closeEditModal = () => {
+    setShowEditModal(false);
+    setEditingVolunteerId(null);
+    setEditVolunteerForm({
+      name: '',
+      email: '',
+      phone: '',
+      primaryLanguage: 'English',
+      otherLanguages: [],
+    });
+    setEditVolunteerError(null);
+  };
+
+  // Save volunteer edit
+  const handleSaveVolunteerEdit = async () => {
+    if (!editingVolunteerId) return;
+
+    setSavingVolunteerEdit(true);
+    setEditVolunteerError(null);
+
+    try {
+      const res = await fetch(`/api/volunteers/${editingVolunteerId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editVolunteerForm.name,
+          email: editVolunteerForm.email,
+          phone: editVolunteerForm.phone || null,
+          primaryLanguage: editVolunteerForm.primaryLanguage,
+          otherLanguages: editVolunteerForm.otherLanguages,
+        }),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to update volunteer');
+      }
+
+      // Update local state
+      setData(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          volunteers: prev.volunteers.map(v =>
+            v.id === editingVolunteerId
+              ? {
+                  ...v,
+                  name: editVolunteerForm.name,
+                  email: editVolunteerForm.email,
+                  phone: editVolunteerForm.phone || null,
+                  primaryLanguage: editVolunteerForm.primaryLanguage,
+                  otherLanguages: editVolunteerForm.otherLanguages,
+                }
+              : v
+          ),
+        };
+      });
+
+      closeEditModal();
+    } catch (error) {
+      setEditVolunteerError(error instanceof Error ? error.message : 'Failed to update volunteer');
+    } finally {
+      setSavingVolunteerEdit(false);
+    }
   };
 
   // Bulk edit handler
@@ -1254,6 +1348,20 @@ export default function VolunteersPage() {
                               <div>
                                 <h4 className="text-sm font-medium text-gray-700 mb-2">Quick Actions</h4>
                                 <div className="space-y-2">
+                                  {isAdmin && (
+                                    <button
+                                      onClick={e => {
+                                        e.stopPropagation();
+                                        openEditModal(volunteer);
+                                      }}
+                                      className="w-full px-3 py-2 text-sm bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 flex items-center justify-center gap-2"
+                                    >
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                      </svg>
+                                      Edit Details
+                                    </button>
+                                  )}
                                   <a
                                     href={`mailto:${volunteer.email}`}
                                     className="block px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-center"
@@ -1794,6 +1902,169 @@ Jane Smith,jane@example.com,555-5678,COORDINATOR,Spanish,Zone 3`}
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Volunteer Modal (Admin only - edit name, phone, languages) */}
+      {showEditModal && editingVolunteerId && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold text-gray-900">Edit Volunteer Details</h2>
+                <button
+                  onClick={closeEditModal}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {editVolunteerError && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                  {editVolunteerError}
+                </div>
+              )}
+
+              <div className="space-y-4">
+                {/* Name */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Full Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editVolunteerForm.name}
+                    onChange={(e) => setEditVolunteerForm(prev => ({ ...prev, name: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  />
+                </div>
+
+                {/* Email */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email Address <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={editVolunteerForm.email}
+                    onChange={(e) => setEditVolunteerForm(prev => ({ ...prev, email: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">This is the volunteer&apos;s login email</p>
+                </div>
+
+                {/* Phone or Signal */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Phone or Signal Handle
+                  </label>
+                  <input
+                    type="text"
+                    value={editVolunteerForm.phone}
+                    onChange={(e) => setEditVolunteerForm(prev => ({ ...prev, phone: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                    placeholder="919-555-1234 or @signal_handle"
+                  />
+                </div>
+
+                {/* Primary Language */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Primary Language
+                  </label>
+                  <select
+                    value={editVolunteerForm.primaryLanguage}
+                    onChange={(e) => setEditVolunteerForm(prev => ({ ...prev, primaryLanguage: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  >
+                    <option value="English">English</option>
+                    <option value="Spanish">Spanish</option>
+                    <option value="Mandarin">Mandarin</option>
+                    <option value="French">French</option>
+                    <option value="Vietnamese">Vietnamese</option>
+                    <option value="Arabic">Arabic</option>
+                    <option value="Korean">Korean</option>
+                    <option value="Hindi">Hindi</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+
+                {/* Other Languages */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Other Languages
+                  </label>
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {editVolunteerForm.otherLanguages.map((lang, idx) => (
+                      <span
+                        key={idx}
+                        className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 text-sm rounded"
+                      >
+                        {lang}
+                        <button
+                          type="button"
+                          onClick={() => setEditVolunteerForm(prev => ({
+                            ...prev,
+                            otherLanguages: prev.otherLanguages.filter((_, i) => i !== idx)
+                          }))}
+                          className="text-gray-500 hover:text-red-600"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                  <select
+                    value=""
+                    onChange={(e) => {
+                      if (e.target.value && !editVolunteerForm.otherLanguages.includes(e.target.value)) {
+                        setEditVolunteerForm(prev => ({
+                          ...prev,
+                          otherLanguages: [...prev.otherLanguages, e.target.value]
+                        }));
+                      }
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  >
+                    <option value="">Add another language...</option>
+                    {['English', 'Spanish', 'Mandarin', 'French', 'Vietnamese', 'Arabic', 'Korean', 'Hindi', 'Other']
+                      .filter(lang => lang !== editVolunteerForm.primaryLanguage && !editVolunteerForm.otherLanguages.includes(lang))
+                      .map(lang => (
+                        <option key={lang} value={lang}>{lang}</option>
+                      ))
+                    }
+                  </select>
+                </div>
+
+                {/* Submit buttons */}
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={closeEditModal}
+                    disabled={savingVolunteerEdit}
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveVolunteerEdit}
+                    disabled={savingVolunteerEdit || !editVolunteerForm.name.trim() || !editVolunteerForm.email.trim()}
+                    className="flex-1 px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {savingVolunteerEdit ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

@@ -166,6 +166,16 @@ export default function Header() {
                 >
                   Schedule
                 </Link>
+                <Link
+                  href="/resources"
+                  className={`text-sm font-medium transition-colors ${
+                    pathname.startsWith('/resources')
+                      ? 'text-cyan-700'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Resources
+                </Link>
                 {['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role) && (
                   <Link
                     href="/volunteers"
@@ -375,6 +385,13 @@ export default function Header() {
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Schedule
+                </Link>
+                <Link
+                  href="/resources"
+                  className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Resources
                 </Link>
                 {['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role) && (
                   <Link
