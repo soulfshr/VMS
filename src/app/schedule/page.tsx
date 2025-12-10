@@ -403,13 +403,13 @@ export default function SchedulePage() {
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-gray-100">
-                    <th className="border-b border-r border-gray-200 px-2 py-3 text-left text-sm font-medium text-gray-600 min-w-[100px] w-[100px] sticky left-0 z-20 bg-gray-100 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">
+                    <th className="border-b border-r border-gray-200 px-2 py-3 text-left text-sm font-medium text-gray-600 min-w-[100px] w-[100px] sticky left-0 top-[130px] z-30 bg-gray-100 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">
                       County / Time
                     </th>
                     {weekDates.map(date => (
                       <th
                         key={date.toISOString()}
-                        className="border-b border-r border-gray-200 px-2 py-3 text-center text-sm font-medium text-gray-600 min-w-[120px]"
+                        className="border-b border-r border-gray-200 px-2 py-3 text-center text-sm font-medium text-gray-600 min-w-[120px] sticky top-[130px] z-20 bg-gray-100"
                       >
                         <div>{date.toLocaleDateString('en-US', { weekday: 'short' })}</div>
                         <div className="text-gray-500">
