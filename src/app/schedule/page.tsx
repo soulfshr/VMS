@@ -399,26 +399,27 @@ export default function SchedulePage() {
           </div>
         ) : scheduleData ? (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200" data-tour="schedule-grid">
-            <div className="overflow-x-auto rounded-lg">
+            {/* Sticky Header Row */}
+            <div className="sticky top-[130px] z-20 bg-gray-100 border-b border-gray-200 overflow-hidden rounded-t-lg">
+              <div className="flex">
+                <div className="min-w-[100px] w-[100px] px-2 py-3 text-left text-sm font-medium text-gray-600 border-r border-gray-200 flex-shrink-0">
+                  County / Time
+                </div>
+                {weekDates.map(date => (
+                  <div
+                    key={date.toISOString()}
+                    className="min-w-[120px] flex-1 px-2 py-3 text-center text-sm font-medium text-gray-600 border-r border-gray-200"
+                  >
+                    <div>{date.toLocaleDateString('en-US', { weekday: 'short' })}</div>
+                    <div className="text-gray-500">
+                      {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="overflow-x-auto">
               <table className="w-full border-collapse">
-                <thead>
-                  <tr className="bg-gray-100">
-                    <th className="border-b border-r border-gray-200 px-2 py-3 text-left text-sm font-medium text-gray-600 min-w-[100px] w-[100px] sticky left-0 top-[130px] z-30 bg-gray-100 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">
-                      County / Time
-                    </th>
-                    {weekDates.map(date => (
-                      <th
-                        key={date.toISOString()}
-                        className="border-b border-r border-gray-200 px-2 py-3 text-center text-sm font-medium text-gray-600 min-w-[120px] sticky top-[130px] z-20 bg-gray-100"
-                      >
-                        <div>{date.toLocaleDateString('en-US', { weekday: 'short' })}</div>
-                        <div className="text-gray-500">
-                          {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                        </div>
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
                 <tbody>
                   {/* Regional Lead Row - spans all counties */}
                   <tr className="bg-purple-50">
