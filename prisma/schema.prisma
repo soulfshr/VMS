@@ -184,6 +184,10 @@ model OrganizationSettings {
   // Developer-only settings
   feedbackEmail     String?   // Email address for receiving user feedback (Developer configurable)
 
+  // Email digest settings
+  weeklyDigestEnabled  Boolean  @default(false)  // Send weekly schedule digest email on Sundays
+  weeklyDigestSendHour Int      @default(18)     // Hour to send (0-23 in ET), default 6 PM
+
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }

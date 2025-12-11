@@ -222,7 +222,7 @@ export default function CoordinatorSettingsPage() {
               <div>
                 <span className="font-medium text-gray-900">Simple - Leaders Only</span>
                 <p className="text-sm text-gray-500 mt-0.5">
-                  Hide volunteer counts on schedule. Only show Regional Lead, Dispatcher, and Zone Lead roles.
+                  Hide volunteer counts on schedule. Only show Dispatch Coordinator, Dispatcher, and Zone Lead roles.
                   Non-qualified users cannot see or sign up for shifts.
                 </p>
               </div>

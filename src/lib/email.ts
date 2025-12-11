@@ -1095,3 +1095,172 @@ export async function sendSightingNotificationToDispatchers(
     }
   }
 }
+
+// ============================================
+// WEEKLY SCHEDULE DIGEST
+// ============================================
+
+export interface WeeklyDigestData {
+  weekStart: Date;
+  weekEnd: Date;
+  days: Array<{
+    date: Date;
+    dateStr: string;
+    regionalLead: { name: string; isPrimary: boolean } | null;
+    dispatchers: Array<{
+      county: string;
+      name: string | null;
+      isBackup: boolean;
+    }>;
+    zoneCoverage: {
+      covered: number;
+      total: number;
+    };
+  }>;
+  totalShifts: number;
+  positionsNeeded: number;
+}
+
+interface WeeklyDigestEmailParams {
+  to: string;
+  recipientName: string;
+  weekStartDate: Date;
+  weekEndDate: Date;
+  scheduleData: WeeklyDigestData;
+  unsubscribeToken?: string;
+}
+
+/**
+ * Send weekly schedule digest email
+ * Sent on Sundays showing the upcoming week's schedule
+ */
+export async function sendWeeklyDigestEmail(params: WeeklyDigestEmailParams): Promise<void> {
+  const branding = await getBranding();
+
+  if (!isEmailConfigured(branding)) {
+    console.log('[Email] SES not configured, skipping weekly digest email');
+    return;
+  }
+
+  const { to, recipientName, weekStartDate, weekEndDate, scheduleData, unsubscribeToken } = params;
+
+  // Format date range for subject
+  const startStr = weekStartDate.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    timeZone: ORG_TIMEZONE,
+  });
+  const endStr = weekEndDate.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    timeZone: ORG_TIMEZONE,
+  });
+
+  // Build day rows HTML
+  const dayRowsHtml = scheduleData.days.map(day => {
+    const regionalLeadText = day.regionalLead
+      ? `${day.regionalLead.name}${day.regionalLead.isPrimary ? '' : ' (Backup)'}`
+      : '<span style="color: #dc2626;">(NEEDED)</span>';
+
+    const dispatcherLines = day.dispatchers.map(d => {
+      const dispatcherText = d.name || '<span style="color: #dc2626;">(NEEDED)</span>';
+      return `<div style="font-size: 13px; margin: 2px 0;">${escapeHtml(d.county)}: ${d.name ? escapeHtml(d.name) : dispatcherText}</div>`;
+    }).join('');
+
+    const coverageColor = day.zoneCoverage.covered === day.zoneCoverage.total
+      ? '#059669' // Green
+      : day.zoneCoverage.covered > 0
+        ? '#d97706' // Amber
+        : '#dc2626'; // Red
+
+    return `
+      <tr>
+        <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; vertical-align: top;">
+          <div style="font-weight: 600; color: #374151;">${escapeHtml(day.dateStr)}</div>
+        </td>
+        <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; vertical-align: top;">
+          ${regionalLeadText}
+        </td>
+        <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; vertical-align: top;">
+          ${dispatcherLines}
+        </td>
+        <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; vertical-align: top; text-align: center;">
+          <span style="color: ${coverageColor}; font-weight: 600;">
+            ${day.zoneCoverage.covered}/${day.zoneCoverage.total}
+          </span>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  // Summary box
+  const hasGaps = scheduleData.positionsNeeded > 0;
+  const summaryColor = hasGaps ? '#fef2f2' : '#ecfdf5';
+  const summaryBorder = hasGaps ? '#dc2626' : '#059669';
+  const summaryTextColor = hasGaps ? '#991b1b' : '#065f46';
+
+  try {
+    await sendEmail({
+      to,
+      subject: `[${branding.orgName}] Weekly Schedule: ${startStr} - ${endStr}`,
+      fromName: branding.emailFromName,
+      fromAddress: branding.emailFromAddress,
+      replyTo: branding.emailReplyTo,
+      unsubscribeToken,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto;">
+          <div style="background: #0891b2; color: white; padding: 16px 24px; border-radius: 8px 8px 0 0;">
+            <h2 style="margin: 0;">Weekly Schedule Overview</h2>
+            <p style="margin: 8px 0 0 0; font-size: 14px; opacity: 0.9;">${escapeHtml(startStr)} - ${escapeHtml(endStr)}</p>
+          </div>
+
+          <div style="border: 1px solid #e5e7eb; border-top: none; padding: 24px; border-radius: 0 0 8px 8px;">
+            <p>Hi ${escapeHtml(recipientName)},</p>
+            <p>Here's the schedule overview for the upcoming week:</p>
+
+            <!-- Summary Box -->
+            <div style="background: ${summaryColor}; padding: 16px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${summaryBorder};">
+              <h3 style="margin-top: 0; color: ${summaryTextColor};">Week Summary</h3>
+              <p style="margin: 8px 0;"><strong>Total Shifts:</strong> ${scheduleData.totalShifts}</p>
+              <p style="margin: 8px 0;"><strong>Positions Needed:</strong> ${scheduleData.positionsNeeded > 0 ? `<span style="color: #dc2626;">${scheduleData.positionsNeeded}</span>` : '<span style="color: #059669;">All covered!</span>'}</p>
+            </div>
+
+            <!-- Schedule Table -->
+            <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin: 20px 0;">
+              <thead>
+                <tr style="background: #f3f4f6;">
+                  <th style="padding: 12px; text-align: left; font-weight: 600; color: #374151; border-bottom: 2px solid #e5e7eb;">Day</th>
+                  <th style="padding: 12px; text-align: left; font-weight: 600; color: #374151; border-bottom: 2px solid #e5e7eb;">Dispatch Coord</th>
+                  <th style="padding: 12px; text-align: left; font-weight: 600; color: #374151; border-bottom: 2px solid #e5e7eb;">Dispatchers</th>
+                  <th style="padding: 12px; text-align: center; font-weight: 600; color: #374151; border-bottom: 2px solid #e5e7eb;">Zones</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${dayRowsHtml}
+              </tbody>
+            </table>
+
+            <!-- CTA Button -->
+            <div style="text-align: center; margin: 24px 0;">
+              <a href="${APP_URL}/schedule"
+                 style="display: inline-block; background: #0891b2; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold;">
+                View Full Schedule
+              </a>
+            </div>
+
+            <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+              This is an automated weekly digest from ${escapeHtml(branding.orgName)}.<br>
+              You're receiving this because you are a coordinator, dispatcher, or administrator.
+            </p>
+
+            ${getEmailFooter(unsubscribeToken, branding)}
+          </div>
+        </div>
+      `,
+    });
+    logger.email('Weekly digest email sent', { to }).catch(() => {});
+  } catch (error) {
+    logger.error('EMAIL', 'Failed to send weekly digest email', { to, error: error instanceof Error ? error.message : 'Unknown' }).catch(() => {});
+    throw error; // Re-throw so caller can track failures
+  }
+}

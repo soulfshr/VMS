@@ -6,15 +6,45 @@ This document tracks user feedback for triage and resolution.
 
 ## Open Issues
 
-### 1. Blurry button text in guided tour
-- **Date Reported:** 2024-12-10
+### 1. Blurry "Next" button in guided tour (recurring)
+- **Date Reported:** 2024-12-11
 - **Reporter:** User
-- **Location:** Guided tour modal (Coverage Legend step, 3 of 5)
-- **Issue:** Text in "Back" and "Next" buttons appears blurry
-- **Screenshot:** Shows tour step with buttons that have blurry text
-- **Status:** Resolved
-- **Priority:** Low (cosmetic)
-- **Notes:** May be related to font rendering, button styling, or tour library CSS
+- **Location:** Dashboard welcome tour modal
+- **Description:** The "Next" button text appears blurry in the onboarding tour popup
+- **Screenshot:** Attached - "Blurry Next button"
+- **Status:** ✅ Resolved (2024-12-11)
+- **Priority:** Medium
+- **Notes:** Fixed by adding explicit CSS overrides for text-shadow, webkit-text-stroke, and filter properties
+
+### 2. Schedule page: day/date bar not sticky
+- **Date Reported:** 2024-12-11
+- **Reporter:** User
+- **Location:** /schedule page
+- **Description:** The filter section is sticky when scrolling, but the day/date header row doesn't stick. When scrolling down the schedule, users lose context of which day each column represents.
+- **Screenshot:** Attached - "Sticky filter window, no sticky day/date bar"
+- **Status:** ✅ Resolved (2024-12-11)
+- **Priority:** High
+- **Notes:** Fixed with internal scroll container and sticky thead within the table
+
+### 3. Terminology: "Regional Lead" should be "Dispatch Coordinator"
+- **Date Reported:** 2024-12-11
+- **Reporter:** User
+- **Location:** Schedule page, Dispatch Process documentation
+- **Description:** The role is labeled as "Regional Lead" but should be "Dispatch Coordinator" per organization terminology
+- **Screenshot:** Attached - "Should be Dispatch Coordinator"
+- **Status:** ✅ Resolved (2024-12-11)
+- **Priority:** Medium
+- **Notes:** Updated UI labels in schedule page, modal, settings, email templates, and API messages. Internal code/database names remain unchanged.
+
+### 4. Coordinator Console right margin issues
+- **Date Reported:** 2024-12-11
+- **Reporter:** User
+- **Location:** /coordinator page
+- **Description:** Layout/spacing issues with right margins on the Coordinator Console. Content appears cramped or misaligned.
+- **Screenshot:** Attached - "Coordinator Console right margins"
+- **Status:** ✅ Resolved (2024-12-11)
+- **Priority:** Medium
+- **Notes:** Fixed by adding responsive mobile navigation - sidebar hidden on mobile, replaced with horizontal tab navigation
 
 ---
 
@@ -27,6 +57,46 @@ This document tracks user feedback for triage and resolution.
 - **Status:** Backlog
 - **Priority:** Medium
 - **Notes:** Could include onboarding videos, role-specific training, certification quizzes
+
+### 2. Daily zone-level documents for dispatchers
+- **Date Requested:** 2024-12-10
+- **Requester:** User
+- **Description:** Zone-level documents viewable by dispatchers for daily operations
+- **Status:** Backlog
+- **Priority:** Medium
+- **Notes:** Could include zone briefings, special instructions, or operational notes
+
+### 3. Daily schedule email reminder
+- **Date Requested:** 2024-12-10
+- **Requester:** User
+- **Description:** Automated daily email showing the schedule for the next day
+- **Status:** Backlog
+- **Priority:** Medium
+- **Notes:** Could be sent evening before to dispatchers/coordinators with next day's assignments
+
+### 4. Weekly schedule email digest
+- **Date Requested:** 2024-12-10
+- **Requester:** User
+- **Description:** Weekly email sent on Sundays showing the schedule for the upcoming week
+- **Status:** ✅ Implemented (2024-12-11)
+- **Priority:** Medium
+- **Notes:** Implemented with configurable send time. Enable in Admin Settings → Email Notifications
+
+### 5. Smart dispatcher staffing recommendations
+- **Date Requested:** 2024-12-10
+- **Requester:** User
+- **Description:** Algorithm to recommend optimal number of dispatchers based on historical data
+- **Status:** Backlog
+- **Priority:** Low
+- **Notes:** Could analyze past coverage, incident volume, volunteer availability patterns
+
+### 6. MFA / Authenticator support
+- **Date Requested:** 2024-12-10
+- **Requester:** User
+- **Description:** Add multi-factor authentication support for enhanced account security
+- **Status:** Backlog
+- **Priority:** Medium
+- **Notes:** Could support TOTP authenticator apps (Google Authenticator, Authy, etc.), SMS backup codes
 
 ---
 

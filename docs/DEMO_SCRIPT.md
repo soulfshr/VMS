@@ -99,14 +99,14 @@
 
 **Show:**
 - Calendar grid view
-- Regional Lead row (if populated)
+- Dispatch Coordinator row (if populated)
 - Dispatcher coverage row (varies by scheduling mode)
 - Click into a day to see shift details
 
 **Talking Points:**
 - "Weekly schedule gives dispatchers and coordinators a bird's-eye view"
 - "See coverage gaps at a glance"
-- "Dispatcher and Regional Lead assignments visible here"
+- "Dispatcher and Dispatch Coordinator assignments visible here"
 - "Dispatchers and Coordinators have identical access to all scheduling features"
 
 ---

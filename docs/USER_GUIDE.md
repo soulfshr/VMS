@@ -306,7 +306,7 @@ The **Schedule** page provides a weekly calendar view showing:
 - Training sessions you're registered for
 
 ### For Coordinators/Dispatchers/Admins:
-- **Regional Lead Assignments** - Who's the regional lead each day
+- **Dispatch Coordinator Assignments** - Who's the dispatch coordinator each day
 - **Dispatcher Assignments** - Who's on dispatch duty (display varies by mode)
 - **Zone Lead Assignments** - Zone leads assigned to each shift
 - Filter by zone to see specific area coverage
@@ -317,7 +317,7 @@ The Schedule page displays dispatchers differently based on the admin-configured
 
 | Mode | Display |
 |------|---------|
-| **Regional** | A dedicated "🎧 Dispatcher (Regional)" section appears between the Regional Lead row and county sections, showing one dispatcher per time block for all counties |
+| **Regional** | A dedicated "🎧 Dispatcher (Regional)" section appears between the Dispatch Coordinator row and county sections, showing one dispatcher per time block for all counties |
 | **County** | A "🎧 Dispatcher" row appears under each county header, showing that county's dispatcher for each day |
 | **Zone** | Dispatchers appear inside each shift cell alongside zone assignments (original behavior) |
 
@@ -505,7 +505,7 @@ The VMS supports three dispatcher scheduling modes to match varying activity lev
 
 | Mode | Activity Level | Description |
 |------|----------------|-------------|
-| **Regional** | Low | One dispatcher covers all counties per time block. Shows a dedicated "Dispatcher" row between Regional Lead and county sections. |
+| **Regional** | Low | One dispatcher covers all counties per time block. Shows a dedicated "Dispatcher" row between Dispatch Coordinator and county sections. |
 | **County** | Medium | One dispatcher per county per time block. Shows a dispatcher row under each county header. |
 | **Zone** | High (default) | Dispatcher shown per cell alongside zone assignments. This is the original behavior. |
 

@@ -14,6 +14,16 @@ interface Settings {
   emailFromAddress: string;
   emailReplyTo: string;
   emailFooter: string;
+  // Email digest settings
+  weeklyDigestEnabled: boolean;
+  weeklyDigestSendHour: number;
+}
+
+// Helper to format hour as readable time
+function formatHour(hour: number): string {
+  const period = hour >= 12 ? 'PM' : 'AM';
+  const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+  return `${displayHour}:00 ${period}`;
 }
 
 export default function AdminSettingsPage() {
@@ -69,6 +79,62 @@ export default function AdminSettingsPage() {
       const updated = await res.json();
       setSettings(updated);
       setMessage({ type: 'success', text: 'Settings updated successfully' });
+    } catch (err) {
+      console.error('Error updating settings:', err);
+      setMessage({ type: 'error', text: 'Failed to update settings' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleToggleWeeklyDigest = async () => {
+    if (!settings) return;
+
+    setIsSaving(true);
+    setMessage(null);
+
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          weeklyDigestEnabled: !settings.weeklyDigestEnabled,
+        }),
+      });
+
+      if (!res.ok) throw new Error('Failed to update settings');
+
+      const updated = await res.json();
+      setSettings(updated);
+      setMessage({ type: 'success', text: 'Weekly digest setting updated' });
+    } catch (err) {
+      console.error('Error updating settings:', err);
+      setMessage({ type: 'error', text: 'Failed to update settings' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleUpdateDigestSendHour = async (hour: number) => {
+    if (!settings) return;
+
+    setIsSaving(true);
+    setMessage(null);
+
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          weeklyDigestSendHour: hour,
+        }),
+      });
+
+      if (!res.ok) throw new Error('Failed to update settings');
+
+      const updated = await res.json();
+      setSettings(updated);
+      setMessage({ type: 'success', text: `Weekly digest will now send at ${formatHour(hour)} ET` });
     } catch (err) {
       console.error('Error updating settings:', err);
       setMessage({ type: 'error', text: 'Failed to update settings' });
@@ -480,6 +546,84 @@ export default function AdminSettingsPage() {
                   placeholder="RippleVMS Team"
                 />
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Email Notifications Settings */}
+      <div className="mt-8">
+        <h2 className="text-xl font-bold text-gray-900 mb-4">Email Notifications</h2>
+        <p className="text-gray-600 mb-4">
+          Configure automated email notifications sent by the system.
+        </p>
+        <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-200">
+          {/* Weekly Schedule Digest */}
+          <div className="p-6">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Weekly Schedule Digest
+                </h3>
+                <p className="text-sm text-gray-500 mt-1 max-w-xl">
+                  Send a weekly email every Sunday with the upcoming week&apos;s schedule (Mon-Sun).
+                  The digest includes dispatcher assignments, zone coverage, and any gaps that need to be filled.
+                </p>
+                <p className="text-sm text-gray-500 mt-2">
+                  Recipients: Coordinators, Dispatchers, and Administrators who have email notifications enabled.
+                </p>
+              </div>
+              <div className="ml-6">
+                <button
+                  onClick={handleToggleWeeklyDigest}
+                  disabled={isSaving}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    settings?.weeklyDigestEnabled ? 'bg-cyan-600' : 'bg-gray-200'
+                  } ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      settings?.weeklyDigestEnabled ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+            <div className="mt-4 flex items-center gap-4">
+              <span
+                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                  settings?.weeklyDigestEnabled
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-gray-100 text-gray-800'
+                }`}
+              >
+                {settings?.weeklyDigestEnabled ? 'Enabled' : 'Disabled'}
+              </span>
+              {settings?.weeklyDigestEnabled && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600">Send at:</span>
+                  <select
+                    value={settings?.weeklyDigestSendHour ?? 18}
+                    onChange={(e) => handleUpdateDigestSendHour(parseInt(e.target.value))}
+                    disabled={isSaving}
+                    className={`px-3 py-1.5 border border-gray-300 rounded-lg text-sm ${
+                      isSaving ? 'bg-gray-50 text-gray-500 cursor-not-allowed' : 'bg-white'
+                    }`}
+                  >
+                    {/* Common hours for weekly digest */}
+                    <option value={8}>8:00 AM ET</option>
+                    <option value={9}>9:00 AM ET</option>
+                    <option value={10}>10:00 AM ET</option>
+                    <option value={12}>12:00 PM ET</option>
+                    <option value={14}>2:00 PM ET</option>
+                    <option value={16}>4:00 PM ET</option>
+                    <option value={17}>5:00 PM ET</option>
+                    <option value={18}>6:00 PM ET</option>
+                    <option value={19}>7:00 PM ET</option>
+                    <option value={20}>8:00 PM ET</option>
+                  </select>
+                </div>
+              )}
             </div>
           </div>
         </div>

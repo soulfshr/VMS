@@ -63,6 +63,9 @@ export async function PUT(request: Request) {
       // Feature flag overrides
       featureTrainings,
       featureSightings,
+      // Email digest settings
+      weeklyDigestEnabled,
+      weeklyDigestSendHour,
     } = body;
 
     // DEVELOPER role can only modify feature flags
@@ -128,6 +131,14 @@ export async function PUT(request: Request) {
       }
     }
 
+    // Validate weekly digest send hour
+    if (weeklyDigestSendHour !== undefined) {
+      const hour = parseInt(weeklyDigestSendHour);
+      if (isNaN(hour) || hour < 0 || hour > 23) {
+        return NextResponse.json({ error: 'Send hour must be between 0 and 23' }, { status: 400 });
+      }
+    }
+
     // Get or create settings singleton
     let settings = await prisma.organizationSettings.findFirst();
     if (!settings) {
@@ -163,6 +174,9 @@ export async function PUT(request: Request) {
           // Feature flags can be null (reset to default), true, or false
           ...(featureTrainings !== undefined && { featureTrainings }),
           ...(featureSightings !== undefined && { featureSightings }),
+          // Email digest settings
+          ...(weeklyDigestEnabled !== undefined && { weeklyDigestEnabled }),
+          ...(weeklyDigestSendHour !== undefined && { weeklyDigestSendHour: parseInt(weeklyDigestSendHour) }),
         },
       });
     }

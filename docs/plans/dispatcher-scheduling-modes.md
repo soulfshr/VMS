@@ -20,7 +20,7 @@ The VMS needs an admin setting to toggle between:
 
 1. Add `dispatcherSchedulingMode` admin setting: `'PER_COUNTY'` | `'CONSOLIDATED'`
 2. Allow `'ALL'` as a valid county value for dispatcher assignments
-3. When in CONSOLIDATED mode, show a dedicated "Dispatcher" row between Regional Lead and counties
+3. When in CONSOLIDATED mode, show a dedicated "Dispatcher" row between Dispatch Coordinator and counties
 
 ### Schedule Grid Visualization
 
@@ -80,7 +80,7 @@ Dispatcher Scheduling
 ### 4. Schedule UI Changes
 
 When mode is CONSOLIDATED:
-- Add a new "Dispatcher" section between Regional Lead row and county sections
+- Add a new "Dispatcher" section between Dispatch Coordinator row and county sections
 - Show time block rows with dispatcher for each day
 - Hide dispatcher info from individual county cells (show only zones)
 

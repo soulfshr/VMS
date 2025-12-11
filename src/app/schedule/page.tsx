@@ -383,7 +383,7 @@ export default function SchedulePage() {
             </div>
             <div className="flex items-center gap-2">
               <span>🌐</span>
-              <span className="text-gray-600">Regional Lead</span>
+              <span className="text-gray-600">Dispatch Coordinator</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-amber-600 font-medium text-xs">Need X</span>
@@ -399,34 +399,35 @@ export default function SchedulePage() {
           </div>
         ) : scheduleData ? (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200" data-tour="schedule-grid">
-            {/* Sticky Header Row */}
-            <div className="sticky top-[130px] z-20 bg-gray-100 border-b border-gray-200 overflow-hidden rounded-t-lg">
-              <div className="flex">
-                <div className="min-w-[100px] w-[100px] px-2 py-3 text-left text-sm font-medium text-gray-600 border-r border-gray-200 flex-shrink-0">
-                  County / Time
-                </div>
-                {weekDates.map(date => (
-                  <div
-                    key={date.toISOString()}
-                    className="min-w-[120px] flex-1 px-2 py-3 text-center text-sm font-medium text-gray-600 border-r border-gray-200"
-                  >
-                    <div>{date.toLocaleDateString('en-US', { weekday: 'short' })}</div>
-                    <div className="text-gray-500">
-                      {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="overflow-x-auto">
+            {/* Scrollable container with max-height for internal scroll with sticky header */}
+            <div className="overflow-auto max-h-[calc(100vh-220px)]">
               <table className="w-full border-collapse">
+                {/* Sticky Header Row - sticks within scroll container */}
+                <thead className="sticky top-0 z-20">
+                  <tr className="bg-gray-100">
+                    <th className="min-w-[100px] w-[100px] px-2 py-3 text-left text-sm font-medium text-gray-600 border-b border-r border-gray-200 bg-gray-100 sticky left-0 z-30 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">
+                      County / Time
+                    </th>
+                    {weekDates.map(date => (
+                      <th
+                        key={date.toISOString()}
+                        className="min-w-[120px] px-2 py-3 text-center text-sm font-medium text-gray-600 border-b border-r border-gray-200 bg-gray-100"
+                      >
+                        <div>{date.toLocaleDateString('en-US', { weekday: 'short' })}</div>
+                        <div className="text-gray-500 font-normal">
+                          {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        </div>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
                 <tbody>
-                  {/* Regional Lead Row - spans all counties */}
+                  {/* Dispatch Coordinator Row - spans all counties */}
                   <tr className="bg-purple-50">
                     <td className="border-b border-r border-purple-200 px-2 py-2 font-semibold text-purple-800 bg-purple-100 w-[100px] sticky left-0 z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">
                       <div className="flex items-center gap-1">
                         <span>🌐</span>
-                        <span className="text-sm">Regional Lead</span>
+                        <span className="text-sm">Dispatch Coord</span>
                       </div>
                       <div className="text-xs font-normal text-purple-600 mt-0.5">All day</div>
                     </td>

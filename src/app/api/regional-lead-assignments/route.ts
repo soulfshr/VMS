@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!regionalLeadRole) {
-      return NextResponse.json({ error: 'Regional Lead role not configured' }, { status: 500 });
+      return NextResponse.json({ error: 'Dispatch Coordinator role not configured' }, { status: 500 });
     }
 
     // Check if target user has REGIONAL_LEAD qualification
@@ -117,8 +117,8 @@ export async function POST(request: NextRequest) {
     if (targetUser.userQualifications.length === 0) {
       return NextResponse.json(
         { error: isSelfSignup
-          ? 'You do not have Regional Lead qualification'
-          : 'User does not have Regional Lead qualification'
+          ? 'You do not have Dispatch Coordinator qualification'
+          : 'User does not have Dispatch Coordinator qualification'
         },
         { status: 403 }
       );
@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
     // Check for unique constraint violation
     if ((error as { code?: string }).code === 'P2002') {
       return NextResponse.json(
-        { error: 'User already assigned as Regional Lead for this date' },
+        { error: 'User already assigned as Dispatch Coordinator for this date' },
         { status: 409 }
       );
     }

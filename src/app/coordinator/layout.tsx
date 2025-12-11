@@ -55,9 +55,32 @@ export default function CoordinatorLayout({
   return (
     <div className="min-h-[calc(100vh-200px)] bg-gray-50">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
+        {/* Mobile Navigation - horizontal tabs */}
+        <div className="md:hidden mb-6">
+          <nav className="flex gap-2 overflow-x-auto pb-2">
+            {coordinatorNavItems.map(item => {
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                    isActive
+                      ? 'bg-cyan-600 text-white'
+                      : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  <span>{item.icon}</span>
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+
         <div className="flex gap-8">
-          {/* Sidebar */}
-          <aside className="w-64 shrink-0">
+          {/* Sidebar - hidden on mobile */}
+          <aside className="hidden md:block w-64 shrink-0">
             <div className="bg-white rounded-xl border border-gray-200 p-4 sticky top-8">
               <h2 className="text-lg font-semibold text-gray-900 mb-4 px-2">
                 Coordinator Console

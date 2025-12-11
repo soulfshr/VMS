@@ -89,7 +89,7 @@ export default function RegionalLeadModal({
   };
 
   const handleRemove = async (assignmentId: string) => {
-    if (!confirm('Remove this Regional Lead assignment?')) return;
+    if (!confirm('Remove this Dispatch Coordinator assignment?')) return;
 
     setSaving(true);
     setError(null);
@@ -157,7 +157,7 @@ export default function RegionalLeadModal({
           <div className="flex items-center gap-2">
             <span className="text-2xl">🌐</span>
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">Regional Lead</h2>
+              <h2 className="text-lg font-semibold text-gray-900">Dispatch Coordinator</h2>
               <p className="text-sm text-gray-600">{formatDate(date)}</p>
             </div>
           </div>
@@ -204,7 +204,7 @@ export default function RegionalLeadModal({
               ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-500">No Regional Leads assigned for this day</p>
+            <p className="text-sm text-gray-500">No Dispatch Coordinators assigned for this day</p>
           )}
         </div>
 
@@ -243,7 +243,7 @@ export default function RegionalLeadModal({
                   className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
                 />
                 <label htmlFor="isPrimary" className="text-sm text-gray-700">
-                  Primary Regional Lead
+                  Primary Dispatch Coordinator
                 </label>
               </div>
 
@@ -263,13 +263,13 @@ export default function RegionalLeadModal({
                 disabled={!selectedUserId || saving}
                 className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
               >
-                {saving ? 'Saving...' : 'Add Regional Lead'}
+                {saving ? 'Saving...' : 'Add Dispatch Coordinator'}
               </button>
             </>
           ) : (
             <p className="text-sm text-gray-500">
               {qualifiedUsers.length === 0
-                ? 'No volunteers have the Regional Lead qualification'
+                ? 'No volunteers have the Dispatch Coordinator qualification'
                 : 'All qualified volunteers are already assigned'}
             </p>
           )}
