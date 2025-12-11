@@ -432,9 +432,57 @@ GET    /api/admin/training-modules/[id]/enrollments   # View all enrollments
 
 5. **Considerations:**
    - Max file size: ~500MB per video (adjust S3 upload limits)
-   - Supported formats: MP4 (H.264), WebM
+   - Supported formats: MP4 (H.264) only - universal browser/mobile support
    - Bandwidth costs: ~$0.09/GB (monitor usage)
    - CloudFront CDN **not required** for our scale (~100 volunteers, regional audience)
+
+### Video Format Requirements
+
+**Current approach: Validation only** (zero transcoding costs). Admins must upload web-ready MP4 files.
+
+**Required format:**
+- Container: MP4
+- Video codec: H.264/AVC
+- Audio codec: AAC
+- Resolution: 720p (1280x720) recommended
+- Max file size: 500MB
+
+**Recommended export settings (for HandBrake/VLC/Premiere):**
+```
+Format: MP4
+Video Encoder: H.264 (x264)
+Quality: RF 23 (or ~1500 kbps for 720p)
+Audio: AAC, 128 kbps, Stereo
+```
+
+**Upload validation:**
+- Check MIME type: `video/mp4`
+- Validate file header (first bytes = `ftyp`)
+- Display clear error if wrong format: "Please convert to MP4 (H.264) using HandBrake"
+
+**Result:** ~10-15 MB per minute, universal playback, zero transcoding costs
+
+### Future: Auto-Transcoding Options
+
+If manual conversion becomes burdensome, consider these alternatives:
+
+| Option | Cost per 10-min video | Setup | Notes |
+|--------|----------------------|-------|-------|
+| **Manual (current)** | $0.00 | None | Admin uses HandBrake |
+| **Lambda + FFmpeg** | ~$0.003 | Medium | Serverless, S3 trigger, FFmpeg layer |
+| **AWS MediaConvert** | ~$0.15 | Easy | Managed service, no infra |
+
+**Lambda + FFmpeg implementation (if needed later):**
+1. Create Lambda function with FFmpeg layer
+2. Trigger on S3 upload to `training-videos/raw/`
+3. Transcode to H.264/720p
+4. Output to `training-videos/processed/`
+5. Update database record with processed URL
+
+**MediaConvert implementation (if needed later):**
+1. Create MediaConvert job template (H.264, 720p, AAC)
+2. Trigger via Lambda on S3 upload
+3. Output to same bucket with `-processed` suffix
 
 ### Quiz Security
 - Don't send correct answers to client until after submission
@@ -537,7 +585,7 @@ GET    /api/admin/training-modules/[id]/enrollments   # View all enrollments
 4. ~~**SCORM compliance?**~~ ✅ **Not needed** - Custom system, internal audience only
 5. **Mobile app?** Offline viewing support for videos?
 6. ~~**CloudFront CDN?**~~ ✅ **Not needed** - Scale doesn't require it (~100 users)
-7. **Video transcoding?** Auto-convert uploads to web-friendly format?
+7. ~~**Video transcoding?**~~ ✅ **Decided:** No auto-transcoding (cost savings). Validate uploads are MP4/H.264. Admins pre-convert using free tools (HandBrake, VLC)
 
 ---
 

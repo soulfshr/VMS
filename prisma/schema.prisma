@@ -117,6 +117,7 @@ model QualifiedRole {
   shiftTypeRequirements ShiftTypeQualifiedRoleRequirement[]
   trainingTypeGrants    TrainingType[] @relation("TrainingGrantsQualifiedRole")
   shiftVolunteers       ShiftVolunteer[]
+  trainingModuleGrants  TrainingModule[] @relation("ModuleGrantsQualifiedRole")
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -879,4 +880,203 @@ model AlertState {
 
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+}
+
+// ============================================
+// TRAINING CENTER (Interactive Training Modules)
+// ============================================
+
+enum SectionType {
+  VIDEO
+  TEXT
+  QUIZ
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+  MULTI_SELECT
+}
+
+enum ModuleEnrollmentStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+// Training Module - a complete training course
+model TrainingModule {
+  id              String    @id @default(cuid())
+  title           String
+  description     String?   @db.Text
+  thumbnailUrl    String?   // S3 URL for module thumbnail
+  estimatedMinutes Int      @default(30)
+  isRequired      Boolean   @default(false)
+  isPublished     Boolean   @default(false)
+  sortOrder       Int       @default(0)
+
+  // Optional: Grant qualification upon completion
+  grantsQualifiedRoleId String?
+  grantsQualifiedRole   QualifiedRole? @relation("ModuleGrantsQualifiedRole", fields: [grantsQualifiedRoleId], references: [id])
+
+  // Relations
+  sections        ModuleSection[]
+  enrollments     ModuleEnrollment[]
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+// Module Section - a segment within a module (video, text, or quiz)
+model ModuleSection {
+  id              String      @id @default(cuid())
+  moduleId        String
+  module          TrainingModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  title           String
+  type            SectionType
+  sortOrder       Int         @default(0)
+
+  // For VIDEO sections
+  videoUrl        String?     // S3 presigned URL path
+  videoDuration   Int?        // Duration in seconds
+
+  // For TEXT sections
+  textContent     String?     @db.Text  // Markdown/HTML content
+
+  // For QUIZ sections
+  quiz            ModuleQuiz?
+
+  // Progress tracking
+  progress        SectionProgress[]
+
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([moduleId])
+}
+
+// Quiz configuration for quiz sections
+model ModuleQuiz {
+  id              String        @id @default(cuid())
+  sectionId       String        @unique
+  section         ModuleSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  passingScore    Int           @default(80)  // Percentage required to pass
+  maxAttempts     Int?          // null = unlimited attempts
+  shuffleQuestions Boolean      @default(false)
+
+  // Relations
+  questions       QuizQuestion[]
+  attempts        QuizAttempt[]
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+// Individual quiz question
+model QuizQuestion {
+  id              String        @id @default(cuid())
+  quizId          String
+  quiz            ModuleQuiz    @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  questionText    String        @db.Text
+  type            QuestionType
+  points          Int           @default(1)
+  sortOrder       Int           @default(0)
+
+  // Explanation shown after answering
+  explanation     String?       @db.Text
+
+  // Relations
+  options         QuizOption[]
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([quizId])
+}
+
+// Answer options for quiz questions
+model QuizOption {
+  id              String        @id @default(cuid())
+  questionId      String
+  question        QuizQuestion  @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  optionText      String
+  isCorrect       Boolean       @default(false)
+  sortOrder       Int           @default(0)
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([questionId])
+}
+
+// User enrollment in a training module
+model ModuleEnrollment {
+  id              String                @id @default(cuid())
+  userId          String
+  moduleId        String
+  module          TrainingModule        @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  status          ModuleEnrollmentStatus @default(NOT_STARTED)
+  startedAt       DateTime?
+  completedAt     DateTime?
+  lastAccessedAt  DateTime?
+
+  // Progress tracking
+  sectionProgress SectionProgress[]
+
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  @@unique([userId, moduleId])
+  @@index([userId])
+  @@index([moduleId])
+}
+
+// Per-section progress tracking
+model SectionProgress {
+  id              String          @id @default(cuid())
+  enrollmentId    String
+  enrollment      ModuleEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  sectionId       String
+  section         ModuleSection   @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  isCompleted     Boolean         @default(false)
+  completedAt     DateTime?
+
+  // For video sections - track watch progress
+  videoProgress   Int?            // Percentage watched (0-100)
+  lastPosition    Int?            // Last position in seconds
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@unique([enrollmentId, sectionId])
+  @@index([enrollmentId])
+  @@index([sectionId])
+}
+
+// Quiz attempt history
+model QuizAttempt {
+  id              String        @id @default(cuid())
+  quizId          String
+  quiz            ModuleQuiz    @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  userId          String
+
+  score           Int           // Points earned
+  maxScore        Int           // Maximum possible points
+  percentage      Int           // Score as percentage
+  passed          Boolean
+
+  answers         Json          // Array of { questionId, selectedOptionIds, isCorrect }
+  startedAt       DateTime
+  completedAt     DateTime      @default(now())
+
+  createdAt       DateTime      @default(now())
+
+  @@index([quizId])
+  @@index([userId])
 }

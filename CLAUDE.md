@@ -32,6 +32,35 @@ This ensures https://dev-nc.ripple-vms.com always points to the latest preview d
 - Dev/Preview: `ep-steep-hall-a4jn07l3-pooler`
 - Production: `ep-frosty-wave-a4l37b2r-pooler`
 
+### Waking Up Neon Databases
+
+Neon databases auto-suspend after inactivity. If `prisma db push` fails with "Can't reach database server", wake the database first by running a quick query:
+
+```bash
+# Create a temp wake script
+cat > wake-db.ts << 'EOF'
+import { PrismaNeon } from '@prisma/adapter-neon';
+import { PrismaClient } from './src/generated/prisma/client';
+
+const connectionString = 'DATABASE_URL_HERE';
+const adapter = new PrismaNeon({ connectionString });
+const prisma = new PrismaClient({ adapter });
+
+async function main() {
+  await prisma.$connect();
+  console.log('Database connected!');
+  await prisma.$disconnect();
+}
+main();
+EOF
+
+# Run it, then immediately push
+npx tsx wake-db.ts && DATABASE_URL="..." npx prisma db push
+
+# Clean up
+rm wake-db.ts
+```
+
 ## Tech Stack
 
 - Next.js 16 (App Router)
