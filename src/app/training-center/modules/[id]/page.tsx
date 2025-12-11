@@ -535,33 +535,27 @@ function SectionCard({
 
     setIsUploading(true);
     try {
-      // Get presigned URL
-      const presignedRes = await fetch('/api/training-center/upload', {
+      // Upload via FormData to our API (server-side S3 upload)
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('moduleId', moduleId);
+
+      const uploadRes = await fetch('/api/training-center/upload', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          filename: file.name,
-          contentType: file.type,
-          moduleId,
-        }),
+        body: formData,
       });
 
-      if (!presignedRes.ok) throw new Error('Failed to get upload URL');
-      const { uploadUrl, key } = await presignedRes.json();
+      if (!uploadRes.ok) {
+        const errorData = await uploadRes.json();
+        throw new Error(errorData.error || 'Upload failed');
+      }
 
-      // Upload directly to S3
-      const uploadRes = await fetch(uploadUrl, {
-        method: 'PUT',
-        body: file,
-        headers: { 'Content-Type': file.type },
-      });
-
-      if (!uploadRes.ok) throw new Error('Upload failed');
+      const { key } = await uploadRes.json();
 
       // Save the S3 key to the section
       setEditVideoUrl(key);
 
-      // Auto-save
+      // Auto-save to section
       const saveRes = await fetch(`/api/training-center/modules/${moduleId}/sections/${section.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },

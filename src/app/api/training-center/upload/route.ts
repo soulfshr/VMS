@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDbUser } from '@/lib/user';
-import { getUploadPresignedUrl } from '@/lib/s3';
+import { uploadToS3 } from '@/lib/s3';
 
-// POST /api/training-center/upload - Get presigned URL for video upload
+// POST /api/training-center/upload - Upload video file to S3
 export async function POST(request: NextRequest) {
   try {
     const user = await getDbUser();
@@ -14,21 +14,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const body = await request.json();
-    const { filename, contentType, moduleId } = body;
+    const formData = await request.formData();
+    const file = formData.get('file') as File | null;
+    const moduleId = formData.get('moduleId') as string | null;
 
-    if (!filename || !contentType) {
-      return NextResponse.json(
-        { error: 'Filename and contentType are required' },
-        { status: 400 }
-      );
+    if (!file) {
+      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
     // Validate content type
     const allowedTypes = ['video/mp4', 'video/webm', 'video/quicktime'];
-    if (!allowedTypes.includes(contentType)) {
+    if (!allowedTypes.includes(file.type)) {
       return NextResponse.json(
-        { error: 'Invalid content type. Only MP4, WebM, and MOV videos are allowed.' },
+        { error: 'Invalid file type. Only MP4, WebM, and MOV videos are allowed.' },
+        { status: 400 }
+      );
+    }
+
+    // Validate file size (100MB max)
+    const maxSize = 100 * 1024 * 1024;
+    if (file.size > maxSize) {
+      return NextResponse.json(
+        { error: 'File too large. Maximum size is 100MB.' },
         { status: 400 }
       );
     }
@@ -36,20 +43,25 @@ export async function POST(request: NextRequest) {
     // Generate unique key
     const timestamp = Date.now();
     const randomStr = Math.random().toString(36).substring(2, 8);
-    const extension = filename.split('.').pop() || 'mp4';
+    const extension = file.name.split('.').pop() || 'mp4';
     const key = `training-videos/${moduleId || 'general'}/${timestamp}-${randomStr}.${extension}`;
 
-    // Get presigned URL (15 minutes expiry for upload)
-    const uploadUrl = await getUploadPresignedUrl(key, contentType, 900);
+    // Convert file to buffer
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    // Upload to S3
+    await uploadToS3(buffer, key, file.type);
 
     return NextResponse.json({
-      uploadUrl,
       key,
+      filename: file.name,
+      size: file.size,
     });
   } catch (error) {
-    console.error('Error generating upload URL:', error);
+    console.error('Error uploading video:', error);
     return NextResponse.json(
-      { error: 'Failed to generate upload URL' },
+      { error: 'Failed to upload video' },
       { status: 500 }
     );
   }
