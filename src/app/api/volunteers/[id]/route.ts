@@ -243,7 +243,7 @@ export async function GET(
     }
 
     // Coordinators, dispatchers, and admins can view volunteer details
-    if (!['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR'].includes(user.role)) {
+    if (!['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -374,7 +374,7 @@ export async function DELETE(
     }
 
     // Only admins can delete volunteers
-    if (user.role !== 'ADMINISTRATOR') {
+    if (!['ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

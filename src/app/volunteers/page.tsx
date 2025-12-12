@@ -244,7 +244,7 @@ export default function VolunteersPage() {
 
   // Handle role change
   const handleRoleChange = async (volunteerId: string, newRole: string) => {
-    if (!user || user.role !== 'ADMINISTRATOR') return;
+    if (!user || !['ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) return;
 
     setUpdatingRole(volunteerId);
     try {
@@ -279,7 +279,7 @@ export default function VolunteersPage() {
 
   // Handle active status toggle
   const handleToggleActive = async (volunteerId: string, isActive: boolean) => {
-    if (!user || user.role !== 'ADMINISTRATOR') return;
+    if (!user || !['ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) return;
 
     try {
       const res = await fetch(`/api/volunteers/${volunteerId}`, {
@@ -862,7 +862,7 @@ export default function VolunteersPage() {
     );
   }
 
-  const isAdmin = user.role === 'ADMINISTRATOR';
+  const isAdmin = ['ADMINISTRATOR', 'DEVELOPER'].includes(user.role);
   const isDeveloper = user.role === 'DEVELOPER';
   const canEditQualifications = ['ADMINISTRATOR', 'COORDINATOR', 'DISPATCHER'].includes(user.role);
 

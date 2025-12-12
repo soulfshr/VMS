@@ -9,7 +9,7 @@ export async function GET() {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    if (user.role !== 'ADMINISTRATOR') {
+    if (!['ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    if (user.role !== 'ADMINISTRATOR') {
+    if (!['ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 

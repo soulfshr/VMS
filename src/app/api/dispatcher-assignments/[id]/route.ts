@@ -52,7 +52,7 @@ export async function PUT(
     }
 
     // Check role
-    if (!['COORDINATOR', 'ADMINISTRATOR'].includes(user.role)) {
+    if (!['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -120,7 +120,7 @@ export async function DELETE(
     }
 
     // Check role
-    if (!['COORDINATOR', 'ADMINISTRATOR'].includes(user.role)) {
+    if (!['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

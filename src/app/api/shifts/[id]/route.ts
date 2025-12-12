@@ -100,7 +100,7 @@ export async function GET(
       spotsLeft: shift.maxVolunteers - confirmedCount,
       userRsvpStatus: userRsvp?.status || null,
       userRsvpId: userRsvp?.id || null,
-      isCoordinator: ['COORDINATOR', 'ADMINISTRATOR'].includes(user.role),
+      isCoordinator: ['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role),
     });
   } catch (error) {
     console.error('Error fetching shift:', error);
@@ -120,7 +120,7 @@ export async function PUT(
     }
 
     // Only coordinators and admins can update shifts
-    if (!['COORDINATOR', 'ADMINISTRATOR'].includes(user.role)) {
+    if (!['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

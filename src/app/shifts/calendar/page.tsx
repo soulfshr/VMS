@@ -134,7 +134,7 @@ export default function ShiftCalendarPage() {
   };
 
   // Handle slot selection (create new shift) - only for coordinators/admins
-  const canCreateShift = user && ['COORDINATOR', 'ADMINISTRATOR'].includes(user.role);
+  const canCreateShift = user && ['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role);
 
   const handleSelectSlot = ({ start }: { start: Date }) => {
     if (!canCreateShift) return;
@@ -168,7 +168,7 @@ export default function ShiftCalendarPage() {
             >
               Grid View
             </Link>
-            {['COORDINATOR', 'ADMINISTRATOR'].includes(user.role) && (
+            {['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role) && (
               <Link
                 href="/shifts/create"
                 className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium"

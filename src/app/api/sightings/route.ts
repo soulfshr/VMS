@@ -129,7 +129,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Only dispatchers, coordinators, and admins can view sightings
-    const allowedRoles = ['DISPATCHER', 'COORDINATOR', 'ADMINISTRATOR'];
+    const allowedRoles = ['DISPATCHER', 'COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'];
     if (!allowedRoles.includes(user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }

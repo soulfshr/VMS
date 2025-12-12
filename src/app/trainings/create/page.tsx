@@ -68,7 +68,7 @@ export default function CreateTrainingPage() {
           return;
         }
         // Only coordinators and admins can create trainings
-        if (!['COORDINATOR', 'ADMINISTRATOR'].includes(sessionData.user.role)) {
+        if (!['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(sessionData.user.role)) {
           router.push('/trainings');
           return;
         }

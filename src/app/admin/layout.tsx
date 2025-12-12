@@ -32,11 +32,11 @@ export default function AdminLayout({
           router.push('/login');
           return;
         }
-        // Coordinators can access email-blast and shifts-import, but other admin pages require ADMINISTRATOR
+        // Coordinators can access email-blast and shifts-import, but other admin pages require ADMINISTRATOR/DEVELOPER
         const isCoordinatorAllowedPage = pathname?.startsWith('/admin/email-blast') || pathname?.startsWith('/admin/shifts-import');
         const allowedRoles = isCoordinatorAllowedPage
-          ? ['ADMINISTRATOR', 'COORDINATOR']
-          : ['ADMINISTRATOR'];
+          ? ['ADMINISTRATOR', 'DEVELOPER', 'COORDINATOR']
+          : ['ADMINISTRATOR', 'DEVELOPER'];
 
         if (!allowedRoles.includes(data.user.role)) {
           router.push('/dashboard');
@@ -72,7 +72,7 @@ export default function AdminLayout({
               </h2>
               <nav className="space-y-1">
                 {adminNavItems
-                  .filter(item => !item.adminOnly || user?.role === 'ADMINISTRATOR')
+                  .filter(item => !item.adminOnly || ['ADMINISTRATOR', 'DEVELOPER'].includes(user?.role || ''))
                   .map(item => {
                     const isActive = pathname === item.href;
                     return (

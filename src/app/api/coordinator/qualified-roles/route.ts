@@ -12,7 +12,7 @@ export async function GET() {
     }
 
     // Allow coordinator, dispatcher, and admin
-    if (!['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR'].includes(user.role)) {
+    if (!['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

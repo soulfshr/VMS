@@ -253,7 +253,7 @@ export async function GET(request: NextRequest) {
     // 5. Query eligible recipients
     const recipients = await prisma.user.findMany({
       where: {
-        role: { in: ['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR'] },
+        role: { in: ['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR', 'DEVELOPER'] },
         isActive: true,
         emailNotifications: true,
       },

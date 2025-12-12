@@ -205,7 +205,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check role
-    if (!['COORDINATOR', 'ADMINISTRATOR'].includes(user.role)) {
+    if (!['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

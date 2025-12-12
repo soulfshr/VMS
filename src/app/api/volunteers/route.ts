@@ -250,7 +250,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Only admins can bulk import
-    if (user.role !== 'ADMINISTRATOR') {
+    if (!['ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

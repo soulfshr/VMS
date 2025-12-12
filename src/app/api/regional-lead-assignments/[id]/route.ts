@@ -52,7 +52,7 @@ export async function PUT(
     }
 
     // Check role - only Coordinators/Admins can update
-    if (!['COORDINATOR', 'ADMINISTRATOR'].includes(user.role)) {
+    if (!['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -115,7 +115,7 @@ export async function DELETE(
 
     // Check if user can delete: either own assignment or Coordinator/Admin
     const isOwnAssignment = assignment.userId === user.id;
-    const isPrivilegedUser = ['COORDINATOR', 'ADMINISTRATOR'].includes(user.role);
+    const isPrivilegedUser = ['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role);
 
     if (!isOwnAssignment && !isPrivilegedUser) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });

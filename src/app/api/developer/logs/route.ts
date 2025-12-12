@@ -95,7 +95,7 @@ export async function DELETE(request: NextRequest) {
   try {
     // Check authentication
     const user = await getDbUser();
-    if (!user || user.role !== 'ADMINISTRATOR') {
+    if (!user || !['ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

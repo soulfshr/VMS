@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
     const isSelfSignup = targetUserId === user.id;
 
     // If assigning someone else, must be Coordinator or Admin
-    if (!isSelfSignup && !['COORDINATOR', 'ADMINISTRATOR'].includes(user.role)) {
+    if (!isSelfSignup && !['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
       return NextResponse.json({ error: 'Forbidden - cannot assign other users' }, { status: 403 });
     }
 

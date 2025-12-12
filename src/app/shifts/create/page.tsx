@@ -66,7 +66,7 @@ export default function CreateShiftPage() {
           return;
         }
         // Only coordinators and admins can create shifts
-        if (!['COORDINATOR', 'ADMINISTRATOR'].includes(sessionData.user.role)) {
+        if (!['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(sessionData.user.role)) {
           router.push('/shifts');
           return;
         }

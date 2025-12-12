@@ -171,7 +171,7 @@ export async function GET() {
 
     // Coordinator/Admin stats
     let coordinatorStats = null;
-    if (['COORDINATOR', 'ADMINISTRATOR'].includes(user.role)) {
+    if (['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
       // Get pending RSVPs count
       const pendingRsvps = await prisma.shiftVolunteer.count({
         where: {

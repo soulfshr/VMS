@@ -218,7 +218,7 @@ export default function Header() {
                 >
                   User Guide
                 </a>
-                {user.role === 'ADMINISTRATOR' && (
+                {['ADMINISTRATOR', 'DEVELOPER'].includes(user.role) && (
                   <Link
                     href="/admin"
                     className={`text-sm font-medium transition-colors ${
@@ -426,7 +426,7 @@ export default function Header() {
                 >
                   User Guide
                 </a>
-                {user.role === 'ADMINISTRATOR' && (
+                {['ADMINISTRATOR', 'DEVELOPER'].includes(user.role) && (
                   <Link
                     href="/admin"
                     className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"

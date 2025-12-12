@@ -199,7 +199,7 @@ export default function SchedulePage() {
     fetchSchedule();
   }, [fetchSchedule]);
 
-  const canEdit = user && ['COORDINATOR', 'ADMINISTRATOR'].includes(user.role);
+  const canEdit = user && ['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role);
 
   const navigateWeek = (direction: 'prev' | 'next') => {
     const newDate = new Date(currentWeekStart);
