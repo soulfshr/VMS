@@ -70,7 +70,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 });
     }
 
-    if (!type || !['VIDEO', 'TEXT', 'QUIZ'].includes(type)) {
+    if (!type || !['VIDEO', 'TEXT', 'QUIZ', 'RESOURCE'].includes(type)) {
       return NextResponse.json({ error: 'Invalid section type' }, { status: 400 });
     }
 

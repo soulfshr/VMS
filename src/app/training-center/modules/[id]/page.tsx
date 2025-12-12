@@ -704,9 +704,12 @@ function SectionCard({
               )}
 
               {section.type === 'QUIZ' && (
-                <div className="p-4 bg-yellow-50 text-yellow-800 rounded-lg text-sm">
-                  Quiz editor coming soon. For now, quizzes can be configured via the API.
-                </div>
+                <QuizBuilder
+                  moduleId={moduleId}
+                  sectionId={section.id}
+                  quiz={section.quiz}
+                  onUpdate={onUpdate}
+                />
               )}
 
               {section.type === 'RESOURCE' && (
@@ -899,4 +902,774 @@ function MarkdownRenderer({ content }: { content: string }) {
     .replace(/\n/gim, '<br />');
 
   return <div dangerouslySetInnerHTML={{ __html: html }} />;
+}
+
+// Quiz Builder Component
+function QuizBuilder({
+  moduleId,
+  sectionId,
+  quiz,
+  onUpdate,
+}: {
+  moduleId: string;
+  sectionId: string;
+  quiz: Quiz | null;
+  onUpdate: () => void;
+}) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Import modal state
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importJson, setImportJson] = useState('');
+  const [replaceExisting, setReplaceExisting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [showTemplate, setShowTemplate] = useState(false);
+
+  // Quiz settings
+  const [passingScore, setPassingScore] = useState(quiz?.passingScore ?? 80);
+  const [maxAttempts, setMaxAttempts] = useState<number | null>(quiz?.maxAttempts ?? null);
+  const [shuffleQuestions, setShuffleQuestions] = useState(quiz?.shuffleQuestions ?? false);
+
+  // New question form
+  const [isAddingQuestion, setIsAddingQuestion] = useState(false);
+  const [newQuestionText, setNewQuestionText] = useState('');
+  const [newQuestionType, setNewQuestionType] = useState<'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'MULTI_SELECT'>('MULTIPLE_CHOICE');
+  const [newQuestionOptions, setNewQuestionOptions] = useState<{ text: string; isCorrect: boolean }[]>([
+    { text: '', isCorrect: false },
+    { text: '', isCorrect: false },
+  ]);
+  const [newQuestionExplanation, setNewQuestionExplanation] = useState('');
+
+  // Editing question
+  const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
+  const [editQuestionText, setEditQuestionText] = useState('');
+  const [editQuestionType, setEditQuestionType] = useState<'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'MULTI_SELECT'>('MULTIPLE_CHOICE');
+  const [editQuestionOptions, setEditQuestionOptions] = useState<{ text: string; isCorrect: boolean }[]>([]);
+  const [editQuestionExplanation, setEditQuestionExplanation] = useState('');
+
+  const handleSaveSettings = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/training-center/modules/${moduleId}/sections/${sectionId}/quiz`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          passingScore,
+          maxAttempts,
+          shuffleQuestions,
+        }),
+      });
+      if (!res.ok) throw new Error('Failed to save settings');
+      onUpdate();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAddQuestion = async () => {
+    if (!newQuestionText.trim()) return;
+
+    // Validate at least one correct answer
+    const hasCorrect = newQuestionOptions.some(o => o.isCorrect);
+    if (!hasCorrect) {
+      setError('Please mark at least one correct answer');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/training-center/modules/${moduleId}/sections/${sectionId}/quiz/questions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          questionText: newQuestionText,
+          type: newQuestionType,
+          explanation: newQuestionExplanation || null,
+          options: newQuestionOptions
+            .filter(o => o.text.trim())
+            .map(o => ({ optionText: o.text, isCorrect: o.isCorrect })),
+        }),
+      });
+      if (!res.ok) throw new Error('Failed to add question');
+
+      // Reset form
+      setNewQuestionText('');
+      setNewQuestionType('MULTIPLE_CHOICE');
+      setNewQuestionOptions([
+        { text: '', isCorrect: false },
+        { text: '', isCorrect: false },
+      ]);
+      setNewQuestionExplanation('');
+      setIsAddingQuestion(false);
+      onUpdate();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add question');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleStartEditQuestion = (question: QuizQuestion) => {
+    setEditingQuestionId(question.id);
+    setEditQuestionText(question.questionText);
+    setEditQuestionType(question.type as 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'MULTI_SELECT');
+    setEditQuestionOptions(question.options.map(o => ({ text: o.optionText, isCorrect: o.isCorrect })));
+    setEditQuestionExplanation(question.explanation || '');
+  };
+
+  const handleSaveEditQuestion = async () => {
+    if (!editingQuestionId || !editQuestionText.trim()) return;
+
+    const hasCorrect = editQuestionOptions.some(o => o.isCorrect);
+    if (!hasCorrect) {
+      setError('Please mark at least one correct answer');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/training-center/modules/${moduleId}/sections/${sectionId}/quiz/questions/${editingQuestionId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          questionText: editQuestionText,
+          type: editQuestionType,
+          explanation: editQuestionExplanation || null,
+          options: editQuestionOptions
+            .filter(o => o.text.trim())
+            .map(o => ({ optionText: o.text, isCorrect: o.isCorrect })),
+        }),
+      });
+      if (!res.ok) throw new Error('Failed to save question');
+      setEditingQuestionId(null);
+      onUpdate();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save question');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteQuestion = async (questionId: string) => {
+    if (!confirm('Delete this question?')) return;
+
+    setIsLoading(true);
+    try {
+      const res = await fetch(`/api/training-center/modules/${moduleId}/sections/${sectionId}/quiz/questions/${questionId}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) throw new Error('Failed to delete');
+      onUpdate();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleImportQuestions = async () => {
+    setImportError(null);
+
+    if (!importJson.trim()) {
+      setImportError('Please paste CSV data');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const res = await fetch(`/api/training-center/modules/${moduleId}/sections/${sectionId}/quiz/import`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          csv: importJson,
+          replaceExisting,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        if (data.details && Array.isArray(data.details)) {
+          setImportError(`Validation errors:\n${data.details.join('\n')}`);
+        } else {
+          setImportError(data.error || 'Failed to import questions');
+        }
+        return;
+      }
+
+      // Success - close modal and refresh
+      setShowImportModal(false);
+      setImportJson('');
+      setReplaceExisting(false);
+      onUpdate();
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : 'Failed to import questions');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDownloadTemplate = () => {
+    window.open(`/api/training-center/modules/${moduleId}/sections/${sectionId}/quiz/import`, '_blank');
+  };
+
+  const CSV_EXAMPLE = `questionText,type,points,explanation,option1,correct1,option2,correct2,option3,correct3,option4,correct4
+"What is the primary role?",MULTIPLE_CHOICE,1,"Explanation here","Option A",false,"Option B",true,"Option C",false,
+"Statement is true.",TRUE_FALSE,1,"","True",true,"False",false,,,,`;
+
+  const handleQuestionTypeChange = (type: 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'MULTI_SELECT', isNew: boolean) => {
+    if (isNew) {
+      setNewQuestionType(type);
+      if (type === 'TRUE_FALSE') {
+        setNewQuestionOptions([
+          { text: 'True', isCorrect: false },
+          { text: 'False', isCorrect: false },
+        ]);
+      } else if (newQuestionOptions.length < 2 || (newQuestionOptions[0].text === 'True' && newQuestionOptions[1].text === 'False')) {
+        setNewQuestionOptions([
+          { text: '', isCorrect: false },
+          { text: '', isCorrect: false },
+        ]);
+      }
+    } else {
+      setEditQuestionType(type);
+      if (type === 'TRUE_FALSE') {
+        setEditQuestionOptions([
+          { text: 'True', isCorrect: false },
+          { text: 'False', isCorrect: false },
+        ]);
+      }
+    }
+  };
+
+  const addOption = (isNew: boolean) => {
+    if (isNew) {
+      setNewQuestionOptions([...newQuestionOptions, { text: '', isCorrect: false }]);
+    } else {
+      setEditQuestionOptions([...editQuestionOptions, { text: '', isCorrect: false }]);
+    }
+  };
+
+  const removeOption = (index: number, isNew: boolean) => {
+    if (isNew) {
+      setNewQuestionOptions(newQuestionOptions.filter((_, i) => i !== index));
+    } else {
+      setEditQuestionOptions(editQuestionOptions.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateOption = (index: number, field: 'text' | 'isCorrect', value: string | boolean, isNew: boolean) => {
+    if (isNew) {
+      const updated = [...newQuestionOptions];
+      if (field === 'text') {
+        updated[index].text = value as string;
+      } else {
+        // For single-answer types, uncheck others
+        if (newQuestionType !== 'MULTI_SELECT') {
+          updated.forEach((o, i) => { o.isCorrect = i === index ? (value as boolean) : false; });
+        } else {
+          updated[index].isCorrect = value as boolean;
+        }
+      }
+      setNewQuestionOptions(updated);
+    } else {
+      const updated = [...editQuestionOptions];
+      if (field === 'text') {
+        updated[index].text = value as string;
+      } else {
+        if (editQuestionType !== 'MULTI_SELECT') {
+          updated.forEach((o, i) => { o.isCorrect = i === index ? (value as boolean) : false; });
+        } else {
+          updated[index].isCorrect = value as boolean;
+        }
+      }
+      setEditQuestionOptions(updated);
+    }
+  };
+
+  if (!quiz) {
+    return (
+      <div className="p-4 bg-yellow-50 text-yellow-800 rounded-lg text-sm">
+        No quiz found for this section. Try refreshing the page.
+      </div>
+    );
+  }
+
+  const sortedQuestions = [...quiz.questions].sort((a, b) => a.sortOrder - b.sortOrder);
+
+  return (
+    <div className="space-y-6">
+      {error && (
+        <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm flex justify-between items-center">
+          {error}
+          <button onClick={() => setError(null)} className="text-red-500 hover:text-red-700">×</button>
+        </div>
+      )}
+
+      {/* Quiz Settings */}
+      <div className="p-4 bg-gray-50 rounded-lg space-y-4">
+        <h4 className="font-medium text-gray-900">Quiz Settings</h4>
+        <div className="grid grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Passing Score (%)</label>
+            <input
+              type="number"
+              value={passingScore}
+              onChange={(e) => setPassingScore(Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))}
+              min={0}
+              max={100}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Max Attempts</label>
+            <input
+              type="number"
+              value={maxAttempts ?? ''}
+              onChange={(e) => setMaxAttempts(e.target.value ? parseInt(e.target.value) : null)}
+              min={1}
+              placeholder="Unlimited"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
+          </div>
+          <div className="flex items-end">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={shuffleQuestions}
+                onChange={(e) => setShuffleQuestions(e.target.checked)}
+                className="w-4 h-4 text-purple-600 border-gray-300 rounded"
+              />
+              Shuffle questions
+            </label>
+          </div>
+        </div>
+        <button
+          onClick={handleSaveSettings}
+          disabled={isLoading}
+          className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50"
+        >
+          {isLoading ? 'Saving...' : 'Save Settings'}
+        </button>
+      </div>
+
+      {/* Questions List */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="font-medium text-gray-900">Questions ({sortedQuestions.length})</h4>
+          {!isAddingQuestion && (
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowImportModal(true)}
+                className="px-3 py-1.5 border border-purple-300 text-purple-700 rounded-lg text-sm font-medium hover:bg-purple-50"
+              >
+                Import CSV
+              </button>
+              <button
+                onClick={() => setIsAddingQuestion(true)}
+                className="px-3 py-1.5 bg-purple-100 text-purple-700 rounded-lg text-sm font-medium hover:bg-purple-200"
+              >
+                + Add Question
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Import Modal */}
+        {showImportModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+              <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+                <h3 className="font-semibold text-gray-900">Import Questions from CSV</h3>
+                <button
+                  onClick={() => {
+                    setShowImportModal(false);
+                    setImportJson('');
+                    setImportError(null);
+                    setShowTemplate(false);
+                  }}
+                  className="text-gray-500 hover:text-gray-700 text-xl"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="p-4 overflow-y-auto flex-1 space-y-4">
+                {importError && (
+                  <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm whitespace-pre-wrap">
+                    {importError}
+                  </div>
+                )}
+
+                {/* Download Template Button */}
+                <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-lg">
+                  <span className="text-purple-700 text-sm">Need a starting point?</span>
+                  <button
+                    onClick={handleDownloadTemplate}
+                    className="px-3 py-1.5 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700"
+                  >
+                    Download CSV Template
+                  </button>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Paste your CSV below
+                    </label>
+                    <button
+                      onClick={() => setShowTemplate(!showTemplate)}
+                      className="text-sm text-purple-600 hover:text-purple-800"
+                    >
+                      {showTemplate ? 'Hide example' : 'Show example'}
+                    </button>
+                  </div>
+
+                  {showTemplate && (
+                    <div className="mb-3 p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-medium text-gray-500">CSV Format Example</span>
+                        <button
+                          onClick={() => {
+                            setImportJson(CSV_EXAMPLE);
+                            setShowTemplate(false);
+                          }}
+                          className="text-xs text-purple-600 hover:text-purple-800"
+                        >
+                          Use this example
+                        </button>
+                      </div>
+                      <pre className="text-xs text-gray-600 overflow-x-auto whitespace-pre">
+                        {CSV_EXAMPLE}
+                      </pre>
+                    </div>
+                  )}
+
+                  <textarea
+                    value={importJson}
+                    onChange={(e) => setImportJson(e.target.value)}
+                    rows={10}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="questionText,type,points,explanation,option1,correct1,option2,correct2,..."
+                  />
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="replaceExisting"
+                    checked={replaceExisting}
+                    onChange={(e) => setReplaceExisting(e.target.checked)}
+                    className="w-4 h-4 text-purple-600 border-gray-300 rounded"
+                  />
+                  <label htmlFor="replaceExisting" className="text-sm text-gray-700">
+                    Replace all existing questions (otherwise appends)
+                  </label>
+                </div>
+
+                <div className="text-xs text-gray-500 space-y-1 p-3 bg-gray-50 rounded-lg">
+                  <p className="font-medium text-gray-700 mb-2">CSV Column Guide:</p>
+                  <p><strong>questionText</strong> - The question text (required)</p>
+                  <p><strong>type</strong> - MULTIPLE_CHOICE, TRUE_FALSE, or MULTI_SELECT (required)</p>
+                  <p><strong>points</strong> - Point value, defaults to 1</p>
+                  <p><strong>explanation</strong> - Shown after answering</p>
+                  <p><strong>option1-4, correct1-4</strong> - Answer options and whether correct (true/false)</p>
+                  <p className="mt-2 text-gray-400">Tip: Use quotes around text with commas</p>
+                </div>
+              </div>
+
+              <div className="p-4 border-t border-gray-200 flex justify-end gap-3">
+                <button
+                  onClick={() => {
+                    setShowImportModal(false);
+                    setImportJson('');
+                    setImportError(null);
+                  }}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800 text-sm font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleImportQuestions}
+                  disabled={isLoading || !importJson.trim()}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50"
+                >
+                  {isLoading ? 'Importing...' : 'Import Questions'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Add Question Form */}
+        {isAddingQuestion && (
+          <div className="mb-4 p-4 border-2 border-purple-200 rounded-lg bg-purple-50 space-y-4">
+            <div className="flex items-center justify-between">
+              <h5 className="font-medium text-purple-900">New Question</h5>
+              <button
+                onClick={() => setIsAddingQuestion(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ×
+              </button>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Question Type</label>
+              <select
+                value={newQuestionType}
+                onChange={(e) => handleQuestionTypeChange(e.target.value as 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'MULTI_SELECT', true)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+              >
+                <option value="MULTIPLE_CHOICE">Multiple Choice (single answer)</option>
+                <option value="TRUE_FALSE">True/False</option>
+                <option value="MULTI_SELECT">Multi-Select (multiple answers)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Question Text</label>
+              <textarea
+                value={newQuestionText}
+                onChange={(e) => setNewQuestionText(e.target.value)}
+                rows={2}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                placeholder="Enter your question..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Answer Options {newQuestionType === 'MULTI_SELECT' ? '(check all correct)' : '(select correct answer)'}
+              </label>
+              <div className="space-y-2">
+                {newQuestionOptions.map((opt, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <input
+                      type={newQuestionType === 'MULTI_SELECT' ? 'checkbox' : 'radio'}
+                      name="newCorrectAnswer"
+                      checked={opt.isCorrect}
+                      onChange={(e) => updateOption(index, 'isCorrect', e.target.checked, true)}
+                      className="w-4 h-4 text-purple-600"
+                    />
+                    <input
+                      type="text"
+                      value={opt.text}
+                      onChange={(e) => updateOption(index, 'text', e.target.value, true)}
+                      disabled={newQuestionType === 'TRUE_FALSE'}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
+                      placeholder={`Option ${index + 1}`}
+                    />
+                    {newQuestionType !== 'TRUE_FALSE' && newQuestionOptions.length > 2 && (
+                      <button
+                        onClick={() => removeOption(index, true)}
+                        className="text-red-500 hover:text-red-700 px-2"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {newQuestionType !== 'TRUE_FALSE' && (
+                <button
+                  onClick={() => addOption(true)}
+                  className="mt-2 text-sm text-purple-600 hover:text-purple-800"
+                >
+                  + Add option
+                </button>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Explanation (shown after answer)</label>
+              <textarea
+                value={newQuestionExplanation}
+                onChange={(e) => setNewQuestionExplanation(e.target.value)}
+                rows={2}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                placeholder="Optional explanation for the correct answer..."
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={handleAddQuestion}
+                disabled={isLoading || !newQuestionText.trim()}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50"
+              >
+                {isLoading ? 'Adding...' : 'Add Question'}
+              </button>
+              <button
+                onClick={() => setIsAddingQuestion(false)}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 text-sm"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Existing Questions */}
+        {sortedQuestions.length === 0 && !isAddingQuestion ? (
+          <div className="text-center py-8 text-gray-500">
+            No questions yet. Click &quot;Add Question&quot; to create one.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {sortedQuestions.map((question, index) => (
+              <div key={question.id} className="border border-gray-200 rounded-lg p-4">
+                {editingQuestionId === question.id ? (
+                  // Edit Mode
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Question Type</label>
+                      <select
+                        value={editQuestionType}
+                        onChange={(e) => handleQuestionTypeChange(e.target.value as 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'MULTI_SELECT', false)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      >
+                        <option value="MULTIPLE_CHOICE">Multiple Choice</option>
+                        <option value="TRUE_FALSE">True/False</option>
+                        <option value="MULTI_SELECT">Multi-Select</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Question Text</label>
+                      <textarea
+                        value={editQuestionText}
+                        onChange={(e) => setEditQuestionText(e.target.value)}
+                        rows={2}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Options</label>
+                      <div className="space-y-2">
+                        {editQuestionOptions.map((opt, optIndex) => (
+                          <div key={optIndex} className="flex items-center gap-2">
+                            <input
+                              type={editQuestionType === 'MULTI_SELECT' ? 'checkbox' : 'radio'}
+                              name="editCorrectAnswer"
+                              checked={opt.isCorrect}
+                              onChange={(e) => updateOption(optIndex, 'isCorrect', e.target.checked, false)}
+                              className="w-4 h-4 text-purple-600"
+                            />
+                            <input
+                              type="text"
+                              value={opt.text}
+                              onChange={(e) => updateOption(optIndex, 'text', e.target.value, false)}
+                              disabled={editQuestionType === 'TRUE_FALSE'}
+                              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
+                            />
+                            {editQuestionType !== 'TRUE_FALSE' && editQuestionOptions.length > 2 && (
+                              <button
+                                onClick={() => removeOption(optIndex, false)}
+                                className="text-red-500 hover:text-red-700 px-2"
+                              >
+                                ×
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      {editQuestionType !== 'TRUE_FALSE' && (
+                        <button
+                          onClick={() => addOption(false)}
+                          className="mt-2 text-sm text-purple-600 hover:text-purple-800"
+                        >
+                          + Add option
+                        </button>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Explanation</label>
+                      <textarea
+                        value={editQuestionExplanation}
+                        onChange={(e) => setEditQuestionExplanation(e.target.value)}
+                        rows={2}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      />
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleSaveEditQuestion}
+                        disabled={isLoading}
+                        className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50"
+                      >
+                        {isLoading ? 'Saving...' : 'Save'}
+                      </button>
+                      <button
+                        onClick={() => setEditingQuestionId(null)}
+                        className="px-4 py-2 text-gray-600 hover:text-gray-800 text-sm"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  // View Mode
+                  <div>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-sm font-medium text-gray-500">Q{index + 1}</span>
+                          <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
+                            {question.type.replace('_', ' ')}
+                          </span>
+                        </div>
+                        <p className="text-gray-900 mb-3">{question.questionText}</p>
+                        <div className="space-y-1">
+                          {question.options.map(opt => (
+                            <div
+                              key={opt.id}
+                              className={`text-sm flex items-center gap-2 ${
+                                opt.isCorrect ? 'text-green-700 font-medium' : 'text-gray-600'
+                              }`}
+                            >
+                              <span>{opt.isCorrect ? '✓' : '○'}</span>
+                              <span>{opt.optionText}</span>
+                            </div>
+                          ))}
+                        </div>
+                        {question.explanation && (
+                          <p className="mt-2 text-sm text-gray-500 italic">
+                            Explanation: {question.explanation}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex gap-2 ml-4">
+                        <button
+                          onClick={() => handleStartEditQuestion(question)}
+                          className="text-purple-600 hover:text-purple-800 text-sm"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteQuestion(question.id)}
+                          className="text-red-600 hover:text-red-800 text-sm"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }

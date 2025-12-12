@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDbUser } from '@/lib/user';
 import { getDownloadPresignedUrl } from '@/lib/s3';
+import { prisma } from '@/lib/db';
 
 // GET /api/training-center/video-url?key=... - Get presigned URL for video playback
 export async function GET(request: NextRequest) {
@@ -8,12 +9,6 @@ export async function GET(request: NextRequest) {
     const user = await getDbUser();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // For now, only developers can access training center videos
-    // This will be expanded when volunteers can take training
-    if (user.role !== 'DEVELOPER') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const key = request.nextUrl.searchParams.get('key');
@@ -31,6 +26,23 @@ export async function GET(request: NextRequest) {
         { error: 'Invalid video key' },
         { status: 400 }
       );
+    }
+
+    // For non-developers, verify the video belongs to a published module
+    if (user.role !== 'DEVELOPER') {
+      // Extract module ID from key (format: training-videos/{moduleId}/filename.mp4)
+      const parts = key.split('/');
+      if (parts.length >= 2) {
+        const moduleId = parts[1];
+        const trainingModule = await prisma.trainingModule.findUnique({
+          where: { id: moduleId },
+          select: { isPublished: true },
+        });
+
+        if (!trainingModule || !trainingModule.isPublished) {
+          return NextResponse.json({ error: 'Video not available' }, { status: 403 });
+        }
+      }
     }
 
     // Get presigned URL (1 hour expiry for playback)

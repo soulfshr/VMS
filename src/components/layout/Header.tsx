@@ -146,14 +146,14 @@ export default function Header() {
                 </Link>
                 {features.trainings && (
                   <Link
-                    href="/trainings"
+                    href="/training"
                     className={`text-sm font-medium transition-colors ${
-                      pathname.startsWith('/trainings')
+                      pathname.startsWith('/training')
                         ? 'text-cyan-700'
                         : 'text-gray-600 hover:text-gray-900'
                     }`}
                   >
-                    Trainings
+                    Training
                   </Link>
                 )}
                 <Link
@@ -242,19 +242,6 @@ export default function Header() {
                     Developer
                   </Link>
                 )}
-                {user.role === 'DEVELOPER' && (
-                  <Link
-                    href="/training-center"
-                    className={`text-sm font-medium transition-colors ${
-                      pathname.startsWith('/training-center')
-                        ? 'text-purple-700'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    Training Center
-                  </Link>
-                )}
-
                 {/* Help Button */}
                 <HelpButton
                   userRole={user.role}
@@ -384,11 +371,11 @@ export default function Header() {
                 </Link>
                 {features.trainings && (
                   <Link
-                    href="/trainings"
+                    href="/training"
                     className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    Trainings
+                    Training
                   </Link>
                 )}
                 <Link
@@ -455,15 +442,6 @@ export default function Header() {
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Developer
-                  </Link>
-                )}
-                {user.role === 'DEVELOPER' && (
-                  <Link
-                    href="/training-center"
-                    className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Training Center
                   </Link>
                 )}
                 <button

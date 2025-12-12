@@ -10,19 +10,24 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Only DEVELOPER role can access Training Center
-    if (user.role !== 'DEVELOPER') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
     const searchParams = request.nextUrl.searchParams;
     const status = searchParams.get('status'); // 'published', 'draft', or null for all
+    const published = searchParams.get('published'); // 'true' for learner view
 
-    const where = status === 'published'
-      ? { isPublished: true }
-      : status === 'draft'
-        ? { isPublished: false }
-        : {};
+    // Non-developers can only see published modules
+    const isDeveloper = user.role === 'DEVELOPER';
+
+    let where: { isPublished?: boolean } = {};
+
+    if (published === 'true' || !isDeveloper) {
+      // Learner view or non-developer: only published modules
+      where = { isPublished: true };
+    } else if (status === 'published') {
+      where = { isPublished: true };
+    } else if (status === 'draft') {
+      where = { isPublished: false };
+    }
+    // else: show all (developer only)
 
     const modules = await prisma.trainingModule.findMany({
       where,

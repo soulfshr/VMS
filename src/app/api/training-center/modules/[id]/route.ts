@@ -14,12 +14,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Only DEVELOPER role can access Training Center
-    if (user.role !== 'DEVELOPER') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
     const { id } = await params;
+    const isDeveloper = user.role === 'DEVELOPER';
 
     const trainingModule = await prisma.trainingModule.findUnique({
       where: { id },
@@ -47,7 +43,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             name: true,
           },
         },
-        enrollments: {
+        enrollments: isDeveloper ? {
           select: {
             id: true,
             status: true,
@@ -55,12 +51,43 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             startedAt: true,
             completedAt: true,
           },
-        },
+        } : false,
       },
     });
 
     if (!trainingModule) {
       return NextResponse.json({ error: 'Module not found' }, { status: 404 });
+    }
+
+    // Non-developers can only view published modules
+    if (!isDeveloper && !trainingModule.isPublished) {
+      return NextResponse.json({ error: 'Module not found' }, { status: 404 });
+    }
+
+    // For non-developers, hide quiz correct answers
+    if (!isDeveloper) {
+      const sanitizedModule = {
+        ...trainingModule,
+        sections: trainingModule.sections.map(section => ({
+          ...section,
+          quiz: section.quiz ? {
+            ...section.quiz,
+            questions: section.quiz.questions.map(q => ({
+              ...q,
+              options: q.options.map(o => ({
+                id: o.id,
+                optionText: o.optionText,
+                sortOrder: o.sortOrder,
+                questionId: o.questionId,
+                createdAt: o.createdAt,
+                updatedAt: o.updatedAt,
+                // Omit isCorrect for non-developers
+              })),
+            })),
+          } : null,
+        })),
+      };
+      return NextResponse.json({ module: sanitizedModule });
     }
 
     return NextResponse.json({ module: trainingModule });

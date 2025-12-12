@@ -46,6 +46,15 @@ This document tracks user feedback for triage and resolution.
 - **Priority:** Medium
 - **Notes:** Fixed by adding responsive mobile navigation - sidebar hidden on mobile, replaced with horizontal tab navigation
 
+### 5. Google Maps Marker API deprecation warning
+- **Date Reported:** 2024-12-11
+- **Reporter:** Console warning
+- **Location:** Map components (mapping pages)
+- **Description:** Console warning: "As of February 21st, 2024, google.maps.Marker is deprecated. Please use google.maps.marker.AdvancedMarkerElement instead."
+- **Status:** Open
+- **Priority:** Low
+- **Notes:** Not urgent - Google says at least 12 months notice before discontinuation. Migration guide: https://developers.google.com/maps/documentation/javascript/advanced-markers/migration
+
 ---
 
 ## Feature Requests
