@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-type SectionType = 'VIDEO' | 'TEXT' | 'QUIZ';
+type SectionType = 'VIDEO' | 'TEXT' | 'QUIZ' | 'RESOURCE';
 
 interface QuizOption {
   id: string;
@@ -39,6 +39,8 @@ interface Section {
   videoUrl: string | null;
   videoDuration: number | null;
   textContent: string | null;
+  resourceUrl: string | null;
+  resourceName: string | null;
   quiz: Quiz | null;
 }
 
@@ -369,6 +371,13 @@ export default function ModuleEditorPage() {
                   <span>❓</span>
                   <span className="text-sm font-medium">Quiz</span>
                 </button>
+                <button
+                  onClick={() => setIsAddingSectionType('RESOURCE')}
+                  className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:border-purple-300 hover:bg-purple-50 transition-colors"
+                >
+                  <span>📁</span>
+                  <span className="text-sm font-medium">Resource</span>
+                </button>
               </div>
             )}
           </div>
@@ -488,9 +497,11 @@ function SectionCard({
   const [editTitle, setEditTitle] = useState(section.title);
   const [editVideoUrl, setEditVideoUrl] = useState(section.videoUrl || '');
   const [editTextContent, setEditTextContent] = useState(section.textContent || '');
+  const [editResourceUrl, setEditResourceUrl] = useState(section.resourceUrl || '');
+  const [editResourceName, setEditResourceName] = useState(section.resourceName || '');
   const [isUploading, setIsUploading] = useState(false);
 
-  const sectionIcon = section.type === 'VIDEO' ? '📹' : section.type === 'TEXT' ? '📝' : '❓';
+  const sectionIcon = section.type === 'VIDEO' ? '📹' : section.type === 'TEXT' ? '📝' : section.type === 'RESOURCE' ? '📁' : '❓';
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -500,6 +511,9 @@ function SectionCard({
         body.videoUrl = editVideoUrl || null;
       } else if (section.type === 'TEXT') {
         body.textContent = editTextContent || null;
+      } else if (section.type === 'RESOURCE') {
+        body.resourceUrl = editResourceUrl || null;
+        body.resourceName = editResourceName || null;
       }
 
       const res = await fetch(`/api/training-center/modules/${moduleId}/sections/${section.id}`, {
@@ -695,6 +709,34 @@ function SectionCard({
                 </div>
               )}
 
+              {section.type === 'RESOURCE' && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Display Name</label>
+                    <input
+                      type="text"
+                      value={editResourceName}
+                      onChange={(e) => setEditResourceName(e.target.value)}
+                      placeholder="e.g., Safety Checklist PDF"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Resource URL</label>
+                    <input
+                      type="text"
+                      value={editResourceUrl}
+                      onChange={(e) => setEditResourceUrl(e.target.value)}
+                      placeholder="https://example.com/document.pdf or S3 key"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Enter a URL to an external resource or upload a file to S3
+                    </p>
+                  </div>
+                </div>
+              )}
+
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleSave}
@@ -709,6 +751,8 @@ function SectionCard({
                     setEditTitle(section.title);
                     setEditVideoUrl(section.videoUrl || '');
                     setEditTextContent(section.textContent || '');
+                    setEditResourceUrl(section.resourceUrl || '');
+                    setEditResourceName(section.resourceName || '');
                   }}
                   className="px-4 py-2 text-gray-600 hover:text-gray-800 text-sm"
                 >
@@ -756,6 +800,25 @@ function SectionCard({
                     </div>
                   ) : (
                     <p className="text-sm text-gray-500">No quiz configured</p>
+                  )}
+                </div>
+              )}
+
+              {section.type === 'RESOURCE' && (
+                <div>
+                  {section.resourceUrl ? (
+                    <a
+                      href={section.resourceUrl.startsWith('http') ? section.resourceUrl : '#'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors"
+                    >
+                      <span>📁</span>
+                      <span className="font-medium">{section.resourceName || 'Download Resource'}</span>
+                      <span className="text-purple-500">↗</span>
+                    </a>
+                  ) : (
+                    <p className="text-sm text-gray-500">No resource configured</p>
                   )}
                 </div>
               )}

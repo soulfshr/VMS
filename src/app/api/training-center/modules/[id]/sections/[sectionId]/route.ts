@@ -73,6 +73,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       videoUrl,
       videoDuration,
       textContent,
+      resourceUrl,
+      resourceName,
     } = body;
 
     // Verify section exists
@@ -91,6 +93,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     if (videoUrl !== undefined) updateData.videoUrl = videoUrl || null;
     if (videoDuration !== undefined) updateData.videoDuration = videoDuration;
     if (textContent !== undefined) updateData.textContent = textContent || null;
+    if (resourceUrl !== undefined) updateData.resourceUrl = resourceUrl || null;
+    if (resourceName !== undefined) updateData.resourceName = resourceName || null;
 
     const section = await prisma.moduleSection.update({
       where: { id: sectionId },
