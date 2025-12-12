@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import HelpButton from '@/components/onboarding/HelpButton';
 import { useFeatures } from '@/hooks/useFeatures';
@@ -21,7 +21,12 @@ export default function Header() {
   const { data: session, status } = useSession();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isResourcesOpen, setIsResourcesOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+
+  // Refs for click-outside detection
+  const resourcesRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [showWelcome, setShowWelcome] = useState(false);
   const [envMismatch, setEnvMismatch] = useState<'dev-serving-prod' | 'prod-serving-dev' | null>(null);
@@ -49,6 +54,21 @@ export default function Header() {
         console.error('🚨 CRITICAL: Production URL is serving dev/preview environment! Users may see test data.');
       }
     }
+  }, []);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (resourcesRef.current && !resourcesRef.current.contains(event.target as Node)) {
+        setIsResourcesOpen(false);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const user = session?.user;
@@ -168,10 +188,9 @@ export default function Header() {
                   Schedule
                 </Link>
                 {/* Resources Dropdown */}
-                <div className="relative">
+                <div className="relative" ref={resourcesRef}>
                   <button
                     onClick={() => setIsResourcesOpen(!isResourcesOpen)}
-                    onBlur={() => setTimeout(() => setIsResourcesOpen(false), 150)}
                     className={`flex items-center gap-1 text-sm font-medium transition-colors ${
                       pathname.startsWith('/resources')
                         ? 'text-cyan-700'
@@ -278,10 +297,10 @@ export default function Header() {
                 />
 
                 {/* User Menu */}
-                <div className="relative">
+                <div className="relative" ref={userMenuRef}>
                   <button
-                    onClick={() => setIsMenuOpen(!isMenuOpen)}
-                    aria-expanded={isMenuOpen}
+                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                    aria-expanded={isUserMenuOpen}
                     aria-haspopup="menu"
                     aria-label="User menu"
                     className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
@@ -291,7 +310,7 @@ export default function Header() {
                     </div>
                     <span className="text-sm font-medium text-gray-700">{user.name}</span>
                     <svg
-                      className={`w-4 h-4 text-gray-500 transition-transform ${isMenuOpen ? 'rotate-180' : ''}`}
+                      className={`w-4 h-4 text-gray-500 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`}
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -301,7 +320,7 @@ export default function Header() {
                     </svg>
                   </button>
 
-                  {isMenuOpen && (
+                  {isUserMenuOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1">
                       <div className="px-4 py-2 border-b border-gray-100">
                         <p className="text-xs text-gray-500">Logged in as</p>
