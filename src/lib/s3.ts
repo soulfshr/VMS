@@ -7,17 +7,17 @@ let s3Client: S3Client | null = null;
 function getS3Client(): S3Client {
   if (!s3Client) {
     s3Client = new S3Client({
-      region: process.env.AWS_REGION || 'us-east-1',
+      region: (process.env.AWS_REGION || 'us-east-1').trim(),
       credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID!.trim(),
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!.trim(),
       },
     });
   }
   return s3Client;
 }
 
-const BUCKET_NAME = process.env.AWS_S3_BUCKET || 'ripple-vms-media';
+const BUCKET_NAME = (process.env.AWS_S3_BUCKET || 'ripple-vms-media').trim();
 
 // Upload a file to S3
 export async function uploadToS3(

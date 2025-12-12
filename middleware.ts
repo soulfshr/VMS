@@ -1,10 +1,22 @@
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 import NextAuth from 'next-auth';
 import { authConfig } from '@/auth.config';
 
-export default NextAuth(authConfig).auth;
+const { auth } = NextAuth(authConfig);
+
+export default async function middleware(request: NextRequest) {
+  // Skip auth for upload routes (they handle their own auth)
+  if (request.nextUrl.pathname.startsWith('/api/training-center/upload')) {
+    return NextResponse.next();
+  }
+
+  // Use NextAuth for all other routes
+  return auth(request as any);
+}
 
 export const config = {
-  // Match all routes except static files and api routes that should be public
+  // Match all routes except static files
   matcher: [
     /*
      * Match all request paths except for the ones starting with:

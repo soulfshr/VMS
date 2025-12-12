@@ -535,22 +535,51 @@ function SectionCard({
 
     setIsUploading(true);
     try {
-      // Upload via FormData to our API (server-side S3 upload)
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('moduleId', moduleId);
-
+      // Request a presigned upload URL from our API
       const uploadRes = await fetch('/api/training-center/upload', {
         method: 'POST',
-        body: formData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          filename: file.name,
+          contentType: file.type,
+          moduleId,
+          size: file.size,
+        }),
+        credentials: 'include', // Ensure cookies are sent
       });
 
       if (!uploadRes.ok) {
-        const errorData = await uploadRes.json();
-        throw new Error(errorData.error || 'Upload failed');
+        const text = await uploadRes.text();
+        console.error('Upload init failed - status:', uploadRes.status, 'body:', text);
+        let errorMsg = `Upload failed (${uploadRes.status})`;
+        try {
+          const errorData = JSON.parse(text);
+          if (errorData.role) {
+            errorMsg = `Your role is "${errorData.role}" but DEVELOPER is required`;
+          } else if (errorData.error) {
+            errorMsg = errorData.error;
+          }
+        } catch {
+          // Response wasn't JSON
+          errorMsg = `Upload failed: ${text.substring(0, 100)}`;
+        }
+        throw new Error(errorMsg);
       }
 
-      const { key } = await uploadRes.json();
+      const { key, uploadUrl } = await uploadRes.json();
+
+      // Upload the file directly to S3 using the presigned URL
+      const directUpload = await fetch(uploadUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.type },
+        body: file,
+      });
+
+      if (!directUpload.ok) {
+        const text = await directUpload.text();
+        console.error('Direct upload failed - status:', directUpload.status, 'body:', text);
+        throw new Error('Failed to upload video to storage');
+      }
 
       // Save the S3 key to the section
       setEditVideoUrl(key);
