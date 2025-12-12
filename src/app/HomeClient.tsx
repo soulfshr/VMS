@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { useFeatures } from '@/hooks/useFeatures';
 
 function WelcomeModal({ onClose }: { onClose: () => void }) {
@@ -52,20 +54,39 @@ function WelcomeModal({ onClose }: { onClose: () => void }) {
 }
 
 export default function HomeClient() {
+  const router = useRouter();
+  const { data: session, status } = useSession();
   const features = useFeatures();
   const [showModal, setShowModal] = useState(false);
 
+  // Redirect logged-in users to dashboard
   useEffect(() => {
-    // Check if user has seen the modal before
-    const hasSeenModal = localStorage.getItem('vms_hasSeenWelcomeModal');
-    if (!hasSeenModal) {
-      // Small delay for better UX
-      const timer = setTimeout(() => {
-        setShowModal(true);
-      }, 500);
-      return () => clearTimeout(timer);
+    if (status === 'authenticated' && session?.user) {
+      router.replace('/dashboard');
     }
-  }, []);
+  }, [status, session, router]);
+
+  useEffect(() => {
+    // Only show welcome modal for non-authenticated users
+    if (status === 'unauthenticated') {
+      const hasSeenModal = localStorage.getItem('vms_hasSeenWelcomeModal');
+      if (!hasSeenModal) {
+        const timer = setTimeout(() => {
+          setShowModal(true);
+        }, 500);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [status]);
+
+  // Show loading state while checking auth or redirecting
+  if (status === 'loading' || status === 'authenticated') {
+    return (
+      <div className="min-h-[calc(100vh-200px)] flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-4 border-cyan-600 border-t-transparent rounded-full" />
+      </div>
+    );
+  }
 
   const handleCloseModal = () => {
     setShowModal(false);
