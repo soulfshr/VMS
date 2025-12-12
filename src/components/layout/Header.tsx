@@ -20,6 +20,7 @@ export default function Header() {
   const pathname = usePathname();
   const { data: session, status } = useSession();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isResourcesOpen, setIsResourcesOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [showWelcome, setShowWelcome] = useState(false);
@@ -166,16 +167,48 @@ export default function Header() {
                 >
                   Schedule
                 </Link>
-                <Link
-                  href="/resources"
-                  className={`text-sm font-medium transition-colors ${
-                    pathname.startsWith('/resources')
-                      ? 'text-cyan-700'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  Resources
-                </Link>
+                {/* Resources Dropdown */}
+                <div className="relative">
+                  <button
+                    onClick={() => setIsResourcesOpen(!isResourcesOpen)}
+                    onBlur={() => setTimeout(() => setIsResourcesOpen(false), 150)}
+                    className={`flex items-center gap-1 text-sm font-medium transition-colors ${
+                      pathname.startsWith('/resources')
+                        ? 'text-cyan-700'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Resources
+                    <svg
+                      className={`w-4 h-4 transition-transform ${isResourcesOpen ? 'rotate-180' : ''}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {isResourcesOpen && (
+                    <div className="absolute left-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                      <Link
+                        href="/resources"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setIsResourcesOpen(false)}
+                      >
+                        Resources
+                      </Link>
+                      <a
+                        href="/guide.html"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setIsResourcesOpen(false)}
+                      >
+                        User Guide
+                      </a>
+                    </div>
+                  )}
+                </div>
                 {['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role) && (
                   <Link
                     href="/volunteers"
@@ -214,14 +247,6 @@ export default function Header() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
                 </Link>
-                <a
-                  href="/guide.html"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
-                >
-                  User Guide
-                </a>
                 {['ADMINISTRATOR', 'DEVELOPER'].includes(user.role) && (
                   <Link
                     href="/admin"
@@ -389,13 +414,25 @@ export default function Header() {
                 >
                   Schedule
                 </Link>
-                <Link
-                  href="/resources"
-                  className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Resources
-                </Link>
+                {/* Resources Group */}
+                <div className="space-y-1">
+                  <Link
+                    href="/resources"
+                    className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Resources
+                  </Link>
+                  <a
+                    href="/guide.html"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg text-sm"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    User Guide
+                  </a>
+                </div>
                 {['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role) && (
                   <Link
                     href="/volunteers"
@@ -425,15 +462,6 @@ export default function Header() {
                   </svg>
                   Settings
                 </Link>
-                <a
-                  href="/guide.html"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  User Guide
-                </a>
                 {['ADMINISTRATOR', 'DEVELOPER'].includes(user.role) && (
                   <Link
                     href="/admin"
