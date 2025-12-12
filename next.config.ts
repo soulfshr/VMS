@@ -12,6 +12,43 @@ const nextConfig: NextConfig = {
     optimizePackageImports: ['date-fns'],
   },
 
+  // Redirects for consolidated settings
+  async redirects() {
+    return [
+      {
+        source: '/profile',
+        destination: '/settings/profile',
+        permanent: true,
+      },
+      {
+        source: '/coordinator/settings',
+        destination: '/settings/scheduling',
+        permanent: true,
+      },
+      {
+        source: '/admin/settings',
+        destination: '/settings/organization',
+        permanent: true,
+      },
+      {
+        source: '/developer/feature-flags',
+        destination: '/settings/features',
+        permanent: true,
+      },
+      // Mapping pages consolidated to /map
+      {
+        source: '/coordinator/mapping',
+        destination: '/map',
+        permanent: true,
+      },
+      {
+        source: '/admin/mapping',
+        destination: '/map',
+        permanent: true,
+      },
+    ];
+  },
+
   // Security headers
   async headers() {
     return [

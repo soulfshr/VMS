@@ -201,14 +201,14 @@ export default function Header() {
                   </Link>
                 )}
                 <Link
-                  href="/profile"
+                  href="/settings"
                   className={`text-sm font-medium transition-colors ${
-                    isActive('/profile')
+                    pathname.startsWith('/settings')
                       ? 'text-cyan-700'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  Profile
+                  Settings
                 </Link>
                 <a
                   href="/guide.html"
@@ -411,11 +411,11 @@ export default function Header() {
                   </Link>
                 )}
                 <Link
-                  href="/profile"
+                  href="/settings"
                   className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  Profile
+                  Settings
                 </Link>
                 <a
                   href="/guide.html"

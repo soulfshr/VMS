@@ -8,7 +8,6 @@ import type { DevUser } from '@/types/auth';
 const coordinatorNavItems = [
   { href: '/coordinator', label: 'Overview', icon: '📊' },
   { href: '/coordinator/email-blast', label: 'Email Blast', icon: '📧' },
-  { href: '/coordinator/mapping', label: 'Mapping', icon: '🗺️' },
 ];
 
 export default function CoordinatorLayout({

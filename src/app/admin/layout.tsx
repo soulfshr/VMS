@@ -9,11 +9,9 @@ const adminNavItems = [
   { href: '/admin', label: 'Dashboard', icon: '📊', adminOnly: true },
   { href: '/admin/shifts-import', label: 'Bulk Import Shifts', icon: '📥', adminOnly: false },
   { href: '/admin/email-blast', label: 'Email Blast', icon: '📧', adminOnly: false },
-  { href: '/admin/settings', label: 'General Settings', icon: '⚙️', adminOnly: true },
   { href: '/admin/qualified-roles', label: 'Qualified Roles', icon: '🏅', adminOnly: true },
   { href: '/admin/shift-types', label: 'Shift Types', icon: '📋', adminOnly: true },
   { href: '/admin/training-types', label: 'Training Types', icon: '🎓', adminOnly: true },
-  { href: '/admin/mapping', label: 'Mapping', icon: '🗺️', adminOnly: true },
 ];
 
 export default function AdminLayout({
