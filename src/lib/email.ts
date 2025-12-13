@@ -5,9 +5,9 @@ import { prisma } from '@/lib/db';
 import { escapeHtml, escapeHtmlPreserveBreaks } from '@/lib/html-escape';
 import { logger } from '@/lib/logger';
 
-// Organization timezone - used for formatting dates in emails
+// Default organization timezone - used for formatting dates in emails
 // This ensures consistent display regardless of server timezone (UTC on Vercel)
-const ORG_TIMEZONE = 'America/New_York';
+const DEFAULT_TIMEZONE = 'America/New_York';
 
 // Email configuration - AWS SES
 // Default fallback from env vars (can be overridden by admin settings)
@@ -29,6 +29,7 @@ interface BrandingSettings {
   emailFromAddress: string;
   emailReplyTo: string;
   emailFooter: string;
+  timezone: string;
 }
 
 // Default branding (used if no settings exist)
@@ -38,6 +39,7 @@ const DEFAULT_BRANDING: BrandingSettings = {
   emailFromAddress: DEFAULT_EMAIL_FROM,
   emailReplyTo: REPLY_TO_EMAIL,
   emailFooter: 'RippleVMS Team',
+  timezone: DEFAULT_TIMEZONE,
 };
 
 // Cache for branding settings (refreshes every 5 minutes)
@@ -62,6 +64,7 @@ async function getBranding(): Promise<BrandingSettings> {
       emailFromAddress: settings.emailFromAddress || DEFAULT_EMAIL_FROM,
       emailReplyTo: settings.emailReplyTo || settings.emailFromAddress || REPLY_TO_EMAIL,
       emailFooter: settings.emailFooter,
+      timezone: settings.timezone || DEFAULT_TIMEZONE,
     } : DEFAULT_BRANDING;
 
     // Update cache
@@ -74,22 +77,22 @@ async function getBranding(): Promise<BrandingSettings> {
 }
 
 // Helper to format date in organization timezone
-function formatDateInOrgTimezone(date: Date): string {
+function formatDateInTimezone(date: Date, timezone: string): string {
   return date.toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
     day: 'numeric',
-    timeZone: ORG_TIMEZONE,
+    timeZone: timezone,
   });
 }
 
 // Helper to format time in organization timezone
-function formatTimeInOrgTimezone(date: Date): string {
+function formatTimeInTimezone(date: Date, timezone: string): string {
   return date.toLocaleTimeString('en-US', {
     hour: 'numeric',
     minute: '2-digit',
-    timeZone: ORG_TIMEZONE,
+    timeZone: timezone,
   });
 }
 
@@ -281,9 +284,9 @@ export async function sendShiftSignupEmail(params: ShiftEmailParams): Promise<vo
 
   const { to, volunteerName, shiftTitle, shiftType, shiftDate, startTime, endTime, zoneName, unsubscribeToken } = params;
 
-  const dateStr = formatDateInOrgTimezone(shiftDate);
-  const startStr = formatTimeInOrgTimezone(startTime);
-  const endStr = formatTimeInOrgTimezone(endTime);
+  const dateStr = formatDateInTimezone(shiftDate, branding.timezone);
+  const startStr = formatTimeInTimezone(startTime, branding.timezone);
+  const endStr = formatTimeInTimezone(endTime, branding.timezone);
 
   try {
     await sendEmail({
@@ -338,16 +341,16 @@ export async function sendShiftConfirmationEmail(params: ShiftEmailParams): Prom
 
   const { to, volunteerName, shiftTitle, shiftType, shiftDate, startTime, endTime, zoneName, description, unsubscribeToken } = params;
 
-  const dateStr = formatDateInOrgTimezone(shiftDate);
-  const startStr = formatTimeInOrgTimezone(startTime);
-  const endStr = formatTimeInOrgTimezone(endTime);
+  const dateStr = formatDateInTimezone(shiftDate, branding.timezone);
+  const startStr = formatTimeInTimezone(startTime, branding.timezone);
+  const endStr = formatTimeInTimezone(endTime, branding.timezone);
 
   // Generate ICS calendar invite with explicit timezone
   const calendar = icalGenerator({ name: branding.orgName });
   calendar.createEvent({
     start: startTime,
     end: endTime,
-    timezone: ORG_TIMEZONE,
+    timezone: branding.timezone,
     summary: `${shiftType}: ${shiftTitle} - ${zoneName}`,
     description: description || `${branding.orgName} volunteer shift\n\nType: ${shiftType}\nZone: ${zoneName}`,
     organizer: { name: branding.orgName, email: branding.emailFromAddress },
@@ -407,9 +410,9 @@ export async function sendShiftCancellationEmail(params: Omit<ShiftEmailParams, 
 
   const { to, volunteerName, shiftTitle, shiftType, shiftDate, startTime, endTime, zoneName, unsubscribeToken } = params;
 
-  const dateStr = formatDateInOrgTimezone(shiftDate);
-  const startStr = formatTimeInOrgTimezone(startTime);
-  const endStr = formatTimeInOrgTimezone(endTime);
+  const dateStr = formatDateInTimezone(shiftDate, branding.timezone);
+  const startStr = formatTimeInTimezone(startTime, branding.timezone);
+  const endStr = formatTimeInTimezone(endTime, branding.timezone);
 
   try {
     await sendEmail({
@@ -476,9 +479,9 @@ export async function sendShiftCancelledByCoordinatorEmail(params: ShiftCancelle
 
   const { to, volunteerName, shiftTitle, shiftType, shiftDate, startTime, endTime, zoneName, reason, unsubscribeToken } = params;
 
-  const dateStr = formatDateInOrgTimezone(shiftDate);
-  const startStr = formatTimeInOrgTimezone(startTime);
-  const endStr = formatTimeInOrgTimezone(endTime);
+  const dateStr = formatDateInTimezone(shiftDate, branding.timezone);
+  const startStr = formatTimeInTimezone(startTime, branding.timezone);
+  const endStr = formatTimeInTimezone(endTime, branding.timezone);
 
   try {
     await sendEmail({
@@ -548,16 +551,16 @@ export async function sendShiftInviteEmail(params: ShiftInviteParams): Promise<v
 
   const { to, volunteerName, shiftTitle, shiftType, shiftDate, startTime, endTime, zoneName, description, coordinatorName, unsubscribeToken } = params;
 
-  const dateStr = formatDateInOrgTimezone(shiftDate);
-  const startStr = formatTimeInOrgTimezone(startTime);
-  const endStr = formatTimeInOrgTimezone(endTime);
+  const dateStr = formatDateInTimezone(shiftDate, branding.timezone);
+  const startStr = formatTimeInTimezone(startTime, branding.timezone);
+  const endStr = formatTimeInTimezone(endTime, branding.timezone);
 
   // Generate ICS calendar invite with explicit timezone
   const calendar = icalGenerator({ name: branding.orgName });
   calendar.createEvent({
     start: startTime,
     end: endTime,
-    timezone: ORG_TIMEZONE,
+    timezone: branding.timezone,
     summary: `${shiftType}: ${shiftTitle} - ${zoneName}`,
     description: description || `${branding.orgName} volunteer shift\n\nType: ${shiftType}\nZone: ${zoneName}`,
     organizer: { name: branding.orgName, email: branding.emailFromAddress },
@@ -631,13 +634,15 @@ export async function sendBlastEmail(params: BlastEmailParams): Promise<{ succes
 
   const { to, recipientName, subject, body, unsubscribeToken } = params;
 
-  // Replace variables in body (escape user content first)
+  // Replace variables in body (escape user content for the variable values)
   const processedBody = body
     .replace(/\{\{volunteerName\}\}/g, escapeHtml(recipientName))
     .replace(/\{\{organizationName\}\}/g, escapeHtml(branding.orgName));
 
-  // The body content is admin-authored, but we still escape and preserve line breaks
-  const htmlBody = escapeHtmlPreserveBreaks(processedBody);
+  // The body may contain HTML from templates (shift lists, training lists).
+  // Check if it contains HTML tags - if so, use as-is; otherwise convert newlines to <br>
+  const containsHtml = /<[a-z][\s\S]*>/i.test(processedBody);
+  const htmlBody = containsHtml ? processedBody : processedBody.replace(/\n/g, '<br>');
 
   try {
     await sendEmail({
@@ -712,17 +717,17 @@ export function generateShiftListHtml(shifts: ShiftForListing[], showAllZones = 
       weekday: 'short',
       month: 'short',
       day: 'numeric',
-      timeZone: ORG_TIMEZONE,
+      timeZone: DEFAULT_TIMEZONE,
     });
     const startStr = shift.startTime.toLocaleTimeString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
-      timeZone: ORG_TIMEZONE,
+      timeZone: DEFAULT_TIMEZONE,
     });
     const endStr = shift.endTime.toLocaleTimeString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
-      timeZone: ORG_TIMEZONE,
+      timeZone: DEFAULT_TIMEZONE,
     });
     const spotsLeft = shift.maxVolunteers - shift.confirmedCount;
     const spotsBg = spotsLeft <= 2 ? '#fef3c7' : '#cffafe';
@@ -770,17 +775,17 @@ export function generateTrainingListHtml(trainings: TrainingForListing[]): strin
       weekday: 'short',
       month: 'short',
       day: 'numeric',
-      timeZone: ORG_TIMEZONE,
+      timeZone: DEFAULT_TIMEZONE,
     });
     const startStr = training.startTime.toLocaleTimeString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
-      timeZone: ORG_TIMEZONE,
+      timeZone: DEFAULT_TIMEZONE,
     });
     const endStr = training.endTime.toLocaleTimeString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
-      timeZone: ORG_TIMEZONE,
+      timeZone: DEFAULT_TIMEZONE,
     });
     const spotsLeft = training.maxAttendees - training.confirmedCount;
     const spotsBg = spotsLeft <= 3 ? '#fef3c7' : '#cffafe';
@@ -891,7 +896,7 @@ export async function sendFeedbackEmail(params: FeedbackEmailParams): Promise<vo
   }
 
   const { category, message, userEmail, userName, url, userAgent } = params;
-  const timestamp = new Date().toLocaleString('en-US', { timeZone: ORG_TIMEZONE });
+  const timestamp = new Date().toLocaleString('en-US', { timeZone: DEFAULT_TIMEZONE });
 
   // Category display mapping
   const categoryLabels: Record<string, string> = {
@@ -1040,8 +1045,8 @@ export async function sendSightingNotificationToDispatchers(
     reporterName,
   } = params;
 
-  const dateStr = formatDateInOrgTimezone(observedAt);
-  const timeStr = formatTimeInOrgTimezone(observedAt);
+  const dateStr = formatDateInTimezone(observedAt, branding.timezone);
+  const timeStr = formatTimeInTimezone(observedAt, branding.timezone);
   const vmsUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ripple-vms.com';
 
   for (const dispatcher of dispatchers) {
@@ -1112,10 +1117,10 @@ export interface WeeklyDigestData {
       name: string | null;
       isBackup: boolean;
     }>;
-    zoneCoverage: {
-      covered: number;
-      total: number;
-    };
+    zoneLeads: Array<{
+      zone: string;
+      name: string | null;
+    }>;
   }>;
   totalShifts: number;
   positionsNeeded: number;
@@ -1148,12 +1153,12 @@ export async function sendWeeklyDigestEmail(params: WeeklyDigestEmailParams): Pr
   const startStr = weekStartDate.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
-    timeZone: ORG_TIMEZONE,
+    timeZone: DEFAULT_TIMEZONE,
   });
   const endStr = weekEndDate.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
-    timeZone: ORG_TIMEZONE,
+    timeZone: DEFAULT_TIMEZONE,
   });
 
   // Build day rows HTML
@@ -1167,11 +1172,13 @@ export async function sendWeeklyDigestEmail(params: WeeklyDigestEmailParams): Pr
       return `<div style="font-size: 13px; margin: 2px 0;">${escapeHtml(d.county)}: ${d.name ? escapeHtml(d.name) : dispatcherText}</div>`;
     }).join('');
 
-    const coverageColor = day.zoneCoverage.covered === day.zoneCoverage.total
-      ? '#059669' // Green
-      : day.zoneCoverage.covered > 0
-        ? '#d97706' // Amber
-        : '#dc2626'; // Red
+    const coveredZones = day.zoneLeads.filter(z => z.name).map(z => z.zone);
+    const gapZones = day.zoneLeads.filter(z => !z.name).map(z => z.zone);
+
+    const zoneLeadLines = `
+      ${coveredZones.length > 0 ? `<div style="font-size: 13px; margin: 2px 0;"><strong style="color: #059669;">Covered:</strong> ${escapeHtml(coveredZones.join(', '))}</div>` : ''}
+      ${gapZones.length > 0 ? `<div style="font-size: 13px; margin: 2px 0;"><strong style="color: #dc2626;">Gaps:</strong> ${escapeHtml(gapZones.join(', '))}</div>` : '<div style="font-size: 13px; color: #059669;">All zones covered!</div>'}
+    `;
 
     return `
       <tr>
@@ -1184,10 +1191,8 @@ export async function sendWeeklyDigestEmail(params: WeeklyDigestEmailParams): Pr
         <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; vertical-align: top;">
           ${dispatcherLines}
         </td>
-        <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; vertical-align: top; text-align: center;">
-          <span style="color: ${coverageColor}; font-weight: 600;">
-            ${day.zoneCoverage.covered}/${day.zoneCoverage.total}
-          </span>
+        <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; vertical-align: top;">
+          ${zoneLeadLines}
         </td>
       </tr>
     `;
@@ -1232,7 +1237,7 @@ export async function sendWeeklyDigestEmail(params: WeeklyDigestEmailParams): Pr
                   <th style="padding: 12px; text-align: left; font-weight: 600; color: #374151; border-bottom: 2px solid #e5e7eb;">Day</th>
                   <th style="padding: 12px; text-align: left; font-weight: 600; color: #374151; border-bottom: 2px solid #e5e7eb;">Dispatch Coord</th>
                   <th style="padding: 12px; text-align: left; font-weight: 600; color: #374151; border-bottom: 2px solid #e5e7eb;">Dispatchers</th>
-                  <th style="padding: 12px; text-align: center; font-weight: 600; color: #374151; border-bottom: 2px solid #e5e7eb;">Zones</th>
+                  <th style="padding: 12px; text-align: left; font-weight: 600; color: #374151; border-bottom: 2px solid #e5e7eb;">Zone Leads</th>
                 </tr>
               </thead>
               <tbody>

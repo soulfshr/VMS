@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { sendWeeklyDigestEmail } from '@/lib/email';
 import { logger } from '@/lib/logger';
+import { getOrgTimezone } from '@/lib/timezone';
 
 // Verify cron request is from Vercel
 function verifyCronRequest(request: NextRequest): boolean {
@@ -16,28 +17,25 @@ function verifyCronRequest(request: NextRequest): boolean {
   return true;
 }
 
-// Organization timezone
-const ORG_TIMEZONE = 'America/New_York';
-
 // Helper to format date in organization timezone
-function formatDateInOrgTimezone(date: Date): string {
+function formatDateWithWeekday(date: Date, timezone: string): string {
   return date.toLocaleDateString('en-US', {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
-    timeZone: ORG_TIMEZONE,
+    timeZone: timezone,
   });
 }
 
 // Get next week's date range (Monday to Sunday)
 // When called on Sunday, returns the upcoming Mon-Sun
-function getNextWeekRange(): { start: Date; end: Date } {
+function getNextWeekRange(timezone: string): { start: Date; end: Date } {
   // Use timezone-aware date calculation
   const now = new Date();
 
-  // Get current day in Eastern Time (0 = Sunday, 1 = Monday, etc.)
-  const etNow = new Date(now.toLocaleString('en-US', { timeZone: ORG_TIMEZONE }));
-  const dayOfWeek = etNow.getDay();
+  // Get current day in the configured timezone (0 = Sunday, 1 = Monday, etc.)
+  const tzNow = new Date(now.toLocaleString('en-US', { timeZone: timezone }));
+  const dayOfWeek = tzNow.getDay();
 
   // Calculate days until next Monday
   // If today is Sunday (0), next Monday is 1 day away
@@ -50,15 +48,16 @@ function getNextWeekRange(): { start: Date; end: Date } {
     daysUntilMonday = 8 - dayOfWeek; // e.g., Monday (1) -> 7, Tuesday (2) -> 6, etc.
   }
 
-  // Create Monday date at midnight ET
-  const monday = new Date(etNow);
-  monday.setDate(etNow.getDate() + daysUntilMonday);
-  monday.setHours(0, 0, 0, 0);
+  // Create Monday date at noon UTC to avoid timezone rollback issues
+  // (midnight UTC converts to previous day in US timezones)
+  const monday = new Date(tzNow);
+  monday.setDate(tzNow.getDate() + daysUntilMonday);
+  monday.setUTCHours(12, 0, 0, 0);
 
-  // Create Sunday date at end of day
+  // Create Sunday date at noon UTC
   const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-  sunday.setHours(23, 59, 59, 999);
+  sunday.setUTCDate(monday.getUTCDate() + 6);
+  sunday.setUTCHours(12, 0, 0, 0);
 
   return { start: monday, end: sunday };
 }
@@ -75,10 +74,10 @@ export interface WeeklyDigestData {
       name: string | null;
       isBackup: boolean;
     }>;
-    zoneCoverage: {
-      covered: number;
-      total: number;
-    };
+    zoneLeads: Array<{
+      zone: string;
+      name: string | null;
+    }>;
   }>;
   totalShifts: number;
   positionsNeeded: number;
@@ -87,11 +86,12 @@ export interface WeeklyDigestData {
 // GET /api/cron/weekly-digest
 // Triggered by Vercel cron hourly on Sundays, checks configured send time
 export async function GET(request: NextRequest) {
-  // Allow test mode with secret or in development
+  // Allow test mode with secret, in development, or when no secret is configured
   const testSecret = request.nextUrl.searchParams.get('secret');
   const isTestMode = request.nextUrl.searchParams.get('test') === 'true' && (
     process.env.NODE_ENV === 'development' ||
-    testSecret === process.env.CRON_SECRET
+    testSecret === process.env.CRON_SECRET ||
+    !process.env.CRON_SECRET // Allow test mode if no secret configured
   );
 
   // Verify cron request
@@ -112,27 +112,30 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // Get organization timezone from settings
+    const timezone = await getOrgTimezone();
+
     // 2. Check if it's the configured send hour (skip check in test mode)
     if (!isTestMode) {
       const now = new Date();
-      const etHour = parseInt(now.toLocaleString('en-US', {
-        timeZone: ORG_TIMEZONE,
+      const currentHour = parseInt(now.toLocaleString('en-US', {
+        timeZone: timezone,
         hour: 'numeric',
         hour12: false
       }));
       const configuredHour = settings.weeklyDigestSendHour ?? 18;
 
-      if (etHour !== configuredHour) {
+      if (currentHour !== configuredHour) {
         return NextResponse.json({
           success: true,
-          message: `Not scheduled hour (current: ${etHour}, configured: ${configuredHour})`,
+          message: `Not scheduled hour (current: ${currentHour}, configured: ${configuredHour})`,
           sent: 0
         });
       }
     }
 
     // 3. Calculate next week's date range
-    const { start: weekStart, end: weekEnd } = getNextWeekRange();
+    const { start: weekStart, end: weekEnd } = getNextWeekRange(timezone);
 
     // 4. Fetch schedule data for the week
     const [zones, counties, shifts, dispatcherAssignments, regionalLeads] = await Promise.all([
@@ -154,9 +157,10 @@ export async function GET(request: NextRequest) {
           status: 'PUBLISHED',
         },
         include: {
-          zone: true,
+          zone: { select: { id: true, name: true } },
           volunteers: {
-            where: { status: { in: ['CONFIRMED', 'PENDING'] } },
+            where: { status: 'CONFIRMED', isZoneLead: true },
+            select: { id: true, isZoneLead: true, user: { select: { name: true } } },
           },
         },
       }),
@@ -191,8 +195,11 @@ export async function GET(request: NextRequest) {
     let positionsNeeded = 0;
 
     for (let i = 0; i < 7; i++) {
+      // Use UTC methods to avoid timezone issues
+      // weekStart is already at noon UTC, so adding days keeps it at noon
       const currentDate = new Date(weekStart);
-      currentDate.setDate(weekStart.getDate() + i);
+      currentDate.setUTCDate(weekStart.getUTCDate() + i);
+      currentDate.setUTCHours(12, 0, 0, 0); // Ensure noon UTC
       const dateStr = currentDate.toISOString().split('T')[0];
 
       // Regional lead for this day
@@ -214,31 +221,41 @@ export async function GET(request: NextRequest) {
         };
       });
 
-      // Zone coverage for this day
+      // Zone leads for this day - get zone lead for each zone
       const dayShifts = shifts.filter(
         s => s.date.toISOString().split('T')[0] === dateStr
       );
       totalShifts += dayShifts.length;
 
-      const coveredZoneIds = new Set(dayShifts.map(s => s.zoneId));
-      const coveredZones = coveredZoneIds.size;
+      // Build zone leads list - for each zone, find who's leading that day
+      const dayZoneLeads = zones.map(zone => {
+        // Find shifts for this zone on this day
+        const zoneShifts = dayShifts.filter(s => s.zone.id === zone.id);
+        // Get the zone lead from any shift in this zone (take the first one found)
+        const zoneLead = zoneShifts
+          .flatMap(s => s.volunteers)
+          .find(v => v.isZoneLead);
+        return {
+          zone: zone.name,
+          name: zoneLead?.user?.name || null,
+        };
+      });
 
-      // Count positions needed (dispatchers + zone leads)
+      // Count positions needed (dispatchers + regional leads + zones without leads)
       const dispatchersNeeded = dayDispatchers.filter(d => !d.name).length;
+      const zoneLeadsNeeded = dayZoneLeads.filter(z => !z.name).length;
       if (!dayRegionalLead) positionsNeeded += 1;
       positionsNeeded += dispatchersNeeded;
+      positionsNeeded += zoneLeadsNeeded;
 
       days.push({
         date: currentDate,
-        dateStr: formatDateInOrgTimezone(currentDate),
+        dateStr: formatDateWithWeekday(currentDate, timezone),
         regionalLead: dayRegionalLead
           ? { name: dayRegionalLead.user.name, isPrimary: dayRegionalLead.isPrimary }
           : null,
         dispatchers: dayDispatchers,
-        zoneCoverage: {
-          covered: coveredZones,
-          total: totalZones,
-        },
+        zoneLeads: dayZoneLeads,
       });
     }
 
@@ -251,11 +268,15 @@ export async function GET(request: NextRequest) {
     };
 
     // 5. Query eligible recipients
+    // In test mode, allow filtering by specific email address
+    const testEmail = isTestMode ? request.nextUrl.searchParams.get('email') : null;
+
     const recipients = await prisma.user.findMany({
       where: {
         role: { in: ['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR', 'DEVELOPER'] },
         isActive: true,
         emailNotifications: true,
+        ...(testEmail ? { email: testEmail } : {}),
       },
       select: {
         id: true,

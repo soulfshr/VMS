@@ -1,8 +1,10 @@
 'use client';
 
 import Link from 'next/link';
+import { useFeatures } from '@/hooks/useFeatures';
 
 export default function CoordinatorPage() {
+  const features = useFeatures();
   return (
     <div>
       <div className="mb-6">
@@ -77,12 +79,14 @@ export default function CoordinatorPage() {
             >
               <span>📅</span> Manage Shifts
             </Link>
-            <Link
-              href="/trainings"
-              className="flex items-center gap-2 text-sm text-gray-600 hover:text-cyan-700"
-            >
-              <span>🎓</span> Manage Trainings
-            </Link>
+            {features.trainings && (
+              <Link
+                href="/trainings"
+                className="flex items-center gap-2 text-sm text-gray-600 hover:text-cyan-700"
+              >
+                <span>🎓</span> Manage Trainings
+              </Link>
+            )}
             <Link
               href="/volunteers"
               className="flex items-center gap-2 text-sm text-gray-600 hover:text-cyan-700"

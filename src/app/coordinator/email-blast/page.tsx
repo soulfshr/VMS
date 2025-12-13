@@ -139,13 +139,37 @@ export default function CoordinatorEmailBlastPage() {
       setIsLoadingShifts(true);
       try {
         const res = await fetch(
-          `/api/shifts?startDate=${dateRange.startDate}&endDate=${dateRange.endDate}&status=PUBLISHED&hasOpenings=true`
+          `/api/shifts?status=PUBLISHED`
         );
         if (res.ok) {
+          // API returns array directly with spotsLeft and maxVolunteers
           const data = await res.json();
-          setAvailableShifts(data.shifts || []);
+          const allShifts = Array.isArray(data) ? data : (data.shifts || []);
+
+          // Filter by date range and openings, map to expected interface
+          const startDate = new Date(dateRange.startDate);
+          const endDate = new Date(dateRange.endDate);
+          endDate.setHours(23, 59, 59); // Include full end date
+
+          const shiftsWithOpenings = allShifts
+            .filter((s: { date: string; spotsLeft: number }) => {
+              const shiftDate = new Date(s.date);
+              return shiftDate >= startDate && shiftDate <= endDate && s.spotsLeft > 0;
+            })
+            .map((s: { id: string; title: string; date: string; startTime: string; endTime: string; zone: { id: string; name: string }; spotsLeft: number; maxVolunteers: number }) => ({
+              id: s.id,
+              title: s.title,
+              date: s.date,
+              startTime: s.startTime,
+              endTime: s.endTime,
+              zone: s.zone,
+              openSlots: s.spotsLeft,
+              totalSlots: s.maxVolunteers,
+            }));
+
+          setAvailableShifts(shiftsWithOpenings);
           // Auto-select all shifts initially
-          setSelectedShiftIds(new Set((data.shifts || []).map((s: Shift) => s.id)));
+          setSelectedShiftIds(new Set(shiftsWithOpenings.map((s: Shift) => s.id)));
         }
       } catch (err) {
         console.error('Error fetching shifts:', err);
