@@ -1,18 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUserWithZones } from '@/lib/user';
-
-// Organization timezone - Eastern Time
-const ORG_TIMEZONE = 'America/New_York';
-
-function getHourInTimezone(date: Date): number {
-  const hourStr = date.toLocaleString('en-US', {
-    hour: 'numeric',
-    hour12: false,
-    timeZone: ORG_TIMEZONE,
-  });
-  return parseInt(hourStr);
-}
+import { getOrgTimezone, createHourExtractor } from '@/lib/timezone';
 
 // GET /api/dashboard - Get dashboard data for current user
 export async function GET() {
@@ -23,6 +12,10 @@ export async function GET() {
     }
 
     const now = new Date();
+
+    // Get organization timezone for consistent date/time handling
+    const timezone = await getOrgTimezone();
+    const getHourInTimezone = createHourExtractor(timezone);
 
     // Get user's upcoming shifts (confirmed, pending, or cancelled but not dismissed)
     // Include cancelled shifts so users can see what was cancelled
@@ -278,14 +271,22 @@ export async function GET() {
       });
 
       // Calculate week-by-week volunteer coverage summary
-      const nextWeekStart = new Date(weekEnd);
-      const nextWeekEnd = new Date(nextWeekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+      // Use calendar week (Sunday to Saturday) to match Schedule page
+      const today = new Date(now.toLocaleString('en-US', { timeZone: timezone }));
+      const dayOfWeek = today.getDay(); // 0 = Sunday
+      const thisWeekStart = new Date(today);
+      thisWeekStart.setDate(today.getDate() - dayOfWeek); // Go back to Sunday
+      thisWeekStart.setHours(0, 0, 0, 0);
+      const thisWeekEnd = new Date(thisWeekStart);
+      thisWeekEnd.setDate(thisWeekStart.getDate() + 7); // Saturday end / Sunday start
+      const nextWeekEnd = new Date(thisWeekEnd);
+      nextWeekEnd.setDate(thisWeekEnd.getDate() + 7);
 
       // Get this week's shifts with all confirmed/pending volunteers
       const thisWeekAllShifts = await prisma.shift.findMany({
         where: {
           status: 'PUBLISHED',
-          date: { gte: now, lt: weekEnd },
+          date: { gte: thisWeekStart, lt: thisWeekEnd },
         },
         include: {
           volunteers: {
@@ -298,7 +299,7 @@ export async function GET() {
       const nextWeekAllShifts = await prisma.shift.findMany({
         where: {
           status: 'PUBLISHED',
-          date: { gte: nextWeekStart, lt: nextWeekEnd },
+          date: { gte: thisWeekEnd, lt: nextWeekEnd },
         },
         include: {
           volunteers: {

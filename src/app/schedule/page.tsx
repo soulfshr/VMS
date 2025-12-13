@@ -164,6 +164,12 @@ export default function SchedulePage() {
   const [regionalLeadModalOpen, setRegionalLeadModalOpen] = useState(false);
   const [selectedRegionalLeadDate, setSelectedRegionalLeadDate] = useState<string | null>(null);
   const [backupDispatchersExpanded, setBackupDispatchersExpanded] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [settingsSaving, setSettingsSaving] = useState(false);
+  const [settingsForm, setSettingsForm] = useState({
+    dispatcherSchedulingMode: 'ZONE' as 'REGIONAL' | 'COUNTY' | 'ZONE',
+    schedulingMode: 'SIMPLE' as 'SIMPLE' | 'FULL',
+  });
 
   // Check authentication
   useEffect(() => {
@@ -212,7 +218,36 @@ export default function SchedulePage() {
     fetchSchedule();
   }, [fetchSchedule]);
 
+  // Sync settings form with schedule data
+  useEffect(() => {
+    if (scheduleData) {
+      setSettingsForm({
+        dispatcherSchedulingMode: scheduleData.dispatcherSchedulingMode || 'ZONE',
+        schedulingMode: scheduleData.schedulingMode || 'SIMPLE',
+      });
+    }
+  }, [scheduleData]);
+
   const canEdit = user && ['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role);
+
+  // Save schedule settings
+  const handleSaveSettings = async () => {
+    setSettingsSaving(true);
+    try {
+      const res = await fetch('/api/coordinator/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settingsForm),
+      });
+      if (!res.ok) throw new Error('Failed to save settings');
+      setShowSettings(false);
+      fetchSchedule(); // Refresh schedule with new settings
+    } catch (error) {
+      console.error('Error saving settings:', error);
+    } finally {
+      setSettingsSaving(false);
+    }
+  };
 
   const navigateWeek = (direction: 'prev' | 'next') => {
     const newDate = new Date(currentWeekStart);
@@ -364,12 +399,24 @@ export default function SchedulePage() {
                 </select>
               </div>
               {canEdit && (
-                <Link
-                  href="/shifts/create"
-                  className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium"
-                >
-                  + Create Shift
-                </Link>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowSettings(true)}
+                    className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+                    title="Schedule Settings"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  </button>
+                  <Link
+                    href="/shifts/create"
+                    className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium"
+                  >
+                    + Create Shift
+                  </Link>
+                </div>
               )}
             </div>
           </div>
@@ -901,6 +948,150 @@ export default function SchedulePage() {
             fetchSchedule();
           }}
         />
+      )}
+
+      {/* Schedule Settings Modal */}
+      {showSettings && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+              <h2 className="text-lg font-semibold text-gray-900">Schedule Settings</h2>
+              <button
+                onClick={() => setShowSettings(false)}
+                className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Dispatcher Scheduling Mode */}
+              <div>
+                <h3 className="text-sm font-medium text-gray-900 mb-3">Dispatcher Scheduling Mode</h3>
+                <p className="text-sm text-gray-500 mb-4">
+                  Controls how dispatchers are assigned to time blocks
+                </p>
+                <div className="space-y-3">
+                  <label className="flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input
+                      type="radio"
+                      name="dispatcherMode"
+                      value="REGIONAL"
+                      checked={settingsForm.dispatcherSchedulingMode === 'REGIONAL'}
+                      onChange={() => setSettingsForm(prev => ({ ...prev, dispatcherSchedulingMode: 'REGIONAL' }))}
+                      className="mt-1"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-gray-900">Regional</span>
+                        <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-full">Low Activity</span>
+                      </div>
+                      <p className="text-sm text-gray-500 mt-1">
+                        One dispatcher covers all counties. Best for quiet periods.
+                      </p>
+                    </div>
+                  </label>
+                  <label className="flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input
+                      type="radio"
+                      name="dispatcherMode"
+                      value="COUNTY"
+                      checked={settingsForm.dispatcherSchedulingMode === 'COUNTY'}
+                      onChange={() => setSettingsForm(prev => ({ ...prev, dispatcherSchedulingMode: 'COUNTY' }))}
+                      className="mt-1"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-gray-900">County</span>
+                        <span className="text-xs px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full">Medium Activity</span>
+                      </div>
+                      <p className="text-sm text-gray-500 mt-1">
+                        One dispatcher per county. Standard configuration.
+                      </p>
+                    </div>
+                  </label>
+                  <label className="flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input
+                      type="radio"
+                      name="dispatcherMode"
+                      value="ZONE"
+                      checked={settingsForm.dispatcherSchedulingMode === 'ZONE'}
+                      onChange={() => setSettingsForm(prev => ({ ...prev, dispatcherSchedulingMode: 'ZONE' }))}
+                      className="mt-1"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-gray-900">Zone</span>
+                        <span className="text-xs px-2 py-0.5 bg-red-100 text-red-700 rounded-full">High Activity</span>
+                      </div>
+                      <p className="text-sm text-gray-500 mt-1">
+                        Dispatchers assigned at zone level. Maximum coverage.
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Volunteer Scheduling Mode */}
+              <div>
+                <h3 className="text-sm font-medium text-gray-900 mb-3">Volunteer Scheduling Mode</h3>
+                <p className="text-sm text-gray-500 mb-4">
+                  Controls which volunteer positions appear in the schedule
+                </p>
+                <div className="space-y-3">
+                  <label className="flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input
+                      type="radio"
+                      name="schedulingMode"
+                      value="SIMPLE"
+                      checked={settingsForm.schedulingMode === 'SIMPLE'}
+                      onChange={() => setSettingsForm(prev => ({ ...prev, schedulingMode: 'SIMPLE' }))}
+                      className="mt-1"
+                    />
+                    <div className="flex-1">
+                      <span className="font-medium text-gray-900">Simple - Leaders Only</span>
+                      <p className="text-sm text-gray-500 mt-1">
+                        Only show zone leads. Volunteers manage themselves.
+                      </p>
+                    </div>
+                  </label>
+                  <label className="flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input
+                      type="radio"
+                      name="schedulingMode"
+                      value="FULL"
+                      checked={settingsForm.schedulingMode === 'FULL'}
+                      onChange={() => setSettingsForm(prev => ({ ...prev, schedulingMode: 'FULL' }))}
+                      className="mt-1"
+                    />
+                    <div className="flex-1">
+                      <span className="font-medium text-gray-900">Full - All Volunteers</span>
+                      <p className="text-sm text-gray-500 mt-1">
+                        Show all volunteer assignments in the schedule grid.
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-end gap-3 rounded-b-xl">
+              <button
+                onClick={() => setShowSettings(false)}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveSettings}
+                disabled={settingsSaving}
+                className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium disabled:opacity-50"
+              >
+                {settingsSaving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
     </>

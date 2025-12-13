@@ -237,15 +237,23 @@
             </div>
             <div class="flex items-center gap-2 text-sm">
               <span class="w-2 h-2 bg-cyan-500 rounded-full"></span>
+              <strong>Map</strong> - Interactive coverage map with zones and POIs
+            </div>
+            <div class="flex items-center gap-2 text-sm">
+              <span class="w-2 h-2 bg-cyan-500 rounded-full"></span>
               <strong>Shifts</strong> - Browse and manage shifts
             </div>
             <div class="flex items-center gap-2 text-sm">
               <span class="w-2 h-2 bg-cyan-500 rounded-full"></span>
-              <strong>Trainings</strong> - View training sessions
+              <strong>Training</strong> - View training sessions and modules
             </div>
             <div class="flex items-center gap-2 text-sm">
               <span class="w-2 h-2 bg-cyan-500 rounded-full"></span>
               <strong>Schedule</strong> - Weekly schedule view
+            </div>
+            <div class="flex items-center gap-2 text-sm">
+              <span class="w-2 h-2 bg-cyan-500 rounded-full"></span>
+              <strong>Resources</strong> - Dispatch Process, User Guide, and Dispatch Training
             </div>
             <div class="flex items-center gap-2 text-sm">
               <span class="w-2 h-2 bg-orange-500 rounded-full"></span>
@@ -256,14 +264,18 @@
               <strong>Volunteers</strong> - Directory (Dispatchers/Coordinators/Admins)
             </div>
             <div class="flex items-center gap-2 text-sm">
-              <span class="w-2 h-2 bg-cyan-500 rounded-full"></span>
-              <strong>Profile</strong> - Your personal settings
-            </div>
-            <div class="flex items-center gap-2 text-sm">
               <span class="w-2 h-2 bg-purple-500 rounded-full"></span>
               <strong>Admin</strong> - System administration (Admins only)
             </div>
           </div>
+
+          <h3 class="text-lg font-semibold text-gray-900 mb-3 mt-6">Resources Dropdown</h3>
+          <p class="text-gray-600 mb-4">The Resources dropdown provides quick access to training materials and documentation:</p>
+          <ul class="list-disc list-inside text-gray-600 space-y-1">
+            <li><strong>Dispatch Process</strong> - Step-by-step dispatch process documentation</li>
+            <li><strong>User Guide</strong> - This comprehensive system guide</li>
+            <li><strong>Dispatch Training</strong> - Google Slides presentation for dispatcher training</li>
+          </ul>
         </section>
 
         <!-- Dashboard -->
@@ -633,12 +645,21 @@
               <h3 class="font-semibold text-blue-900 mb-2">For Coordinators/Dispatchers/Admins:</h3>
               <ul class="text-sm text-gray-600 space-y-1">
                 <li><strong>Dispatch Coordinator Assignments</strong> - Who's the dispatch coordinator each day</li>
+                <li><strong>Backup Dispatchers</strong> - Region-wide backup dispatchers available to support any county</li>
                 <li><strong>Dispatcher Assignments</strong> - Who's on dispatch duty (display varies by mode)</li>
                 <li><strong>Zone Lead Assignments</strong> - Zone leads assigned to each shift</li>
                 <li>Filter by zone to see specific area coverage</li>
               </ul>
             </div>
           </div>
+
+          <h3 class="text-lg font-semibold text-gray-900 mb-3">Backup Dispatchers</h3>
+          <p class="text-gray-600 mb-4">Backup dispatchers are region-wide and available to support any county during their assigned time blocks. They appear in an orange "Backup Disp." row on the schedule when assigned:</p>
+          <ul class="list-disc list-inside text-gray-600 mb-6 space-y-1">
+            <li>Shows backup dispatcher names organized by time block</li>
+            <li>Only visible when backup dispatchers are assigned for the week</li>
+            <li>Backup dispatchers can step in for any county as needed</li>
+          </ul>
 
           <h3 class="text-lg font-semibold text-gray-900 mb-3">Dispatcher Display by Mode</h3>
           <p class="text-gray-600 mb-4">The Schedule page displays dispatchers differently based on the admin-configured Dispatcher Scheduling Mode:</p>

@@ -121,11 +121,13 @@
 flowchart TB
     subgraph Client["Client Layer"]
         Dashboard
+        Map
         Shifts
         Trainings
         Sightings
         Volunteers
         Schedule
+        Resources
         Admin
     end
     subgraph Components["Component Layer"]
@@ -140,6 +142,7 @@ flowchart TB
         TrainingsAPI["/api/trainings"]
         SightingsAPI["/api/sightings"]
         VolunteersAPI["/api/volunteers"]
+        ScheduleAPI["/api/schedule"]
         AdminAPI["/api/admin"]
         ProfileAPI["/api/profile"]
     end
@@ -333,6 +336,12 @@ erDiagram
                     <div class="api-route"><span class="api-method post">POST</span><span class="api-path">/api/sightings</span><span class="api-desc">Report sighting (no auth)</span></div>
                 </div>
                 <div class="api-group">
+                    <div class="api-group-title">Schedule</div>
+                    <div class="api-route"><span class="api-method get">GET</span><span class="api-path">/api/schedule</span><span class="api-desc">Weekly schedule data with dispatchers, leads, backups</span></div>
+                    <div class="api-route"><span class="api-method post">POST</span><span class="api-path">/api/dispatcher-assignments</span><span class="api-desc">Create dispatcher assignment</span></div>
+                    <div class="api-route"><span class="api-method post">POST</span><span class="api-path">/api/regional-lead-assignments</span><span class="api-desc">Assign dispatch coordinator</span></div>
+                </div>
+                <div class="api-group">
                     <div class="api-group-title">Admin</div>
                     <div class="api-route"><span class="api-method get">GET</span><span class="api-path">/api/admin/zones</span><span class="api-desc">Zone management</span></div>
                     <div class="api-route"><span class="api-method get">GET</span><span class="api-path">/api/admin/shift-types</span><span class="api-desc">Shift type config</span></div>
@@ -436,6 +445,34 @@ graph LR
                     <div class="tech-card" style="border-left: 4px solid var(--accent-green);"><div class="tech-name">Regional Mode</div><div class="tech-desc">Dedicated dispatcher row between Dispatch Coordinator and counties</div></div>
                     <div class="tech-card" style="border-left: 4px solid var(--accent-orange);"><div class="tech-name">County Mode</div><div class="tech-desc">Dispatcher row under each county header</div></div>
                     <div class="tech-card" style="border-left: 4px solid var(--accent-red);"><div class="tech-name">Zone Mode</div><div class="tech-desc">Dispatcher inline with zone assignments (default)</div></div>
+                </div>
+            </div>
+            <div class="card">
+                <h2>Backup Dispatchers</h2>
+                <p style="margin-bottom: 1rem; color: var(--text-secondary);">Region-wide backup dispatchers available to support any county</p>
+<pre class="mermaid">
+graph TD
+    subgraph Schedule["Schedule View"]
+        DC["Dispatch Coordinator"]
+        BD["🔄 Backup Dispatchers"]
+        CD["County Dispatchers"]
+        ZL["Zone Leads"]
+        DC --> BD
+        BD --> CD
+        CD --> ZL
+    end
+    subgraph BackupFeatures["Backup Dispatcher Features"]
+        B1["Region-wide availability"]
+        B2["Assigned per time block"]
+        B3["Support any county"]
+        B4["Orange highlighting"]
+    end
+    BD --- BackupFeatures
+</pre>
+                <div class="tech-grid" style="margin-top: 1rem;">
+                    <div class="tech-card" style="border-left: 4px solid var(--accent-orange);"><div class="tech-name">Region-Wide</div><div class="tech-desc">Not tied to specific county - can support any area</div></div>
+                    <div class="tech-card" style="border-left: 4px solid var(--accent-orange);"><div class="tech-name">Time Block Based</div><div class="tech-desc">Assigned to specific time blocks (6am-10am, 10am-2pm, 2pm-6pm)</div></div>
+                    <div class="tech-card" style="border-left: 4px solid var(--accent-orange);"><div class="tech-name">Visual Display</div><div class="tech-desc">Orange "Backup Disp." row in schedule view</div></div>
                 </div>
             </div>
         </section>

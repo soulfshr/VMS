@@ -68,6 +68,23 @@ export async function POST(
     // Check if volunteer is already on this shift
     const existingRsvp = shift.volunteers.find(v => v.userId === volunteerId);
     if (existingRsvp) {
+      // If already on shift and we're trying to make them zone lead, update instead
+      if (isZoneLead && !existingRsvp.isZoneLead) {
+        const updatedRsvp = await prisma.shiftVolunteer.update({
+          where: { id: existingRsvp.id },
+          data: { isZoneLead: true },
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+          },
+        });
+        return NextResponse.json(updatedRsvp, { status: 200 });
+      }
       return NextResponse.json(
         { error: 'Volunteer is already signed up for this shift' },
         { status: 400 }

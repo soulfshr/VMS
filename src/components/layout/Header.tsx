@@ -208,13 +208,13 @@ export default function Header() {
                     </svg>
                   </button>
                   {isResourcesOpen && (
-                    <div className="absolute left-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                    <div className="absolute left-0 mt-2 w-44 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
                       <Link
                         href="/resources"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => setIsResourcesOpen(false)}
                       >
-                        Resources
+                        Dispatch Process
                       </Link>
                       <a
                         href="/guide.html"
@@ -224,6 +224,15 @@ export default function Header() {
                         onClick={() => setIsResourcesOpen(false)}
                       >
                         User Guide
+                      </a>
+                      <a
+                        href="https://docs.google.com/presentation/d/1laZwZv-C_Vwuru4kbJzzQcH8HKy4HHYTdQ5r9FNIf_Y/edit?slide=id.p"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setIsResourcesOpen(false)}
+                      >
+                        Dispatch Training
                       </a>
                     </div>
                   )}
@@ -440,7 +449,7 @@ export default function Header() {
                     className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    Resources
+                    Dispatch Process
                   </Link>
                   <a
                     href="/guide.html"
@@ -450,6 +459,15 @@ export default function Header() {
                     onClick={() => setIsMenuOpen(false)}
                   >
                     User Guide
+                  </a>
+                  <a
+                    href="https://docs.google.com/presentation/d/1laZwZv-C_Vwuru4kbJzzQcH8HKy4HHYTdQ5r9FNIf_Y/edit?slide=id.p"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg text-sm"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Dispatch Training
                   </a>
                 </div>
                 {['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role) && (
