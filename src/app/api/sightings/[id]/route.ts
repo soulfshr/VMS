@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
-import { SightingStatus } from '@/generated/prisma/enums';
+import { SightingStatus, SightingDisposition } from '@/generated/prisma/enums';
 
 // GET /api/sightings/[id] - Get a single sighting (requires authentication)
 export async function GET(
@@ -43,7 +43,7 @@ export async function GET(
   }
 }
 
-// PATCH /api/sightings/[id] - Update a sighting (status, notes, assignment)
+// PATCH /api/sightings/[id] - Update a sighting (status, disposition, notes, assignment)
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -63,7 +63,7 @@ export async function PATCH(
     const { id } = await params;
     const body = await request.json();
 
-    const { status, notes, assignedToId } = body;
+    const { status, disposition, notes, assignedToId } = body;
 
     // Validate status if provided
     if (status && !Object.values(SightingStatus).includes(status)) {
@@ -73,13 +73,31 @@ export async function PATCH(
       );
     }
 
+    // Validate disposition if provided
+    if (disposition && !Object.values(SightingDisposition).includes(disposition)) {
+      return NextResponse.json(
+        { error: 'Invalid disposition' },
+        { status: 400 }
+      );
+    }
+
+    // Build update data
+    const updateData: Record<string, unknown> = {};
+
+    if (status) updateData.status = status;
+    if (notes !== undefined) updateData.notes = notes;
+    if (assignedToId !== undefined) updateData.assignedToId = assignedToId;
+
+    // Handle disposition - auto-close when disposition is set
+    if (disposition) {
+      updateData.disposition = disposition;
+      // Auto-set status to CLOSED when a disposition is set
+      updateData.status = SightingStatus.CLOSED;
+    }
+
     const sighting = await prisma.iceSighting.update({
       where: { id },
-      data: {
-        ...(status && { status }),
-        ...(notes !== undefined && { notes }),
-        ...(assignedToId !== undefined && { assignedToId }),
-      },
+      data: updateData,
       include: {
         media: true,
       },

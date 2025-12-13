@@ -27,7 +27,8 @@ interface Sighting {
   reporterName: string | null;
   reporterPhone: string | null;
   reporterEmail: string | null;
-  status: 'NEW' | 'REVIEWING' | 'VERIFIED' | 'RESPONDED' | 'CLOSED';
+  status: 'NEW' | 'REVIEWING' | 'DISPATCHED' | 'CLOSED';
+  disposition: 'CONFIRMED' | 'UNVERIFIED' | 'FALSE_ALARM' | null;
   notes: string | null;
   assignedToId: string | null;
   media: SightingMedia[];
@@ -35,23 +36,33 @@ interface Sighting {
   updatedAt: string;
 }
 
+// Status colors and labels (workflow stages)
 const statusColors: Record<string, string> = {
   NEW: 'bg-red-100 text-red-800 border-red-200',
   REVIEWING: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  VERIFIED: 'bg-blue-100 text-blue-800 border-blue-200',
-  RESPONDED: 'bg-green-100 text-green-800 border-green-200',
+  DISPATCHED: 'bg-blue-100 text-blue-800 border-blue-200',
   CLOSED: 'bg-gray-100 text-gray-800 border-gray-200',
 };
 
 const statusLabels: Record<string, string> = {
   NEW: 'New',
   REVIEWING: 'Reviewing',
-  VERIFIED: 'Verified',
-  RESPONDED: 'Responded',
+  DISPATCHED: 'Dispatched',
   CLOSED: 'Closed',
 };
 
-const allStatuses = ['NEW', 'REVIEWING', 'VERIFIED', 'RESPONDED', 'CLOSED'];
+// Disposition colors and labels (outcomes)
+const dispositionColors: Record<string, string> = {
+  CONFIRMED: 'bg-red-100 text-red-800 border-red-200',
+  UNVERIFIED: 'bg-gray-100 text-gray-600 border-gray-200',
+  FALSE_ALARM: 'bg-green-100 text-green-800 border-green-200',
+};
+
+const dispositionLabels: Record<string, string> = {
+  CONFIRMED: 'Confirmed',
+  UNVERIFIED: 'Unverified',
+  FALSE_ALARM: 'False Alarm',
+};
 
 function formatDate(dateString: string) {
   return new Date(dateString).toLocaleDateString('en-US', {
@@ -88,6 +99,7 @@ export default function SightingDetailPage({ params }: { params: Promise<{ id: s
   const [updating, setUpdating] = useState(false);
   const [notes, setNotes] = useState('');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [copiedMessage, setCopiedMessage] = useState<string | null>(null);
 
   useEffect(() => {
     fetchSighting();
@@ -169,6 +181,94 @@ export default function SightingDetailPage({ params }: { params: Promise<{ id: s
     }
   };
 
+  const updateDisposition = async (disposition: string) => {
+    if (!sighting) return;
+    setUpdating(true);
+
+    try {
+      const response = await fetch(`/api/sightings/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ disposition }),
+      });
+
+      if (!response.ok) throw new Error('Failed to update disposition');
+
+      const updated = await response.json();
+      setSighting(updated);
+    } catch (err) {
+      alert('Failed to update disposition');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  // Signal message template helpers
+  const formatTime = (dateString: string) => {
+    return new Date(dateString).toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  };
+
+  const generateDispatchMessage = () => {
+    if (!sighting) return '';
+    const time = formatTime(sighting.observedAt);
+    const parts = [
+      `ICE SIGHTING REPORT - ${time}`,
+      '',
+      `Location: ${sighting.location}`,
+    ];
+    if (sighting.size) parts.push(`Size: ${sighting.size}`);
+    if (sighting.uniform) parts.push(`Uniform: ${sighting.uniform}`);
+    if (sighting.equipment) parts.push(`Equipment: ${sighting.equipment}`);
+    if (sighting.activity) parts.push(`Activity: ${sighting.activity}`);
+    parts.push('', 'Verifiers needed! React with thumbs up if heading there. Reply with ETA.');
+    return parts.join('\n');
+  };
+
+  const generateConfirmedMessage = () => {
+    if (!sighting) return '';
+    const time = formatTime(sighting.observedAt);
+    const parts = [
+      `CONFIRMED - ${time}`,
+      `Location: ${sighting.location}`,
+    ];
+    if (sighting.size) parts.push(sighting.size);
+    if (sighting.activity) parts.push(sighting.activity);
+    return parts.join('\n');
+  };
+
+  const generateUnverifiedMessage = () => {
+    if (!sighting) return '';
+    const time = formatTime(sighting.observedAt);
+    return [
+      `UNVERIFIED - ${time}`,
+      `Location: ${sighting.location}`,
+      'Unable to confirm - no activity observed on arrival',
+    ].join('\n');
+  };
+
+  const generateFalseAlarmMessage = () => {
+    if (!sighting) return '';
+    const time = formatTime(sighting.observedAt);
+    return [
+      `FALSE ALARM - ${time}`,
+      `Location: ${sighting.location}`,
+      'Not ICE - regular delivery/service vehicle',
+    ].join('\n');
+  };
+
+  const copyToClipboard = async (text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedMessage(label);
+      setTimeout(() => setCopiedMessage(null), 2000);
+    } catch (err) {
+      alert('Failed to copy to clipboard');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 p-8">
@@ -235,10 +335,15 @@ export default function SightingDetailPage({ params }: { params: Promise<{ id: s
         {/* Header */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-            <div>
+            <div className="flex items-center gap-2 flex-wrap">
               <span className={`inline-flex px-3 py-1 rounded-lg text-sm font-medium border ${statusColors[sighting.status]}`}>
                 {statusLabels[sighting.status]}
               </span>
+              {sighting.status === 'CLOSED' && sighting.disposition && (
+                <span className={`inline-flex px-3 py-1 rounded-lg text-sm font-medium border ${dispositionColors[sighting.disposition]}`}>
+                  {dispositionLabels[sighting.disposition]}
+                </span>
+              )}
             </div>
             <div className="text-sm text-gray-500">
               Submitted {formatDate(sighting.createdAt)}
@@ -252,27 +357,147 @@ export default function SightingDetailPage({ params }: { params: Promise<{ id: s
             Observed: {formatDate(sighting.observedAt)}
           </p>
 
-          {/* Status workflow */}
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Update Status</label>
-            <div className="flex flex-wrap gap-2">
-              {allStatuses.map((status) => (
-                <button
-                  key={status}
-                  onClick={() => updateStatus(status)}
-                  disabled={updating || sighting.status === status}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    sighting.status === status
-                      ? `${statusColors[status]} border cursor-default`
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'
-                  } disabled:opacity-50`}
-                >
-                  {statusLabels[status]}
-                </button>
-              ))}
+          {/* Workflow Actions - only show if not closed */}
+          {sighting.status !== 'CLOSED' && (
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <div className="space-y-4">
+                {/* Status Actions */}
+                {sighting.status === 'NEW' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Start Review</label>
+                    <button
+                      onClick={() => updateStatus('REVIEWING')}
+                      disabled={updating}
+                      className="px-4 py-2 bg-yellow-100 text-yellow-800 border border-yellow-200 rounded-lg text-sm font-medium hover:bg-yellow-200 transition-colors disabled:opacity-50"
+                    >
+                      Start Reviewing
+                    </button>
+                  </div>
+                )}
+
+                {(sighting.status === 'REVIEWING' || sighting.status === 'DISPATCHED') && (
+                  <>
+                    {sighting.status === 'REVIEWING' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Field Team</label>
+                        <button
+                          onClick={() => updateStatus('DISPATCHED')}
+                          disabled={updating}
+                          className="px-4 py-2 bg-blue-100 text-blue-800 border border-blue-200 rounded-lg text-sm font-medium hover:bg-blue-200 transition-colors disabled:opacity-50"
+                        >
+                          Mark as Dispatched
+                        </button>
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Set Disposition (closes sighting)</label>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={() => updateDisposition('CONFIRMED')}
+                          disabled={updating}
+                          className="px-4 py-2 bg-red-100 text-red-800 border border-red-200 rounded-lg text-sm font-medium hover:bg-red-200 transition-colors disabled:opacity-50"
+                        >
+                          Confirmed
+                        </button>
+                        <button
+                          onClick={() => updateDisposition('UNVERIFIED')}
+                          disabled={updating}
+                          className="px-4 py-2 bg-gray-100 text-gray-700 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors disabled:opacity-50"
+                        >
+                          Unverified
+                        </button>
+                        <button
+                          onClick={() => updateDisposition('FALSE_ALARM')}
+                          disabled={updating}
+                          className="px-4 py-2 bg-green-100 text-green-800 border border-green-200 rounded-lg text-sm font-medium hover:bg-green-200 transition-colors disabled:opacity-50"
+                        >
+                          False Alarm
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Signal Message Templates - only show for active sightings */}
+        {sighting.status !== 'CLOSED' && (
+          <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Signal Message Templates</h2>
+            <p className="text-sm text-gray-600 mb-4">Copy these messages to paste into Signal groups</p>
+
+            {copiedMessage && (
+              <div className="mb-4 px-3 py-2 bg-green-50 text-green-700 rounded-lg text-sm">
+                Copied: {copiedMessage}
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <button
+                onClick={() => copyToClipboard(generateDispatchMessage(), 'Dispatch Request')}
+                className="w-full text-left p-4 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium text-blue-800">Dispatch Request</div>
+                    <div className="text-sm text-blue-600">Request field team verification</div>
+                  </div>
+                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                  </svg>
+                </div>
+              </button>
+
+              <button
+                onClick={() => copyToClipboard(generateConfirmedMessage(), 'Confirmed Result')}
+                className="w-full text-left p-4 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium text-red-800">Confirmed Result</div>
+                    <div className="text-sm text-red-600">ICE activity verified</div>
+                  </div>
+                  <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                  </svg>
+                </div>
+              </button>
+
+              <button
+                onClick={() => copyToClipboard(generateUnverifiedMessage(), 'Unverified Result')}
+                className="w-full text-left p-4 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium text-gray-800">Unverified Result</div>
+                    <div className="text-sm text-gray-600">Unable to confirm</div>
+                  </div>
+                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                  </svg>
+                </div>
+              </button>
+
+              <button
+                onClick={() => copyToClipboard(generateFalseAlarmMessage(), 'False Alarm')}
+                className="w-full text-left p-4 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium text-green-800">False Alarm</div>
+                    <div className="text-sm text-green-600">Not ICE activity</div>
+                  </div>
+                  <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                  </svg>
+                </div>
+              </button>
             </div>
           </div>
-        </div>
+        )}
 
         {/* SALUTE Details */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
@@ -286,7 +511,9 @@ export default function SightingDetailPage({ params }: { params: Promise<{ id: s
               </div>
               <div>
                 <div className="text-sm font-medium text-gray-500">Size / Strength</div>
-                <div className="text-gray-900">{sighting.size}</div>
+                <div className={sighting.size ? 'text-gray-900' : 'text-gray-400 italic'}>
+                  {sighting.size || 'Not provided'}
+                </div>
               </div>
             </div>
 
@@ -297,7 +524,9 @@ export default function SightingDetailPage({ params }: { params: Promise<{ id: s
               </div>
               <div>
                 <div className="text-sm font-medium text-gray-500">Actions / Activity</div>
-                <div className="text-gray-900">{sighting.activity}</div>
+                <div className={sighting.activity ? 'text-gray-900' : 'text-gray-400 italic'}>
+                  {sighting.activity || 'Not provided'}
+                </div>
               </div>
             </div>
 
@@ -352,7 +581,9 @@ export default function SightingDetailPage({ params }: { params: Promise<{ id: s
               </div>
               <div>
                 <div className="text-sm font-medium text-gray-500">Uniform / Clothes</div>
-                <div className="text-gray-900">{sighting.uniform}</div>
+                <div className={sighting.uniform ? 'text-gray-900' : 'text-gray-400 italic'}>
+                  {sighting.uniform || 'Not provided'}
+                </div>
               </div>
             </div>
 
@@ -374,7 +605,9 @@ export default function SightingDetailPage({ params }: { params: Promise<{ id: s
               </div>
               <div>
                 <div className="text-sm font-medium text-gray-500">Equipment / Weapons</div>
-                <div className="text-gray-900">{sighting.equipment}</div>
+                <div className={sighting.equipment ? 'text-gray-900' : 'text-gray-400 italic'}>
+                  {sighting.equipment || 'Not provided'}
+                </div>
               </div>
             </div>
           </div>

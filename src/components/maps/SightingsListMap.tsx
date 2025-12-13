@@ -9,7 +9,8 @@ interface Sighting {
   longitude: number | null;
   activity: string;
   observedAt: string;
-  status: 'NEW' | 'REVIEWING' | 'VERIFIED' | 'RESPONDED' | 'CLOSED';
+  status: 'NEW' | 'REVIEWING' | 'DISPATCHED' | 'CLOSED';
+  disposition?: 'CONFIRMED' | 'UNVERIFIED' | 'FALSE_ALARM' | null;
 }
 
 interface SightingsListMapProps {

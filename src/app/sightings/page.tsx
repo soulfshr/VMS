@@ -26,26 +26,40 @@ interface Sighting {
   reporterName: string | null;
   reporterPhone: string | null;
   reporterEmail: string | null;
-  status: 'NEW' | 'REVIEWING' | 'VERIFIED' | 'RESPONDED' | 'CLOSED';
+  status: 'NEW' | 'REVIEWING' | 'DISPATCHED' | 'CLOSED';
+  disposition: 'CONFIRMED' | 'UNVERIFIED' | 'FALSE_ALARM' | null;
   notes: string | null;
+  assignedToId: string | null;
   media: SightingMedia[];
   createdAt: string;
 }
 
+// Status colors and labels (workflow stages)
 const statusColors: Record<string, string> = {
   NEW: 'bg-red-100 text-red-800',
   REVIEWING: 'bg-yellow-100 text-yellow-800',
-  VERIFIED: 'bg-blue-100 text-blue-800',
-  RESPONDED: 'bg-green-100 text-green-800',
+  DISPATCHED: 'bg-blue-100 text-blue-800',
   CLOSED: 'bg-gray-100 text-gray-800',
 };
 
 const statusLabels: Record<string, string> = {
   NEW: 'New',
   REVIEWING: 'Reviewing',
-  VERIFIED: 'Verified',
-  RESPONDED: 'Responded',
+  DISPATCHED: 'Dispatched',
   CLOSED: 'Closed',
+};
+
+// Disposition colors and labels (outcomes)
+const dispositionColors: Record<string, string> = {
+  CONFIRMED: 'bg-red-100 text-red-800',
+  UNVERIFIED: 'bg-gray-100 text-gray-600',
+  FALSE_ALARM: 'bg-green-100 text-green-800',
+};
+
+const dispositionLabels: Record<string, string> = {
+  CONFIRMED: 'Confirmed',
+  UNVERIFIED: 'Unverified',
+  FALSE_ALARM: 'False Alarm',
 };
 
 function formatDate(dateString: string) {
@@ -149,13 +163,26 @@ export default function SightingsPage() {
             <span>/</span>
             <span>ICE Sightings</span>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">ICE Sighting Reports</h1>
-          <p className="text-gray-600 mt-1">Review and manage community-submitted sighting reports</p>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">ICE Sighting Reports</h1>
+              <p className="text-gray-600 mt-1">Review and manage community-submitted sighting reports</p>
+            </div>
+            <Link
+              href="/sightings/new"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              New Sighting
+            </Link>
+          </div>
         </div>
 
         {/* Status counts */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
-          {['NEW', 'REVIEWING', 'VERIFIED', 'RESPONDED', 'CLOSED'].map((status) => (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+          {['NEW', 'REVIEWING', 'DISPATCHED', 'CLOSED'].map((status) => (
             <button
               key={status}
               onClick={() => setStatusFilter(statusFilter === status ? 'all' : status)}
@@ -248,10 +275,16 @@ export default function SightingsPage() {
               >
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-2">
+                    <div className="flex items-center gap-3 mb-2 flex-wrap">
                       <span className={`inline-flex px-2 py-1 rounded text-xs font-medium ${statusColors[sighting.status]}`}>
                         {statusLabels[sighting.status]}
                       </span>
+                      {/* Show disposition badge for closed sightings */}
+                      {sighting.status === 'CLOSED' && sighting.disposition && (
+                        <span className={`inline-flex px-2 py-1 rounded text-xs font-medium ${dispositionColors[sighting.disposition]}`}>
+                          {dispositionLabels[sighting.disposition]}
+                        </span>
+                      )}
                       <span className="text-sm text-gray-500">
                         {formatDate(sighting.observedAt)}
                       </span>
@@ -269,13 +302,15 @@ export default function SightingsPage() {
                       {sighting.location}
                     </h3>
 
-                    <p className="text-sm text-gray-600 line-clamp-2">
-                      <span className="font-medium">Activity:</span> {sighting.activity}
-                    </p>
+                    {sighting.activity && (
+                      <p className="text-sm text-gray-600 line-clamp-2">
+                        <span className="font-medium">Activity:</span> {sighting.activity}
+                      </p>
+                    )}
 
                     <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
-                      <span><span className="font-medium">Size:</span> {sighting.size}</span>
-                      <span><span className="font-medium">Uniform:</span> {sighting.uniform}</span>
+                      {sighting.size && <span><span className="font-medium">Size:</span> {sighting.size}</span>}
+                      {sighting.uniform && <span><span className="font-medium">Uniform:</span> {sighting.uniform}</span>}
                     </div>
                   </div>
 

@@ -58,13 +58,19 @@ enum Qualification {
   DISPATCHER    // Can handle dispatch calls
 }
 
-// ICE Sighting report statuses
+// ICE Sighting report statuses (workflow stage)
 enum SightingStatus {
-  NEW
-  REVIEWING
-  VERIFIED
-  RESPONDED
-  CLOSED
+  NEW        // Reserved for future public submissions
+  REVIEWING  // Dispatcher entered, working on it
+  DISPATCHED // Field team sent out
+  CLOSED     // Resolved (check disposition for outcome)
+}
+
+// ICE Sighting disposition (outcome - separate from status)
+enum SightingDisposition {
+  CONFIRMED   // ICE activity verified
+  UNVERIFIED  // Unable to confirm or deny
+  FALSE_ALARM // Not ICE / mistaken report
 }
 
 // Media types for sighting uploads
@@ -677,7 +683,8 @@ model IceSighting {
   reporterEmail   String?
 
   // Workflow & Tracking
-  status      SightingStatus @default(NEW)
+  status      SightingStatus @default(REVIEWING)  // Default REVIEWING for dispatcher entry
+  disposition SightingDisposition?                // Outcome - set when resolved
   notes       String?        // Dispatcher notes
   assignedToId String?       // Dispatcher ID handling this
 

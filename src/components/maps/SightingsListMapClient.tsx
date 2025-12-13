@@ -12,7 +12,8 @@ interface Sighting {
   longitude: number | null;
   activity: string;
   observedAt: string;
-  status: 'NEW' | 'REVIEWING' | 'VERIFIED' | 'RESPONDED' | 'CLOSED';
+  status: 'NEW' | 'REVIEWING' | 'DISPATCHED' | 'CLOSED';
+  disposition?: 'CONFIRMED' | 'UNVERIFIED' | 'FALSE_ALARM' | null;
 }
 
 interface SightingsListMapClientProps {
@@ -32,16 +33,14 @@ const defaultCenter = {
 const statusColors: Record<string, string> = {
   NEW: 'bg-red-100 text-red-800',
   REVIEWING: 'bg-yellow-100 text-yellow-800',
-  VERIFIED: 'bg-blue-100 text-blue-800',
-  RESPONDED: 'bg-green-100 text-green-800',
+  DISPATCHED: 'bg-blue-100 text-blue-800',
   CLOSED: 'bg-gray-100 text-gray-800',
 };
 
 const statusLabels: Record<string, string> = {
   NEW: 'New',
   REVIEWING: 'Reviewing',
-  VERIFIED: 'Verified',
-  RESPONDED: 'Responded',
+  DISPATCHED: 'Dispatched',
   CLOSED: 'Closed',
 };
 
@@ -122,8 +121,7 @@ export default function SightingsListMapClient({ sightings }: SightingsListMapCl
               scale: 10,
               fillColor: sighting.status === 'NEW' ? '#ef4444' :
                         sighting.status === 'REVIEWING' ? '#eab308' :
-                        sighting.status === 'VERIFIED' ? '#3b82f6' :
-                        sighting.status === 'RESPONDED' ? '#22c55e' : '#6b7280',
+                        sighting.status === 'DISPATCHED' ? '#3b82f6' : '#6b7280',
               fillOpacity: 1,
               strokeColor: '#ffffff',
               strokeWeight: 2,
@@ -168,10 +166,7 @@ export default function SightingsListMapClient({ sightings }: SightingsListMapCl
           <span className="w-3 h-3 rounded-full bg-yellow-500"></span> Reviewing
         </span>
         <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded-full bg-blue-500"></span> Verified
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded-full bg-green-500"></span> Responded
+          <span className="w-3 h-3 rounded-full bg-blue-500"></span> Dispatched
         </span>
         <span className="flex items-center gap-1">
           <span className="w-3 h-3 rounded-full bg-gray-500"></span> Closed

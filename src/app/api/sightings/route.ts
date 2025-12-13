@@ -5,7 +5,9 @@ import { SightingStatus } from '@/generated/prisma/enums';
 import { sendSightingNotificationToDispatchers } from '@/lib/email';
 import { checkRateLimitAsync, getClientIp, RATE_LIMITS, rateLimitResponse } from '@/lib/rate-limit';
 
-// POST /api/sightings - Create a new ICE sighting report (PUBLIC - no auth required)
+// POST /api/sightings - Create a new ICE sighting report
+// - PUBLIC submissions (unauthenticated): All SALUTE fields required, status = NEW
+// - DISPATCHER entries (authenticated): Only location required, status = REVIEWING, auto-assigned
 export async function POST(request: NextRequest) {
   // Rate limiting for public endpoint
   const clientIp = getClientIp(request);
@@ -15,6 +17,10 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // Check if user is authenticated (dispatcher entry mode)
+    const user = await getDbUser();
+    const isDispatcherEntry = !!user;
+
     const body = await request.json();
 
     const {
@@ -33,31 +39,51 @@ export async function POST(request: NextRequest) {
       reporterEmail,
       // Media URLs (already uploaded to Vercel Blob)
       mediaUrls,
+      // Optional notes for dispatcher entry
+      notes,
     } = body;
 
-    // Validate required SALUTE fields
-    if (!size || !activity || !location || !uniform || !observedAt || !equipment) {
-      return NextResponse.json(
-        { error: 'All SALUTE fields are required' },
-        { status: 400 }
-      );
+    // Validate required fields based on mode
+    if (isDispatcherEntry) {
+      // Dispatcher entry: only location is required
+      if (!location) {
+        return NextResponse.json(
+          { error: 'Location is required' },
+          { status: 400 }
+        );
+      }
+    } else {
+      // Public submission: all SALUTE fields required
+      if (!size || !activity || !location || !uniform || !observedAt || !equipment) {
+        return NextResponse.json(
+          { error: 'All SALUTE fields are required' },
+          { status: 400 }
+        );
+      }
     }
 
     // Create the sighting with media
     const sighting = await prisma.iceSighting.create({
       data: {
-        size,
-        activity,
+        // SALUTE fields - use empty string for required fields if not provided (dispatcher mode)
+        size: size || '',
+        activity: activity || '',
         location,
         latitude: latitude || null,
         longitude: longitude || null,
-        uniform,
-        observedAt: new Date(observedAt),
-        equipment,
+        uniform: uniform || '',
+        observedAt: observedAt ? new Date(observedAt) : new Date(),
+        equipment: equipment || '',
+        // Reporter info
         reporterName: reporterName || null,
         reporterPhone: reporterPhone || null,
         reporterEmail: reporterEmail || null,
-        status: SightingStatus.NEW,
+        // Workflow: REVIEWING for dispatchers, NEW for public submissions
+        status: isDispatcherEntry ? SightingStatus.REVIEWING : SightingStatus.NEW,
+        // Auto-assign to dispatcher who created it
+        assignedToId: isDispatcherEntry ? user.id : null,
+        notes: notes || null,
+        // Media attachments
         media: mediaUrls?.length > 0 ? {
           create: mediaUrls.map((media: { url: string; type: string; filename: string; size: number }) => ({
             url: media.url,
@@ -72,42 +98,44 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Send email notification to all dispatchers
-    try {
-      // Get all users with DISPATCHER role or DISPATCHER qualification
-      const dispatchers = await prisma.user.findMany({
-        where: {
-          OR: [
-            { role: 'DISPATCHER' },
-            { qualifications: { has: 'DISPATCHER' } },
-          ],
-        },
-        select: {
-          email: true,
-          name: true,
-        },
-      });
-
-      if (dispatchers.length > 0) {
-        await sendSightingNotificationToDispatchers(
-          {
-            sightingId: sighting.id,
-            size: sighting.size,
-            activity: sighting.activity,
-            location: sighting.location,
-            uniform: sighting.uniform,
-            observedAt: sighting.observedAt,
-            equipment: sighting.equipment,
-            hasMedia: sighting.media.length > 0,
-            reporterName: sighting.reporterName,
+    // Send email notification to all dispatchers (only for public submissions)
+    if (!isDispatcherEntry) {
+      try {
+        // Get all users with DISPATCHER role or DISPATCHER qualification
+        const dispatchers = await prisma.user.findMany({
+          where: {
+            OR: [
+              { role: 'DISPATCHER' },
+              { qualifications: { has: 'DISPATCHER' } },
+            ],
           },
-          dispatchers.map((d) => ({ email: d.email, name: d.name || 'Dispatcher' }))
-        );
-        console.log(`[Sightings] Notified ${dispatchers.length} dispatchers of new sighting ${sighting.id}`);
+          select: {
+            email: true,
+            name: true,
+          },
+        });
+
+        if (dispatchers.length > 0) {
+          await sendSightingNotificationToDispatchers(
+            {
+              sightingId: sighting.id,
+              size: sighting.size,
+              activity: sighting.activity,
+              location: sighting.location,
+              uniform: sighting.uniform,
+              observedAt: sighting.observedAt,
+              equipment: sighting.equipment,
+              hasMedia: sighting.media.length > 0,
+              reporterName: sighting.reporterName,
+            },
+            dispatchers.map((d) => ({ email: d.email, name: d.name || 'Dispatcher' }))
+          );
+          console.log(`[Sightings] Notified ${dispatchers.length} dispatchers of new sighting ${sighting.id}`);
+        }
+      } catch (emailError) {
+        // Don't fail the sighting creation if email fails
+        console.error('[Sightings] Failed to send dispatcher notifications:', emailError);
       }
-    } catch (emailError) {
-      // Don't fail the sighting creation if email fails
-      console.error('[Sightings] Failed to send dispatcher notifications:', emailError);
     }
 
     return NextResponse.json(sighting, { status: 201 });
