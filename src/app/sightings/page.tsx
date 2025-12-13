@@ -89,6 +89,7 @@ export default function SightingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+  const [showWorkflow, setShowWorkflow] = useState(false);
 
   useEffect(() => {
     fetchSightings();
@@ -178,6 +179,94 @@ export default function SightingsPage() {
               New Sighting
             </Link>
           </div>
+        </div>
+
+        {/* Workflow Info */}
+        <div className="mb-6">
+          <button
+            onClick={() => setShowWorkflow(!showWorkflow)}
+            className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-cyan-600 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            {showWorkflow ? 'Hide' : 'Show'} Workflow Guide
+            <svg className={`w-4 h-4 transition-transform ${showWorkflow ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          {showWorkflow && (
+            <div className="mt-4 bg-white rounded-xl border border-gray-200 p-6">
+              <h3 className="font-semibold text-gray-900 mb-4">Dispatcher Workflow</h3>
+
+              <div className="space-y-4 text-sm">
+                {/* Step 1 */}
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-cyan-100 text-cyan-700 flex items-center justify-center text-xs font-bold flex-shrink-0">1</div>
+                  <div>
+                    <p className="font-medium text-gray-900">Signal Report Arrives</p>
+                    <p className="text-gray-600">Report comes in via Signal &quot;Triangle - BROADCAST&quot; group</p>
+                  </div>
+                </div>
+
+                {/* Step 2 */}
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-cyan-100 text-cyan-700 flex items-center justify-center text-xs font-bold flex-shrink-0">2</div>
+                  <div>
+                    <p className="font-medium text-gray-900">Claim in Signal</p>
+                    <p className="text-gray-600">React with thumbs-up in Signal to claim the report</p>
+                  </div>
+                </div>
+
+                {/* Step 3 */}
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-yellow-100 text-yellow-700 flex items-center justify-center text-xs font-bold flex-shrink-0">3</div>
+                  <div>
+                    <p className="font-medium text-gray-900">Enter in VMS</p>
+                    <p className="text-gray-600">Click &quot;New Sighting&quot; and enter location + any available details</p>
+                    <p className="text-gray-500 text-xs mt-1">Status: <span className="px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-800">Reviewing</span></p>
+                  </div>
+                </div>
+
+                {/* Decision Point */}
+                <div className="ml-9 border-l-2 border-gray-200 pl-4 py-2">
+                  <p className="font-medium text-gray-700 mb-2">Can you resolve remotely?</p>
+
+                  <div className="space-y-3">
+                    {/* YES path */}
+                    <div className="bg-green-50 rounded-lg p-3">
+                      <p className="font-medium text-green-800">YES - Resolve directly</p>
+                      <p className="text-green-700 text-xs">Set disposition: Confirmed, Unverified, or False Alarm</p>
+                      <p className="text-gray-500 text-xs mt-1">Auto-closes the sighting</p>
+                    </div>
+
+                    {/* NO path */}
+                    <div className="bg-blue-50 rounded-lg p-3">
+                      <p className="font-medium text-blue-800">NO - Send field team</p>
+                      <div className="text-blue-700 text-xs space-y-1">
+                        <p>1. Click &quot;Mark as Dispatched&quot;</p>
+                        <p>2. Copy &quot;Dispatch Request&quot; message to Signal</p>
+                        <p>3. Wait for field team verification</p>
+                        <p>4. Set disposition when team reports back</p>
+                      </div>
+                      <p className="text-gray-500 text-xs mt-1">Status: <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800">Dispatched</span> then <span className="px-1.5 py-0.5 rounded bg-gray-100 text-gray-800">Closed</span></p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Dispositions */}
+                <div className="pt-2 border-t border-gray-200">
+                  <p className="font-medium text-gray-900 mb-2">Disposition Options</p>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="px-2 py-1 rounded text-xs bg-red-100 text-red-800">Confirmed - ICE activity verified</span>
+                    <span className="px-2 py-1 rounded text-xs bg-gray-100 text-gray-600">Unverified - Unable to confirm</span>
+                    <span className="px-2 py-1 rounded text-xs bg-green-100 text-green-800">False Alarm - Not ICE</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Status counts */}
