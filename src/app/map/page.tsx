@@ -88,7 +88,7 @@ const DEFAULT_COLORS = [
 ];
 
 const CAN_MANAGE_ROLES: UserRole[] = ['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR', 'DEVELOPER'];
-const CAN_MANAGE_CATEGORIES_ROLES: UserRole[] = ['ADMINISTRATOR', 'DEVELOPER'];
+const CAN_MANAGE_CATEGORIES_ROLES: UserRole[] = ['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'];
 
 // ============ Zones Tab ============
 function ZonesTab({ onRefreshMap }: { onRefreshMap: () => void }) {

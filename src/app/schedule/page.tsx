@@ -113,6 +113,17 @@ interface CountyDispatcher {
   coverage: 'full' | 'none';
 }
 
+interface RegionalBackupDispatcher {
+  date: string;
+  timeBlock: TimeBlock;
+  dispatchers: Array<{
+    id: string;
+    name: string;
+    assignmentId: string;
+    notes: string | null;
+  }>;
+}
+
 interface ScheduleData {
   counties: string[];
   zones: Zone[];
@@ -124,6 +135,7 @@ interface ScheduleData {
   schedulingMode: 'SIMPLE' | 'FULL';
   regionalDispatchers: RegionalDispatcher[];
   countyDispatchers: CountyDispatcher[];
+  regionalBackupDispatchers: RegionalBackupDispatcher[];
 }
 
 // Format date as YYYY-MM-DD in local timezone (not UTC)
@@ -151,6 +163,7 @@ export default function SchedulePage() {
   const [expandedCells, setExpandedCells] = useState<Set<string>>(new Set());
   const [regionalLeadModalOpen, setRegionalLeadModalOpen] = useState(false);
   const [selectedRegionalLeadDate, setSelectedRegionalLeadDate] = useState<string | null>(null);
+  const [backupDispatchersExpanded, setBackupDispatchersExpanded] = useState(false);
 
   // Check authentication
   useEffect(() => {
@@ -401,17 +414,17 @@ export default function SchedulePage() {
           <div className="bg-white rounded-lg shadow-sm border border-gray-200" data-tour="schedule-grid">
             {/* Scrollable container with max-height for internal scroll with sticky header */}
             <div className="overflow-auto max-h-[calc(100vh-220px)]">
-              <table className="w-full border-collapse">
+              <table className="w-full border-collapse table-fixed">
                 {/* Sticky Header Row - sticks within scroll container */}
                 <thead className="sticky top-0 z-20">
                   <tr className="bg-gray-100">
-                    <th className="min-w-[100px] w-[100px] px-2 py-3 text-left text-sm font-medium text-gray-600 border-b border-r border-gray-200 bg-gray-100 sticky left-0 z-30 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">
+                    <th className="w-[100px] min-w-[100px] px-2 py-3 text-left text-sm font-medium text-gray-600 border-b border-r border-gray-200 bg-gray-100 sticky left-0 z-30 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">
                       County / Time
                     </th>
                     {weekDates.map(date => (
                       <th
                         key={date.toISOString()}
-                        className="min-w-[120px] px-2 py-3 text-center text-sm font-medium text-gray-600 border-b border-r border-gray-200 bg-gray-100"
+                        className="w-[calc((100%-100px)/7)] min-w-[120px] px-2 py-3 text-center text-sm font-medium text-gray-600 border-b border-r border-gray-200 bg-gray-100"
                       >
                         <div>{date.toLocaleDateString('en-US', { weekday: 'short' })}</div>
                         <div className="text-gray-500 font-normal">
@@ -482,7 +495,99 @@ export default function SchedulePage() {
                     })}
                   </tr>
 
+                  {/* Backup Dispatchers Section - shown when there are any regional backups */}
+                  {scheduleData.regionalBackupDispatchers?.some(rb => rb.dispatchers.length > 0) && (
+                    <>
+                      {/* Backup Dispatchers Header - Collapsible */}
+                      <tr
+                        className="bg-cyan-50 cursor-pointer hover:bg-cyan-100 transition-colors"
+                        onClick={() => setBackupDispatchersExpanded(!backupDispatchersExpanded)}
+                      >
+                        <td className="border-b border-r border-cyan-200 px-2 py-2 font-semibold text-cyan-800 bg-cyan-100 w-[100px] sticky left-0 z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">
+                          <div className="flex items-center gap-1">
+                            <span className={`transition-transform ${backupDispatchersExpanded ? 'rotate-90' : ''}`}>▶</span>
+                            <span className="text-sm">Backup Disp.</span>
+                          </div>
+                          <div className="text-xs font-normal text-cyan-600 mt-0.5">Region-wide</div>
+                        </td>
+                        <td colSpan={7} className="border-b border-cyan-200 bg-cyan-50 text-xs text-cyan-600 px-3">
+                          {!backupDispatchersExpanded && 'Click to expand'}
+                        </td>
+                      </tr>
+                      {/* Time block rows for backup dispatchers - only shown when expanded */}
+                      {backupDispatchersExpanded && scheduleData.timeBlocks.map(timeBlock => (
+                        <tr key={`backup-${timeBlock.label}`} className="bg-cyan-50">
+                          <td className="border-b border-r border-cyan-200 px-2 py-2 text-sm text-cyan-700 bg-cyan-50 w-[100px] sticky left-0 z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">
+                            {timeBlock.label}
+                          </td>
+                          {weekDates.map(date => {
+                            const dateStr = formatDateLocal(date);
+                            const backupData = scheduleData.regionalBackupDispatchers?.find(
+                              rb => rb.date === dateStr && rb.timeBlock.label === timeBlock.label
+                            );
+                            const dispatchers = backupData?.dispatchers || [];
+                            const firstDispatcher = dispatchers[0] || null;
+
+                            return (
+                              <td
+                                key={dateStr}
+                                onClick={() => {
+                                  if (canEdit) {
+                                    // Create synthetic cell for backup dispatcher modal
+                                    const syntheticCell: CellData = {
+                                      county: 'REGIONAL', // Special marker for backup dispatchers
+                                      date: dateStr,
+                                      timeBlock,
+                                      dispatcher: firstDispatcher ? {
+                                        id: firstDispatcher.id,
+                                        name: firstDispatcher.name,
+                                        assignmentId: firstDispatcher.assignmentId,
+                                        isBackup: true,
+                                        notes: firstDispatcher.notes,
+                                      } : null,
+                                      backupDispatchers: dispatchers.slice(1),
+                                      zones: [],
+                                      coverage: dispatchers.length > 0 ? 'full' : 'none',
+                                      gaps: { needsDispatcher: dispatchers.length === 0, zonesNeedingLeads: [] },
+                                    };
+                                    handleCellClick(syntheticCell);
+                                  }
+                                }}
+                                className={`border-b border-r border-cyan-200 px-3 py-2 text-sm bg-cyan-50 ${
+                                  canEdit ? 'cursor-pointer hover:bg-cyan-100' : ''
+                                }`}
+                              >
+                                {dispatchers.length > 0 ? (
+                                  <div className="space-y-1">
+                                    {dispatchers.slice(0, 3).map(d => (
+                                      <div key={d.id} className="text-xs text-gray-700">
+                                        {d.name.split(' ')[0]}
+                                        {d.notes && (
+                                          <span className="ml-1 text-cyan-600">{d.notes}</span>
+                                        )}
+                                      </div>
+                                    ))}
+                                    {dispatchers.length > 3 && (
+                                      <div className="text-xs text-cyan-600">
+                                        +{dispatchers.length - 3} more
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div className="text-gray-400 text-xs">
+                                    {canEdit ? 'Click to assign' : '—'}
+                                  </div>
+                                )}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </>
+                  )}
+
                   {/* Regional Dispatcher Section - only shown in REGIONAL mode */}
+                  {/* Aggregates dispatchers from ALL counties by time slot */}
                   {scheduleData.dispatcherSchedulingMode === 'REGIONAL' && (
                     <>
                       {/* Regional Dispatcher Header */}
@@ -496,7 +601,7 @@ export default function SchedulePage() {
                         </td>
                         <td colSpan={7} className="border-b border-cyan-200 bg-cyan-50"></td>
                       </tr>
-                      {/* Time block rows for regional dispatchers */}
+                      {/* Time block rows - aggregate county dispatchers by time */}
                       {scheduleData.timeBlocks.map(timeBlock => (
                         <tr key={`regional-${timeBlock.label}`} className="bg-cyan-50">
                           <td className="border-b border-r border-cyan-200 px-2 py-2 text-sm text-cyan-700 bg-cyan-50 w-[100px] sticky left-0 z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">
@@ -504,49 +609,45 @@ export default function SchedulePage() {
                           </td>
                           {weekDates.map(date => {
                             const dateStr = formatDateLocal(date);
-                            const regionalDisp = scheduleData.regionalDispatchers.find(
-                              rd => rd.date === dateStr && rd.timeBlock.label === timeBlock.label
-                            );
+                            // Aggregate all county dispatchers for this date + time block
+                            const dispatchersForTimeSlot = scheduleData.countyDispatchers
+                              .filter(cd => cd.date === dateStr && cd.timeBlock.label === timeBlock.label && cd.dispatcher)
+                              .map(cd => cd.dispatcher!);
+                            const hasAnyDispatcher = dispatchersForTimeSlot.length > 0;
+                            // Get unique dispatcher names (first name only)
+                            const dispatcherNames = [...new Set(dispatchersForTimeSlot.map(d => d.name.split(' ')[0]))];
 
                             return (
                               <td
                                 key={dateStr}
                                 onClick={() => {
                                   if (canEdit) {
-                                    // Create a synthetic cell for the modal
+                                    // Create a synthetic cell for the modal - assigns for ALL counties
                                     const syntheticCell: CellData = {
                                       county: 'ALL',
                                       date: dateStr,
                                       timeBlock,
-                                      dispatcher: regionalDisp?.dispatcher || null,
-                                      backupDispatchers: regionalDisp?.backupDispatchers || [],
+                                      dispatcher: null, // Modal will handle multi-county assignment
+                                      backupDispatchers: [],
                                       zones: [],
-                                      coverage: regionalDisp?.coverage || 'none',
-                                      gaps: { needsDispatcher: !regionalDisp?.dispatcher, zonesNeedingLeads: [] },
+                                      coverage: hasAnyDispatcher ? 'full' : 'none',
+                                      gaps: { needsDispatcher: !hasAnyDispatcher, zonesNeedingLeads: [] },
                                     };
                                     handleCellClick(syntheticCell);
                                   }
                                 }}
                                 className={`border-b border-r px-3 py-2 text-sm ${
-                                  regionalDisp?.coverage === 'full' ? 'bg-green-100 border-green-200' : 'bg-red-50 border-red-200'
+                                  hasAnyDispatcher ? 'bg-green-100 border-green-200' : 'bg-red-50 border-red-200'
                                 } ${canEdit ? 'cursor-pointer hover:bg-opacity-80' : ''}`}
                               >
-                                {regionalDisp?.dispatcher ? (
-                                  <div className="space-y-1">
-                                    <div className="flex items-center gap-1">
-                                      <span className="text-yellow-500 text-xs">★</span>
-                                      <span className="font-medium text-gray-900">
-                                        {regionalDisp.dispatcher.name.split(' ')[0]}
-                                        {regionalDisp.dispatcher.notes && (
-                                          <span className="ml-1 font-normal text-cyan-600">{regionalDisp.dispatcher.notes}</span>
-                                        )}
+                                {hasAnyDispatcher ? (
+                                  <div className="space-y-0.5">
+                                    <div className="flex items-start gap-1 min-w-0">
+                                      <span className="text-yellow-500 text-xs flex-shrink-0">★</span>
+                                      <span className="font-medium text-gray-900 break-words text-xs">
+                                        {dispatcherNames.join(', ')}
                                       </span>
                                     </div>
-                                    {regionalDisp.backupDispatchers.slice(0, 2).map(backup => (
-                                      <div key={backup.id} className="text-xs text-gray-600">
-                                        {backup.name.split(' ')[0]}
-                                      </div>
-                                    ))}
                                   </div>
                                 ) : (
                                   <div className="text-red-400 text-xs font-medium">
@@ -623,9 +724,9 @@ export default function SchedulePage() {
                                   >
                                     {countyDisp?.dispatcher ? (
                                       <div className="space-y-1">
-                                        <div className="flex items-center gap-1">
-                                          <span className="text-yellow-500 text-xs">★</span>
-                                          <span className="font-medium text-gray-900">
+                                        <div className="flex items-start gap-1 min-w-0">
+                                          <span className="text-yellow-500 text-xs flex-shrink-0">★</span>
+                                          <span className="font-medium text-gray-900 break-words">
                                             {countyDisp.dispatcher.name.split(' ')[0]}
                                             {countyDisp.dispatcher.notes && (
                                               <span className="ml-1 font-normal text-cyan-600">{countyDisp.dispatcher.notes}</span>

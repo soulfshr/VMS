@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
+import { createHourExtractor, createDateStringExtractor, formatHour } from '@/lib/timezone';
 
 interface TimeBlock {
   startTime: string;      // Eastern time format "6:00"
@@ -55,32 +56,6 @@ interface CellData {
     needsDispatcher: boolean;
     zonesNeedingLeads: string[];
   };
-}
-
-// Build a helper that extracts the hour for any timezone defined in settings
-function createHourExtractor(timezone: string) {
-  const formatter = new Intl.DateTimeFormat('en-US', {
-    hour: 'numeric',
-    hour12: false,
-    timeZone: timezone,
-  });
-
-  return (date: Date): number => {
-    const hourPart = formatter.formatToParts(date).find(part => part.type === 'hour');
-    if (!hourPart) {
-      return date.getUTCHours();
-    }
-
-    const hour = parseInt(hourPart.value, 10);
-    return Number.isNaN(hour) ? date.getUTCHours() : hour % 24;
-  };
-}
-
-function formatHour(hour: number): string {
-  if (hour === 0) return '12am';
-  if (hour === 12) return '12pm';
-  if (hour < 12) return `${hour}am`;
-  return `${hour - 12}pm`;
 }
 
 // Type for shift with volunteers included
@@ -144,9 +119,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'startDate and endDate are required' }, { status: 400 });
     }
 
-    // Parse dates - ensure end date is inclusive of the entire day
+    // Parse dates for DB query - expand range by 1 day on each side to handle timezone offsets
+    // Example: Dec 15 ET shifts are stored as Dec 16 UTC (midnight UTC = 7pm ET previous day)
+    // So when querying for Dec 15-21 ET, we need to query Dec 15-22 UTC to catch all shifts
     const start = new Date(`${startDate}T00:00:00.000Z`);
     const end = new Date(`${endDate}T23:59:59.999Z`);
+    // Add 1 day buffer to end date for timezone safety
+    end.setUTCDate(end.getUTCDate() + 1);
 
     // Build query filters
     const shiftsWhere: Record<string, unknown> = {
@@ -169,8 +148,14 @@ export async function GET(request: NextRequest) {
       date: { gte: start, lte: end },
     };
 
+    // Regional backup dispatchers (county = 'REGIONAL', available region-wide)
+    const regionalBackupWhere: Record<string, unknown> = {
+      date: { gte: start, lte: end },
+      county: 'REGIONAL',
+    };
+
     // Run all queries in PARALLEL for better performance
-    const [zones, shifts, dispatcherAssignments, regionalLeadAssignments, settings] = await Promise.all([
+    const [zones, shifts, dispatcherAssignments, regionalLeadAssignments, regionalBackupAssignments, settings] = await Promise.all([
       prisma.zone.findMany({
         where: { isActive: true },
         orderBy: { name: 'asc' },
@@ -222,6 +207,19 @@ export async function GET(request: NextRequest) {
         },
         orderBy: [{ date: 'asc' }, { isPrimary: 'desc' }],
       }),
+      prisma.dispatcherAssignment.findMany({
+        where: regionalBackupWhere,
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+        orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
+      }),
       prisma.organizationSettings.findFirst(),
     ]);
 
@@ -231,6 +229,7 @@ export async function GET(request: NextRequest) {
     const schedulingMode = settings?.schedulingMode || 'SIMPLE';
     const timezone = settings?.timezone || 'America/New_York';
     const getHourFromDate = createHourExtractor(timezone);
+    const getDateString = createDateStringExtractor(timezone);
 
     // For REGIONAL mode, we also need dispatchers with county = 'ALL'
     let regionalDispatcherAssignments: typeof dispatcherAssignments = [];
@@ -257,12 +256,14 @@ export async function GET(request: NextRequest) {
     const counties = [...new Set(zones.map(z => z.county).filter(Boolean))] as string[];
 
     // PRE-COMPUTE timezone hours ONCE per shift (not in loops!)
+    // IMPORTANT: Use timezone-aware date string so shifts display on the correct day
+    // A shift stored as 2025-12-16T00:00:00Z should display as Dec 15 in Eastern Time
     const shiftsWithHours: ShiftWithHours[] = shifts.map(shift => {
       const startHour = getHourFromDate(shift.startTime);
       const endHour = getHourFromDate(shift.endTime);
       return {
         shift,
-        dateStr: shift.date.toISOString().split('T')[0],
+        dateStr: getDateString(shift.date), // Use timezone-aware date, not UTC
         startHour,
         endHour,
         timeBlockKey: `${startHour}-${endHour}`,
@@ -270,12 +271,13 @@ export async function GET(request: NextRequest) {
     });
 
     // PRE-COMPUTE timezone hours ONCE per dispatcher assignment
+    // Use timezone-aware date string for consistent display
     const dispatchersWithHours: DispatcherWithHours[] = dispatcherAssignments.map(assignment => {
       const startHour = getHourFromDate(assignment.startTime);
       const endHour = getHourFromDate(assignment.endTime);
       return {
         assignment,
-        dateStr: assignment.date.toISOString().split('T')[0],
+        dateStr: getDateString(assignment.date), // Use timezone-aware date
         startHour,
         endHour,
         timeBlockKey: `${startHour}-${endHour}`,
@@ -288,7 +290,20 @@ export async function GET(request: NextRequest) {
       const endHour = getHourFromDate(assignment.endTime);
       return {
         assignment,
-        dateStr: assignment.date.toISOString().split('T')[0],
+        dateStr: getDateString(assignment.date), // Use timezone-aware date
+        startHour,
+        endHour,
+        timeBlockKey: `${startHour}-${endHour}`,
+      };
+    });
+
+    // PRE-COMPUTE regional backup dispatchers (county = 'REGIONAL', available region-wide)
+    const regionalBackupDispatchersWithHours: DispatcherWithHours[] = regionalBackupAssignments.map(assignment => {
+      const startHour = getHourFromDate(assignment.startTime);
+      const endHour = getHourFromDate(assignment.endTime);
+      return {
+        assignment,
+        dateStr: getDateString(assignment.date), // Use timezone-aware date
         startHour,
         endHour,
         timeBlockKey: `${startHour}-${endHour}`,
@@ -317,12 +332,12 @@ export async function GET(request: NextRequest) {
       return parseInt(a.startTime) - parseInt(b.startTime);
     });
 
-    // Generate dates in range
+    // Generate dates in range - use UTC methods to avoid timezone issues
     const dates: string[] = [];
     const current = new Date(start);
     while (current <= end) {
       dates.push(current.toISOString().split('T')[0]);
-      current.setDate(current.getDate() + 1);
+      current.setUTCDate(current.getUTCDate() + 1);
     }
 
     // BUILD LOOKUP MAPS for O(1) access instead of O(n) filtering in loops
@@ -511,6 +526,15 @@ export async function GET(request: NextRequest) {
       countyDispatchersByDate.set(key, existing);
     }
 
+    // Build regional backup dispatchers by date+timeBlock
+    const regionalBackupsByDateTime = new Map<string, DispatcherWithHours[]>();
+    for (const dispatcherData of regionalBackupDispatchersWithHours) {
+      const key = `${dispatcherData.dateStr}-${dispatcherData.timeBlockKey}`;
+      const existing = regionalBackupsByDateTime.get(key) || [];
+      existing.push(dispatcherData);
+      regionalBackupsByDateTime.set(key, existing);
+    }
+
     // Format regional dispatchers for response
     const regionalDispatchers: Array<{
       date: string;
@@ -590,8 +614,8 @@ export async function GET(request: NextRequest) {
       coverage: 'full' | 'none';
     }> = [];
 
-    // Only populate if in COUNTY mode
-    if (dispatcherSchedulingMode === 'COUNTY') {
+    // Populate in both COUNTY and REGIONAL modes (REGIONAL uses it for aggregation)
+    if (dispatcherSchedulingMode === 'COUNTY' || dispatcherSchedulingMode === 'REGIONAL') {
       const targetCounties = county && county !== 'all' ? [county] : counties;
       for (const countyName of targetCounties) {
         for (const date of dates) {
@@ -631,6 +655,40 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Format regional backup dispatchers for response (available region-wide, county = 'REGIONAL')
+    const regionalBackupDispatchers: Array<{
+      date: string;
+      timeBlock: TimeBlock;
+      dispatchers: Array<{
+        id: string;
+        name: string;
+        assignmentId: string;
+        notes: string | null;
+      }>;
+    }> = [];
+
+    // Build array for all date/timeBlock combinations
+    for (const date of dates) {
+      for (const timeBlock of timeBlocks) {
+        const startHour = parseInt(timeBlock.startTime);
+        const endHour = parseInt(timeBlock.endTime);
+        const timeBlockKey = `${startHour}-${endHour}`;
+        const key = `${date}-${timeBlockKey}`;
+        const backups = regionalBackupsByDateTime.get(key) || [];
+
+        regionalBackupDispatchers.push({
+          date,
+          timeBlock,
+          dispatchers: backups.map(d => ({
+            id: d.assignment.user.id,
+            name: d.assignment.user.name,
+            assignmentId: d.assignment.id,
+            notes: d.assignment.notes,
+          })),
+        });
+      }
+    }
+
     return NextResponse.json({
       counties,
       zones,
@@ -641,11 +699,12 @@ export async function GET(request: NextRequest) {
       schedulingMode,
       regionalDispatchers,
       countyDispatchers,
+      regionalBackupDispatchers,
       regionalLeads: regionalLeadAssignments.map(a => ({
         id: a.id,
         userId: a.user.id,
         userName: a.user.name,
-        date: a.date.toISOString().split('T')[0],
+        date: getDateString(a.date), // Use timezone-aware date
         isPrimary: a.isPrimary,
         notes: a.notes,
       })),

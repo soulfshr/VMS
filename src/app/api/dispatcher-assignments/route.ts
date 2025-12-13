@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
+import { getOrgTimezone, parseDisplayDate } from '@/lib/timezone';
 
 // GET /api/dispatcher-assignments - List dispatcher assignments with filters
 export async function GET(request: NextRequest) {
@@ -102,14 +103,38 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Create the assignment
-    const assignment = await prisma.dispatcherAssignment.create({
-      data: {
+    // Use upsert to handle case where assignment already exists for this user/county/date/time
+    // This can happen when re-assigning the same person or when timezone changes cause mismatches
+
+    // Parse the display date using timezone-aware utility
+    // This properly converts "2025-12-15" in ET to the correct UTC Date for storage
+    const timezone = await getOrgTimezone();
+    const parsedDate = parseDisplayDate(date, timezone);
+
+    const parsedStartTime = new Date(startTime);
+    const parsedEndTime = new Date(endTime);
+
+    const assignment = await prisma.dispatcherAssignment.upsert({
+      where: {
+        userId_county_date_startTime: {
+          userId,
+          county,
+          date: parsedDate,
+          startTime: parsedStartTime,
+        },
+      },
+      update: {
+        endTime: parsedEndTime,
+        isBackup,
+        notes,
+        createdById: user.id,
+      },
+      create: {
         userId,
         county,
-        date: new Date(date),
-        startTime: new Date(startTime),
-        endTime: new Date(endTime),
+        date: parsedDate,
+        startTime: parsedStartTime,
+        endTime: parsedEndTime,
         isBackup,
         notes,
         createdById: user.id,
