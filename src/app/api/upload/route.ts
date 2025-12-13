@@ -12,7 +12,46 @@ async function getUploadSettings() {
   };
 }
 
-// POST /api/upload - Upload a file to S3 (PUBLIC - no auth required for sighting reports)
+// Magic byte signatures for file type validation
+const MAGIC_BYTES: Record<string, number[][]> = {
+  'image/jpeg': [[0xFF, 0xD8, 0xFF]],
+  'image/png': [[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]],
+  'image/gif': [[0x47, 0x49, 0x46, 0x38, 0x37, 0x61], [0x47, 0x49, 0x46, 0x38, 0x39, 0x61]],
+  'image/webp': [[0x52, 0x49, 0x46, 0x46]], // RIFF header (WebP starts with RIFF...WEBP)
+  'video/mp4': [[0x00, 0x00, 0x00], [0x66, 0x74, 0x79, 0x70]], // ftyp at offset 4
+  'video/quicktime': [[0x00, 0x00, 0x00]], // MOV also uses ftyp
+  'video/webm': [[0x1A, 0x45, 0xDF, 0xA3]], // EBML header
+};
+
+// Validate file content matches declared type
+function validateMagicBytes(buffer: Buffer, mimeType: string): boolean {
+  const signatures = MAGIC_BYTES[mimeType];
+  if (!signatures) {
+    // For types without magic byte validation (HEIC, etc.), allow if MIME type is in allowed list
+    return true;
+  }
+
+  for (const sig of signatures) {
+    let matches = true;
+    for (let i = 0; i < sig.length; i++) {
+      if (buffer[i] !== sig[i]) {
+        matches = false;
+        break;
+      }
+    }
+    if (matches) return true;
+  }
+  return false;
+}
+
+// POST /api/upload - Upload a file to S3
+// SECURITY NOTE: This endpoint is intentionally public to support anonymous ICE sighting reports.
+// Community members need to upload photos/videos without authentication.
+// Protections in place:
+// 1. Rate limiting: 10 uploads per minute per IP (see RATE_LIMITS.upload)
+// 2. File type validation: Only images and videos allowed (MIME type + magic bytes)
+// 3. File size limits: Configurable max size (default 50MB)
+// 4. Files stored in isolated S3 path (sightings/)
 export async function POST(request: NextRequest) {
   // Rate limiting
   const clientIp = getClientIp(request);
@@ -77,6 +116,14 @@ export async function POST(request: NextRequest) {
     // Convert file to buffer
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
+
+    // Validate file content matches declared MIME type (magic byte check)
+    if (!validateMagicBytes(buffer, file.type)) {
+      return NextResponse.json(
+        { error: 'File content does not match declared type.' },
+        { status: 400 }
+      );
+    }
 
     // Upload to S3
     const url = await uploadToS3(buffer, key, file.type);

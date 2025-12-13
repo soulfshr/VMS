@@ -4,15 +4,17 @@ import { logger } from '@/lib/logger';
 
 // Verify cron request is from Vercel
 function verifyCronRequest(request: NextRequest): boolean {
-  const authHeader = request.headers.get('authorization');
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    // In development, allow requests without auth
-    if (process.env.NODE_ENV === 'development') return true;
-    // Also allow if CRON_SECRET is not set (for initial setup)
-    if (!process.env.CRON_SECRET) return true;
+  // In development, allow requests without auth
+  if (process.env.NODE_ENV === 'development') return true;
+
+  // In production, CRON_SECRET is required
+  if (!process.env.CRON_SECRET) {
+    console.error('[Cron] CRON_SECRET not configured - rejecting request');
     return false;
   }
-  return true;
+
+  const authHeader = request.headers.get('authorization');
+  return authHeader === `Bearer ${process.env.CRON_SECRET}`;
 }
 
 export async function GET(request: NextRequest) {

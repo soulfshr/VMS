@@ -4,6 +4,18 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+// HTML escape function for XSS prevention in markdown rendering
+function escapeHtml(str: string): string {
+  const escapeMap: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#x27;',
+  };
+  return str.replace(/[&<>"']/g, (char) => escapeMap[char] || char);
+}
+
 type SectionType = 'VIDEO' | 'TEXT' | 'QUIZ' | 'RESOURCE';
 
 interface QuizOption {
@@ -452,8 +464,9 @@ function TextSection({
     return <p className="text-gray-500">No content available.</p>;
   }
 
-  // Basic markdown rendering
-  const html = section.textContent
+  // First escape HTML to prevent XSS, then apply markdown transformations
+  const escaped = escapeHtml(section.textContent);
+  const html = escaped
     .replace(/^### (.*$)/gim, '<h3 class="text-lg font-semibold mt-4 mb-2">$1</h3>')
     .replace(/^## (.*$)/gim, '<h2 class="text-xl font-semibold mt-4 mb-2">$1</h2>')
     .replace(/^# (.*$)/gim, '<h1 class="text-2xl font-bold mt-4 mb-2">$1</h1>')

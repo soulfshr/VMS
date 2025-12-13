@@ -66,10 +66,19 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     // Score the quiz
     let totalPoints = 0;
     let earnedPoints = 0;
-    const gradedAnswers: Array<{
+    // Internal grading data (includes correct answers for storage)
+    const gradedAnswersInternal: Array<{
       questionId: string;
       selectedOptionIds: string[];
       correctOptionIds: string[];
+      isCorrect: boolean;
+      points: number;
+      earnedPoints: number;
+    }> = [];
+    // Safe response data (excludes correct answers to prevent cheating)
+    const gradedAnswersResponse: Array<{
+      questionId: string;
+      selectedOptionIds: string[];
       isCorrect: boolean;
       points: number;
       earnedPoints: number;
@@ -103,10 +112,20 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         earnedPoints += question.points;
       }
 
-      gradedAnswers.push({
+      // Store full data internally (for database storage)
+      gradedAnswersInternal.push({
         questionId: question.id,
         selectedOptionIds,
         correctOptionIds,
+        isCorrect,
+        points: question.points,
+        earnedPoints: isCorrect ? question.points : 0,
+      });
+
+      // Store safe data for response (no answer key)
+      gradedAnswersResponse.push({
+        questionId: question.id,
+        selectedOptionIds,
         isCorrect,
         points: question.points,
         earnedPoints: isCorrect ? question.points : 0,
@@ -116,7 +135,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const percentage = totalPoints > 0 ? Math.round((earnedPoints / totalPoints) * 100) : 0;
     const passed = percentage >= quiz.passingScore;
 
-    // Save the attempt
+    // Save the attempt (store full grading data including correct answers)
     const attempt = await prisma.quizAttempt.create({
       data: {
         quizId,
@@ -125,7 +144,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         maxScore: totalPoints,
         percentage,
         passed,
-        answers: gradedAnswers,
+        answers: gradedAnswersInternal,
         startedAt: startedAt ? new Date(startedAt) : new Date(),
         completedAt: new Date(),
       },
@@ -213,18 +232,20 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         maxScore: totalPoints,
         percentage,
         passed,
-        answers: gradedAnswers,
+        answers: gradedAnswersResponse, // Safe version without correct answers
         attemptNumber: attemptCount,
         maxAttempts: quiz.maxAttempts,
         passingScore: quiz.passingScore,
       },
-      // Include question explanations for review
-      explanations: quiz.questions.reduce((acc, q) => {
-        if (q.explanation) {
-          acc[q.id] = q.explanation;
-        }
-        return acc;
-      }, {} as Record<string, string>),
+      // Include question explanations for review (only if passed or no more attempts)
+      explanations: (passed || (quiz.maxAttempts && attemptCount >= quiz.maxAttempts))
+        ? quiz.questions.reduce((acc, q) => {
+            if (q.explanation) {
+              acc[q.id] = q.explanation;
+            }
+            return acc;
+          }, {} as Record<string, string>)
+        : {},
     });
   } catch (error) {
     console.error('Error submitting quiz attempt:', error);
