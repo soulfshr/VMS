@@ -231,6 +231,23 @@ export default function Header() {
                   {isResourcesOpen && (
                     <div className="absolute left-0 mt-2 w-44 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
                       <Link
+                        href="/map"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setIsResourcesOpen(false)}
+                      >
+                        Map
+                      </Link>
+                      {features.trainings && (
+                        <Link
+                          href="/training"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => setIsResourcesOpen(false)}
+                        >
+                          Training
+                        </Link>
+                      )}
+                      <div className="border-t border-gray-100 my-1" />
+                      <Link
                         href="/resources"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => setIsResourcesOpen(false)}
@@ -449,12 +466,29 @@ export default function Header() {
                 )}
                 {/* 8. Resources Group */}
                 <div className="space-y-1">
+                  <p className="px-2 py-1 text-xs font-medium text-gray-500 uppercase tracking-wider">Resources</p>
                   <Link
-                    href="/resources"
-                    className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+                    href="/map"
+                    className="block px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    Resources
+                    Map
+                  </Link>
+                  {features.trainings && (
+                    <Link
+                      href="/training"
+                      className="block px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Training
+                    </Link>
+                  )}
+                  <Link
+                    href="/resources"
+                    className="block px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Dispatch Process
                   </Link>
                   <a
                     href="/guide.html"
