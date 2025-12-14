@@ -29,6 +29,10 @@ interface Training {
     name: string;
     color: string;
     grantsRole: string | null;
+    grantsQualifiedRole: {
+      id: string;
+      name: string;
+    } | null;
   };
   zone: {
     name: string;
@@ -56,6 +60,7 @@ export default function TrainingRosterPage() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>('all');
+  const [resetModal, setResetModal] = useState<{ attendee: Attendee; revokeQualification: boolean } | null>(null);
 
   useEffect(() => {
     fetchTraining();
@@ -112,6 +117,31 @@ export default function TrainingRosterPage() {
     const confirmed = training?.attendees.filter(a => a.status === 'CONFIRMED' && !a.completedAt) || [];
     for (const attendee of confirmed) {
       await handleUpdateStatus(attendee.id, 'CONFIRMED', true);
+    }
+  };
+
+  const handleResetCompletion = async () => {
+    if (!resetModal) return;
+    setUpdating(resetModal.attendee.id);
+    try {
+      const res = await fetch(`/api/trainings/${params.id}/rsvp`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          attendeeId: resetModal.attendee.id,
+          status: 'CONFIRMED',
+          resetCompletion: true,
+          revokeQualification: resetModal.revokeQualification,
+        }),
+      });
+      if (res.ok) {
+        fetchTraining();
+      }
+    } catch (error) {
+      console.error('Error resetting completion:', error);
+    } finally {
+      setUpdating(null);
+      setResetModal(null);
     }
   };
 
@@ -383,9 +413,18 @@ export default function TrainingRosterPage() {
                     </div>
                   )}
                   {attendee.completedAt && (
-                    <span className="text-gray-400 text-xs">
-                      Completed {new Date(attendee.completedAt).toLocaleDateString()}
-                    </span>
+                    <div className="flex justify-end items-center gap-3">
+                      <span className="text-gray-400 text-xs">
+                        {new Date(attendee.completedAt).toLocaleDateString()}
+                      </span>
+                      <button
+                        onClick={() => setResetModal({ attendee, revokeQualification: false })}
+                        disabled={updating === attendee.id}
+                        className="text-red-600 hover:text-red-900 disabled:opacity-50 text-xs"
+                      >
+                        Reset
+                      </button>
+                    </div>
                   )}
                   {attendee.status === 'DECLINED' && (
                     <button
@@ -407,6 +446,49 @@ export default function TrainingRosterPage() {
           </div>
         )}
       </div>
+
+      {/* Reset Completion Modal */}
+      {resetModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Reset Training Completion</h3>
+            <p className="text-gray-600 mb-4">
+              This will reset the completion status for <strong>{resetModal.attendee.user.name}</strong> back to &quot;Confirmed&quot;.
+            </p>
+            {training?.trainingType.grantsQualifiedRole && (
+              <label className="flex items-start gap-3 p-3 bg-red-50 border border-red-200 rounded-lg mb-4 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={resetModal.revokeQualification}
+                  onChange={(e) => setResetModal({ ...resetModal, revokeQualification: e.target.checked })}
+                  className="mt-1"
+                />
+                <div>
+                  <span className="font-medium text-red-800">Also revoke qualification</span>
+                  <p className="text-sm text-red-600">
+                    Remove the &quot;{training.trainingType.grantsQualifiedRole.name}&quot; qualification that was granted by this training.
+                  </p>
+                </div>
+              </label>
+            )}
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setResetModal(null)}
+                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleResetCompletion}
+                disabled={updating === resetModal.attendee.id}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+              >
+                {updating === resetModal.attendee.id ? 'Resetting...' : 'Reset Completion'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

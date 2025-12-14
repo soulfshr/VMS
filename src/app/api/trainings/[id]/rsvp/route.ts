@@ -143,13 +143,76 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     const { id: sessionId } = await params;
     const body = await request.json();
-    const { attendeeId, status, completedAt } = body;
+    const { attendeeId, status, completedAt, resetCompletion, revokeQualification } = body;
 
     if (!attendeeId || !status) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
       );
+    }
+
+    // Handle reset completion
+    if (resetCompletion) {
+      // Get the attendee with training type info first
+      const existingAttendee = await prisma.trainingSessionAttendee.findUnique({
+        where: { id: attendeeId, sessionId },
+        include: {
+          session: {
+            include: {
+              trainingType: {
+                include: {
+                  grantsQualifiedRole: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!existingAttendee) {
+        return NextResponse.json({ error: 'Attendee not found' }, { status: 404 });
+      }
+
+      // Reset completion status
+      const updatedAttendee = await prisma.trainingSessionAttendee.update({
+        where: { id: attendeeId, sessionId },
+        data: {
+          completedAt: null,
+          status: 'CONFIRMED',
+        },
+        include: {
+          session: {
+            include: {
+              trainingType: {
+                include: {
+                  grantsQualifiedRole: true,
+                },
+              },
+            },
+          },
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+      });
+
+      // If revokeQualification is requested and training grants a role
+      if (revokeQualification && existingAttendee.session.trainingType.grantsQualifiedRoleId) {
+        await prisma.userQualification.deleteMany({
+          where: {
+            userId: existingAttendee.userId,
+            qualifiedRoleId: existingAttendee.session.trainingType.grantsQualifiedRoleId,
+            trainingSessionId: sessionId, // Only delete if granted by THIS training
+          },
+        });
+      }
+
+      return NextResponse.json(updatedAttendee);
     }
 
     // Update attendance record

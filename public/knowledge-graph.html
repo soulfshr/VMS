@@ -121,14 +121,14 @@
 flowchart TB
     subgraph Client["Client Layer"]
         Dashboard
-        Map
+        Schedule
         Shifts
-        Trainings
         Sightings
         Volunteers
-        Schedule
-        Resources
+        Coordinator
         Admin
+        Resources["Resources (Map, Training, Docs)"]
+        Settings
     end
     subgraph Components["Component Layer"]
         Layout["Layout Components"]
@@ -546,7 +546,7 @@ graph TD
         </section>
 
         <footer>
-            <p>RippleVMS Knowledge Graph | Generated December 2025</p>
+            <p>RippleVMS Knowledge Graph | Updated December 14, 2025</p>
             <p style="font-size: 0.85rem; margin-top: 0.5rem;">Next.js 16 | Prisma ORM | PostgreSQL | TypeScript | Tailwind CSS</p>
         </footer>
     </div>

@@ -4,7 +4,7 @@ import { getDbUser } from '@/lib/user';
 import { Role } from '@/generated/prisma/enums';
 
 // PATCH /api/volunteers/[id] - Update a volunteer
-// - ADMINISTRATOR: Can update all fields
+// - ADMINISTRATOR, DEVELOPER: Can update all fields
 // - COORDINATOR, DISPATCHER: Can only update qualifiedRoleIds
 export async function PATCH(
   request: NextRequest,
@@ -16,8 +16,8 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const isAdmin = user.role === 'ADMINISTRATOR';
-    const canEditQualifications = ['ADMINISTRATOR', 'COORDINATOR', 'DISPATCHER'].includes(user.role);
+    const hasFullAccess = ['ADMINISTRATOR', 'DEVELOPER'].includes(user.role);
+    const canEditQualifications = ['ADMINISTRATOR', 'COORDINATOR', 'DISPATCHER', 'DEVELOPER'].includes(user.role);
 
     // Must be admin, coordinator, or dispatcher
     if (!canEditQualifications) {
@@ -28,13 +28,13 @@ export async function PATCH(
     const body = await request.json();
 
     // Non-admins can only update qualifiedRoleIds
-    if (!isAdmin) {
+    if (!hasFullAccess) {
       const allowedFields = ['qualifiedRoleIds'];
       const providedFields = Object.keys(body);
       const disallowedFields = providedFields.filter(f => !allowedFields.includes(f));
       if (disallowedFields.length > 0) {
         return NextResponse.json(
-          { error: `Only administrators can update: ${disallowedFields.join(', ')}` },
+          { error: `Only administrators or developers can update: ${disallowedFields.join(', ')}` },
           { status: 403 }
         );
       }
@@ -50,7 +50,7 @@ export async function PATCH(
     }
 
     // Prevent admin from demoting themselves
-    if (id === user.id && body.role && body.role !== 'ADMINISTRATOR') {
+    if (id === user.id && body.role && !hasFullAccess) {
       return NextResponse.json(
         { error: 'Cannot change your own role' },
         { status: 400 }

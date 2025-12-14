@@ -19,7 +19,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const session = await prisma.trainingSession.findUnique({
       where: { id },
       include: {
-        trainingType: true,
+        trainingType: {
+          include: {
+            grantsQualifiedRole: true,
+          },
+        },
         zone: true,
         createdBy: {
           select: { id: true, name: true, email: true },
@@ -44,12 +48,14 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Add computed fields
+    const isCoordinator = ['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role);
     const sessionWithCounts = {
       ...session,
       confirmedCount: session.attendees.filter(a => a.status === 'CONFIRMED').length,
       pendingCount: session.attendees.filter(a => a.status === 'PENDING').length,
       spotsLeft: session.maxAttendees - session.attendees.filter(a => a.status === 'CONFIRMED').length,
       userRsvp: session.attendees.find(a => a.userId === user.id) || null,
+      isCoordinator,
     };
 
     return NextResponse.json(sessionWithCounts);
