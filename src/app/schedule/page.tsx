@@ -920,7 +920,9 @@ export default function SchedulePage() {
       {modalOpen && selectedCell && scheduleData && (
         <AssignmentModal
           cell={selectedCell}
-          zones={scheduleData.zones.filter(z => z.county === selectedCell.county)}
+          zones={selectedCell.county === 'ALL'
+            ? scheduleData.zones  // Pass ALL zones for regional dispatcher assignment
+            : scheduleData.zones.filter(z => z.county === selectedCell.county)}
           onClose={() => {
             setModalOpen(false);
             setSelectedCell(null);
