@@ -353,53 +353,74 @@ export default function SchedulePage() {
           </p>
         </div>
 
-        {/* Controls - NOT sticky on mobile for more content visibility */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            {/* Week navigation */}
-            <div className="flex items-center gap-2" data-tour="week-nav">
-              <button
-                onClick={() => navigateWeek('prev')}
-                className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+        {/* Controls - Compact on mobile */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 mb-4 sm:mb-6">
+          {/* Row 1: Week navigation - centered on mobile */}
+          <div className="flex items-center justify-center gap-1 sm:gap-2 mb-3" data-tour="week-nav">
+            <button
+              onClick={() => navigateWeek('prev')}
+              className="p-2 sm:px-3 sm:py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+              aria-label="Previous week"
+            >
+              <span className="hidden sm:inline">← Prev</span>
+              <span className="sm:hidden">←</span>
+            </button>
+            <button
+              onClick={goToToday}
+              className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm sm:text-base"
+            >
+              Today
+            </button>
+            <button
+              onClick={() => navigateWeek('next')}
+              className="p-2 sm:px-3 sm:py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+              aria-label="Next week"
+            >
+              <span className="hidden sm:inline">Next →</span>
+              <span className="sm:hidden">→</span>
+            </button>
+            <span className="ml-2 sm:ml-4 font-medium text-gray-900 text-sm sm:text-base whitespace-nowrap">
+              {formatWeekRange()}
+            </span>
+          </div>
+
+          {/* Row 2: Filter + Actions - full width on mobile */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2" data-tour="county-filter">
+              <select
+                value={selectedCounty}
+                onChange={e => setSelectedCounty(e.target.value)}
+                className="px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 rounded-lg text-sm bg-white"
               >
-                ← Prev
-              </button>
-              <button
-                onClick={goToToday}
-                className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                Today
-              </button>
-              <button
-                onClick={() => navigateWeek('next')}
-                className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                Next →
-              </button>
-              <span className="ml-4 font-medium text-gray-900">
-                Week of {formatWeekRange()}
-              </span>
+                <option value="all">All Counties</option>
+                {scheduleData?.counties.map(county => (
+                  <option key={county} value={county}>
+                    {county}
+                  </option>
+                ))}
+              </select>
             </div>
 
-            {/* County filter and Create button */}
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2" data-tour="county-filter">
-                <label className="text-sm text-gray-600">Filter:</label>
-                <select
-                  value={selectedCounty}
-                  onChange={e => setSelectedCounty(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg"
-                >
-                  <option value="all">All Counties</option>
-                  {scheduleData?.counties.map(county => (
-                    <option key={county} value={county}>
-                      {county} County
-                    </option>
-                  ))}
-                </select>
+            {/* Legend - inline compact on mobile */}
+            <div className="hidden sm:flex items-center gap-3 text-xs" data-tour="coverage-legend">
+              <div className="flex items-center gap-1" title="Full coverage">
+                <div className="w-3 h-3 rounded bg-green-100 border border-green-300"></div>
+                <span className="text-gray-500">Full</span>
               </div>
+              <div className="flex items-center gap-1" title="Partial coverage">
+                <div className="w-3 h-3 rounded bg-yellow-100 border border-yellow-300"></div>
+                <span className="text-gray-500">Partial</span>
+              </div>
+              <div className="flex items-center gap-1" title="No coverage">
+                <div className="w-3 h-3 rounded bg-red-50 border border-red-200"></div>
+                <span className="text-gray-500">Gap</span>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center gap-1 sm:gap-2">
               {canEdit && (
-                <div className="flex items-center gap-2">
+                <>
                   <button
                     onClick={() => setShowSettings(true)}
                     className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
@@ -412,42 +433,30 @@ export default function SchedulePage() {
                   </button>
                   <Link
                     href="/shifts/create"
-                    className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium"
+                    className="p-2 sm:px-4 sm:py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium"
+                    title="Create Shift"
                   >
-                    + Create Shift
+                    <span className="hidden sm:inline">+ Create Shift</span>
+                    <span className="sm:hidden text-lg">+</span>
                   </Link>
-                </div>
+                </>
               )}
             </div>
           </div>
 
-          {/* Legend */}
-          <div className="flex flex-wrap items-center gap-4 mt-4 pt-4 border-t border-gray-200 text-sm" data-tour="coverage-legend">
-            <span className="text-gray-500 font-medium">Coverage:</span>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-green-100 border border-green-300"></div>
-              <span className="text-gray-600">Full</span>
+          {/* Mobile legend - minimal inline */}
+          <div className="flex sm:hidden items-center justify-center gap-4 mt-2 pt-2 border-t border-gray-100 text-xs" data-tour="coverage-legend">
+            <div className="flex items-center gap-1">
+              <div className="w-2.5 h-2.5 rounded bg-green-100 border border-green-300"></div>
+              <span className="text-gray-500">Full</span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-yellow-100 border border-yellow-300"></div>
-              <span className="text-gray-600">Partial</span>
+            <div className="flex items-center gap-1">
+              <div className="w-2.5 h-2.5 rounded bg-yellow-100 border border-yellow-300"></div>
+              <span className="text-gray-500">Partial</span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-gray-100 border border-gray-300"></div>
-              <span className="text-gray-600">None</span>
-            </div>
-            <span className="text-gray-300">|</span>
-            <div className="flex items-center gap-2">
-              <span>🎧</span>
-              <span className="text-gray-600">Dispatcher</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span>🌐</span>
-              <span className="text-gray-600">Dispatch Coordinator</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-amber-600 font-medium text-xs">Need X</span>
-              <span className="text-gray-600">Gap</span>
+            <div className="flex items-center gap-1">
+              <div className="w-2.5 h-2.5 rounded bg-red-50 border border-red-200"></div>
+              <span className="text-gray-500">Gap</span>
             </div>
           </div>
         </div>
