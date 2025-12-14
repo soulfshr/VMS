@@ -437,7 +437,8 @@ export default function DashboardClient() {
                           {new Date(nextShift.date).toLocaleDateString('en-US', {
                             weekday: 'long',
                             month: 'long',
-                            day: 'numeric'
+                            day: 'numeric',
+                            timeZone: 'America/New_York'
                           })}
                         </span>
                         <span className="mx-2">•</span>
@@ -538,7 +539,8 @@ export default function DashboardClient() {
                               {new Date(shift.date).toLocaleDateString('en-US', {
                                 weekday: 'short',
                                 month: 'short',
-                                day: 'numeric'
+                                day: 'numeric',
+                                timeZone: 'America/New_York'
                               })} • {new Date(shift.startTime).toLocaleTimeString('en-US', {
                                 hour: 'numeric',
                                 minute: '2-digit',
@@ -916,7 +918,8 @@ export default function DashboardClient() {
                               {new Date(shift.date).toLocaleDateString('en-US', {
                                 weekday: 'short',
                                 month: 'short',
-                                day: 'numeric'
+                                day: 'numeric',
+                                timeZone: 'America/New_York'
                               })} • {new Date(shift.startTime).toLocaleTimeString('en-US', {
                                 hour: 'numeric',
                                 minute: '2-digit',
@@ -1087,7 +1090,8 @@ export default function DashboardClient() {
                               {new Date(training.date).toLocaleDateString('en-US', {
                                 weekday: 'short',
                                 month: 'short',
-                                day: 'numeric'
+                                day: 'numeric',
+                                timeZone: 'America/New_York'
                               })} • {new Date(training.startTime).toLocaleTimeString('en-US', {
                                 hour: 'numeric',
                                 minute: '2-digit',
