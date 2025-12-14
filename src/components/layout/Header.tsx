@@ -123,6 +123,7 @@ export default function Header() {
               </div>
             ) : user ? (
               <>
+                {/* 1. Dashboard */}
                 <Link
                   href="/dashboard"
                   className={`text-sm font-medium transition-colors ${
@@ -133,16 +134,29 @@ export default function Header() {
                 >
                   Dashboard
                 </Link>
+                {/* 2. Schedule */}
                 <Link
-                  href="/map"
+                  href="/schedule"
                   className={`text-sm font-medium transition-colors ${
-                    isActive('/map')
+                    pathname.startsWith('/schedule')
                       ? 'text-cyan-700'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  Map
+                  Schedule
                 </Link>
+                {/* 3. Shifts */}
+                <Link
+                  href="/shifts"
+                  className={`text-sm font-medium transition-colors ${
+                    pathname.startsWith('/shifts')
+                      ? 'text-cyan-700'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Shifts
+                </Link>
+                {/* 4. Sightings (role-restricted) */}
                 {features.sightings && ['DISPATCHER', 'COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role) && (
                   <Link
                     href="/sightings"
@@ -155,39 +169,46 @@ export default function Header() {
                     Sightings
                   </Link>
                 )}
-                <Link
-                  href="/shifts"
-                  className={`text-sm font-medium transition-colors ${
-                    pathname.startsWith('/shifts')
-                      ? 'text-cyan-700'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  Shifts
-                </Link>
-                {features.trainings && (
+                {/* 5. Volunteers (role-restricted) */}
+                {['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role) && (
                   <Link
-                    href="/training"
+                    href="/volunteers"
                     className={`text-sm font-medium transition-colors ${
-                      pathname.startsWith('/training')
+                      pathname.startsWith('/volunteers')
                         ? 'text-cyan-700'
                         : 'text-gray-600 hover:text-gray-900'
                     }`}
                   >
-                    Training
+                    Volunteers
                   </Link>
                 )}
-                <Link
-                  href="/schedule"
-                  className={`text-sm font-medium transition-colors ${
-                    pathname.startsWith('/schedule')
-                      ? 'text-cyan-700'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  Schedule
-                </Link>
-                {/* Resources Dropdown */}
+                {/* 6. Coordinator (role-restricted) */}
+                {['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR'].includes(user.role) && (
+                  <Link
+                    href="/coordinator"
+                    className={`text-sm font-medium transition-colors ${
+                      pathname.startsWith('/coordinator')
+                        ? 'text-cyan-700'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Coordinator
+                  </Link>
+                )}
+                {/* 7. Admin (role-restricted) */}
+                {['ADMINISTRATOR', 'DEVELOPER'].includes(user.role) && (
+                  <Link
+                    href="/admin"
+                    className={`text-sm font-medium transition-colors ${
+                      pathname.startsWith('/admin')
+                        ? 'text-cyan-700'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Admin
+                  </Link>
+                )}
+                {/* 8. Resources Dropdown */}
                 <div className="relative" ref={resourcesRef}>
                   <button
                     onClick={() => setIsResourcesOpen(!isResourcesOpen)}
@@ -237,30 +258,7 @@ export default function Header() {
                     </div>
                   )}
                 </div>
-                {['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role) && (
-                  <Link
-                    href="/volunteers"
-                    className={`text-sm font-medium transition-colors ${
-                      pathname.startsWith('/volunteers')
-                        ? 'text-cyan-700'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    Volunteers
-                  </Link>
-                )}
-                {['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR'].includes(user.role) && (
-                  <Link
-                    href="/coordinator"
-                    className={`text-sm font-medium transition-colors ${
-                      pathname.startsWith('/coordinator')
-                        ? 'text-cyan-700'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    Coordinator
-                  </Link>
-                )}
+                {/* 9. Settings (icon) */}
                 <Link
                   href="/settings"
                   className={`transition-colors ${
@@ -275,18 +273,12 @@ export default function Header() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
                 </Link>
-                {['ADMINISTRATOR', 'DEVELOPER'].includes(user.role) && (
-                  <Link
-                    href="/admin"
-                    className={`text-sm font-medium transition-colors ${
-                      pathname.startsWith('/admin')
-                        ? 'text-cyan-700'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    Admin
-                  </Link>
-                )}
+                {/* 10. Help Button */}
+                <HelpButton
+                  userRole={user.role}
+                  onRestartWelcome={() => setShowWelcome(true)}
+                />
+                {/* Developer (role-restricted, shown after help) */}
                 {user.role === 'DEVELOPER' && (
                   <Link
                     href="/developer"
@@ -299,11 +291,6 @@ export default function Header() {
                     Developer
                   </Link>
                 )}
-                {/* Help Button */}
-                <HelpButton
-                  userRole={user.role}
-                  onRestartWelcome={() => setShowWelcome(true)}
-                />
 
                 {/* User Menu */}
                 <div className="relative" ref={userMenuRef}>
@@ -396,6 +383,7 @@ export default function Header() {
                   <p className="text-sm font-medium text-gray-900">{user.name}</p>
                   <p className="text-xs text-gray-500">{user.role} {user.zone && `- ${user.zone}`}</p>
                 </div>
+                {/* 1. Dashboard */}
                 <Link
                   href="/dashboard"
                   className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
@@ -403,13 +391,23 @@ export default function Header() {
                 >
                   Dashboard
                 </Link>
+                {/* 2. Schedule */}
                 <Link
-                  href="/map"
+                  href="/schedule"
                   className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  Map
+                  Schedule
                 </Link>
+                {/* 3. Shifts */}
+                <Link
+                  href="/shifts"
+                  className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Shifts
+                </Link>
+                {/* 4. Sightings (role-restricted) */}
                 {features.sightings && ['DISPATCHER', 'COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role) && (
                   <Link
                     href="/sightings"
@@ -419,37 +417,44 @@ export default function Header() {
                     Sightings
                   </Link>
                 )}
-                <Link
-                  href="/shifts"
-                  className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Shifts
-                </Link>
-                {features.trainings && (
+                {/* 5. Volunteers (role-restricted) */}
+                {['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role) && (
                   <Link
-                    href="/training"
+                    href="/volunteers"
                     className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    Training
+                    Volunteers
                   </Link>
                 )}
-                <Link
-                  href="/schedule"
-                  className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Schedule
-                </Link>
-                {/* Resources Group */}
+                {/* 6. Coordinator (role-restricted) */}
+                {['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR'].includes(user.role) && (
+                  <Link
+                    href="/coordinator"
+                    className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Coordinator
+                  </Link>
+                )}
+                {/* 7. Admin (role-restricted) */}
+                {['ADMINISTRATOR', 'DEVELOPER'].includes(user.role) && (
+                  <Link
+                    href="/admin"
+                    className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Admin
+                  </Link>
+                )}
+                {/* 8. Resources Group */}
                 <div className="space-y-1">
                   <Link
                     href="/resources"
                     className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    Dispatch Process
+                    Resources
                   </Link>
                   <a
                     href="/guide.html"
@@ -470,24 +475,7 @@ export default function Header() {
                     Dispatch Training
                   </a>
                 </div>
-                {['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role) && (
-                  <Link
-                    href="/volunteers"
-                    className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Volunteers
-                  </Link>
-                )}
-                {['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR'].includes(user.role) && (
-                  <Link
-                    href="/coordinator"
-                    className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Coordinator Console
-                  </Link>
-                )}
+                {/* 9. Settings */}
                 <Link
                   href="/settings"
                   className="flex items-center gap-2 px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
@@ -499,15 +487,7 @@ export default function Header() {
                   </svg>
                   Settings
                 </Link>
-                {['ADMINISTRATOR', 'DEVELOPER'].includes(user.role) && (
-                  <Link
-                    href="/admin"
-                    className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Admin
-                  </Link>
-                )}
+                {/* Developer (role-restricted) */}
                 {user.role === 'DEVELOPER' && (
                   <Link
                     href="/developer"
