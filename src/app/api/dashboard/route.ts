@@ -89,6 +89,31 @@ export async function GET() {
       ],
     });
 
+    // Get dispatch coordinators (regional leads) for the next shift's day
+    const dispatchCoordinators = nextConfirmedShift ? await prisma.regionalLeadAssignment.findMany({
+      where: {
+        date: nextConfirmedShift.date,
+      },
+      include: {
+        user: { select: { id: true, name: true } }
+      },
+      orderBy: { isPrimary: 'desc' }
+    }) : [];
+
+    // Get dispatcher for the next shift's county/time slot
+    const shiftDispatcher = nextConfirmedShift?.zone?.county ? await prisma.dispatcherAssignment.findFirst({
+      where: {
+        county: nextConfirmedShift.zone.county,
+        date: nextConfirmedShift.date,
+        startTime: { lte: nextConfirmedShift.startTime },
+        endTime: { gte: nextConfirmedShift.startTime },
+        isBackup: false,
+      },
+      include: {
+        user: { select: { id: true, name: true } }
+      }
+    }) : null;
+
     // Get user's zone IDs for filtering
     const userZoneIds = user.zones.map(uz => uz.zone.id);
 
@@ -484,6 +509,17 @@ export async function GET() {
             name: v.user.name,
             qualifiedRole: v.qualifiedRole,
           })),
+        dispatchCoordinators: dispatchCoordinators.map(dc => ({
+          id: dc.user.id,
+          name: dc.user.name,
+          isPrimary: dc.isPrimary,
+          notes: dc.notes,
+        })),
+        dispatcher: shiftDispatcher ? {
+          id: shiftDispatcher.user.id,
+          name: shiftDispatcher.user.name,
+          notes: shiftDispatcher.notes,
+        } : null,
       } : null,
     });
   } catch (error) {

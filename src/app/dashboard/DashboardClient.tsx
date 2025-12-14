@@ -95,6 +95,13 @@ interface NextShiftTeammate {
   qualifiedRole: QualifiedRole | null;
 }
 
+interface DispatchCoordinator {
+  id: string;
+  name: string;
+  isPrimary: boolean;
+  notes: string | null;
+}
+
 interface NextShift {
   id: string;
   title: string;
@@ -110,6 +117,12 @@ interface NextShift {
     name: string;
   } | null;
   teammates: NextShiftTeammate[];
+  dispatchCoordinators: DispatchCoordinator[];
+  dispatcher: {
+    id: string;
+    name: string;
+    notes: string | null;
+  } | null;
 }
 
 interface VolunteerStats {
@@ -494,6 +507,35 @@ export default function DashboardClient() {
                           </div>
                         )}
                       </div>
+                      {/* Dispatch Support Section */}
+                      {(nextShift.dispatchCoordinators.length > 0 || nextShift.dispatcher) && (
+                        <div className="mt-3 pt-3 border-t border-gray-100">
+                          <p className="text-xs text-gray-500 mb-2">Shift Support</p>
+                          <div className="space-y-1.5">
+                            {nextShift.dispatchCoordinators.length > 0 && (
+                              <p className="text-sm text-gray-600">
+                                <span className="font-medium">Coordinator{nextShift.dispatchCoordinators.length > 1 ? 's' : ''}:</span>{' '}
+                                {nextShift.dispatchCoordinators.map((c, i) => (
+                                  <span key={c.id}>
+                                    {i > 0 && ', '}
+                                    {c.name}
+                                    {c.isPrimary && <span className="text-amber-500 ml-0.5">★</span>}
+                                    {c.notes && <span className="text-gray-400 text-xs ml-1">({c.notes})</span>}
+                                  </span>
+                                ))}
+                              </p>
+                            )}
+                            {nextShift.dispatcher && (
+                              <p className="text-sm text-gray-600">
+                                <span className="font-medium">Dispatcher:</span> {nextShift.dispatcher.name}
+                                {nextShift.dispatcher.notes && (
+                                  <span className="text-gray-400 text-xs ml-1">({nextShift.dispatcher.notes})</span>
+                                )}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                     <div className="text-cyan-600">
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
