@@ -112,21 +112,21 @@ export default function HealthPage() {
 
   return (
     <div>
-      <div className="flex justify-between items-start mb-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Health Status</h1>
-          <p className="text-gray-600 mt-1">Monitor service health and uptime</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Health Status</h1>
+          <p className="text-sm text-gray-600 mt-1">Monitor service health and uptime</p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           {lastRefresh && (
-            <span className="text-sm text-gray-500">
-              Last updated: {lastRefresh.toLocaleTimeString()}
+            <span className="text-xs sm:text-sm text-gray-500 hidden sm:inline">
+              Updated: {lastRefresh.toLocaleTimeString()}
             </span>
           )}
           <button
             onClick={handleManualRefresh}
             disabled={isRefreshing}
-            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2"
+            className="px-3 sm:px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2 text-sm"
           >
             {isRefreshing ? (
               <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
@@ -242,23 +242,23 @@ export default function HealthPage() {
         ) : (
           <div className="divide-y divide-gray-100">
             {history.slice(0, 50).map((check, index) => (
-              <div key={index} className="p-4 flex items-center gap-4">
-                <span className={`w-2 h-2 rounded-full ${
+              <div key={index} className="p-3 sm:p-4 flex items-center gap-2 sm:gap-4">
+                <span className={`w-2 h-2 shrink-0 rounded-full ${
                   check.status === 'healthy' ? 'bg-green-500' :
                   check.status === 'degraded' ? 'bg-yellow-500' : 'bg-red-500'
                 }`} />
-                <span className="font-medium text-gray-900 capitalize w-24">{check.service}</span>
-                <span className={`text-sm w-20 ${
+                <span className="font-medium text-gray-900 capitalize text-sm w-16 sm:w-24 truncate">{check.service}</span>
+                <span className={`text-sm w-14 sm:w-20 ${
                   check.responseMs < 100 ? 'text-green-600' :
                   check.responseMs < 500 ? 'text-yellow-600' : 'text-red-600'
                 }`}>
                   {check.responseMs}ms
                 </span>
-                <span className="text-sm text-gray-500 flex-1">
-                  {new Date(check.checkedAt).toLocaleString()}
+                <span className="text-xs sm:text-sm text-gray-500 flex-1 truncate">
+                  {new Date(check.checkedAt).toLocaleTimeString()}
                 </span>
                 {check.error && (
-                  <span className="text-sm text-red-600 truncate max-w-xs" title={check.error}>
+                  <span className="hidden sm:inline text-sm text-red-600 truncate max-w-xs" title={check.error}>
                     {check.error}
                   </span>
                 )}

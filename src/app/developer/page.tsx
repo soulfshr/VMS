@@ -195,21 +195,21 @@ export default function DeveloperOverviewPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">System Monitoring</h1>
-          <p className="text-gray-600 mt-1">Real-time system health and metrics</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">System Monitoring</h1>
+          <p className="text-sm text-gray-600 mt-1">Real-time health and metrics</p>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-gray-500">
-            Last updated: {new Date(stats.generatedAt).toLocaleTimeString()}
+        <div className="flex items-center gap-2 sm:gap-3">
+          <span className="text-xs sm:text-sm text-gray-500 hidden sm:inline">
+            Updated: {new Date(stats.generatedAt).toLocaleTimeString()}
           </span>
           <button
             onClick={handleRefresh}
             disabled={isRefreshing}
             className="px-3 py-1.5 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
           >
-            {isRefreshing ? 'Refreshing...' : 'Refresh'}
+            {isRefreshing ? '...' : 'Refresh'}
           </button>
         </div>
       </div>
@@ -405,32 +405,32 @@ export default function DeveloperOverviewPage() {
       </div>
 
       {/* Quick Actions */}
-      <div className="mt-6 flex gap-4">
+      <div className="mt-6 flex flex-wrap gap-2 sm:gap-4">
         <button
           onClick={runHealthCheck}
-          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
+          className="px-3 sm:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
         >
-          Run Health Check
+          Health Check
         </button>
         <button
           onClick={sendTestAlert}
           disabled={alertStatus === 'sending'}
-          className={`px-4 py-2 rounded-lg text-sm font-medium ${
+          className={`px-3 sm:px-4 py-2 rounded-lg text-sm font-medium ${
             alertStatus === 'sent' ? 'bg-green-100 text-green-700' :
             alertStatus === 'error' ? 'bg-red-100 text-red-700' :
             'bg-orange-600 text-white hover:bg-orange-700'
           } disabled:opacity-50`}
         >
-          {alertStatus === 'sending' ? 'Sending...' :
-           alertStatus === 'sent' ? 'Alert Sent!' :
+          {alertStatus === 'sending' ? '...' :
+           alertStatus === 'sent' ? 'Sent!' :
            alertStatus === 'error' ? 'Failed' :
-           'Send Test Alert'}
+           'Test Alert'}
         </button>
         <Link
           href="/developer/logs"
-          className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium"
+          className="px-3 sm:px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium"
         >
-          View All Logs
+          All Logs
         </Link>
       </div>
     </div>
