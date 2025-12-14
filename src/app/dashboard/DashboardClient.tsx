@@ -944,7 +944,7 @@ export default function DashboardClient() {
                     availableZoneShifts.map((shift) => (
                       <Link
                         key={shift.id}
-                        href={`/shifts/${shift.id}`}
+                        href={`/shifts/${shift.id}/roster`}
                         className="block p-4 hover:bg-gray-50 transition-colors"
                       >
                         <div className="flex items-start gap-3">
