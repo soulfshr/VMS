@@ -60,19 +60,9 @@ export async function GET(request: NextRequest) {
             },
           },
         ],
-        // Optionally filter by county for ZONE_LEAD only
-        // Dispatchers don't need zone affiliation - they can cover any area
-        ...(county && role === 'ZONE_LEAD'
-          ? {
-              zones: {
-                some: {
-                  zone: {
-                    county,
-                  },
-                },
-              },
-            }
-          : {}),
+        // Zone preferences no longer restrict assignment eligibility
+        // Any qualified zone lead can be assigned to any zone from the schedule page
+        // Zone preferences are only used for dashboard recommendations and email notifications
       },
       select: {
         id: true,
