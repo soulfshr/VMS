@@ -43,6 +43,7 @@ export default function ProfilePage() {
 
   // Form state
   const [phone, setPhone] = useState('');
+  const [signalHandle, setSignalHandle] = useState('');
   const [primaryLanguage, setPrimaryLanguage] = useState('English');
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [selectedZoneIds, setSelectedZoneIds] = useState<string[]>([]);
@@ -63,6 +64,7 @@ export default function ProfilePage() {
 
         if (profileData.user) {
           setPhone(profileData.user.phone || '');
+          setSignalHandle(profileData.user.signalHandle || '');
           setPrimaryLanguage(profileData.user.primaryLanguage || 'English');
           setEmailNotifications(profileData.user.emailNotifications ?? true);
         }
@@ -132,6 +134,7 @@ export default function ProfilePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           phone,
+          signalHandle,
           primaryLanguage,
           emailNotifications,
         }),
@@ -267,12 +270,22 @@ export default function ProfilePage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone or Signal Handle</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone or Signal ID</label>
                   <input
                     type="text"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    placeholder="(919) 555-0000 or @signal_handle"
+                    placeholder="(919) 555-0000"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Signal Handle</label>
+                  <input
+                    type="text"
+                    value={signalHandle}
+                    onChange={(e) => setSignalHandle(e.target.value)}
+                    placeholder="@signal_username"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
                   />
                 </div>

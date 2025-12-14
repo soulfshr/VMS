@@ -315,10 +315,26 @@
         <!-- ICE Sightings -->
         <section id="sightings" class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
           <h2 class="text-2xl font-bold text-gray-900 mb-6">ICE Sightings</h2>
-          <p class="text-gray-600 mb-6">The ICE sighting system allows community members to report immigration enforcement activity and enables dispatchers to coordinate responses.</p>
+          <p class="text-gray-600 mb-6">The ICE sighting system enables dispatchers to track and coordinate responses to immigration enforcement activity reported via Signal.</p>
 
-          <h3 class="text-lg font-semibold text-gray-900 mb-3">Reporting a Sighting (Public)</h3>
-          <p class="text-gray-600 mb-4">Anyone can report an ICE sighting using the public report form at <code>/report</code>. Reports use the SALUTE model:</p>
+          <h3 class="text-lg font-semibold text-gray-900 mb-3">Dispatcher Workflow Overview</h3>
+          <div class="p-4 bg-cyan-50 border border-cyan-200 rounded-lg mb-6">
+            <p class="text-sm text-gray-700 mb-3">The VMS complements your existing Signal-based coordination:</p>
+            <ol class="list-decimal list-inside text-sm text-gray-600 space-y-2">
+              <li><strong>Signal:</strong> Report arrives in "Triangle - BROADCAST" channel</li>
+              <li><strong>Signal:</strong> Dispatcher 👍 reacts to claim the report</li>
+              <li><strong>VMS:</strong> Dispatcher creates sighting entry (auto-assigned to them as REVIEWING)</li>
+              <li><strong>Decision:</strong> Can this be resolved remotely?
+                <ul class="list-disc list-inside ml-4 mt-1 text-gray-500">
+                  <li><strong>YES:</strong> Set disposition directly (CONFIRMED, FALSE_ALARM) → Auto-closes</li>
+                  <li><strong>NO:</strong> Mark as DISPATCHED → Field team reports back → Set disposition → Auto-closes</li>
+                </ul>
+              </li>
+            </ol>
+          </div>
+
+          <h3 class="text-lg font-semibold text-gray-900 mb-3">SALUTE Reporting Model</h3>
+          <p class="text-gray-600 mb-4">When creating a sighting entry, only <strong>Location</strong> is required. Add other details as available from the Signal report:</p>
           <div class="overflow-x-auto mb-6">
             <table class="w-full text-sm">
               <thead>
@@ -340,8 +356,8 @@
                   <td>"Officers approaching homes"</td>
                 </tr>
                 <tr>
-                  <td><strong>L</strong>ocation</td>
-                  <td>Where the activity is occurring</td>
+                  <td><strong>L</strong>ocation *</td>
+                  <td>Where the activity is occurring (required)</td>
                   <td>"Parked in front of Wendy's on Main St"</td>
                 </tr>
                 <tr>
@@ -352,7 +368,7 @@
                 <tr>
                   <td><strong>T</strong>ime</td>
                   <td>When it was observed</td>
-                  <td>Date and time picker</td>
+                  <td>Auto-captured on entry</td>
                 </tr>
                 <tr>
                   <td><strong>E</strong>quipment</td>
@@ -362,19 +378,19 @@
               </tbody>
             </table>
           </div>
-          <p class="text-gray-600 mb-6">Reporters can optionally include their contact information for follow-up, photos/videos, and use their location or pin a spot on the map.</p>
 
           <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-lg mb-6">
             <h4 class="font-semibold text-yellow-900 mb-2">24/7 Hotline</h4>
-            <p class="text-sm text-gray-600">For immediate reports, community members can also call the hotline: <strong>336-543-0353</strong></p>
+            <p class="text-sm text-gray-600">Community members report sightings via Signal or the hotline: <strong>336-543-0353</strong></p>
           </div>
 
           <h3 class="text-lg font-semibold text-gray-900 mb-3">Viewing Sightings (Dispatchers/Coordinators)</h3>
           <p class="text-gray-600 mb-4">Dispatchers and Coordinators can view and manage all sighting reports from the <strong>Sightings</strong> page:</p>
           <ul class="list-disc list-inside text-gray-600 mb-6 space-y-1">
-            <li><strong>List View</strong> - Browse all sightings with filters</li>
+            <li><strong>List View</strong> - Browse all sightings with filters and quick actions</li>
             <li><strong>Map View</strong> - See sightings plotted on a map with color-coded status markers</li>
-            <li><strong>Filter by status</strong> - New, Reviewing, Verified, Responded, Closed</li>
+            <li><strong>Filter by status</strong> - Reviewing, Dispatched, Closed</li>
+            <li><strong>Workflow Guide</strong> - Click "Workflow Guide" to see the process flow</li>
           </ul>
 
           <h3 class="text-lg font-semibold text-gray-900 mb-3">Sighting Statuses</h3>
@@ -389,37 +405,76 @@
               <tbody>
                 <tr>
                   <td><span class="px-2 py-1 bg-red-100 text-red-800 rounded text-xs font-medium">New</span></td>
-                  <td>Just submitted, awaiting review</td>
+                  <td>Reserved for future public submissions</td>
                 </tr>
                 <tr>
                   <td><span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-medium">Reviewing</span></td>
-                  <td>Dispatcher is evaluating the report</td>
+                  <td>Dispatcher entered and working on the report</td>
                 </tr>
                 <tr>
-                  <td><span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">Verified</span></td>
-                  <td>Report has been confirmed as accurate</td>
-                </tr>
-                <tr>
-                  <td><span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">Responded</span></td>
-                  <td>Field team has been dispatched/responded</td>
+                  <td><span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">Dispatched</span></td>
+                  <td>Field team has been sent to verify</td>
                 </tr>
                 <tr>
                   <td><span class="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs font-medium">Closed</span></td>
-                  <td>Incident resolved or no longer active</td>
+                  <td>Resolved with a disposition (see below)</td>
                 </tr>
               </tbody>
             </table>
           </div>
 
-          <div class="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+          <h3 class="text-lg font-semibold text-gray-900 mb-3">Sighting Dispositions</h3>
+          <p class="text-gray-600 mb-4">When closing a sighting, set a disposition to record the outcome:</p>
+          <div class="overflow-x-auto mb-6">
+            <table class="w-full text-sm">
+              <thead>
+                <tr>
+                  <th>Disposition</th>
+                  <th>Meaning</th>
+                  <th>When to Use</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="px-2 py-1 bg-red-100 text-red-800 rounded text-xs font-medium">Confirmed</span></td>
+                  <td>ICE activity verified</td>
+                  <td>Field team or remote verification confirmed ICE presence</td>
+                </tr>
+                <tr>
+                  <td><span class="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs font-medium">Unverified</span></td>
+                  <td>Unable to confirm or deny</td>
+                  <td>No one could reach location in time, or unable to verify</td>
+                </tr>
+                <tr>
+                  <td><span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">False Alarm</span></td>
+                  <td>Not ICE / mistaken report</td>
+                  <td>Verified as non-ICE (delivery vehicle, similar uniforms, etc.)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="p-4 bg-orange-50 border border-orange-200 rounded-lg mb-6">
             <h4 class="font-semibold text-orange-900 mb-2">Managing Sightings (Dispatchers/Coordinators)</h4>
             <ol class="list-decimal list-inside text-sm text-gray-600 space-y-1">
-              <li>Click on a sighting to view full SALUTE details and any photos</li>
+              <li>Click on a sighting to view full SALUTE details</li>
               <li>View the location on the embedded map</li>
-              <li>Update the status as the response progresses</li>
-              <li>Add internal notes for coordination</li>
-              <li>Contact reporter if follow-up info was provided</li>
+              <li>Use action buttons: <strong>[DISPATCHED]</strong> to send field team</li>
+              <li>Set disposition: <strong>[CONFIRMED]</strong> <strong>[UNVERIFIED]</strong> <strong>[FALSE ALARM]</strong></li>
+              <li>Use Signal message templates to copy formatted updates</li>
+              <li>Add dispatcher notes for coordination logs</li>
             </ol>
+          </div>
+
+          <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h4 class="font-semibold text-blue-900 mb-2">Signal Message Templates</h4>
+            <p class="text-sm text-gray-600 mb-2">The sighting detail page provides copy-to-clipboard templates for Signal coordination:</p>
+            <ul class="list-disc list-inside text-sm text-gray-600 space-y-1">
+              <li><strong>Dispatch Request</strong> - Send to Zone Dispatch group to request field verification</li>
+              <li><strong>Confirmed Result</strong> - Post to ICE WATCH when activity is confirmed</li>
+              <li><strong>Unverified Result</strong> - Post when unable to verify</li>
+              <li><strong>False Alarm</strong> - Post to close out false reports</li>
+            </ul>
           </div>
         </section>
 
@@ -1036,29 +1091,32 @@ John Doe,john@example.com,(919) 555-0100,VOLUNTEER,"Durham 1;Durham 2",English</
 
             <!-- Workflow 6 -->
             <div class="border-l-4 border-red-500 pl-4">
-              <h3 class="font-semibold text-gray-900 mb-3">Reporting an ICE Sighting</h3>
+              <h3 class="font-semibold text-gray-900 mb-3">Entering an ICE Sighting from Signal</h3>
               <ol class="text-sm text-gray-600 space-y-1">
-                <li>1. <strong>Community member</strong> visits <code>/report</code></li>
-                <li>2. <strong>Community member</strong> fills in SALUTE fields (Size, Activity, Location, Uniform, Time, Equipment)</li>
-                <li>3. <strong>Community member</strong> optionally adds photos and contact info</li>
-                <li>4. <strong>Community member</strong> submits the report</li>
-                <li>5. <strong>Dispatchers</strong> receive notification of new sighting</li>
-                <li>6. Sighting appears on dispatcher dashboard</li>
+                <li>1. <strong>Signal:</strong> Report arrives in "Triangle - BROADCAST" channel</li>
+                <li>2. <strong>Dispatcher</strong> 👍 reacts to claim the report</li>
+                <li>3. <strong>Dispatcher</strong> clicks "New Sighting" in VMS</li>
+                <li>4. <strong>Dispatcher</strong> enters location (required) and any SALUTE details available</li>
+                <li>5. <strong>VMS</strong> auto-assigns to dispatcher with status REVIEWING</li>
+                <li>6. Sighting appears in dispatcher's sightings list</li>
               </ol>
             </div>
 
             <!-- Workflow 7 -->
             <div class="border-l-4 border-yellow-500 pl-4">
-              <h3 class="font-semibold text-gray-900 mb-3">Dispatcher Responds to ICE Sighting</h3>
+              <h3 class="font-semibold text-gray-900 mb-3">Dispatcher Resolves ICE Sighting</h3>
               <ol class="text-sm text-gray-600 space-y-1">
-                <li>1. <strong>Dispatcher</strong> sees new sighting on dashboard</li>
-                <li>2. <strong>Dispatcher</strong> clicks to view full details and location map</li>
-                <li>3. <strong>Dispatcher</strong> sets status to "Reviewing"</li>
-                <li>4. <strong>Dispatcher</strong> verifies report validity (calls reporter if needed)</li>
-                <li>5. <strong>Dispatcher</strong> sets status to "Verified"</li>
-                <li>6. <strong>Dispatcher</strong> coordinates field response if needed</li>
-                <li>7. <strong>Dispatcher</strong> sets status to "Responded" when team dispatched</li>
-                <li>8. <strong>Dispatcher</strong> sets status to "Closed" when incident resolved</li>
+                <li>1. <strong>Dispatcher</strong> reviews sighting details</li>
+                <li>2. <strong>Decision:</strong> Can this be resolved remotely?</li>
+                <li class="pl-4"><strong>If YES (remote resolution):</strong></li>
+                <li class="pl-6">3a. <strong>Dispatcher</strong> sets disposition: CONFIRMED, UNVERIFIED, or FALSE_ALARM</li>
+                <li class="pl-6">4a. <strong>VMS</strong> auto-closes the sighting</li>
+                <li class="pl-4"><strong>If NO (field team needed):</strong></li>
+                <li class="pl-6">3b. <strong>Dispatcher</strong> clicks [DISPATCHED] and copies Signal template</li>
+                <li class="pl-6">4b. <strong>Dispatcher</strong> posts dispatch request to Zone Signal group</li>
+                <li class="pl-6">5b. <strong>Field team</strong> verifies and reports back via Signal</li>
+                <li class="pl-6">6b. <strong>Dispatcher</strong> sets disposition based on field team report</li>
+                <li class="pl-6">7b. <strong>VMS</strong> auto-closes the sighting</li>
               </ol>
             </div>
 

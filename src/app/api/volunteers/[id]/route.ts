@@ -65,6 +65,7 @@ export async function PATCH(
       name?: string;
       email?: string;
       phone?: string | null;
+      signalHandle?: string | null;
       primaryLanguage?: string;
       otherLanguages?: string[];
     } = {};
@@ -110,6 +111,10 @@ export async function PATCH(
 
     if (body.phone !== undefined) {
       updateData.phone = body.phone || null;
+    }
+
+    if (body.signalHandle !== undefined) {
+      updateData.signalHandle = body.signalHandle || null;
     }
 
     if (body.primaryLanguage !== undefined) {
@@ -201,6 +206,7 @@ export async function PATCH(
         name: true,
         email: true,
         phone: true,
+        signalHandle: true,
         role: true,
         primaryLanguage: true,
         otherLanguages: true,
@@ -327,6 +333,7 @@ export async function GET(
       name: volunteer.name,
       email: volunteer.email,
       phone: volunteer.phone,
+      signalHandle: volunteer.signalHandle,
       role: volunteer.role,
       primaryLanguage: volunteer.primaryLanguage,
       otherLanguages: volunteer.otherLanguages,

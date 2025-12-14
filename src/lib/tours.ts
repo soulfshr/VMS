@@ -1,7 +1,7 @@
 // Tour definitions for guided tours
 // Note: react-joyride types are defined locally until React 19 support is added
 
-export type PageName = 'dashboard' | 'shifts' | 'schedule' | 'profile' | 'volunteers' | 'trainings' | 'admin';
+export type PageName = 'dashboard' | 'shifts' | 'schedule' | 'profile' | 'volunteers' | 'trainings' | 'admin' | 'sightings';
 
 // Local type definition matching react-joyride's Step interface
 export interface TourStep {
@@ -265,6 +265,49 @@ export const adminTour: TourDefinition = {
   ],
 };
 
+export const sightingsTour: TourDefinition = {
+  name: 'sightings',
+  title: 'Sightings Page Tour',
+  steps: [
+    createStep(
+      '[data-tour="sightings-workflow"]',
+      'Workflow Guide',
+      'Click here to see the complete dispatcher workflow for handling ICE sightings from Signal to resolution.',
+      'bottom'
+    ),
+    createStep(
+      '[data-tour="new-sighting"]',
+      'Create New Sighting',
+      'After claiming a report in Signal with 👍, click here to enter it into the VMS for tracking.',
+      'left'
+    ),
+    createStep(
+      '[data-tour="sightings-filters"]',
+      'Filter Sightings',
+      'Filter by status (Reviewing, Dispatched, Closed) to focus on active reports or review history.',
+      'bottom'
+    ),
+    createStep(
+      '[data-tour="sightings-list"]',
+      'Sightings List',
+      'Each row shows location, time, status, and disposition. Click any sighting to view details and take action.',
+      'top'
+    ),
+    createStep(
+      '[data-tour="sighting-actions"]',
+      'Quick Actions',
+      'Use these buttons to mark as DISPATCHED (field team sent) or set a disposition (CONFIRMED, UNVERIFIED, FALSE_ALARM) to close.',
+      'left'
+    ),
+    createStep(
+      '[data-tour="map-view"]',
+      'Map View',
+      'Toggle to map view to see all sightings plotted geographically with color-coded status markers.',
+      'bottom'
+    ),
+  ],
+};
+
 // Map of all tours
 export const tours: Record<PageName, TourDefinition> = {
   dashboard: dashboardTour,
@@ -274,6 +317,7 @@ export const tours: Record<PageName, TourDefinition> = {
   volunteers: volunteersTour,
   trainings: trainingsTour,
   admin: adminTour,
+  sightings: sightingsTour,
 };
 
 // Get tour for a specific page
@@ -289,6 +333,12 @@ export function filterStepsForRole(steps: TourStep[], role: string): TourStep[] 
     '[data-tour="bulk-actions"]',
     '[data-tour="dispatcher-assign"]',
     '[data-tour="bulk-import"]',
+    '[data-tour="sightings-workflow"]',
+    '[data-tour="new-sighting"]',
+    '[data-tour="sightings-filters"]',
+    '[data-tour="sightings-list"]',
+    '[data-tour="sighting-actions"]',
+    '[data-tour="map-view"]',
   ];
 
   const adminTargets = [

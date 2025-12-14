@@ -58,6 +58,7 @@ export async function PUT(request: NextRequest) {
     const {
       name,
       phone,
+      signalHandle,
       primaryLanguage,
       otherLanguages,
       emergencyContact,
@@ -69,6 +70,7 @@ export async function PUT(request: NextRequest) {
     const updateData: Record<string, unknown> = {};
     if (name) updateData.name = name;
     if (phone !== undefined) updateData.phone = phone;
+    if (signalHandle !== undefined) updateData.signalHandle = signalHandle;
     if (primaryLanguage) updateData.primaryLanguage = primaryLanguage;
     if (otherLanguages) updateData.otherLanguages = otherLanguages;
     if (emergencyContact !== undefined) updateData.emergencyContact = emergencyContact;

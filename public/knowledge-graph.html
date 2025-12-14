@@ -280,14 +280,18 @@ erDiagram
                 <pre class="mermaid">
 erDiagram
     IceSighting ||--o{ SightingMedia : has
+    User ||--o{ IceSighting : manages
     IceSighting {
         string id PK
-        int size
+        string size
         string activity
         string location
         float latitude
         float longitude
         enum status
+        enum disposition
+        string assignedToId FK
+        string notes
     }
     SightingMedia {
         string id PK
@@ -295,6 +299,10 @@ erDiagram
         enum type
     }
                 </pre>
+                <div class="tech-grid" style="margin-top: 1rem;">
+                    <div class="tech-card" style="border-left: 4px solid var(--accent-orange);"><div class="tech-name">Status</div><div class="tech-desc">NEW → REVIEWING → DISPATCHED → CLOSED</div></div>
+                    <div class="tech-card" style="border-left: 4px solid var(--accent-green);"><div class="tech-name">Disposition</div><div class="tech-desc">CONFIRMED | UNVERIFIED | FALSE_ALARM</div></div>
+                </div>
             </div>
         </section>
 
@@ -331,9 +339,11 @@ erDiagram
                     <div class="api-route"><span class="api-method put">PUT</span><span class="api-path">/api/volunteers/[id]</span><span class="api-desc">Update volunteer</span></div>
                 </div>
                 <div class="api-group">
-                    <div class="api-group-title">Sightings (Public)</div>
+                    <div class="api-group-title">Sightings (Dispatcher)</div>
                     <div class="api-route"><span class="api-method get">GET</span><span class="api-path">/api/sightings</span><span class="api-desc">List ICE sightings</span></div>
-                    <div class="api-route"><span class="api-method post">POST</span><span class="api-path">/api/sightings</span><span class="api-desc">Report sighting (no auth)</span></div>
+                    <div class="api-route"><span class="api-method post">POST</span><span class="api-path">/api/sightings</span><span class="api-desc">Create sighting (auto-assigns)</span></div>
+                    <div class="api-route"><span class="api-method get">GET</span><span class="api-path">/api/sightings/[id]</span><span class="api-desc">Get sighting details</span></div>
+                    <div class="api-route"><span class="api-method put">PUT</span><span class="api-path">/api/sightings/[id]</span><span class="api-desc">Update status/disposition</span></div>
                 </div>
                 <div class="api-group">
                     <div class="api-group-title">Schedule</div>
@@ -401,21 +411,33 @@ I --> J["Role Granted to User"]
 </pre>
             </div>
             <div class="card">
-                <h2>ICE Sighting Report Flow</h2>
+                <h2>ICE Sighting Dispatcher Workflow</h2>
+                <p style="margin-bottom: 1rem; color: var(--text-secondary);">VMS complements Signal-based coordination for tracking and disposition</p>
 <pre class="mermaid">
 graph TD
-A["Public User"]
-A --> B["Report Page"]
-B --> C["SALUTE Form"]
-C --> D["POST to API"]
-D --> E["IceSighting Created"]
-D --> F["SightingMedia Uploaded"]
-E --> G["Email Alert to Dispatchers"]
-G --> H["Dispatcher Dashboard"]
-H --> I["Status Updates"]
-I --> J["REVIEWING / VERIFIED / RESPONDED"]
-J --> K["CLOSED"]
+A["📱 Signal: Report in BROADCAST"]
+A --> B["👍 Dispatcher Claims Report"]
+B --> C["🖥️ VMS: New Sighting Entry"]
+C --> D["Auto-assigned REVIEWING"]
+D --> E{"Can Resolve Remotely?"}
+E -->|YES| F["Set Disposition"]
+E -->|NO| G["Mark DISPATCHED"]
+G --> H["📱 Signal: Dispatch Request"]
+H --> I["Field Team Verifies"]
+I --> J["📱 Signal: Field Report"]
+J --> F
+F --> K["✅ CONFIRMED"]
+F --> L["❓ UNVERIFIED"]
+F --> M["❌ FALSE_ALARM"]
+K --> N["Auto-CLOSED"]
+L --> N
+M --> N
 </pre>
+                <div class="tech-grid" style="margin-top: 1rem;">
+                    <div class="tech-card" style="border-left: 4px solid var(--accent-cyan);"><div class="tech-name">Signal Integration</div><div class="tech-desc">VMS provides templates for Signal coordination</div></div>
+                    <div class="tech-card" style="border-left: 4px solid var(--accent-orange);"><div class="tech-name">Auto-Assignment</div><div class="tech-desc">Creating sighting auto-assigns to dispatcher</div></div>
+                    <div class="tech-card" style="border-left: 4px solid var(--accent-green);"><div class="tech-name">Auto-Close</div><div class="tech-desc">Setting disposition auto-closes sighting</div></div>
+                </div>
             </div>
             <div class="card">
                 <h2>Dispatcher Scheduling Modes</h2>

@@ -84,6 +84,7 @@ export async function GET(request: NextRequest) {
         { name: { contains: search, mode: 'insensitive' } },
         { email: { contains: search, mode: 'insensitive' } },
         { phone: { contains: search, mode: 'insensitive' } },
+        { signalHandle: { contains: search, mode: 'insensitive' } },
       ];
     }
 
@@ -182,6 +183,7 @@ export async function GET(request: NextRequest) {
       name: v.name,
       email: v.email,
       phone: v.phone,
+      signalHandle: v.signalHandle,
       role: v.role,
       primaryLanguage: v.primaryLanguage,
       otherLanguages: v.otherLanguages,
@@ -342,6 +344,7 @@ export async function POST(request: NextRequest) {
           name: vol.name,
           email: vol.email.toLowerCase(),
           phone: vol.phone || null,
+          signalHandle: vol.signalHandle || null,
           role: (vol.role?.toUpperCase() || 'VOLUNTEER') as Role,
           primaryLanguage: vol.primaryLanguage || 'English',
           otherLanguages: vol.otherLanguages || [],

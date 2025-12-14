@@ -46,6 +46,49 @@ export async function GET() {
       take: 10, // Get more to account for cancelled ones
     });
 
+    // Get the next confirmed shift with ALL teammates (for the "Your Next Shift" widget)
+    const nextConfirmedShift = await prisma.shift.findFirst({
+      where: {
+        date: { gte: now },
+        status: 'PUBLISHED',
+        volunteers: {
+          some: {
+            userId: user.id,
+            status: 'CONFIRMED',
+          },
+        },
+      },
+      include: {
+        zone: true,
+        typeConfig: true,
+        volunteers: {
+          where: {
+            status: 'CONFIRMED',
+          },
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            qualifiedRole: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+                color: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: [
+        { date: 'asc' },
+        { startTime: 'asc' },
+      ],
+    });
+
     // Get user's zone IDs for filtering
     const userZoneIds = user.zones.map(uz => uz.zone.id);
 
@@ -419,6 +462,29 @@ export async function GET() {
       },
       zoneStats,
       coordinatorStats,
+      // Next confirmed shift with all teammates
+      nextShift: nextConfirmedShift ? {
+        id: nextConfirmedShift.id,
+        title: nextConfirmedShift.title,
+        date: nextConfirmedShift.date,
+        startTime: nextConfirmedShift.startTime,
+        endTime: nextConfirmedShift.endTime,
+        shiftType: nextConfirmedShift.typeConfig ? {
+          name: nextConfirmedShift.typeConfig.name,
+          color: nextConfirmedShift.typeConfig.color,
+        } : null,
+        zone: nextConfirmedShift.zone ? {
+          id: nextConfirmedShift.zone.id,
+          name: nextConfirmedShift.zone.name,
+        } : null,
+        teammates: nextConfirmedShift.volunteers
+          .filter(v => v.userId !== user.id) // Exclude current user
+          .map(v => ({
+            id: v.user.id,
+            name: v.user.name,
+            qualifiedRole: v.qualifiedRole,
+          })),
+      } : null,
     });
   } catch (error) {
     console.error('Error fetching dashboard:', error);

@@ -140,16 +140,15 @@ export default function CreateTrainingPage() {
     setError(null);
 
     try {
-      // Combine date and time into full ISO strings
-      const dateObj = new Date(formData.date);
+      // Parse date components to avoid UTC interpretation
+      const [year, month, day] = formData.date.split('-').map(Number);
       const [startHour, startMin] = formData.startTime.split(':').map(Number);
       const [endHour, endMin] = formData.endTime.split(':').map(Number);
 
-      const startTime = new Date(dateObj);
-      startTime.setHours(startHour, startMin, 0, 0);
-
-      const endTime = new Date(dateObj);
-      endTime.setHours(endHour, endMin, 0, 0);
+      // Create dates in local timezone
+      const dateObj = new Date(year, month - 1, day, 0, 0, 0, 0);
+      const startTime = new Date(year, month - 1, day, startHour, startMin, 0, 0);
+      const endTime = new Date(year, month - 1, day, endHour, endMin, 0, 0);
 
       const body = {
         trainingTypeId: formData.trainingTypeId,

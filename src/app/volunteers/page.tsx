@@ -40,6 +40,7 @@ interface Volunteer {
   name: string;
   email: string;
   phone: string | null;
+  signalHandle: string | null;
   role: string;
   primaryLanguage: string;
   otherLanguages: string[];
@@ -80,7 +81,8 @@ interface ImportFieldDefinition {
 const IMPORT_FIELD_DEFINITIONS: ImportFieldDefinition[] = [
   { key: 'name', label: 'Name', required: true, description: 'Full name of the volunteer' },
   { key: 'email', label: 'Email', required: true, description: 'Email address (must be unique)' },
-  { key: 'phone', label: 'Phone or Signal Handle', required: false, description: 'Phone number or Signal handle' },
+  { key: 'phone', label: 'Phone or Signal ID', required: false, description: 'Phone number or Signal ID (phone number)' },
+  { key: 'signalHandle', label: 'Signal Handle', required: false, description: 'Signal username/handle' },
   { key: 'role', label: 'User Type', required: false, description: 'User type: VOLUNTEER, COORDINATOR, DISPATCHER, ADMINISTRATOR' },
   { key: 'primaryLanguage', label: 'Primary Language', required: false, description: 'Primary language (default: English)' },
   { key: 'zones', label: 'Zones', required: false, description: 'Zone names (semicolon-separated)' },
@@ -119,6 +121,7 @@ export default function VolunteersPage() {
     name: '',
     email: '',
     phone: '',
+    signalHandle: '',
     role: 'VOLUNTEER',
     zoneId: '',
     primaryLanguage: 'English',
@@ -138,6 +141,7 @@ export default function VolunteersPage() {
     name: '',
     email: '',
     phone: '',
+    signalHandle: '',
     primaryLanguage: 'English',
     otherLanguages: [] as string[],
   });
@@ -562,6 +566,7 @@ export default function VolunteersPage() {
         name: addVolunteerForm.name,
         email: addVolunteerForm.email,
         phone: addVolunteerForm.phone || undefined,
+        signalHandle: addVolunteerForm.signalHandle || undefined,
         role: addVolunteerForm.role,
         primaryLanguage: addVolunteerForm.primaryLanguage,
         zones: addVolunteerForm.zoneId ? [data?.zones.find(z => z.id === addVolunteerForm.zoneId)?.name || ''] : [],
@@ -590,6 +595,7 @@ export default function VolunteersPage() {
         name: '',
         email: '',
         phone: '',
+        signalHandle: '',
         role: 'VOLUNTEER',
         zoneId: '',
         primaryLanguage: 'English',
@@ -609,6 +615,7 @@ export default function VolunteersPage() {
       name: '',
       email: '',
       phone: '',
+      signalHandle: '',
       role: 'VOLUNTEER',
       zoneId: '',
       primaryLanguage: 'English',
@@ -673,6 +680,7 @@ export default function VolunteersPage() {
       name: volunteer.name,
       email: volunteer.email,
       phone: volunteer.phone || '',
+      signalHandle: volunteer.signalHandle || '',
       primaryLanguage: volunteer.primaryLanguage,
       otherLanguages: volunteer.otherLanguages || [],
     });
@@ -688,6 +696,7 @@ export default function VolunteersPage() {
       name: '',
       email: '',
       phone: '',
+      signalHandle: '',
       primaryLanguage: 'English',
       otherLanguages: [],
     });
@@ -709,6 +718,7 @@ export default function VolunteersPage() {
           name: editVolunteerForm.name,
           email: editVolunteerForm.email,
           phone: editVolunteerForm.phone || null,
+          signalHandle: editVolunteerForm.signalHandle || null,
           primaryLanguage: editVolunteerForm.primaryLanguage,
           otherLanguages: editVolunteerForm.otherLanguages,
         }),
@@ -731,6 +741,7 @@ export default function VolunteersPage() {
                   name: editVolunteerForm.name,
                   email: editVolunteerForm.email,
                   phone: editVolunteerForm.phone || null,
+                  signalHandle: editVolunteerForm.signalHandle || null,
                   primaryLanguage: editVolunteerForm.primaryLanguage,
                   otherLanguages: editVolunteerForm.otherLanguages,
                 }
@@ -1771,17 +1782,31 @@ Jane Smith,jane@example.com,555-5678,COORDINATOR,Spanish,Zone 3`}
                   />
                 </div>
 
-                {/* Phone or Signal */}
+                {/* Phone or Signal ID */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone or Signal Handle
+                    Phone or Signal ID
                   </label>
                   <input
                     type="text"
                     value={addVolunteerForm.phone}
                     onChange={(e) => setAddVolunteerForm(prev => ({ ...prev, phone: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-                    placeholder="919-555-1234 or @signal_handle"
+                    placeholder="919-555-1234"
+                  />
+                </div>
+
+                {/* Signal Handle */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Signal Handle
+                  </label>
+                  <input
+                    type="text"
+                    value={addVolunteerForm.signalHandle}
+                    onChange={(e) => setAddVolunteerForm(prev => ({ ...prev, signalHandle: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                    placeholder="@signal_username"
                   />
                 </div>
 
@@ -1960,17 +1985,31 @@ Jane Smith,jane@example.com,555-5678,COORDINATOR,Spanish,Zone 3`}
                   <p className="text-xs text-gray-500 mt-1">This is the volunteer&apos;s login email</p>
                 </div>
 
-                {/* Phone or Signal */}
+                {/* Phone or Signal ID */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone or Signal Handle
+                    Phone or Signal ID
                   </label>
                   <input
                     type="text"
                     value={editVolunteerForm.phone}
                     onChange={(e) => setEditVolunteerForm(prev => ({ ...prev, phone: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-                    placeholder="919-555-1234 or @signal_handle"
+                    placeholder="919-555-1234"
+                  />
+                </div>
+
+                {/* Signal Handle */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Signal Handle
+                  </label>
+                  <input
+                    type="text"
+                    value={editVolunteerForm.signalHandle}
+                    onChange={(e) => setEditVolunteerForm(prev => ({ ...prev, signalHandle: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                    placeholder="@signal_username"
                   />
                 </div>
 

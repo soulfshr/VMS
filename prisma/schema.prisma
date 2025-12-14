@@ -263,6 +263,7 @@ model User {
   email             String    @unique
   name              String
   phone             String?
+  signalHandle      String?   // Signal username/handle for coordination
   role              Role      @default(VOLUNTEER)
   profileImageUrl   String?
 

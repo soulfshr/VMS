@@ -502,8 +502,8 @@ function ShiftsPageContent() {
     Promise.all([
       fetch('/api/auth/session').then(res => res.json()),
       fetch('/api/zones').then(res => res.json()),
-      fetch('/api/admin/shift-types').then(res => res.json()).catch(() => []),
-      fetch('/api/admin/settings').then(res => res.json()).catch(() => ({ schedulingMode: 'SIMPLE' })),
+      fetch('/api/shift-types').then(res => res.json()).catch(() => []),
+      fetch('/api/settings/public').then(res => res.json()).catch(() => ({ schedulingMode: 'SIMPLE' })),
     ])
       .then(([sessionData, zonesData, shiftTypesData, settingsData]) => {
         if (!sessionData.user) {
