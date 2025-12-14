@@ -256,14 +256,13 @@ export async function GET(request: NextRequest) {
     const counties = [...new Set(zones.map(z => z.county).filter(Boolean))] as string[];
 
     // PRE-COMPUTE timezone hours ONCE per shift (not in loops!)
-    // IMPORTANT: Use timezone-aware date string so shifts display on the correct day
-    // A shift stored as 2025-12-16T00:00:00Z should display as Dec 15 in Eastern Time
+    // Use UTC date string to match the dates array for consistent lookup
     const shiftsWithHours: ShiftWithHours[] = shifts.map(shift => {
       const startHour = getHourFromDate(shift.startTime);
       const endHour = getHourFromDate(shift.endTime);
       return {
         shift,
-        dateStr: getDateString(shift.date), // Use timezone-aware date, not UTC
+        dateStr: shift.date.toISOString().split('T')[0], // Use UTC date to match dates array
         startHour,
         endHour,
         timeBlockKey: `${startHour}-${endHour}`,
@@ -271,13 +270,14 @@ export async function GET(request: NextRequest) {
     });
 
     // PRE-COMPUTE timezone hours ONCE per dispatcher assignment
-    // Use timezone-aware date string for consistent display
+    // Use UTC date string to match the dates array (which is also UTC-based)
+    // This ensures consistent lookup regardless of how dates were stored historically
     const dispatchersWithHours: DispatcherWithHours[] = dispatcherAssignments.map(assignment => {
       const startHour = getHourFromDate(assignment.startTime);
       const endHour = getHourFromDate(assignment.endTime);
       return {
         assignment,
-        dateStr: getDateString(assignment.date), // Use timezone-aware date
+        dateStr: assignment.date.toISOString().split('T')[0], // Use UTC date to match dates array
         startHour,
         endHour,
         timeBlockKey: `${startHour}-${endHour}`,
@@ -290,7 +290,7 @@ export async function GET(request: NextRequest) {
       const endHour = getHourFromDate(assignment.endTime);
       return {
         assignment,
-        dateStr: getDateString(assignment.date), // Use timezone-aware date
+        dateStr: assignment.date.toISOString().split('T')[0], // Use UTC date to match dates array
         startHour,
         endHour,
         timeBlockKey: `${startHour}-${endHour}`,
@@ -303,7 +303,7 @@ export async function GET(request: NextRequest) {
       const endHour = getHourFromDate(assignment.endTime);
       return {
         assignment,
-        dateStr: getDateString(assignment.date), // Use timezone-aware date
+        dateStr: assignment.date.toISOString().split('T')[0], // Use UTC date to match dates array
         startHour,
         endHour,
         timeBlockKey: `${startHour}-${endHour}`,
@@ -704,7 +704,10 @@ export async function GET(request: NextRequest) {
         id: a.id,
         userId: a.user.id,
         userName: a.user.name,
-        date: getDateString(a.date), // Use timezone-aware date
+        // For DATE-only columns (@db.Date), extract date directly without timezone conversion
+        // PostgreSQL DATE stores just the date; Prisma reads it as midnight UTC
+        // Applying timezone would shift to previous day (midnight UTC = 7pm EST previous day)
+        date: a.date.toISOString().split('T')[0],
         isPrimary: a.isPrimary,
         notes: a.notes,
       })),

@@ -72,7 +72,12 @@ export async function PUT(
     const updateData: Record<string, unknown> = {};
     if (userId !== undefined) updateData.userId = userId;
     if (county !== undefined) updateData.county = county;
-    if (date !== undefined) updateData.date = new Date(date);
+    if (date !== undefined) {
+      // Parse date for DATE-only column storage
+      // Use UTC noon to ensure PostgreSQL DATE stores the correct calendar date
+      const [year, month, day] = date.split('-').map(Number);
+      updateData.date = new Date(Date.UTC(year, month - 1, day, 12, 0, 0, 0));
+    }
     if (startTime !== undefined) updateData.startTime = new Date(startTime);
     if (endTime !== undefined) updateData.endTime = new Date(endTime);
     if (isBackup !== undefined) updateData.isBackup = isBackup;

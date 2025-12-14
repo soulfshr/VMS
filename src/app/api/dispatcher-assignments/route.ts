@@ -23,17 +23,24 @@ export async function GET(request: NextRequest) {
       where.county = county;
     }
 
+    // Parse dates for DATE-only column filtering
+    // Use UTC noon to ensure correct date comparison regardless of server timezone
+    const parseDateString = (dateStr: string) => {
+      const [year, month, day] = dateStr.split('-').map(Number);
+      return new Date(Date.UTC(year, month - 1, day, 12, 0, 0, 0));
+    };
+
     if (startDate) {
       where.date = {
         ...((where.date as object) || {}),
-        gte: new Date(startDate),
+        gte: parseDateString(startDate),
       };
     }
 
     if (endDate) {
       where.date = {
         ...((where.date as object) || {}),
-        lte: new Date(endDate),
+        lte: parseDateString(endDate),
       };
     }
 

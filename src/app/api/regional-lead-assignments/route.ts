@@ -17,17 +17,24 @@ export async function GET(request: NextRequest) {
     // Build filter conditions
     const where: Record<string, unknown> = {};
 
+    // Parse dates for DATE-only column filtering
+    // Use UTC noon to ensure correct date comparison regardless of server timezone
+    const parseDateString = (dateStr: string) => {
+      const [year, month, day] = dateStr.split('-').map(Number);
+      return new Date(Date.UTC(year, month - 1, day, 12, 0, 0, 0));
+    };
+
     if (startDate) {
       where.date = {
         ...((where.date as object) || {}),
-        gte: new Date(startDate),
+        gte: parseDateString(startDate),
       };
     }
 
     if (endDate) {
       where.date = {
         ...((where.date as object) || {}),
-        lte: new Date(endDate),
+        lte: parseDateString(endDate),
       };
     }
 
@@ -124,11 +131,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Parse date correctly for DATE-only storage
+    // Use UTC noon to ensure PostgreSQL DATE stores the correct calendar date
+    // regardless of server timezone
+    const [year, month, day] = date.split('-').map(Number);
+    const dateObj = new Date(Date.UTC(year, month - 1, day, 12, 0, 0, 0));
+
     // Create the assignment
     const assignment = await prisma.regionalLeadAssignment.create({
       data: {
         userId: targetUserId,
-        date: new Date(date),
+        date: dateObj,
         isPrimary,
         notes,
         createdById: user.id,

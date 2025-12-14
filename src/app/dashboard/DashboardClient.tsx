@@ -89,6 +89,29 @@ interface QualifiedRole {
   color: string;
 }
 
+interface NextShiftTeammate {
+  id: string;
+  name: string | null;
+  qualifiedRole: QualifiedRole | null;
+}
+
+interface NextShift {
+  id: string;
+  title: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  shiftType: {
+    name: string;
+    color: string;
+  } | null;
+  zone: {
+    id: string;
+    name: string;
+  } | null;
+  teammates: NextShiftTeammate[];
+}
+
 interface VolunteerStats {
   myShifts: number;
   hoursThisMonth: number;
@@ -106,10 +129,7 @@ interface WeekCoverage {
 }
 
 interface CoordinatorStats {
-  totalShifts: number;
   pendingRsvps: number;
-  activeVolunteers: number;
-  needsCoverage: number;
   weeklyCoverage?: {
     thisWeek: WeekCoverage;
     nextWeek: WeekCoverage;
@@ -131,6 +151,7 @@ interface DashboardData {
   coordinatorStats?: CoordinatorStats;
   zoneStats?: ZoneStats;
   orgStats?: OrgStats;
+  nextShift?: NextShift | null;
 }
 
 interface UpcomingTraining {
@@ -318,7 +339,7 @@ export default function DashboardClient() {
     return <WelcomeScreen onComplete={handleWelcomeComplete} userRole={sessionUser.role} userName={sessionUser.name} />;
   }
 
-  const { upcomingShifts, availableZoneShifts, volunteerStats, coordinatorStats, zoneStats, orgStats } = dashboardData;
+  const { upcomingShifts, availableZoneShifts, volunteerStats, coordinatorStats, zoneStats, orgStats, nextShift } = dashboardData;
   // Harmonize COORDINATOR and DISPATCHER - both have leadership access
   const isLeader = sessionUser.role === 'COORDINATOR' || sessionUser.role === 'DISPATCHER' || sessionUser.role === 'ADMINISTRATOR';
   const isCoordinator = isLeader; // For backward compatibility
@@ -368,18 +389,11 @@ export default function DashboardClient() {
                 <p className="text-xs text-gray-500 mt-1">this month</p>
               </div>
               {isCoordinator && coordinatorStats && (
-                <>
-                  <div className="bg-white rounded-xl border border-gray-200 p-4">
-                    <p className="text-sm text-gray-500">Pending</p>
-                    <p className="text-2xl font-bold text-orange-600 mt-1">{coordinatorStats.pendingRsvps}</p>
-                    <p className="text-xs text-gray-500 mt-1">RSVPs</p>
-                  </div>
-                  <div className="bg-white rounded-xl border border-gray-200 p-4">
-                    <p className="text-sm text-gray-500">Coverage</p>
-                    <p className="text-2xl font-bold text-red-600 mt-1">{coordinatorStats.needsCoverage}</p>
-                    <p className="text-xs text-gray-500 mt-1">need help</p>
-                  </div>
-                </>
+                <div className="bg-white rounded-xl border border-gray-200 p-4">
+                  <p className="text-sm text-gray-500">Pending</p>
+                  <p className="text-2xl font-bold text-orange-600 mt-1">{coordinatorStats.pendingRsvps}</p>
+                  <p className="text-xs text-gray-500 mt-1">RSVPs</p>
+                </div>
               )}
               {!isCoordinator && (
                 <>
@@ -398,6 +412,97 @@ export default function DashboardClient() {
                 </>
               )}
             </div>
+
+            {/* Your Next Shift Widget */}
+            {nextShift && (
+              <div className="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-xl border border-cyan-200" data-tour="next-shift">
+                <div className="p-4 border-b border-cyan-200/50 flex items-center gap-2">
+                  <span className="text-xl">📅</span>
+                  <h2 className="font-semibold text-gray-900">Your Next Shift</h2>
+                </div>
+                <Link href={`/shifts/${nextShift.id}`} className="block p-5 hover:bg-cyan-50/50 transition-colors">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: nextShift.shiftType?.color || '#14b8a6' }}
+                        />
+                        <span className="font-semibold text-gray-900 text-lg">
+                          {nextShift.shiftType?.name || nextShift.title}
+                        </span>
+                      </div>
+                      <div className="text-gray-600 mb-3">
+                        <span className="font-medium">
+                          {new Date(nextShift.date).toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
+                        </span>
+                        <span className="mx-2">•</span>
+                        <span>
+                          {new Date(nextShift.startTime).toLocaleTimeString('en-US', {
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            timeZone: 'America/New_York'
+                          })} - {new Date(nextShift.endTime).toLocaleTimeString('en-US', {
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            timeZone: 'America/New_York'
+                          })}
+                        </span>
+                        {nextShift.zone && (
+                          <>
+                            <span className="mx-2">•</span>
+                            <span>{nextShift.zone.name}</span>
+                          </>
+                        )}
+                      </div>
+                      {/* Teammates Section */}
+                      <div className="mt-4">
+                        <p className="text-sm text-gray-500 mb-2">
+                          {nextShift.teammates.length > 0
+                            ? `Your teammates (${nextShift.teammates.length})`
+                            : 'No teammates assigned yet'
+                          }
+                        </p>
+                        {nextShift.teammates.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {nextShift.teammates.map((teammate) => {
+                              const displayName = teammate.name || 'Unknown';
+                              return (
+                              <div
+                                key={teammate.id}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white rounded-full text-sm border border-gray-200"
+                              >
+                                <span className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-xs font-medium text-gray-600">
+                                  {displayName.charAt(0)}
+                                </span>
+                                <span className="text-gray-700">{displayName.split(' ')[0]}</span>
+                                {teammate.qualifiedRole && (
+                                  <span
+                                    className="w-2 h-2 rounded-full"
+                                    style={{ backgroundColor: teammate.qualifiedRole.color }}
+                                    title={teammate.qualifiedRole.name}
+                                  />
+                                )}
+                              </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-cyan-600">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
+                  </div>
+                </Link>
+              </div>
+            )}
 
             {/* Upcoming Shifts */}
             <div className="bg-white rounded-xl border border-gray-200" data-tour="upcoming-shifts">
