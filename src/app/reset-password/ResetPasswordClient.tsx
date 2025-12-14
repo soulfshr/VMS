@@ -109,10 +109,10 @@ export default function ResetPasswordClient() {
         {/* Header */}
         <div className="text-center mb-8">
           <Image
-            src="/ripple-logo-perspective-animated.svg"
+            src="/ripple-logo.png"
             alt="RippleVMS"
-            width={120}
-            height={75}
+            width={150}
+            height={124}
             className="mx-auto mb-4"
           />
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
