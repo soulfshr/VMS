@@ -389,7 +389,7 @@ export default function Header() {
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <nav className="md:hidden py-4 border-t border-gray-200">
+          <nav className="md:hidden py-4 border-t border-gray-200 max-h-[calc(100vh-120px)] overflow-y-auto">
             {user ? (
               <div className="space-y-2">
                 <div className="px-2 py-2 bg-gray-100 rounded-lg mb-4">
@@ -517,12 +517,15 @@ export default function Header() {
                     Developer
                   </Link>
                 )}
-                <button
-                  onClick={handleLogout}
-                  className="w-full text-left px-2 py-2 text-red-600 hover:bg-red-50 rounded-lg"
-                >
-                  Logout
-                </button>
+                {/* Logout - with visual separator */}
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <button
+                    onClick={handleLogout}
+                    className="w-full text-left px-2 py-2 text-red-600 hover:bg-red-50 rounded-lg font-medium"
+                  >
+                    Logout
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="space-y-2">
