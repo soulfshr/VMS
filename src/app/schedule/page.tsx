@@ -353,8 +353,8 @@ export default function SchedulePage() {
           </p>
         </div>
 
-        {/* Controls - Sticky */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6 sticky top-0 z-30">
+        {/* Controls - NOT sticky on mobile for more content visibility */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
             {/* Week navigation */}
             <div className="flex items-center gap-2" data-tour="week-nav">
@@ -459,19 +459,19 @@ export default function SchedulePage() {
           </div>
         ) : scheduleData ? (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200" data-tour="schedule-grid">
-            {/* Scrollable container with max-height for internal scroll with sticky header */}
-            <div className="overflow-auto max-h-[calc(100vh-220px)]">
-              <table className="w-full border-collapse table-fixed">
+            {/* Scrollable container - horizontal scroll on mobile, vertical scroll always */}
+            <div className="overflow-auto max-h-[calc(100vh-180px)]">
+              <table className="border-collapse" style={{ minWidth: '900px' }}>
                 {/* Sticky Header Row - sticks within scroll container */}
                 <thead className="sticky top-0 z-20">
                   <tr className="bg-gray-100">
                     <th className="w-[100px] min-w-[100px] px-2 py-3 text-left text-sm font-medium text-gray-600 border-b border-r border-gray-200 bg-gray-100 sticky left-0 z-30 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">
-                      County / Time
+                      Time
                     </th>
                     {weekDates.map(date => (
                       <th
                         key={date.toISOString()}
-                        className="w-[calc((100%-100px)/7)] min-w-[120px] px-2 py-3 text-center text-sm font-medium text-gray-600 border-b border-r border-gray-200 bg-gray-100"
+                        className="w-[115px] min-w-[115px] px-2 py-3 text-center text-sm font-medium text-gray-600 border-b border-r border-gray-200 bg-gray-100"
                       >
                         <div>{date.toLocaleDateString('en-US', { weekday: 'short' })}</div>
                         <div className="text-gray-500 font-normal">
