@@ -107,21 +107,29 @@ export async function GET() {
 
     // Get dispatcher for the next shift's county/time slot
     // Use date range to match by day (shift dates may be stored at different UTC times)
+    // Match by extracted hours since startTime/endTime may have inconsistent date portions
     const shiftDateStart = nextConfirmedShift ? new Date(nextConfirmedShift.date.toISOString().split('T')[0] + 'T00:00:00.000Z') : null;
     const shiftDateEnd = shiftDateStart ? new Date(shiftDateStart.getTime() + 24 * 60 * 60 * 1000) : null;
+    const shiftStartHour = nextConfirmedShift ? getHourInTimezone(nextConfirmedShift.startTime) : null;
 
-    const shiftDispatcher = (nextConfirmedShift?.zone?.county && shiftDateStart && shiftDateEnd) ? await prisma.dispatcherAssignment.findFirst({
+    // First fetch all dispatchers for the county/date, then filter by hour
+    const candidateDispatchers = (nextConfirmedShift?.zone?.county && shiftDateStart && shiftDateEnd) ? await prisma.dispatcherAssignment.findMany({
       where: {
         county: nextConfirmedShift.zone.county,
         date: { gte: shiftDateStart, lt: shiftDateEnd },
-        startTime: { lte: nextConfirmedShift.startTime },
-        endTime: { gte: nextConfirmedShift.startTime },
         isBackup: false,
       },
       include: {
         user: { select: { id: true, name: true } }
       }
-    }) : null;
+    }) : [];
+
+    // Find dispatcher whose time slot covers the shift start hour
+    const shiftDispatcher = candidateDispatchers.find(d => {
+      const dispatcherStartHour = getHourInTimezone(d.startTime);
+      const dispatcherEndHour = getHourInTimezone(d.endTime);
+      return shiftStartHour !== null && dispatcherStartHour <= shiftStartHour && dispatcherEndHour > shiftStartHour;
+    }) || null;
 
     // Get user's zone IDs for filtering
     const userZoneIds = user.zones.map(uz => uz.zone.id);
