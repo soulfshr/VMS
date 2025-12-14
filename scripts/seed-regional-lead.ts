@@ -14,21 +14,21 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  console.log('Seeding Regional Lead Qualified Role...\n');
+  console.log('Seeding Dispatch Coordinator Qualified Role...\n');
 
   const existing = await prisma.qualifiedRole.findUnique({
     where: { slug: 'REGIONAL_LEAD' },
   });
 
   if (existing) {
-    console.log('✓ Regional Lead role already exists:', existing.id);
+    console.log('✓ Dispatch Coordinator role already exists:', existing.id);
     return;
   }
 
   const role = await prisma.qualifiedRole.create({
     data: {
-      name: 'Regional Lead',
-      slug: 'REGIONAL_LEAD',
+      name: 'Dispatch Coordinator',
+      slug: 'REGIONAL_LEAD', // Keeping slug for backwards compatibility
       description: 'Coordinates all Triangle zones for an entire day',
       color: '#8b5cf6', // Purple
       sortOrder: 4,
@@ -37,7 +37,7 @@ async function main() {
     },
   });
 
-  console.log('✓ Created Regional Lead role:', role.id);
+  console.log('✓ Created Dispatch Coordinator role:', role.id);
 }
 
 main()
