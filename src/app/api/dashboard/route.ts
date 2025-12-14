@@ -90,9 +90,14 @@ export async function GET() {
     });
 
     // Get dispatch coordinators (regional leads) for the next shift's day
-    const dispatchCoordinators = nextConfirmedShift ? await prisma.regionalLeadAssignment.findMany({
+    // Extract date portion and use range to handle different UTC times
+    const shiftDateStr = nextConfirmedShift ? nextConfirmedShift.date.toISOString().split('T')[0] : null;
+    const coordDateStart = shiftDateStr ? new Date(shiftDateStr + 'T00:00:00.000Z') : null;
+    const coordDateEnd = coordDateStart ? new Date(coordDateStart.getTime() + 24 * 60 * 60 * 1000) : null;
+
+    const dispatchCoordinators = (coordDateStart && coordDateEnd) ? await prisma.regionalLeadAssignment.findMany({
       where: {
-        date: nextConfirmedShift.date,
+        date: { gte: coordDateStart, lt: coordDateEnd },
       },
       include: {
         user: { select: { id: true, name: true } }
@@ -101,10 +106,14 @@ export async function GET() {
     }) : [];
 
     // Get dispatcher for the next shift's county/time slot
-    const shiftDispatcher = nextConfirmedShift?.zone?.county ? await prisma.dispatcherAssignment.findFirst({
+    // Use date range to match by day (shift dates may be stored at different UTC times)
+    const shiftDateStart = nextConfirmedShift ? new Date(nextConfirmedShift.date.toISOString().split('T')[0] + 'T00:00:00.000Z') : null;
+    const shiftDateEnd = shiftDateStart ? new Date(shiftDateStart.getTime() + 24 * 60 * 60 * 1000) : null;
+
+    const shiftDispatcher = (nextConfirmedShift?.zone?.county && shiftDateStart && shiftDateEnd) ? await prisma.dispatcherAssignment.findFirst({
       where: {
         county: nextConfirmedShift.zone.county,
-        date: nextConfirmedShift.date,
+        date: { gte: shiftDateStart, lt: shiftDateEnd },
         startTime: { lte: nextConfirmedShift.startTime },
         endTime: { gte: nextConfirmedShift.startTime },
         isBackup: false,
