@@ -65,8 +65,8 @@ export default function CreateShiftPage() {
           router.push('/login');
           return;
         }
-        // Only coordinators and admins can create shifts
-        if (!['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(sessionData.user.role)) {
+        // Coordinators, dispatchers, and admins can create shifts
+        if (!['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR', 'DEVELOPER'].includes(sessionData.user.role)) {
           router.push('/shifts');
           return;
         }
@@ -104,16 +104,19 @@ export default function CreateShiftPage() {
     setError(null);
 
     try {
-      // Combine date and time into full ISO strings
-      const dateObj = new Date(formData.date);
+      // Parse date components
+      const [year, month, day] = formData.date.split('-').map(Number);
       const [startHour, startMin] = formData.startTime.split(':').map(Number);
       const [endHour, endMin] = formData.endTime.split(':').map(Number);
 
-      const startTime = new Date(dateObj);
-      startTime.setHours(startHour, startMin, 0, 0);
+      // Create date at UTC noon to ensure consistent date regardless of timezone
+      // UTC noon ensures the date portion is always correct when extracted
+      const dateObj = new Date(Date.UTC(year, month - 1, day, 12, 0, 0, 0));
 
-      const endTime = new Date(dateObj);
-      endTime.setHours(endHour, endMin, 0, 0);
+      // Create start/end times at UTC with the selected hours
+      // This preserves the intended time of day
+      const startTime = new Date(Date.UTC(year, month - 1, day, startHour, startMin, 0, 0));
+      const endTime = new Date(Date.UTC(year, month - 1, day, endHour, endMin, 0, 0));
 
       // Build request body
       const body: Record<string, unknown> = {
