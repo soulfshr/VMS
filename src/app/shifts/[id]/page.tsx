@@ -35,6 +35,12 @@ interface Shift {
     id: string;
     name: string;
   };
+  typeConfig: {
+    id: string;
+    name: string;
+    slug: string;
+    color: string;
+  } | null;
   volunteers: Volunteer[];
   createdBy: {
     id: string;
@@ -202,7 +208,7 @@ export default function ShiftDetailPage() {
         <div className="flex justify-between items-start mb-4">
           <div>
             <span className="inline-block px-3 py-1 bg-cyan-100 text-cyan-800 rounded-full text-sm font-medium mb-2">
-              {shift.type.replace(/_/g, ' ')}
+              {shift.typeConfig?.name || shift.type.replace(/_/g, ' ')}
             </span>
             <h1 className="text-2xl font-bold text-gray-900">{shift.title}</h1>
           </div>
@@ -264,14 +270,17 @@ export default function ShiftDetailPage() {
               </div>
             )}
             {shift.userRsvpStatus === 'CONFIRMED' && (
-              <div className="flex items-center gap-4">
-                <span className="text-green-600 font-medium">You are confirmed for this shift!</span>
-                <button
-                  onClick={handleCancelRsvp}
-                  className="text-red-600 hover:underline"
-                >
-                  Cancel Signup
-                </button>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-4">
+                  <span className="text-green-600 font-medium">You are confirmed for this shift!</span>
+                  <button
+                    onClick={handleCancelRsvp}
+                    className="text-red-600 hover:underline"
+                  >
+                    Cancel Signup
+                  </button>
+                </div>
+                <p className="text-sm text-gray-600">Check your email for a calendar invite.</p>
               </div>
             )}
           </div>
