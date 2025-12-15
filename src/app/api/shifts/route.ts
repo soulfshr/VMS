@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
+import { auditCreate, toAuditUser } from '@/lib/audit';
 
 // GET /api/shifts - List shifts with filters
 export async function GET(request: NextRequest) {
@@ -284,6 +285,14 @@ export async function POST(request: NextRequest) {
         data: shiftsData,
       });
 
+      // Audit log bulk shift creation
+      auditCreate(
+        toAuditUser(user),
+        'Shift',
+        'bulk',
+        { count: result.count, title, type, zoneId }
+      );
+
       return NextResponse.json(
         { message: `Created ${result.count} shifts`, count: result.count },
         { status: 201 }
@@ -318,6 +327,14 @@ export async function POST(request: NextRequest) {
         },
       },
     });
+
+    // Audit log shift creation
+    auditCreate(
+      toAuditUser(user),
+      'Shift',
+      shift.id,
+      { title: shift.title, type: shift.type, zoneName: shift.zone.name, date: shift.date }
+    );
 
     return NextResponse.json(shift, { status: 201 });
   } catch (error) {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { Role } from '@/generated/prisma/enums';
+import { auditUpdate, auditDelete, toAuditUser } from '@/lib/audit';
 
 // PATCH /api/volunteers/[id] - Update a volunteer
 // - ADMINISTRATOR, DEVELOPER: Can update all fields
@@ -227,6 +228,15 @@ export async function PATCH(
       },
     });
 
+    // Audit log the volunteer update
+    auditUpdate(
+      toAuditUser(user),
+      'User',
+      updated.id,
+      volunteer as unknown as Record<string, unknown>,
+      updated as unknown as Record<string, unknown>
+    );
+
     return NextResponse.json({
       ...updated,
       qualifiedRoles: updated.userQualifications.map(uq => uq.qualifiedRole),
@@ -429,6 +439,14 @@ export async function DELETE(
     await prisma.user.delete({
       where: { id },
     });
+
+    // Audit log the deletion
+    auditDelete(
+      toAuditUser(user),
+      'User',
+      id,
+      volunteer as unknown as Record<string, unknown>
+    );
 
     return NextResponse.json({ success: true, message: 'Volunteer deleted' });
   } catch (error) {

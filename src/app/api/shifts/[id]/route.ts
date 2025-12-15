@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { ShiftType, ShiftStatus } from '@/generated/prisma/enums';
+import { auditUpdate, toAuditUser } from '@/lib/audit';
 
 // GET /api/shifts/[id] - Get single shift with volunteers
 export async function GET(
@@ -233,6 +234,15 @@ export async function PUT(
         },
       },
     });
+
+    // Audit log the shift update
+    auditUpdate(
+      toAuditUser(user),
+      'Shift',
+      shift.id,
+      existing as unknown as Record<string, unknown>,
+      shift as unknown as Record<string, unknown>
+    );
 
     return NextResponse.json(shift);
   } catch (error) {

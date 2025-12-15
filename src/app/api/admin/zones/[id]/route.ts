@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
+import { auditUpdate, auditDelete, toAuditUser } from '@/lib/audit';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -90,6 +91,15 @@ export async function PUT(request: Request, { params }: RouteParams) {
       },
     });
 
+    // Audit log the zone update
+    auditUpdate(
+      toAuditUser(user),
+      'Zone',
+      zone.id,
+      existing as unknown as Record<string, unknown>,
+      zone as unknown as Record<string, unknown>
+    );
+
     return NextResponse.json(zone);
   } catch (error) {
     console.error('Error updating zone:', error);
@@ -131,13 +141,32 @@ export async function DELETE(request: Request, { params }: RouteParams) {
       await prisma.zone.delete({
         where: { id },
       });
+
+      // Audit log the hard delete
+      auditDelete(
+        toAuditUser(user),
+        'Zone',
+        id,
+        existing as unknown as Record<string, unknown>
+      );
+
       return NextResponse.json({ message: 'Zone deleted' });
     } else {
       // Soft delete - just mark as inactive
-      await prisma.zone.update({
+      const archived = await prisma.zone.update({
         where: { id },
         data: { isActive: false },
       });
+
+      // Audit log the archive (soft delete)
+      auditUpdate(
+        toAuditUser(user),
+        'Zone',
+        id,
+        existing as unknown as Record<string, unknown>,
+        archived as unknown as Record<string, unknown>
+      );
+
       return NextResponse.json({ message: 'Zone archived (has existing users or shifts)' });
     }
   } catch (error) {

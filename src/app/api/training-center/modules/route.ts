@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
+import { auditCreate, toAuditUser } from '@/lib/audit';
 
 // GET /api/training-center/modules - List all modules
 export async function GET(request: NextRequest) {
@@ -146,6 +147,14 @@ export async function POST(request: NextRequest) {
         },
       },
     });
+
+    // Audit log the module creation
+    auditCreate(
+      toAuditUser(user),
+      'TrainingModule',
+      trainingModule.id,
+      { title: trainingModule.title, isRequired: trainingModule.isRequired }
+    );
 
     return NextResponse.json({ module: trainingModule }, { status: 201 });
   } catch (error) {

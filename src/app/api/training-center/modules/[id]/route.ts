@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
+import { auditUpdate, auditDelete, toAuditUser } from '@/lib/audit';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -50,7 +51,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             userId: true,
             startedAt: true,
             completedAt: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
           },
+          orderBy: { completedAt: 'desc' },
         } : false,
       },
     });
@@ -166,6 +175,15 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       },
     });
 
+    // Audit log the module update
+    auditUpdate(
+      toAuditUser(user),
+      'TrainingModule',
+      trainingModule.id,
+      existing as unknown as Record<string, unknown>,
+      trainingModule as unknown as Record<string, unknown>
+    );
+
     return NextResponse.json({ module: trainingModule });
   } catch (error) {
     console.error('Error updating module:', error);
@@ -218,6 +236,14 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     await prisma.trainingModule.delete({
       where: { id },
     });
+
+    // Audit log the module deletion
+    auditDelete(
+      toAuditUser(user),
+      'TrainingModule',
+      id,
+      existing as unknown as Record<string, unknown>
+    );
 
     return NextResponse.json({ success: true });
   } catch (error) {

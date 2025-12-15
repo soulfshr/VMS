@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
+import { auditCreate, toAuditUser } from '@/lib/audit';
 
 // GET /api/admin/zones - List all zones (including archived)
 export async function GET() {
@@ -72,6 +73,14 @@ export async function POST(request: Request) {
         boundaries: boundaries || null,
       },
     });
+
+    // Audit log the zone creation
+    auditCreate(
+      toAuditUser(user),
+      'Zone',
+      zone.id,
+      { name: zone.name, county: zone.county }
+    );
 
     return NextResponse.json(zone, { status: 201 });
   } catch (error) {
