@@ -84,9 +84,8 @@ export function auditCreate(
   entityId: string,
   newValue: Record<string, unknown>,
   metadata?: Record<string, unknown>
-): void {
-  // Fire and forget
-  auditLog({
+): Promise<void> {
+  return auditLog({
     user,
     entityType,
     entityId,
@@ -106,9 +105,8 @@ export function auditUpdate(
   previousValue: Record<string, unknown>,
   newValue: Record<string, unknown>,
   metadata?: Record<string, unknown>
-): void {
-  // Fire and forget
-  auditLog({
+): Promise<void> {
+  return auditLog({
     user,
     entityType,
     entityId,
@@ -128,9 +126,8 @@ export function auditDelete(
   entityId: string,
   previousValue: Record<string, unknown>,
   metadata?: Record<string, unknown>
-): void {
-  // Fire and forget
-  auditLog({
+): Promise<void> {
+  return auditLog({
     user,
     entityType,
     entityId,
@@ -147,9 +144,8 @@ export function auditAuth(
   user: AuditUser,
   action: 'LOGIN' | 'LOGOUT',
   metadata?: Record<string, unknown>
-): void {
-  // Fire and forget
-  auditLog({
+): Promise<void> {
+  return auditLog({
     user,
     entityType: 'Auth',
     action,

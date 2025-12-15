@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Coordinator View Settings</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f3f4f6;
+      padding: 20px;
+      color: #1f2937;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1 {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      color: #6b7280;
+      margin-bottom: 24px;
+    }
+    .settings-card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+    .card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #e5e7eb;
+      font-weight: 600;
+    }
+    .card-body {
+      padding: 20px;
+    }
+    .setting-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 16px 0;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .setting-row:last-child {
+      border-bottom: none;
+    }
+    .setting-info h3 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .setting-info p {
+      font-size: 13px;
+      color: #6b7280;
+      max-width: 400px;
+    }
+    
+    /* Toggle Switch */
+    .view-selector {
+      display: flex;
+      background: #f3f4f6;
+      border-radius: 8px;
+      padding: 4px;
+    }
+    .view-option {
+      padding: 8px 16px;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      color: #6b7280;
+      transition: all 0.2s;
+    }
+    .view-option.active {
+      background: white;
+      color: #0d9488;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+    
+    /* Preview */
+    .preview-section {
+      margin-top: 24px;
+    }
+    .preview-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+    .preview-box {
+      background: #f9fafb;
+      border: 2px dashed #d1d5db;
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+    }
+    .preview-box img {
+      max-width: 100%;
+      border-radius: 4px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .mini-table {
+      font-size: 11px;
+      width: 100%;
+      text-align: left;
+      border-collapse: collapse;
+    }
+    .mini-table th {
+      background: #e5e7eb;
+      padding: 6px 8px;
+      font-weight: 600;
+    }
+    .mini-table td {
+      padding: 6px 8px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .mini-table .filled { background: #ecfdf5; }
+    .mini-table .empty { background: #fef2f2; color: #991b1b; }
+    
+    .save-btn {
+      background: #0d9488;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+    .save-btn:hover {
+      background: #0f766e;
+    }
+    
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #065f46;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .toast.show {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Coordinator Settings</h1>
+    <p class="subtitle">Customize your dispatch schedule view preferences</p>
+
+    <div class="settings-card">
+      <div class="card-header">Schedule Display Preferences</div>
+      <div class="card-body">
+        
+        <div class="setting-row">
+          <div class="setting-info">
+            <h3>Schedule View Layout</h3>
+            <p>Choose how you want to see the dispatch schedule organized. This only affects your view.</p>
+          </div>
+          <div class="view-selector">
+            <button class="view-option" onclick="selectView('county')" id="county-btn">County-First</button>
+            <button class="view-option active" onclick="selectView('time')" id="time-btn">Time/Shift-First</button>
+          </div>
+        </div>
+
+        <div class="preview-section">
+          <div class="preview-label">Preview</div>
+          
+          <!-- County-First Preview -->
+          <div class="preview-box" id="county-preview" style="display: none;">
+            <p style="margin-bottom: 12px; color: #6b7280; font-size: 13px;">Columns show counties, rows show time slots</p>
+            <table class="mini-table">
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Durham</th>
+                  <th>Orange</th>
+                  <th>Wake</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>6am-10am</strong></td>
+                  <td class="filled">Sarah J.</td>
+                  <td class="filled">Mike R.</td>
+                  <td class="empty">OPEN</td>
+                </tr>
+                <tr>
+                  <td><strong>10am-2pm</strong></td>
+                  <td class="filled">John D.</td>
+                  <td class="filled">Amy L.</td>
+                  <td class="filled">Tom C.</td>
+                </tr>
+                <tr>
+                  <td><strong>2pm-6pm</strong></td>
+                  <td class="empty">OPEN</td>
+                  <td class="filled">Karen W.</td>
+                  <td class="filled">Robert B.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Time-First Preview -->
+          <div class="preview-box" id="time-preview">
+            <p style="margin-bottom: 12px; color: #6b7280; font-size: 13px;">Columns show time slots, rows show counties</p>
+            <table class="mini-table">
+              <thead>
+                <tr>
+                  <th>County</th>
+                  <th>6am-10am</th>
+                  <th>10am-2pm</th>
+                  <th>2pm-6pm</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Durham</strong></td>
+                  <td class="filled">Sarah J.</td>
+                  <td class="filled">John D.</td>
+                  <td class="empty">OPEN</td>
+                </tr>
+                <tr>
+                  <td><strong>Orange</strong></td>
+                  <td class="filled">Mike R.</td>
+                  <td class="filled">Amy L.</td>
+                  <td class="filled">Karen W.</td>
+                </tr>
+                <tr>
+                  <td><strong>Wake</strong></td>
+                  <td class="empty">OPEN</td>
+                  <td class="filled">Tom C.</td>
+                  <td class="filled">Robert B.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <button class="save-btn" onclick="saveSettings()">Save Preferences</button>
+      </div>
+    </div>
+
+    <div class="settings-card">
+      <div class="card-header">Why Two Views?</div>
+      <div class="card-body" style="font-size: 14px; color: #4b5563;">
+        <p style="margin-bottom: 12px;">
+          <strong>County-First:</strong> Best when you're focused on a specific county's coverage throughout the day.
+          "Who do we have for Durham today?"
+        </p>
+        <p>
+          <strong>Time/Shift-First:</strong> Best when you're checking if shifts are filled across all counties.
+          "Is the 6am shift fully staffed?" - Matches how reminders are sent to Signal.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">Preferences saved!</div>
+
+  <script>
+    function selectView(view) {
+      document.getElementById('county-btn').classList.toggle('active', view === 'county');
+      document.getElementById('time-btn').classList.toggle('active', view === 'time');
+      
+      document.getElementById('county-preview').style.display = view === 'county' ? 'block' : 'none';
+      document.getElementById('time-preview').style.display = view === 'time' ? 'block' : 'none';
+    }
+    
+    function saveSettings() {
+      const toast = document.getElementById('toast');
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+  </script>
+</body>
+</html>

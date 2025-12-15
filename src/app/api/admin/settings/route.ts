@@ -186,7 +186,7 @@ export async function PUT(request: Request) {
 
     // Audit log the settings change
     if (previousSettings) {
-      auditUpdate(
+      await auditUpdate(
         toAuditUser(user),
         'OrganizationSettings',
         settings.id,

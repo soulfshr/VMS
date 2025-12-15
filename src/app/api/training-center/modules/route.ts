@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Audit log the module creation
-    auditCreate(
+    await auditCreate(
       toAuditUser(user),
       'TrainingModule',
       trainingModule.id,

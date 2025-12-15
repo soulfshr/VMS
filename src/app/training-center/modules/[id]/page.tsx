@@ -61,6 +61,19 @@ interface QualifiedRole {
   name: string;
 }
 
+interface Enrollment {
+  id: string;
+  status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
+  userId: string;
+  startedAt: string | null;
+  completedAt: string | null;
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+  };
+}
+
 interface TrainingModule {
   id: string;
   title: string;
@@ -72,6 +85,7 @@ interface TrainingModule {
   sortOrder: number;
   grantsQualifiedRole: QualifiedRole | null;
   sections: Section[];
+  enrollments?: Enrollment[];
 }
 
 export default function ModuleEditorPage() {
@@ -83,7 +97,14 @@ export default function ModuleEditorPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'details' | 'sections'>('sections');
+  const [activeTab, setActiveTab] = useState<'details' | 'sections' | 'learners'>('sections');
+
+  // Reset modal state
+  const [resetModal, setResetModal] = useState<{
+    enrollment: Enrollment;
+    revokeQualification: boolean;
+  } | null>(null);
+  const [isResetting, setIsResetting] = useState(false);
 
   // Form state for module details
   const [title, setTitle] = useState('');
@@ -234,6 +255,28 @@ export default function ModuleEditorPage() {
     }
   };
 
+  const handleResetEnrollment = async () => {
+    if (!resetModal) return;
+
+    setIsResetting(true);
+    try {
+      const url = `/api/training-center/modules/${moduleId}/enrollments/${resetModal.enrollment.id}${
+        resetModal.revokeQualification ? '?revokeQualification=true' : ''
+      }`;
+      const res = await fetch(url, { method: 'DELETE' });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to reset');
+      }
+      setResetModal(null);
+      await fetchModule();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to reset enrollment');
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -322,6 +365,20 @@ export default function ModuleEditorPage() {
             }`}
           >
             Module Details
+          </button>
+          <button
+            onClick={() => setActiveTab('learners')}
+            className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === 'learners'
+                ? 'border-purple-600 text-purple-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Learners {trainingModule.enrollments && trainingModule.enrollments.length > 0 && (
+              <span className="ml-1 px-1.5 py-0.5 text-xs bg-gray-100 text-gray-600 rounded-full">
+                {trainingModule.enrollments.length}
+              </span>
+            )}
           </button>
         </nav>
       </div>
@@ -472,6 +529,143 @@ export default function ModuleEditorPage() {
                 className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 text-sm font-medium"
               >
                 {isSaving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Learners Tab */}
+      {activeTab === 'learners' && (
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          {!trainingModule.enrollments || trainingModule.enrollments.length === 0 ? (
+            <div className="p-12 text-center">
+              <span className="text-4xl mb-4 block">👥</span>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No learners yet</h3>
+              <p className="text-gray-500">Learners will appear here once they start the module</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Learner
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Started
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Completed
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {trainingModule.enrollments.map((enrollment) => (
+                    <tr key={enrollment.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {enrollment.user?.name || 'Unknown'}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {enrollment.user?.email || ''}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 text-xs rounded-full font-medium ${
+                          enrollment.status === 'COMPLETED'
+                            ? 'bg-green-100 text-green-700'
+                            : enrollment.status === 'IN_PROGRESS'
+                            ? 'bg-yellow-100 text-yellow-700'
+                            : 'bg-gray-100 text-gray-700'
+                        }`}>
+                          {enrollment.status.replace('_', ' ')}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {enrollment.startedAt
+                          ? new Date(enrollment.startedAt).toLocaleDateString()
+                          : '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {enrollment.completedAt
+                          ? new Date(enrollment.completedAt).toLocaleDateString()
+                          : '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button
+                          onClick={() => setResetModal({ enrollment, revokeQualification: false })}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          Reset Progress
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Reset Confirmation Modal */}
+      {resetModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Reset Progress
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Are you sure you want to reset progress for{' '}
+              <strong>{resetModal.enrollment.user?.name || 'this learner'}</strong>?
+              This will delete all their section progress and quiz attempts for this module.
+            </p>
+
+            {trainingModule.grantsQualifiedRole && (
+              <label className="flex items-start gap-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg mb-4 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={resetModal.revokeQualification}
+                  onChange={(e) => setResetModal({
+                    ...resetModal,
+                    revokeQualification: e.target.checked,
+                  })}
+                  className="mt-0.5 w-4 h-4 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500"
+                />
+                <div>
+                  <p className="text-sm font-medium text-yellow-800">
+                    Also revoke &ldquo;{trainingModule.grantsQualifiedRole.name}&rdquo; qualification
+                  </p>
+                  <p className="text-xs text-yellow-700 mt-1">
+                    This will remove the role granted by completing this module
+                  </p>
+                </div>
+              </label>
+            )}
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setResetModal(null)}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 text-sm font-medium"
+                disabled={isResetting}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleResetEnrollment}
+                disabled={isResetting}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50"
+              >
+                {isResetting ? 'Resetting...' : 'Reset Progress'}
               </button>
             </div>
           </div>

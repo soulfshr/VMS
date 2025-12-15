@@ -286,7 +286,7 @@ export async function POST(request: NextRequest) {
       });
 
       // Audit log bulk shift creation
-      auditCreate(
+      await auditCreate(
         toAuditUser(user),
         'Shift',
         'bulk',
@@ -329,7 +329,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Audit log shift creation
-    auditCreate(
+    await auditCreate(
       toAuditUser(user),
       'Shift',
       shift.id,

@@ -100,7 +100,7 @@ export async function POST(
     });
 
     // Audit log the RSVP creation
-    auditCreate(
+    await auditCreate(
       toAuditUser(user),
       'ShiftVolunteer',
       rsvp.id,
@@ -203,7 +203,7 @@ export async function DELETE(
     });
 
     // Audit log the RSVP cancellation
-    auditDelete(
+    await auditDelete(
       toAuditUser(user),
       'ShiftVolunteer',
       rsvp.id,
@@ -316,7 +316,7 @@ export async function PATCH(
     });
 
     // Audit log the RSVP update
-    auditUpdate(
+    await auditUpdate(
       toAuditUser(user),
       'ShiftVolunteer',
       rsvp.id,

@@ -92,7 +92,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
     });
 
     // Audit log the zone update
-    auditUpdate(
+    await auditUpdate(
       toAuditUser(user),
       'Zone',
       zone.id,
@@ -143,7 +143,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
       });
 
       // Audit log the hard delete
-      auditDelete(
+      await auditDelete(
         toAuditUser(user),
         'Zone',
         id,
@@ -159,7 +159,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
       });
 
       // Audit log the archive (soft delete)
-      auditUpdate(
+      await auditUpdate(
         toAuditUser(user),
         'Zone',
         id,

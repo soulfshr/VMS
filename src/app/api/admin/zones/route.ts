@@ -75,7 +75,7 @@ export async function POST(request: Request) {
     });
 
     // Audit log the zone creation
-    auditCreate(
+    await auditCreate(
       toAuditUser(user),
       'Zone',
       zone.id,

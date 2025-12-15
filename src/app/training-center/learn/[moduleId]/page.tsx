@@ -534,7 +534,7 @@ function QuizSection({
     answers: Array<{
       questionId: string;
       isCorrect: boolean;
-      correctOptionIds: string[];
+      selectedOptionIds: string[];
     }>;
   } | null>(null);
   const [explanations, setExplanations] = useState<Record<string, string>>({});
@@ -699,20 +699,22 @@ function QuizSection({
                 <div className="ml-8 space-y-1">
                   {question.options.map(opt => {
                     const isSelected = userAnswers.includes(opt.id);
-                    const isCorrect = answerResult?.correctOptionIds.includes(opt.id);
+                    // correctOptionIds not included in API response for security
+                    // Show as correct if user selected it and got the question right
+                    const showAsCorrect = answerResult?.isCorrect && isSelected;
                     return (
                       <div
                         key={opt.id}
                         className={`text-sm flex items-center gap-2 ${
-                          isCorrect ? 'text-green-700 font-medium' :
-                          isSelected ? 'text-red-600' : 'text-gray-600'
+                          showAsCorrect ? 'text-green-700 font-medium' :
+                          isSelected && !answerResult?.isCorrect ? 'text-red-600' : 'text-gray-600'
                         }`}
                       >
                         <span>
-                          {isCorrect ? '✓' : isSelected ? '×' : '○'}
+                          {showAsCorrect ? '✓' : isSelected && !answerResult?.isCorrect ? '×' : '○'}
                         </span>
                         <span>{opt.optionText}</span>
-                        {isSelected && !isCorrect && <span className="text-xs">(your answer)</span>}
+                        {isSelected && !answerResult?.isCorrect && <span className="text-xs">(your answer)</span>}
                       </div>
                     );
                   })}

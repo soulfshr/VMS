@@ -236,7 +236,7 @@ export async function PUT(
     });
 
     // Audit log the shift update
-    auditUpdate(
+    await auditUpdate(
       toAuditUser(user),
       'Shift',
       shift.id,

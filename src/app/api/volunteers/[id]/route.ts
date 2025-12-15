@@ -229,7 +229,7 @@ export async function PATCH(
     });
 
     // Audit log the volunteer update
-    auditUpdate(
+    await auditUpdate(
       toAuditUser(user),
       'User',
       updated.id,
@@ -441,7 +441,7 @@ export async function DELETE(
     });
 
     // Audit log the deletion
-    auditDelete(
+    await auditDelete(
       toAuditUser(user),
       'User',
       id,

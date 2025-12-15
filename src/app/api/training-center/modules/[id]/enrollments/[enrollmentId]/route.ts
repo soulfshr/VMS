@@ -81,7 +81,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     });
 
     // Audit log the enrollment reset
-    auditDelete(
+    await auditDelete(
       toAuditUser(user),
       'TrainingEnrollment',
       enrollmentId,

@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dispatch Schedule View Comparison</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f3f4f6;
+      padding: 20px;
+      color: #1f2937;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    h1 {
+      font-size: 24px;
+      margin-bottom: 8px;
+      color: #111827;
+    }
+    .subtitle {
+      color: #6b7280;
+      margin-bottom: 24px;
+    }
+    .view-toggle {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+      background: white;
+      padding: 8px;
+      border-radius: 12px;
+      width: fit-content;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .toggle-btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+      background: transparent;
+      color: #6b7280;
+    }
+    .toggle-btn.active {
+      background: #0d9488;
+      color: white;
+    }
+    .toggle-btn:hover:not(.active) {
+      background: #f3f4f6;
+    }
+    .schedule-card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+    .card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+    }
+    .date-badge {
+      background: #f3f4f6;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #4b5563;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th {
+      background: #f9fafb;
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 12px;
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid #f3f4f6;
+      vertical-align: top;
+    }
+    .row-header {
+      font-weight: 600;
+      color: #374151;
+      background: #f9fafb;
+      min-width: 120px;
+    }
+    .volunteer-cell {
+      min-width: 150px;
+    }
+    .volunteer {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      background: #ecfdf5;
+      border-radius: 6px;
+      margin-bottom: 4px;
+      font-size: 13px;
+    }
+    .volunteer.empty {
+      background: #fef2f2;
+      color: #991b1b;
+      font-style: italic;
+    }
+    .volunteer-avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #10b981;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .volunteer.empty .volunteer-avatar {
+      background: #ef4444;
+    }
+    .zone-badge {
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+    .zone-durham { background: #dbeafe; color: #1e40af; }
+    .zone-orange { background: #ffedd5; color: #c2410c; }
+    .zone-wake { background: #dcfce7; color: #166534; }
+    
+    .time-badge {
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: #f3f4f6;
+      color: #374151;
+      font-weight: 500;
+    }
+    
+    .pros-cons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 16px;
+    }
+    .pros, .cons {
+      padding: 16px;
+      border-radius: 8px;
+    }
+    .pros {
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+    }
+    .cons {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+    }
+    .pros h4 { color: #065f46; }
+    .cons h4 { color: #991b1b; }
+    .pros ul, .cons ul {
+      margin-top: 8px;
+      padding-left: 20px;
+      font-size: 13px;
+    }
+    .pros li { color: #047857; }
+    .cons li { color: #b91c1c; }
+    
+    .hidden { display: none; }
+    
+    .description {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      color: #1e40af;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Dispatch Schedule View Options</h1>
+    <p class="subtitle">Compare different ways to display the dispatcher schedule</p>
+    
+    <div class="view-toggle">
+      <button class="toggle-btn active" onclick="showView('current')">Current View (County-First)</button>
+      <button class="toggle-btn" onclick="showView('proposed')">Proposed View (Time-First)</button>
+    </div>
+
+    <!-- CURRENT VIEW: County-Centric -->
+    <div id="current-view">
+      <div class="description">
+        <strong>Current View:</strong> Columns are organized by <strong>County</strong>, rows show time slots. 
+        This answers: "Who is covering each county?"
+      </div>
+      
+      <div class="schedule-card">
+        <div class="card-header">
+          <span class="card-title">Dispatch Schedule - County View</span>
+          <span class="date-badge">Monday, Dec 16, 2024</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Time Slot</th>
+              <th>Durham</th>
+              <th>Orange</th>
+              <th>Wake</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="row-header">6:00 AM - 10:00 AM</td>
+              <td class="volunteer-cell">
+                <div class="volunteer">
+                  <span class="volunteer-avatar">SJ</span>
+                  Sarah Johnson
+                </div>
+              </td>
+              <td class="volunteer-cell">
+                <div class="volunteer">
+                  <span class="volunteer-avatar">MR</span>
+                  Mike Rodriguez
+                </div>
+              </td>
+              <td class="volunteer-cell">
+                <div class="volunteer empty">
+                  <span class="volunteer-avatar">?</span>
+                  NEEDS COVERAGE
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td class="row-header">10:00 AM - 2:00 PM</td>
+              <td class="volunteer-cell">
+                <div class="volunteer">
+                  <span class="volunteer-avatar">JD</span>
+                  John Davis
+                </div>
+              </td>
+              <td class="volunteer-cell">
+                <div class="volunteer">
+                  <span class="volunteer-avatar">AL</span>
+                  Amy Lee
+                </div>
+              </td>
+              <td class="volunteer-cell">
+                <div class="volunteer">
+                  <span class="volunteer-avatar">TC</span>
+                  Tom Chen
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td class="row-header">2:00 PM - 6:00 PM</td>
+              <td class="volunteer-cell">
+                <div class="volunteer empty">
+                  <span class="volunteer-avatar">?</span>
+                  NEEDS COVERAGE
+                </div>
+              </td>
+              <td class="volunteer-cell">
+                <div class="volunteer">
+                  <span class="volunteer-avatar">KW</span>
+                  Karen White
+                </div>
+              </td>
+              <td class="volunteer-cell">
+                <div class="volunteer">
+                  <span class="volunteer-avatar">RB</span>
+                  Robert Brown
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td class="row-header">6:00 PM - 10:00 PM</td>
+              <td class="volunteer-cell">
+                <div class="volunteer">
+                  <span class="volunteer-avatar">LM</span>
+                  Lisa Martinez
+                </div>
+              </td>
+              <td class="volunteer-cell">
+                <div class="volunteer empty">
+                  <span class="volunteer-avatar">?</span>
+                  NEEDS COVERAGE
+                </div>
+              </td>
+              <td class="volunteer-cell">
+                <div class="volunteer">
+                  <span class="volunteer-avatar">DT</span>
+                  David Taylor
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <div class="pros-cons">
+        <div class="pros">
+          <h4>Pros</h4>
+          <ul>
+            <li>Easy to see all coverage for a specific county</li>
+            <li>Good for county-focused coordinators</li>
+            <li>Matches geographic thinking</li>
+          </ul>
+        </div>
+        <div class="cons">
+          <h4>Cons</h4>
+          <ul>
+            <li>Harder to see if a time slot is fully staffed</li>
+            <li>Doesn't match Signal communication format</li>
+            <li>Less useful when dispatchers cover multiple counties</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROPOSED VIEW: Time-Centric -->
+    <div id="proposed-view" class="hidden">
+      <div class="description">
+        <strong>Proposed View:</strong> Columns are organized by <strong>Time Slot</strong>, rows show counties.
+        This answers: "Is each shift filled?" - matches how dispatchers think and communicate.
+      </div>
+      
+      <div class="schedule-card">
+        <div class="card-header">
+          <span class="card-title">Dispatch Schedule - Shift View</span>
+          <span class="date-badge">Monday, Dec 16, 2024</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>County</th>
+              <th>6:00 AM - 10:00 AM</th>
+              <th>10:00 AM - 2:00 PM</th>
+              <th>2:00 PM - 6:00 PM</th>
+              <th>6:00 PM - 10:00 PM</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="row-header">
+                <span class="zone-badge zone-durham">Durham</span>
+              </td>
+              <td class="volunteer-cell">
+                <div class="volunteer">
+                  <span class="volunteer-avatar">SJ</span>
+                  Sarah Johnson
+                </div>
+              </td>
+              <td class="volunteer-cell">
+                <div class="volunteer">
+                  <span class="volunteer-avatar">JD</span>
+                  John Davis
+                </div>
+              </td>
+              <td class="volunteer-cell">
+                <div class="volunteer empty">
+                  <span class="volunteer-avatar">?</span>
+                  NEEDS COVERAGE
+                </div>
+              </td>
+              <td class="volunteer-cell">
+                <div class="volunteer">
+                  <span class="volunteer-avatar">LM</span>
+                  Lisa Martinez
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td class="row-header">
+                <span class="zone-badge zone-orange">Orange</span>
+              </td>
+              <td class="volunteer-cell">
+                <div class="volunteer">
+                  <span class="volunteer-avatar">MR</span>
+                  Mike Rodriguez
+                </div>
+              </td>
+              <td class="volunteer-cell">
+                <div class="volunteer">
+                  <span class="volunteer-avatar">AL</span>
+                  Amy Lee
+                </div>
+              </td>
+              <td class="volunteer-cell">
+                <div class="volunteer">
+                  <span class="volunteer-avatar">KW</span>
+                  Karen White
+                </div>
+              </td>
+              <td class="volunteer-cell">
+                <div class="volunteer empty">
+                  <span class="volunteer-avatar">?</span>
+                  NEEDS COVERAGE
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td class="row-header">
+                <span class="zone-badge zone-wake">Wake</span>
+              </td>
+              <td class="volunteer-cell">
+                <div class="volunteer empty">
+                  <span class="volunteer-avatar">?</span>
+                  NEEDS COVERAGE
+                </div>
+              </td>
+              <td class="volunteer-cell">
+                <div class="volunteer">
+                  <span class="volunteer-avatar">TC</span>
+                  Tom Chen
+                </div>
+              </td>
+              <td class="volunteer-cell">
+                <div class="volunteer">
+                  <span class="volunteer-avatar">RB</span>
+                  Robert Brown
+                </div>
+              </td>
+              <td class="volunteer-cell">
+                <div class="volunteer">
+                  <span class="volunteer-avatar">DT</span>
+                  David Taylor
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="schedule-card">
+        <div class="card-header">
+          <span class="card-title">Signal-Ready Format</span>
+          <span class="date-badge">Copy-paste friendly</span>
+        </div>
+        <div style="padding: 20px; font-family: monospace; font-size: 13px; background: #f9fafb;">
+          <strong>Monday 12/16 - 6:00 AM - 10:00 AM Shift:</strong><br>
+          Durham: Sarah Johnson<br>
+          Orange: Mike Rodriguez<br>
+          Wake: ⚠️ NEEDS COVERAGE<br><br>
+          
+          <strong>Monday 12/16 - 10:00 AM - 2:00 PM Shift:</strong><br>
+          Durham: John Davis<br>
+          Orange: Amy Lee<br>
+          Wake: Tom Chen<br><br>
+          
+          <em style="color: #6b7280;">...matches how reminders are sent to Signal</em>
+        </div>
+      </div>
+      
+      <div class="pros-cons">
+        <div class="pros">
+          <h4>Pros</h4>
+          <ul>
+            <li>Easy to see if each shift is fully staffed</li>
+            <li>Matches Signal communication format</li>
+            <li>Better for "is the 6am shift covered?" thinking</li>
+            <li>Supports cross-county coverage scenarios</li>
+            <li>Screenshots ready for Signal sharing</li>
+          </ul>
+        </div>
+        <div class="cons">
+          <h4>Cons</h4>
+          <ul>
+            <li>Wider table (more columns)</li>
+            <li>Different from current mental model</li>
+            <li>May require adjustment period</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    function showView(view) {
+      // Update buttons
+      document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+      
+      // Show/hide views
+      if (view === 'current') {
+        document.getElementById('current-view').classList.remove('hidden');
+        document.getElementById('proposed-view').classList.add('hidden');
+      } else {
+        document.getElementById('current-view').classList.add('hidden');
+        document.getElementById('proposed-view').classList.remove('hidden');
+      }
+    }
+  </script>
+</body>
+</html>

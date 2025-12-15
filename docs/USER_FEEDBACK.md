@@ -107,6 +107,14 @@ This document tracks user feedback for triage and resolution.
 - **Priority:** Medium
 - **Notes:** Could support TOTP authenticator apps (Google Authenticator, Authy, etc.), SMS backup codes
 
+### 7. One-click dispatch schedule copy
+- **Date Requested:** 2024-12-12
+- **Requester:** Tobi
+- **Description:** Provide a one-click action that copies the daily dispatch schedule (assignments + coverage gaps) from the app into the clipboard for easy sharing in Signal or other channels.
+- **Status:** Backlog
+- **Priority:** Medium
+- **Notes:** Mirrors existing dispatch support workflow that generates formatted text; requested via Signal chat where dispatchers currently type these updates manually.
+
 ---
 
 ## Resolved Issues

@@ -74,7 +74,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         });
 
         // Audit log the login
-        auditAuth(
+        await auditAuth(
           { id: user.id, email: user.email, name: user.name },
           'LOGIN'
         );

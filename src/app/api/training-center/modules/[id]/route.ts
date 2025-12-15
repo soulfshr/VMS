@@ -176,7 +176,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     });
 
     // Audit log the module update
-    auditUpdate(
+    await auditUpdate(
       toAuditUser(user),
       'TrainingModule',
       trainingModule.id,
@@ -238,7 +238,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     });
 
     // Audit log the module deletion
-    auditDelete(
+    await auditDelete(
       toAuditUser(user),
       'TrainingModule',
       id,
