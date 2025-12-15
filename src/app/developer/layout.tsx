@@ -13,6 +13,7 @@ interface User {
 
 const developerNavItems = [
   { href: '/developer', label: 'Overview', icon: '📊' },
+  { href: '/developer/audit', label: 'Audit Trail', icon: '📋' },
   { href: '/developer/logs', label: 'System Logs', icon: '📜' },
   { href: '/developer/health', label: 'Health Status', icon: '💚' },
   { href: '/developer/feature-flags', label: 'Feature Flags', icon: '🚩' },

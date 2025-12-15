@@ -3,6 +3,7 @@ import Credentials from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
 import { authConfig } from './auth.config';
 import { prisma } from '@/lib/db';
+import { auditAuth } from '@/lib/audit';
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -71,6 +72,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           where: { id: user.id },
           data: { lastLoginAt: new Date() },
         });
+
+        // Audit log the login
+        auditAuth(
+          { id: user.id, email: user.email, name: user.name },
+          'LOGIN'
+        );
 
         // Get primary zone name
         const primaryZone = user.zones[0]?.zone?.name;

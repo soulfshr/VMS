@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
+import { auditUpdate, toAuditUser } from '@/lib/audit';
 
 // GET /api/admin/settings - Get organization settings
 export async function GET() {
@@ -141,6 +142,8 @@ export async function PUT(request: Request) {
 
     // Get or create settings singleton
     let settings = await prisma.organizationSettings.findFirst();
+    const previousSettings = settings ? { ...settings } : null;
+
     if (!settings) {
       settings = await prisma.organizationSettings.create({
         data: {
@@ -179,6 +182,17 @@ export async function PUT(request: Request) {
           ...(weeklyDigestSendHour !== undefined && { weeklyDigestSendHour: parseInt(weeklyDigestSendHour) }),
         },
       });
+    }
+
+    // Audit log the settings change
+    if (previousSettings) {
+      auditUpdate(
+        toAuditUser(user),
+        'OrganizationSettings',
+        settings.id,
+        previousSettings as unknown as Record<string, unknown>,
+        settings as unknown as Record<string, unknown>
+      );
     }
 
     return NextResponse.json(settings);

@@ -40,15 +40,24 @@ export async function GET(request: NextRequest) {
       where: { checkedAt: { lt: healthCutoff } },
     });
 
+    // Delete AuditLogs older than 30 days
+    const auditRetentionDays = 30;
+    const auditCutoff = new Date(now.getTime() - auditRetentionDays * 24 * 60 * 60 * 1000);
+    const deletedAuditLogs = await prisma.auditLog.deleteMany({
+      where: { createdAt: { lt: auditCutoff } },
+    });
+
     // Log the cleanup
     await logger.info(
       'SYSTEM',
-      `Cleanup completed: deleted ${deletedLogs.count} logs and ${deletedHealthChecks.count} health checks`,
+      `Cleanup completed: deleted ${deletedLogs.count} logs, ${deletedHealthChecks.count} health checks, ${deletedAuditLogs.count} audit logs`,
       {
         logsDeleted: deletedLogs.count,
         healthChecksDeleted: deletedHealthChecks.count,
+        auditLogsDeleted: deletedAuditLogs.count,
         logsCutoff: logsCutoff.toISOString(),
         healthCutoff: healthCutoff.toISOString(),
+        auditCutoff: auditCutoff.toISOString(),
       }
     );
 
@@ -57,10 +66,12 @@ export async function GET(request: NextRequest) {
       deleted: {
         systemLogs: deletedLogs.count,
         healthChecks: deletedHealthChecks.count,
+        auditLogs: deletedAuditLogs.count,
       },
       cutoffs: {
         systemLogs: logsCutoff.toISOString(),
         healthChecks: healthCutoff.toISOString(),
+        auditLogs: auditCutoff.toISOString(),
       },
     });
   } catch (error) {

@@ -311,6 +311,9 @@ model User {
   // Qualified roles (new system - positions user can fill during shifts)
   userQualifications    UserQualification[]
 
+  // Training Center enrollments
+  moduleEnrollments     ModuleEnrollment[]
+
   // Email blast relationships
   sentEmailBlasts      EmailBlast[]          @relation("EmailBlastSentBy")
   receivedEmailBlasts  EmailBlastRecipient[] @relation("EmailBlastRecipients")
@@ -890,6 +893,26 @@ model AlertState {
   updatedAt       DateTime  @updatedAt
 }
 
+// Audit log for tracking all data changes
+model AuditLog {
+  id            String   @id @default(cuid())
+  userId        String                        // Who made the change
+  userEmail     String                        // Denormalized for display
+  userName      String?                       // Denormalized for display
+  entityType    String                        // "User", "Shift", "Zone", etc.
+  entityId      String?                       // ID of affected record
+  action        String                        // "CREATE", "UPDATE", "DELETE", "LOGIN", "LOGOUT"
+  previousValue Json?    @db.JsonB            // State before change
+  newValue      Json?    @db.JsonB            // State after change
+  metadata      Json?    @db.JsonB            // Extra context (IP, endpoint)
+  createdAt     DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([userId])
+  @@index([entityType])
+  @@index([action])
+}
+
 // ============================================
 // TRAINING CENTER (Interactive Training Modules)
 // ============================================
@@ -1030,6 +1053,7 @@ model QuizOption {
 model ModuleEnrollment {
   id              String                @id @default(cuid())
   userId          String
+  user            User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   moduleId        String
   module          TrainingModule        @relation(fields: [moduleId], references: [id], onDelete: Cascade)
 

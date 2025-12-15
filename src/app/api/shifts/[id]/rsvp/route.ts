@@ -7,6 +7,7 @@ import {
   sendShiftConfirmationEmail,
   sendShiftCancellationEmail,
 } from '@/lib/email';
+import { auditCreate, auditUpdate, auditDelete, toAuditUser } from '@/lib/audit';
 
 // POST /api/shifts/[id]/rsvp - RSVP to a shift
 export async function POST(
@@ -98,6 +99,19 @@ export async function POST(
       },
     });
 
+    // Audit log the RSVP creation
+    auditCreate(
+      toAuditUser(user),
+      'ShiftVolunteer',
+      rsvp.id,
+      {
+        shiftId,
+        shiftTitle: rsvp.shift.title,
+        status: rsvp.status,
+        qualification: rsvp.qualification,
+      }
+    );
+
     // Send appropriate email based on auto-confirm setting
     // Use try/catch with await to ensure email completes before serverless function terminates
     try {
@@ -188,6 +202,18 @@ export async function DELETE(
       where: { id: rsvp.id },
     });
 
+    // Audit log the RSVP cancellation
+    auditDelete(
+      toAuditUser(user),
+      'ShiftVolunteer',
+      rsvp.id,
+      {
+        shiftId,
+        shiftTitle: rsvp.shift.title,
+        status: rsvp.status,
+      }
+    );
+
     // Send cancellation email - await to ensure it completes before function terminates
     try {
       await sendShiftCancellationEmail({
@@ -250,6 +276,17 @@ export async function PATCH(
       updateData.isZoneLead = isZoneLead;
     }
 
+    // Get previous RSVP state for audit log
+    const previousRsvp = await prisma.shiftVolunteer.findUnique({
+      where: {
+        shiftId_userId: {
+          shiftId,
+          userId: volunteerId,
+        },
+      },
+      select: { status: true, isZoneLead: true },
+    });
+
     // Update RSVP
     const rsvp = await prisma.shiftVolunteer.update({
       where: {
@@ -277,6 +314,16 @@ export async function PATCH(
         },
       },
     });
+
+    // Audit log the RSVP update
+    auditUpdate(
+      toAuditUser(user),
+      'ShiftVolunteer',
+      rsvp.id,
+      { status: previousRsvp?.status, isZoneLead: previousRsvp?.isZoneLead },
+      { status: rsvp.status, isZoneLead: rsvp.isZoneLead },
+      { shiftId, shiftTitle: rsvp.shift.title, volunteerName: rsvp.user.name }
+    );
 
     // Send confirmation email with calendar invite when status is changed to CONFIRMED
     if (statusUpdated === 'CONFIRMED') {
