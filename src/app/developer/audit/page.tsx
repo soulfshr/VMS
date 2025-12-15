@@ -277,10 +277,20 @@ export default function AuditPage() {
                     <p className="text-sm text-gray-900">
                       <span className="font-medium">{log.userName || log.userEmail}</span>
                       <span className="text-gray-500">
-                        {' '}{log.action.toLowerCase()}d{' '}
-                        {log.entityType}
-                        {log.entityId && (
-                          <span className="font-mono text-xs ml-1">({log.entityId.slice(0, 8)}...)</span>
+                        {' '}
+                        {log.action === 'LOGIN' ? 'logged in' :
+                         log.action === 'LOGOUT' ? 'logged out' :
+                         log.action === 'CREATE' ? 'created' :
+                         log.action === 'UPDATE' ? 'updated' :
+                         log.action === 'DELETE' ? 'deleted' :
+                         log.action.toLowerCase()}
+                        {log.entityType !== 'Auth' && (
+                          <>
+                            {' '}{log.entityType}
+                            {log.entityId && (
+                              <span className="font-mono text-xs ml-1">({log.entityId.slice(0, 8)}...)</span>
+                            )}
+                          </>
                         )}
                       </span>
                     </p>
