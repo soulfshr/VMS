@@ -1,63 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { useFeatures } from '@/hooks/useFeatures';
-
-function WelcomeModal({ onClose }: { onClose: () => void }) {
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-      />
-
-      {/* Modal */}
-      <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-in fade-in zoom-in duration-300">
-        <button
-          onClick={onClose}
-          className="absolute top-3 right-3 z-10 p-2 rounded-full bg-white/80 hover:bg-white text-gray-600 hover:text-gray-900 transition-colors"
-          aria-label="Close"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-
-        <Image
-          src="/howdoyoudo.jpg"
-          alt="How do you do, fellow Anti-ICE?"
-          width={500}
-          height={375}
-          className="w-full"
-          priority
-        />
-
-        <div className="p-6 text-center bg-gradient-to-b from-white to-gray-50">
-          <p className="text-gray-600 italic mb-4">
-            New volunteers welcome - no skateboard required
-          </p>
-          <button
-            onClick={onClose}
-            className="px-6 py-3 bg-cyan-600 text-white font-semibold rounded-lg hover:bg-cyan-700 transition-colors"
-          >
-            Join the Movement
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export default function HomeClient() {
   const router = useRouter();
   const { data: session, status } = useSession();
-  const features = useFeatures();
-  const [showModal, setShowModal] = useState(false);
 
   // Redirect logged-in users to dashboard
   useEffect(() => {
@@ -65,19 +16,6 @@ export default function HomeClient() {
       router.replace('/dashboard');
     }
   }, [status, session, router]);
-
-  useEffect(() => {
-    // Only show welcome modal for non-authenticated users
-    if (status === 'unauthenticated') {
-      const hasSeenModal = localStorage.getItem('vms_hasSeenWelcomeModal');
-      if (!hasSeenModal) {
-        const timer = setTimeout(() => {
-          setShowModal(true);
-        }, 500);
-        return () => clearTimeout(timer);
-      }
-    }
-  }, [status]);
 
   // Show loading state while checking auth or redirecting
   if (status === 'loading' || status === 'authenticated') {
@@ -88,15 +26,8 @@ export default function HomeClient() {
     );
   }
 
-  const handleCloseModal = () => {
-    setShowModal(false);
-    localStorage.setItem('vms_hasSeenWelcomeModal', 'true');
-  };
-
   return (
     <div className="min-h-[calc(100vh-200px)]">
-      {/* Welcome Modal */}
-      {showModal && <WelcomeModal onClose={handleCloseModal} />}
 
       {/* Public ICE Sighting Report Banner - HIDDEN for now */}
 
