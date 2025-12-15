@@ -162,12 +162,12 @@ export default function SightingsPage() {
           <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
             <Link href="/dashboard" className="hover:text-cyan-600">Dashboard</Link>
             <span>/</span>
-            <span>ICE Sightings</span>
+            <span>Dispatch</span>
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">ICE Sighting Reports</h1>
-              <p className="text-gray-600 mt-1">Review and manage community-submitted sighting reports</p>
+              <h1 className="text-3xl font-bold text-gray-900">Dispatch</h1>
+              <p className="text-gray-600 mt-1">Optional support for dispatchers chasing down reports</p>
             </div>
             <Link
               href="/sightings/new"

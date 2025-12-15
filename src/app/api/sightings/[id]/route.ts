@@ -63,7 +63,19 @@ export async function PATCH(
     const { id } = await params;
     const body = await request.json();
 
-    const { status, disposition, notes, assignedToId } = body;
+    const {
+      status,
+      disposition,
+      notes,
+      assignedToId,
+      // SALUTE fields
+      size,
+      activity,
+      location,
+      uniform,
+      equipment,
+      observedAt,
+    } = body;
 
     // Validate status if provided
     if (status && !Object.values(SightingStatus).includes(status)) {
@@ -87,6 +99,26 @@ export async function PATCH(
     if (status) updateData.status = status;
     if (notes !== undefined) updateData.notes = notes;
     if (assignedToId !== undefined) updateData.assignedToId = assignedToId;
+
+    // SALUTE fields - only allow editing for non-closed sightings
+    const existingSighting = await prisma.iceSighting.findUnique({
+      where: { id },
+      select: { status: true },
+    });
+
+    if (!existingSighting) {
+      return NextResponse.json({ error: 'Sighting not found' }, { status: 404 });
+    }
+
+    // Allow SALUTE edits only for active sightings (not closed)
+    if (existingSighting.status !== SightingStatus.CLOSED) {
+      if (size !== undefined) updateData.size = size;
+      if (activity !== undefined) updateData.activity = activity;
+      if (location !== undefined) updateData.location = location;
+      if (uniform !== undefined) updateData.uniform = uniform;
+      if (equipment !== undefined) updateData.equipment = equipment;
+      if (observedAt !== undefined) updateData.observedAt = new Date(observedAt);
+    }
 
     // Handle disposition - auto-close when disposition is set
     if (disposition) {

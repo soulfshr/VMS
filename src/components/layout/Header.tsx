@@ -156,7 +156,7 @@ export default function Header() {
                 >
                   Shifts
                 </Link>
-                {/* 4. Sightings (role-restricted) */}
+                {/* 4. Dispatch (role-restricted) */}
                 {features.sightings && ['DISPATCHER', 'COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role) && (
                   <Link
                     href="/sightings"
@@ -166,7 +166,7 @@ export default function Header() {
                         : 'text-gray-600 hover:text-gray-900'
                     }`}
                   >
-                    Sightings
+                    Dispatch
                   </Link>
                 )}
                 {/* 5. Volunteers (role-restricted) */}
@@ -424,14 +424,14 @@ export default function Header() {
                 >
                   Shifts
                 </Link>
-                {/* 4. Sightings (role-restricted) */}
+                {/* 4. Dispatch (role-restricted) */}
                 {features.sightings && ['DISPATCHER', 'COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role) && (
                   <Link
                     href="/sightings"
                     className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    Sightings
+                    Dispatch
                   </Link>
                 )}
                 {/* 5. Volunteers (role-restricted) */}

@@ -101,6 +101,15 @@ export default function SightingDetailPage({ params }: { params: Promise<{ id: s
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [copiedMessage, setCopiedMessage] = useState<string | null>(null);
 
+  // SALUTE edit mode
+  const [isEditingSalute, setIsEditingSalute] = useState(false);
+  const [editSize, setEditSize] = useState('');
+  const [editActivity, setEditActivity] = useState('');
+  const [editLocation, setEditLocation] = useState('');
+  const [editUniform, setEditUniform] = useState('');
+  const [editEquipment, setEditEquipment] = useState('');
+  const [editObservedAt, setEditObservedAt] = useState('');
+
   useEffect(() => {
     fetchSighting();
   }, [id]);
@@ -269,6 +278,55 @@ export default function SightingDetailPage({ params }: { params: Promise<{ id: s
     }
   };
 
+  // SALUTE editing functions
+  const startEditingSalute = () => {
+    if (!sighting) return;
+    setEditSize(sighting.size || '');
+    setEditActivity(sighting.activity || '');
+    setEditLocation(sighting.location || '');
+    setEditUniform(sighting.uniform || '');
+    setEditEquipment(sighting.equipment || '');
+    // Format date for datetime-local input
+    const date = new Date(sighting.observedAt);
+    const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+    setEditObservedAt(localDate.toISOString().slice(0, 16));
+    setIsEditingSalute(true);
+  };
+
+  const cancelEditingSalute = () => {
+    setIsEditingSalute(false);
+  };
+
+  const saveSalute = async () => {
+    if (!sighting) return;
+    setUpdating(true);
+
+    try {
+      const response = await fetch(`/api/sightings/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          size: editSize,
+          activity: editActivity,
+          location: editLocation,
+          uniform: editUniform,
+          equipment: editEquipment,
+          observedAt: editObservedAt ? new Date(editObservedAt).toISOString() : undefined,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to update SALUTE report');
+
+      const updated = await response.json();
+      setSighting(updated);
+      setIsEditingSalute(false);
+    } catch (err) {
+      alert('Failed to update SALUTE report');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 p-8">
@@ -327,7 +385,7 @@ export default function SightingDetailPage({ params }: { params: Promise<{ id: s
         <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
           <Link href="/dashboard" className="hover:text-cyan-600">Dashboard</Link>
           <span>/</span>
-          <Link href="/sightings" className="hover:text-cyan-600">Sightings</Link>
+          <Link href="/sightings" className="hover:text-cyan-600">Dispatch</Link>
           <span>/</span>
           <span className="text-gray-700">Report Details</span>
         </div>
@@ -501,116 +559,259 @@ export default function SightingDetailPage({ params }: { params: Promise<{ id: s
 
         {/* SALUTE Details */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">S.A.L.U.T.E. Report</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">S.A.L.U.T.E. Report</h2>
+            {sighting.status !== 'CLOSED' && !isEditingSalute && (
+              <button
+                onClick={startEditingSalute}
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-cyan-600 hover:text-cyan-700 hover:bg-cyan-50 rounded-lg transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Edit
+              </button>
+            )}
+          </div>
 
-          <div className="space-y-4">
-            {/* Size */}
-            <div className="flex gap-4">
-              <div className="w-8 h-8 bg-cyan-100 text-cyan-700 rounded-lg flex items-center justify-center font-bold flex-shrink-0">
-                S
-              </div>
-              <div>
-                <div className="text-sm font-medium text-gray-500">Size / Strength</div>
-                <div className={sighting.size ? 'text-gray-900' : 'text-gray-400 italic'}>
-                  {sighting.size || 'Not provided'}
+          {isEditingSalute ? (
+            // Edit Mode
+            <div className="space-y-4">
+              {/* Size */}
+              <div className="flex gap-4">
+                <div className="w-8 h-8 bg-cyan-100 text-cyan-700 rounded-lg flex items-center justify-center font-bold flex-shrink-0">
+                  S
+                </div>
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-500 mb-1">Size / Strength</label>
+                  <input
+                    type="text"
+                    value={editSize}
+                    onChange={(e) => setEditSize(e.target.value)}
+                    placeholder="e.g., 2 vans, 4 agents"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-sm"
+                  />
                 </div>
               </div>
-            </div>
 
-            {/* Activity */}
-            <div className="flex gap-4">
-              <div className="w-8 h-8 bg-cyan-100 text-cyan-700 rounded-lg flex items-center justify-center font-bold flex-shrink-0">
-                A
-              </div>
-              <div>
-                <div className="text-sm font-medium text-gray-500">Actions / Activity</div>
-                <div className={sighting.activity ? 'text-gray-900' : 'text-gray-400 italic'}>
-                  {sighting.activity || 'Not provided'}
+              {/* Activity */}
+              <div className="flex gap-4">
+                <div className="w-8 h-8 bg-cyan-100 text-cyan-700 rounded-lg flex items-center justify-center font-bold flex-shrink-0">
+                  A
+                </div>
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-500 mb-1">Actions / Activity</label>
+                  <textarea
+                    value={editActivity}
+                    onChange={(e) => setEditActivity(e.target.value)}
+                    placeholder="Describe what was observed..."
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-sm"
+                  />
                 </div>
               </div>
-            </div>
 
-            {/* Location */}
-            <div className="flex gap-4">
-              <div className="w-8 h-8 bg-cyan-100 text-cyan-700 rounded-lg flex items-center justify-center font-bold flex-shrink-0">
-                L
-              </div>
-              <div className="flex-1">
-                <div className="text-sm font-medium text-gray-500">Location / Direction</div>
-                <div className="flex flex-col lg:flex-row gap-4">
-                  <div className="flex-1">
-                    <div className="text-gray-900">{sighting.location}</div>
-                    {sighting.latitude && sighting.longitude && (
-                      <div className="mt-2">
-                        <a
-                          href={`https://www.google.com/maps?q=${sighting.latitude},${sighting.longitude}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-sm text-cyan-600 hover:underline"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                          </svg>
-                          Open in Google Maps
-                        </a>
-                        <span className="text-xs text-gray-400 ml-2">
-                          ({sighting.latitude.toFixed(6)}, {sighting.longitude.toFixed(6)})
-                        </span>
-                      </div>
-                    )}
-                  </div>
+              {/* Location */}
+              <div className="flex gap-4">
+                <div className="w-8 h-8 bg-cyan-100 text-cyan-700 rounded-lg flex items-center justify-center font-bold flex-shrink-0">
+                  L
+                </div>
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-500 mb-1">Location / Direction</label>
+                  <input
+                    type="text"
+                    value={editLocation}
+                    onChange={(e) => setEditLocation(e.target.value)}
+                    placeholder="Address or description"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-sm"
+                  />
                   {sighting.latitude && sighting.longitude && (
-                    <div className="lg:w-64 xl:w-80 flex-shrink-0">
-                      <div className="rounded-lg overflow-hidden border border-gray-200">
-                        <SightingMap
-                          latitude={sighting.latitude}
-                          longitude={sighting.longitude}
-                        />
-                      </div>
-                    </div>
+                    <p className="text-xs text-gray-400 mt-1">
+                      Coordinates: ({sighting.latitude.toFixed(6)}, {sighting.longitude.toFixed(6)})
+                    </p>
                   )}
                 </div>
               </div>
-            </div>
 
-            {/* Uniform */}
-            <div className="flex gap-4">
-              <div className="w-8 h-8 bg-cyan-100 text-cyan-700 rounded-lg flex items-center justify-center font-bold flex-shrink-0">
-                U
+              {/* Uniform */}
+              <div className="flex gap-4">
+                <div className="w-8 h-8 bg-cyan-100 text-cyan-700 rounded-lg flex items-center justify-center font-bold flex-shrink-0">
+                  U
+                </div>
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-500 mb-1">Uniform / Clothes</label>
+                  <input
+                    type="text"
+                    value={editUniform}
+                    onChange={(e) => setEditUniform(e.target.value)}
+                    placeholder="e.g., Blue vests, tactical gear"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-sm"
+                  />
+                </div>
               </div>
-              <div>
-                <div className="text-sm font-medium text-gray-500">Uniform / Clothes</div>
-                <div className={sighting.uniform ? 'text-gray-900' : 'text-gray-400 italic'}>
-                  {sighting.uniform || 'Not provided'}
+
+              {/* Time */}
+              <div className="flex gap-4">
+                <div className="w-8 h-8 bg-cyan-100 text-cyan-700 rounded-lg flex items-center justify-center font-bold flex-shrink-0">
+                  T
+                </div>
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-500 mb-1">Time & Date</label>
+                  <input
+                    type="datetime-local"
+                    value={editObservedAt}
+                    onChange={(e) => setEditObservedAt(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* Equipment */}
+              <div className="flex gap-4">
+                <div className="w-8 h-8 bg-cyan-100 text-cyan-700 rounded-lg flex items-center justify-center font-bold flex-shrink-0">
+                  E
+                </div>
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-500 mb-1">Equipment / Weapons</label>
+                  <input
+                    type="text"
+                    value={editEquipment}
+                    onChange={(e) => setEditEquipment(e.target.value)}
+                    placeholder="e.g., Handcuffs, radios, firearms"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* Save/Cancel buttons */}
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+                <button
+                  onClick={cancelEditingSalute}
+                  disabled={updating}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800 text-sm font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={saveSalute}
+                  disabled={updating}
+                  className="px-4 py-2 bg-cyan-600 text-white rounded-lg text-sm font-medium hover:bg-cyan-700 disabled:opacity-50"
+                >
+                  {updating ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </div>
+          ) : (
+            // View Mode
+            <div className="space-y-4">
+              {/* Size */}
+              <div className="flex gap-4">
+                <div className="w-8 h-8 bg-cyan-100 text-cyan-700 rounded-lg flex items-center justify-center font-bold flex-shrink-0">
+                  S
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-gray-500">Size / Strength</div>
+                  <div className={sighting.size ? 'text-gray-900' : 'text-gray-400 italic'}>
+                    {sighting.size || 'Not provided'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Activity */}
+              <div className="flex gap-4">
+                <div className="w-8 h-8 bg-cyan-100 text-cyan-700 rounded-lg flex items-center justify-center font-bold flex-shrink-0">
+                  A
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-gray-500">Actions / Activity</div>
+                  <div className={sighting.activity ? 'text-gray-900' : 'text-gray-400 italic'}>
+                    {sighting.activity || 'Not provided'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Location */}
+              <div className="flex gap-4">
+                <div className="w-8 h-8 bg-cyan-100 text-cyan-700 rounded-lg flex items-center justify-center font-bold flex-shrink-0">
+                  L
+                </div>
+                <div className="flex-1">
+                  <div className="text-sm font-medium text-gray-500">Location / Direction</div>
+                  <div className="flex flex-col lg:flex-row gap-4">
+                    <div className="flex-1">
+                      <div className="text-gray-900">{sighting.location}</div>
+                      {sighting.latitude && sighting.longitude && (
+                        <div className="mt-2">
+                          <a
+                            href={`https://www.google.com/maps?q=${sighting.latitude},${sighting.longitude}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-sm text-cyan-600 hover:underline"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            Open in Google Maps
+                          </a>
+                          <span className="text-xs text-gray-400 ml-2">
+                            ({sighting.latitude.toFixed(6)}, {sighting.longitude.toFixed(6)})
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    {sighting.latitude && sighting.longitude && (
+                      <div className="lg:w-64 xl:w-80 flex-shrink-0">
+                        <div className="rounded-lg overflow-hidden border border-gray-200">
+                          <SightingMap
+                            latitude={sighting.latitude}
+                            longitude={sighting.longitude}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Uniform */}
+              <div className="flex gap-4">
+                <div className="w-8 h-8 bg-cyan-100 text-cyan-700 rounded-lg flex items-center justify-center font-bold flex-shrink-0">
+                  U
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-gray-500">Uniform / Clothes</div>
+                  <div className={sighting.uniform ? 'text-gray-900' : 'text-gray-400 italic'}>
+                    {sighting.uniform || 'Not provided'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Time */}
+              <div className="flex gap-4">
+                <div className="w-8 h-8 bg-cyan-100 text-cyan-700 rounded-lg flex items-center justify-center font-bold flex-shrink-0">
+                  T
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-gray-500">Time & Date</div>
+                  <div className="text-gray-900">{formatDate(sighting.observedAt)}</div>
+                </div>
+              </div>
+
+              {/* Equipment */}
+              <div className="flex gap-4">
+                <div className="w-8 h-8 bg-cyan-100 text-cyan-700 rounded-lg flex items-center justify-center font-bold flex-shrink-0">
+                  E
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-gray-500">Equipment / Weapons</div>
+                  <div className={sighting.equipment ? 'text-gray-900' : 'text-gray-400 italic'}>
+                    {sighting.equipment || 'Not provided'}
+                  </div>
                 </div>
               </div>
             </div>
-
-            {/* Time */}
-            <div className="flex gap-4">
-              <div className="w-8 h-8 bg-cyan-100 text-cyan-700 rounded-lg flex items-center justify-center font-bold flex-shrink-0">
-                T
-              </div>
-              <div>
-                <div className="text-sm font-medium text-gray-500">Time & Date</div>
-                <div className="text-gray-900">{formatDate(sighting.observedAt)}</div>
-              </div>
-            </div>
-
-            {/* Equipment */}
-            <div className="flex gap-4">
-              <div className="w-8 h-8 bg-cyan-100 text-cyan-700 rounded-lg flex items-center justify-center font-bold flex-shrink-0">
-                E
-              </div>
-              <div>
-                <div className="text-sm font-medium text-gray-500">Equipment / Weapons</div>
-                <div className={sighting.equipment ? 'text-gray-900' : 'text-gray-400 italic'}>
-                  {sighting.equipment || 'Not provided'}
-                </div>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Media */}

@@ -13,12 +13,12 @@ interface DispatchStep {
 const dispatchProcess: DispatchStep[] = [
   {
     step: 'The night before',
-    action: 'The Regional Dispatch Lead assigned to the next day checks-in with the Local Dispatchers the night before to confirm their shift.',
-    responsible: 'Regional Zone Lead',
+    action: 'The Dispatch Coordinator assigned to the next day checks-in with the Dispatchers the night before to confirm their shift.',
+    responsible: 'Dispatch Coordinator',
   },
   {
     step: 'Note',
-    action: 'If a local dispatcher or zone lead is unavailable, they are responsible for finding a replacement among the "backup" list. Dispatching can be done without a zone lead but things go more smoothly when they are there.',
+    action: 'If a dispatcher or zone lead is unavailable, they are responsible for finding a replacement among the "backup" list. Dispatching can be done without a zone lead but things go more smoothly when they are there.',
     responsible: '',
     isNote: true,
   },
@@ -29,19 +29,19 @@ const dispatchProcess: DispatchStep[] = [
   },
   {
     step: 'Shift Start/Change',
-    action: 'At the start of each shift, the Regional Dispatch Lead meets with the scheduled Local Dispatchers on zoom to make sure Local Dispatchers are in the correct Zone Dispatch groups, the "Triangle - BROADCAST" group, and the "Verification Result - ICE WATCH" group. If this is a shift change (10 AM and 2 PM) the previous Local Dispatchers are also on the zoom line to share any important updates about what happened during their shift.',
-    responsible: 'Regional Zone Lead',
+    action: 'At the start of each shift, the Dispatch Coordinator meets with the scheduled Dispatchers on zoom to make sure Dispatchers are in the correct Zone Dispatch groups, the "Triangle - BROADCAST" group, and the "Verification Result - ICE WATCH" group. If this is a shift change (10 AM and 2 PM) the previous Dispatchers are also on the zoom line to share any important updates about what happened during their shift.',
+    responsible: 'Dispatch Coordinator',
   },
   {
     step: 'Note',
-    action: 'If we begin to receive confirmed reports of ICE activity, Dispatchers will go back to being on Zoom together. The Regional Zone Lead on duty will help communicate that out to the scheduled Dispatchers.',
+    action: 'If we begin to receive confirmed reports of ICE activity, Dispatchers will go back to being on Zoom together. The Dispatch Coordinator on duty will help communicate that out to the scheduled Dispatchers.',
     responsible: '',
     isNote: true,
   },
   {
     step: 'Start of shift',
     action: 'There is one Dispatcher per county. When a Dispatcher begins their shift, they post in the zone dispatch groups that they are assigned to (all those in their county) the "hello, I\'m your new dispatcher" message.',
-    responsible: 'Local Dispatcher',
+    responsible: 'Dispatcher',
   },
   {
     step: 'Start of shift',
@@ -50,51 +50,51 @@ const dispatchProcess: DispatchStep[] = [
   },
   {
     step: 'Note',
-    action: 'Local Dispatchers and Zone Leads can check the schedule in the Coordination Spreadsheet if they need to contact the other during their shift.',
+    action: 'Dispatchers and Zone Leads can check the schedule in the Coordination Spreadsheet if they need to contact the other during their shift.',
     responsible: '',
     isNote: true,
   },
   {
     step: 'During shift',
-    action: 'The Local Dispatcher is actively watching "Triangle - BROADCAST" signal group where credible reports are being posted from the Siembra hotline and social media.',
-    responsible: 'Local Dispatcher',
+    action: 'The Dispatcher is actively watching "Triangle - BROADCAST" signal group where credible reports are being posted from the Siembra hotline and social media.',
+    responsible: 'Dispatcher',
   },
   {
     step: 'Note',
-    action: 'The Local Dispatcher is not responsible for answering questions from volunteers in the zone dispatch signal group. This is the responsibility of zone leads. If they don\'t know the answer, they can reach out to the Local Dispatcher. Let\'s start developing a list of FAQs so we can create a doc.',
+    action: 'The Dispatcher is not responsible for answering questions from volunteers in the zone dispatch signal group. This is the responsibility of zone leads. If they don\'t know the answer, they can reach out to the Dispatcher. Let\'s start developing a list of FAQs so we can create a doc.',
     responsible: '',
     isNote: true,
   },
   {
     step: 'Confirmed report',
-    action: 'When a report is posted in the "Triangle - BROADCAST" signal group, the Local Dispatcher for the appropriate county should react to the comment with a Thumbs up to indicate that they are following up on the report. This is an announcement only signal group where hotline operators and social media scouts are the only ones posting.',
-    responsible: 'Local Dispatcher',
+    action: 'When a report is posted in the "Triangle - BROADCAST" signal group, the Dispatcher for the appropriate county should react to the comment with a Thumbs up to indicate that they are following up on the report. This is an announcement only signal group where hotline operators and social media scouts are the only ones posting.',
+    responsible: 'Dispatcher',
   },
   {
     step: 'Note',
-    action: 'Verifier volunteers should tell active Local Dispatchers about reports that they hear about (if there are sufficient details) by DMing them. Local Dispatchers can then post it in the appropriate Zone Dispatch signal group. If a Zone Lead sees a verifier volunteer post a report in your chat, respond and ask them to DM the dispatcher directly moving forward.',
+    action: 'Verifier volunteers should tell active Dispatchers about reports that they hear about (if there are sufficient details) by DMing them. Dispatchers can then post it in the appropriate Zone Dispatch signal group. If a Zone Lead sees a verifier volunteer post a report in your chat, respond and ask them to DM the dispatcher directly moving forward.',
     responsible: '',
     isNote: true,
   },
   {
     step: 'Confirmed report',
-    action: 'The Local Dispatcher should attempt to remotely verify the report before posting it in the zone dispatch: If it is from a school or business with a public phone number, call that phone number first to see if you can verify the report remotely.',
-    responsible: 'Local Dispatcher',
+    action: 'The Dispatcher should attempt to remotely verify the report before posting it in the zone dispatch: If it is from a school or business with a public phone number, call that phone number first to see if you can verify the report remotely.',
+    responsible: 'Dispatcher',
   },
   {
     step: 'Confirmed report',
     action: 'If there is a photo or video, search it in Google images and see if it is an old image.',
-    responsible: 'Local Dispatcher',
+    responsible: 'Dispatcher',
   },
   {
     step: 'Confirmed report',
     action: 'If the report cannot be verified remotely, the Dispatcher should search the report address, identify the zone it is in, and post the dispatch request in the zone dispatch signal group.',
-    responsible: 'Local Dispatcher',
+    responsible: 'Dispatcher',
   },
   {
     step: 'Confirmed report',
-    action: 'Dispatcher should ask for verifier volunteers to 1) react to the message if they can head that way and 2) respond with their ETA. The Local Dispatcher should plan to call the verifier to take notes on what they see/give further instructions.',
-    responsible: 'Local Dispatcher',
+    action: 'Dispatcher should ask for verifier volunteers to 1) react to the message if they can head that way and 2) respond with their ETA. The Dispatcher should plan to call the verifier to take notes on what they see/give further instructions.',
+    responsible: 'Dispatcher',
   },
   {
     step: 'Confirmed report',
@@ -103,8 +103,8 @@ const dispatchProcess: DispatchStep[] = [
   },
   {
     step: 'Confirmed report',
-    action: 'If a report is confirmed, the Local Dispatcher posts a detailed but brief description of the confirmed report in the "Verification Result - ICE WATCH" signal group.',
-    responsible: 'Local Dispatcher',
+    action: 'If a report is confirmed, the Dispatcher posts a detailed but brief description of the confirmed report in the "Verification Result - ICE WATCH" signal group.',
+    responsible: 'Dispatcher',
   },
   {
     step: 'Confirmed report',
@@ -113,13 +113,13 @@ const dispatchProcess: DispatchStep[] = [
   },
   {
     step: 'Confirmed report',
-    action: 'After a confirmed report, the Local Dispatcher should get any videos of the interactions with ICE/CBP/DHS and add them to the Siembra dropbox. The video should be titled: "Date.Location"',
-    responsible: 'Local Dispatcher',
+    action: 'After a confirmed report, the Dispatcher should get any videos of the interactions with ICE/CBP/DHS and add them to the Siembra dropbox. The video should be titled: "Date.Location"',
+    responsible: 'Dispatcher',
   },
   {
     step: 'Unconfirmed report',
-    action: 'If a report is not confirmed as ICE, the Local Dispatcher should share that in the Zone Dispatch signal group (if the verifier hasn\'t already) and in the "Verification Result - ICE Watch" signal group. Reports that came from the community that are unconfirmed don\'t need to be added to the "Verification Result" signal group.',
-    responsible: 'Local Dispatcher',
+    action: 'If a report is not confirmed as ICE, the Dispatcher should share that in the Zone Dispatch signal group (if the verifier hasn\'t already) and in the "Verification Result - ICE Watch" signal group. Reports that came from the community that are unconfirmed don\'t need to be added to the "Verification Result" signal group.',
+    responsible: 'Dispatcher',
   },
   {
     step: 'Note',
@@ -165,11 +165,11 @@ export default function ResourcesPage() {
 
   const getResponsibleBadgeColor = (responsible: string) => {
     switch (responsible) {
-      case 'Regional Zone Lead':
+      case 'Dispatch Coordinator':
         return 'bg-purple-100 text-purple-800';
       case 'Zone Lead':
         return 'bg-amber-100 text-amber-800';
-      case 'Local Dispatcher':
+      case 'Dispatcher':
         return 'bg-blue-100 text-blue-800';
       case 'Siembra Staff':
         return 'bg-green-100 text-green-800';
@@ -210,14 +210,14 @@ export default function ResourcesPage() {
           {/* Legend */}
           <div className="px-6 py-3 border-b border-gray-200 bg-white flex flex-wrap gap-3">
             <span className="text-xs text-gray-500 mr-2">Roles:</span>
-            <span className={`px-2 py-0.5 rounded text-xs font-medium ${getResponsibleBadgeColor('Regional Zone Lead')}`}>
-              Regional Zone Lead
+            <span className={`px-2 py-0.5 rounded text-xs font-medium ${getResponsibleBadgeColor('Dispatch Coordinator')}`}>
+              Dispatch Coordinator
             </span>
             <span className={`px-2 py-0.5 rounded text-xs font-medium ${getResponsibleBadgeColor('Zone Lead')}`}>
               Zone Lead
             </span>
-            <span className={`px-2 py-0.5 rounded text-xs font-medium ${getResponsibleBadgeColor('Local Dispatcher')}`}>
-              Local Dispatcher
+            <span className={`px-2 py-0.5 rounded text-xs font-medium ${getResponsibleBadgeColor('Dispatcher')}`}>
+              Dispatcher
             </span>
             <span className={`px-2 py-0.5 rounded text-xs font-medium ${getResponsibleBadgeColor('Siembra Staff')}`}>
               Siembra Staff
