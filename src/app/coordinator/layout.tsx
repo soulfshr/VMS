@@ -7,6 +7,7 @@ import type { DevUser } from '@/types/auth';
 
 const coordinatorNavItems = [
   { href: '/coordinator', label: 'Overview', icon: '📊' },
+  { href: '/shifts', label: 'Shifts', icon: '📅' },
   { href: '/coordinator/email-blast', label: 'Email Blast', icon: '📧' },
 ];
 
@@ -26,6 +27,11 @@ export default function CoordinatorLayout({
       .then(data => {
         if (!data.user) {
           router.push('/login');
+          return;
+        }
+        // Check account status - redirect PENDING/REJECTED to pending page
+        if (data.user.accountStatus === 'PENDING' || data.user.accountStatus === 'REJECTED') {
+          router.push('/pending');
           return;
         }
         // Coordinators, Dispatchers, and Administrators can access
@@ -58,7 +64,8 @@ export default function CoordinatorLayout({
         <div className="md:hidden mb-6">
           <nav className="flex gap-2 overflow-x-auto pb-2">
             {coordinatorNavItems.map(item => {
-              const isActive = pathname === item.href;
+              const isActive = pathname === item.href ||
+                (item.href !== '/coordinator' && pathname?.startsWith(item.href));
               return (
                 <Link
                   key={item.href}
@@ -86,7 +93,8 @@ export default function CoordinatorLayout({
               </h2>
               <nav className="space-y-1">
                 {coordinatorNavItems.map(item => {
-                  const isActive = pathname === item.href;
+                  const isActive = pathname === item.href ||
+                    (item.href !== '/coordinator' && pathname?.startsWith(item.href));
                   return (
                     <Link
                       key={item.href}

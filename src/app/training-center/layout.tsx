@@ -37,6 +37,11 @@ export default function TrainingCenterLayout({
           router.push('/login');
           return;
         }
+        // Check account status - redirect PENDING/REJECTED to pending page
+        if (data.user.accountStatus === 'PENDING' || data.user.accountStatus === 'REJECTED') {
+          router.push('/pending');
+          return;
+        }
         // Learner paths are accessible to all authenticated users
         // Management paths (dashboard, modules) require DEVELOPER role
         if (!isLearnerPath && data.user.role !== 'DEVELOPER') {

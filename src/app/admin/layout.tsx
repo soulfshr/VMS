@@ -32,6 +32,11 @@ export default function AdminLayout({
           router.push('/login');
           return;
         }
+        // Check account status - redirect PENDING/REJECTED to pending page
+        if (data.user.accountStatus === 'PENDING' || data.user.accountStatus === 'REJECTED') {
+          router.push('/pending');
+          return;
+        }
         // Coordinators can access email-blast and shifts-import, but other admin pages require ADMINISTRATOR/DEVELOPER
         const isCoordinatorAllowedPage = pathname?.startsWith('/admin/email-blast') || pathname?.startsWith('/admin/shifts-import');
         const allowedRoles = isCoordinatorAllowedPage

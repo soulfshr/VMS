@@ -2,12 +2,11 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 
 export default function LoginClient() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
   const error = searchParams.get('error');
@@ -37,8 +36,9 @@ export default function LoginClient() {
         return;
       }
 
-      router.push(callbackUrl);
-      router.refresh();
+      // Use full page navigation instead of client-side routing
+      // This ensures middleware runs and can redirect PENDING/REJECTED users
+      window.location.href = callbackUrl;
     } catch {
       setLoginError('An error occurred. Please try again.');
       setIsLoading(false);

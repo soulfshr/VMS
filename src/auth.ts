@@ -112,18 +112,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.accountStatus = user.accountStatus;
       }
 
-      // If accountStatus is missing (old tokens), fetch it from database
-      if (token.id && !token.accountStatus) {
+      // Always refresh accountStatus from database to catch status changes
+      // This ensures PENDING/APPROVED/REJECTED changes take effect immediately
+      if (token.id) {
         try {
           const dbUser = await prisma.user.findUnique({
             where: { id: token.id as string },
-            select: { accountStatus: true },
+            select: { accountStatus: true, isActive: true },
           });
           if (dbUser) {
             token.accountStatus = dbUser.accountStatus;
+            // Also check if user has been deactivated
+            if (!dbUser.isActive) {
+              // Return empty token to force re-authentication
+              return {};
+            }
           }
         } catch (error) {
-          console.error('Error fetching accountStatus:', error);
+          console.error('Error refreshing accountStatus:', error);
         }
       }
 

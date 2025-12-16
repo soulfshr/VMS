@@ -38,6 +38,11 @@ export default function DeveloperLayout({
           router.push('/login');
           return;
         }
+        // Check account status - redirect PENDING/REJECTED to pending page
+        if (data.user.accountStatus === 'PENDING' || data.user.accountStatus === 'REJECTED') {
+          router.push('/pending');
+          return;
+        }
         // Only DEVELOPER role can access the developer console
         if (data.user.role !== 'DEVELOPER') {
           router.push('/dashboard');

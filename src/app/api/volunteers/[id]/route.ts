@@ -7,7 +7,8 @@ import { sendWelcomeEmail, sendApplicationRejectedEmail } from '@/lib/email';
 
 // PATCH /api/volunteers/[id] - Update a volunteer
 // - ADMINISTRATOR, DEVELOPER: Can update all fields
-// - COORDINATOR, DISPATCHER: Can only update qualifiedRoleIds
+// - COORDINATOR: Can update qualifiedRoleIds, zoneIds, and approve/reject applications
+// - DISPATCHER: Can only update qualifiedRoleIds
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -19,6 +20,7 @@ export async function PATCH(
     }
 
     const hasFullAccess = ['ADMINISTRATOR', 'DEVELOPER'].includes(user.role);
+    const isCoordinator = user.role === 'COORDINATOR';
     const canEditQualifications = ['ADMINISTRATOR', 'COORDINATOR', 'DISPATCHER', 'DEVELOPER'].includes(user.role);
 
     // Must be admin, coordinator, or dispatcher
@@ -29,9 +31,13 @@ export async function PATCH(
     const { id } = await params;
     const body = await request.json();
 
-    // Non-admins can only update qualifiedRoleIds
+    // Non-admins have limited fields they can update
     if (!hasFullAccess) {
-      const allowedFields = ['qualifiedRoleIds'];
+      // Coordinators can approve/reject applications and manage qualifications/zones
+      // Dispatchers can only update qualifications
+      const allowedFields = isCoordinator
+        ? ['qualifiedRoleIds', 'zoneIds', 'action', 'role', 'rejectionReason']
+        : ['qualifiedRoleIds'];
       const providedFields = Object.keys(body);
       const disallowedFields = providedFields.filter(f => !allowedFields.includes(f));
       if (disallowedFields.length > 0) {
