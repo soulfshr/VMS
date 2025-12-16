@@ -543,6 +543,7 @@ export default function DashboardClient() {
   };
 
   // Auto-select first available tab when data loads
+  // Priority: Dispatch (highest priority) → Shifts (Zone Lead) → Coordinator
   useEffect(() => {
     if (!dashboardData) return;
 
@@ -551,10 +552,11 @@ export default function DashboardClient() {
     const hasDispatch = dispatcherSlotOpenings && dispatcherSlotOpenings.length > 0;
     const hasCoord = regionalLeadOpenings && regionalLeadOpenings.length > 0;
 
-    if (hasShifts) {
-      setOpeningsTab('shifts');
-    } else if (hasDispatch) {
+    // Dispatch is highest priority
+    if (hasDispatch) {
       setOpeningsTab('dispatch');
+    } else if (hasShifts) {
+      setOpeningsTab('shifts');
     } else if (hasCoord) {
       setOpeningsTab('coordinator');
     }
