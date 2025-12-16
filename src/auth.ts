@@ -111,6 +111,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.qualifications = user.qualifications;
         token.accountStatus = user.accountStatus;
       }
+
+      // If accountStatus is missing (old tokens), fetch it from database
+      if (token.id && !token.accountStatus) {
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.id as string },
+            select: { accountStatus: true },
+          });
+          if (dbUser) {
+            token.accountStatus = dbUser.accountStatus;
+          }
+        } catch (error) {
+          console.error('Error fetching accountStatus:', error);
+        }
+      }
+
       return token;
     },
     async session({ session, token }) {
