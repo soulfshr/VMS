@@ -16,6 +16,7 @@ export async function GET() {
 
     return NextResponse.json({
       schedulingMode: settings?.schedulingMode || 'SIMPLE',
+      autoConfirmRsvp: settings?.autoConfirmRsvp || false,
     });
   } catch (error) {
     console.error('Error fetching public settings:', error);

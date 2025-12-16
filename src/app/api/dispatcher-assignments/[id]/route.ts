@@ -113,7 +113,7 @@ export async function PUT(
   }
 }
 
-// DELETE /api/dispatcher-assignments/[id] - Delete assignment (Coordinator/Admin only)
+// DELETE /api/dispatcher-assignments/[id] - Delete assignment (Owner or Coordinator/Admin)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -124,12 +124,25 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check role
-    if (!['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    const { id } = await params;
+
+    // Get the assignment to check ownership
+    const assignment = await prisma.dispatcherAssignment.findUnique({
+      where: { id },
+      select: { userId: true },
+    });
+
+    if (!assignment) {
+      return NextResponse.json({ error: 'Assignment not found' }, { status: 404 });
     }
 
-    const { id } = await params;
+    // Allow if user owns the assignment OR is coordinator/admin
+    const isOwner = assignment.userId === user.id;
+    const isAdmin = ['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role);
+
+    if (!isOwner && !isAdmin) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
     await prisma.dispatcherAssignment.delete({
       where: { id },

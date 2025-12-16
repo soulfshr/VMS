@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { checkRateLimitAsync, getClientIp, RATE_LIMITS, rateLimitResponse } from '@/lib/rate-limit';
 import { validatePassword } from '@/lib/password';
+import { sendNewApplicationNotification } from '@/lib/email';
 
 /**
  * Hash a reset token using SHA-256
@@ -66,7 +67,11 @@ export async function POST(request: NextRequest) {
     // Hash the new password
     const passwordHash = await bcrypt.hash(password, 10);
 
+    // Check if this is a new signup verification (PENDING user setting password for first time)
+    const isNewSignupVerification = user.accountStatus === 'PENDING' && !user.isVerified;
+
     // Update user with new password and clear reset token
+    // Also set isVerified: true if this is a new signup verification
     await prisma.user.update({
       where: { id: user.id },
       data: {
@@ -74,11 +79,25 @@ export async function POST(request: NextRequest) {
         passwordSetAt: new Date(),
         resetToken: null,
         resetTokenExpiresAt: null,
+        ...(isNewSignupVerification && { isVerified: true }),
       },
     });
 
-    console.log(`[Auth] Password reset successful for ${user.email}`);
-    return NextResponse.json({ success: true });
+    // If this is a new signup, notify coordinators/admins
+    if (isNewSignupVerification) {
+      console.log(`[Auth] New signup verified: ${user.email}`);
+
+      // Send notification to coordinators and admins (fire and forget)
+      sendNewApplicationNotification({
+        applicantName: user.name,
+        applicantEmail: user.email,
+      }).catch(err => {
+        console.error('[Auth] Failed to send new application notification:', err);
+      });
+    }
+
+    console.log(`[Auth] Password ${isNewSignupVerification ? 'set' : 'reset'} successful for ${user.email}`);
+    return NextResponse.json({ success: true, isNewSignup: isNewSignupVerification });
   } catch (error) {
     console.error('[Auth] Error in reset-password:', error);
     return NextResponse.json(

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
-import { Role } from '@/generated/prisma/enums';
+import { Role, AccountStatus } from '@/generated/prisma/enums';
 import { auditUpdate, auditDelete, toAuditUser } from '@/lib/audit';
+import { sendWelcomeEmail, sendApplicationRejectedEmail } from '@/lib/email';
 
 // PATCH /api/volunteers/[id] - Update a volunteer
 // - ADMINISTRATOR, DEVELOPER: Can update all fields
@@ -48,6 +49,153 @@ export async function PATCH(
 
     if (!volunteer) {
       return NextResponse.json({ error: 'Volunteer not found' }, { status: 404 });
+    }
+
+    // Handle approval/rejection actions
+    if (body.action === 'approve' || body.action === 'reject') {
+      // Only admins and coordinators can approve/reject applications
+      if (!['ADMINISTRATOR', 'COORDINATOR', 'DEVELOPER'].includes(user.role)) {
+        return NextResponse.json(
+          { error: 'Only administrators and coordinators can approve or reject applications' },
+          { status: 403 }
+        );
+      }
+
+      // Must be a PENDING user
+      if (volunteer.accountStatus !== 'PENDING') {
+        return NextResponse.json(
+          { error: 'Can only approve or reject pending applications' },
+          { status: 400 }
+        );
+      }
+
+      if (body.action === 'approve') {
+        // Update user to APPROVED with role and qualifications
+        const roleToSet = (body.role || 'VOLUNTEER') as Role;
+        const qualifiedRoleIds = body.qualifiedRoleIds || [];
+        const zoneIds = body.zoneIds || [];
+
+        // Remove existing qualifications and add new ones
+        await prisma.userQualification.deleteMany({
+          where: { userId: id },
+        });
+
+        for (const qualifiedRoleId of qualifiedRoleIds) {
+          await prisma.userQualification.create({
+            data: {
+              userId: id,
+              qualifiedRoleId,
+              grantedById: user.id,
+            },
+          });
+        }
+
+        // Update zones if provided
+        if (zoneIds.length > 0) {
+          await prisma.userZone.deleteMany({
+            where: { userId: id },
+          });
+
+          for (let i = 0; i < zoneIds.length; i++) {
+            await prisma.userZone.create({
+              data: {
+                userId: id,
+                zoneId: zoneIds[i],
+                isPrimary: i === 0,
+              },
+            });
+          }
+        }
+
+        const updated = await prisma.user.update({
+          where: { id },
+          data: {
+            accountStatus: 'APPROVED' as AccountStatus,
+            role: roleToSet,
+            approvedById: user.id,
+            approvedAt: new Date(),
+            isActive: true,
+          },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            accountStatus: true,
+          },
+        });
+
+        // Audit log the approval
+        await auditUpdate(
+          toAuditUser(user),
+          'User',
+          updated.id,
+          { accountStatus: 'PENDING', role: volunteer.role },
+          { accountStatus: 'APPROVED', role: updated.role }
+        );
+
+        // Send welcome email
+        try {
+          await sendWelcomeEmail({
+            email: updated.email,
+            name: updated.name,
+            role: updated.role,
+          });
+        } catch (emailError) {
+          console.error('Failed to send welcome email:', emailError);
+          // Don't fail the request if email fails
+        }
+
+        return NextResponse.json({
+          success: true,
+          message: 'Application approved',
+          volunteer: updated,
+        });
+      } else if (body.action === 'reject') {
+        const rejectionReason = body.rejectionReason || null;
+
+        const updated = await prisma.user.update({
+          where: { id },
+          data: {
+            accountStatus: 'REJECTED' as AccountStatus,
+            rejectionReason,
+          },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            accountStatus: true,
+            rejectionReason: true,
+          },
+        });
+
+        // Audit log the rejection
+        await auditUpdate(
+          toAuditUser(user),
+          'User',
+          updated.id,
+          { accountStatus: 'PENDING' },
+          { accountStatus: 'REJECTED', rejectionReason }
+        );
+
+        // Send rejection email
+        try {
+          await sendApplicationRejectedEmail({
+            email: updated.email,
+            name: updated.name,
+            rejectionReason,
+          });
+        } catch (emailError) {
+          console.error('Failed to send rejection email:', emailError);
+          // Don't fail the request if email fails
+        }
+
+        return NextResponse.json({
+          success: true,
+          message: 'Application rejected',
+          volunteer: updated,
+        });
+      }
     }
 
     // Prevent admin from demoting themselves

@@ -22,15 +22,36 @@ export async function POST(
 
     const { id: shiftId } = await params;
 
-    // Parse optional qualification from body
+    // Parse optional parameters from body
     let qualification: Qualification | null = null;
+    let asZoneLead = false;
     try {
       const body = await request.json();
       if (body.qualification && Object.values(Qualification).includes(body.qualification)) {
         qualification = body.qualification as Qualification;
       }
+      if (body.asZoneLead === true) {
+        asZoneLead = true;
+      }
     } catch {
-      // No body or invalid JSON is fine - qualification is optional
+      // No body or invalid JSON is fine - parameters are optional
+    }
+
+    // If requesting zone lead assignment, verify user has the qualification
+    // Slugs are stored as uppercase with underscores (e.g., ZONE_LEAD)
+    if (asZoneLead) {
+      const userQualifications = await prisma.userQualification.findMany({
+        where: { userId: user.id },
+        include: { qualifiedRole: { select: { slug: true } } },
+      });
+      const hasZoneLeadQual = userQualifications.some(uq => uq.qualifiedRole.slug === 'ZONE_LEAD');
+
+      if (!hasZoneLeadQual) {
+        return NextResponse.json(
+          { error: 'You are not qualified as a zone lead' },
+          { status: 403 }
+        );
+      }
     }
 
     // Check if shift exists and is published
@@ -82,6 +103,7 @@ export async function POST(
         status: autoConfirm ? 'CONFIRMED' : 'PENDING',
         confirmedAt: autoConfirm ? new Date() : null,
         qualification,
+        isZoneLead: asZoneLead,
       },
       include: {
         shift: {
@@ -109,6 +131,7 @@ export async function POST(
         shiftTitle: rsvp.shift.title,
         status: rsvp.status,
         qualification: rsvp.qualification,
+        isZoneLead: rsvp.isZoneLead,
       }
     );
 

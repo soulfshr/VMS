@@ -1,5 +1,5 @@
 import 'next-auth';
-import type { Role, Qualification } from '@/generated/prisma/client';
+import type { Role, Qualification, AccountStatus } from '@/generated/prisma/client';
 
 declare module 'next-auth' {
   interface Session {
@@ -10,6 +10,7 @@ declare module 'next-auth' {
       role: Role;
       zone?: string;
       qualifications: Qualification[];
+      accountStatus?: AccountStatus;
     };
   }
 
@@ -20,6 +21,7 @@ declare module 'next-auth' {
     role: Role;
     zone?: string;
     qualifications: Qualification[];
+    accountStatus?: AccountStatus;
   }
 }
 
@@ -31,5 +33,6 @@ declare module 'next-auth/jwt' {
     role: Role;
     zone?: string;
     qualifications: Qualification[];
+    accountStatus?: AccountStatus;
   }
 }

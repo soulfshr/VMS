@@ -870,6 +870,181 @@ export async function sendPasswordResetEmail(params: PasswordResetParams): Promi
 }
 
 // ============================================
+// ACCOUNT VERIFICATION / SIGNUP EMAILS
+// ============================================
+
+interface VerifyEmailParams {
+  to: string;
+  userName: string;
+  verificationToken: string;
+}
+
+/**
+ * Send email verification and password setup email for new signups
+ */
+export async function sendVerifyEmailAndSetPasswordEmail(params: VerifyEmailParams): Promise<boolean> {
+  const branding = await getBranding();
+
+  if (!isEmailConfigured(branding)) {
+    console.log('[Email] SES not configured, skipping verification email');
+    return false;
+  }
+
+  const { to, userName, verificationToken } = params;
+  const verifyUrl = `${APP_URL}/set-password?token=${verificationToken}`;
+
+  try {
+    await sendEmail({
+      to,
+      subject: `Verify Your Email - ${branding.orgName}`,
+      fromName: branding.emailFromName,
+      fromAddress: branding.emailFromAddress,
+      replyTo: branding.emailReplyTo,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: #0891b2; color: white; padding: 16px 24px; border-radius: 8px 8px 0 0;">
+            <h2 style="margin: 0;">${branding.orgName}</h2>
+          </div>
+
+          <div style="border: 1px solid #e5e7eb; border-top: none; padding: 24px; border-radius: 0 0 8px 8px;">
+            <h2 style="color: #374151; margin-top: 0;">Welcome! Verify Your Email</h2>
+            <p>Hi ${escapeHtml(userName)},</p>
+            <p>Thank you for applying to volunteer with ${branding.orgName}! To complete your application, please verify your email address and set your password.</p>
+
+            <div style="text-align: center; margin: 32px 0;">
+              <a href="${verifyUrl}"
+                 style="display: inline-block; background: #0891b2; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
+                Verify Email & Set Password
+              </a>
+            </div>
+
+            <div style="background: #f0f9ff; padding: 16px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #0891b2;">
+              <h4 style="margin-top: 0; color: #0369a1;">What happens next?</h4>
+              <ol style="margin: 0; padding-left: 20px; color: #374151;">
+                <li style="margin-bottom: 8px;">Click the button above to verify your email and create your password</li>
+                <li style="margin-bottom: 8px;">Our team will review your application</li>
+                <li>Once approved, you'll receive a welcome email and can start volunteering!</li>
+              </ol>
+            </div>
+
+            <p style="color: #6b7280; font-size: 14px;">
+              This link will expire in 48 hours. If you didn't submit this application, you can safely ignore this email.
+            </p>
+
+            <p style="color: #9ca3af; font-size: 12px; margin-top: 32px;">
+              If the button doesn't work, copy and paste this link into your browser:<br>
+              <a href="${verifyUrl}" style="color: #0891b2; word-break: break-all;">${verifyUrl}</a>
+            </p>
+
+            ${getEmailFooter(undefined, branding)}
+          </div>
+        </div>
+      `,
+    });
+    logger.email('Verification email sent', { to }).catch(() => {});
+    return true;
+  } catch (error) {
+    logger.error('EMAIL', 'Failed to send verification email', { to, error: error instanceof Error ? error.message : 'Unknown' }).catch(() => {});
+    return false;
+  }
+}
+
+interface NewApplicationNotificationParams {
+  applicantName: string;
+  applicantEmail: string;
+}
+
+/**
+ * Send notification to coordinators/admins when a new volunteer application is verified
+ */
+export async function sendNewApplicationNotification(params: NewApplicationNotificationParams): Promise<boolean> {
+  const branding = await getBranding();
+
+  if (!isEmailConfigured(branding)) {
+    console.log('[Email] SES not configured, skipping new application notification');
+    return false;
+  }
+
+  const { applicantName, applicantEmail } = params;
+
+  // Get all coordinators and administrators who have email notifications enabled
+  const recipients = await prisma.user.findMany({
+    where: {
+      role: { in: ['COORDINATOR', 'ADMINISTRATOR'] },
+      isActive: true,
+      emailNotifications: true,
+    },
+    select: { email: true, name: true },
+  });
+
+  if (recipients.length === 0) {
+    console.log('[Email] No coordinators/admins to notify about new application');
+    return true;
+  }
+
+  const reviewUrl = `${APP_URL}/volunteers?status=pending`;
+
+  let successCount = 0;
+  for (const recipient of recipients) {
+    try {
+      await sendEmail({
+        to: recipient.email,
+        subject: `New Volunteer Application: ${applicantName}`,
+        fromName: branding.emailFromName,
+        fromAddress: branding.emailFromAddress,
+        replyTo: branding.emailReplyTo,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: #0891b2; color: white; padding: 16px 24px; border-radius: 8px 8px 0 0;">
+              <h2 style="margin: 0;">${branding.orgName}</h2>
+            </div>
+
+            <div style="border: 1px solid #e5e7eb; border-top: none; padding: 24px; border-radius: 0 0 8px 8px;">
+              <h2 style="color: #374151; margin-top: 0;">New Volunteer Application</h2>
+              <p>Hi ${escapeHtml(recipient.name || 'Coordinator')},</p>
+              <p>A new volunteer application has been submitted and is ready for review.</p>
+
+              <div style="background: #f0f9ff; padding: 16px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #0891b2;">
+                <h4 style="margin-top: 0; color: #0369a1;">Applicant Details</h4>
+                <p style="margin: 8px 0;"><strong>Name:</strong> ${escapeHtml(applicantName)}</p>
+                <p style="margin: 8px 0;"><strong>Email:</strong> ${escapeHtml(applicantEmail)}</p>
+              </div>
+
+              <div style="text-align: center; margin: 32px 0;">
+                <a href="${reviewUrl}"
+                   style="display: inline-block; background: #0891b2; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
+                  Review Application
+                </a>
+              </div>
+
+              <p style="color: #6b7280; font-size: 14px;">
+                Please review the application and approve or reject accordingly.
+              </p>
+
+              ${getEmailFooter(undefined, branding)}
+            </div>
+          </div>
+        `,
+      });
+      successCount++;
+    } catch (error) {
+      logger.error('EMAIL', 'Failed to send new application notification', {
+        to: recipient.email,
+        error: error instanceof Error ? error.message : 'Unknown'
+      }).catch(() => {});
+    }
+  }
+
+  logger.email('New application notification sent', {
+    applicantEmail,
+    recipientCount: recipients.length,
+    successCount
+  }).catch(() => {});
+
+  return successCount > 0;
+}
+
+// ============================================
 // FEEDBACK EMAILS
 // ============================================
 
@@ -1267,5 +1442,245 @@ export async function sendWeeklyDigestEmail(params: WeeklyDigestEmailParams): Pr
   } catch (error) {
     logger.error('EMAIL', 'Failed to send weekly digest email', { to, error: error instanceof Error ? error.message : 'Unknown' }).catch(() => {});
     throw error; // Re-throw so caller can track failures
+  }
+}
+
+/**
+ * Dispatcher slot confirmation email params
+ */
+interface DispatcherSlotConfirmationParams {
+  to: string;
+  dispatcherName: string;
+  county: string;
+  date: Date;
+  startTime: Date;
+  endTime: Date;
+  zones: string[];
+}
+
+/**
+ * Send email when dispatcher claims a slot
+ * Includes ICS calendar invite attachment
+ */
+export async function sendDispatcherSlotConfirmationEmail(params: DispatcherSlotConfirmationParams): Promise<void> {
+  const branding = await getBranding();
+
+  if (!isEmailConfigured(branding)) {
+    console.log('[Email] SES not configured, skipping dispatcher slot confirmation email');
+    return;
+  }
+
+  const { to, dispatcherName, county, date, startTime, endTime, zones } = params;
+
+  const dateStr = formatDateInTimezone(date, branding.timezone);
+  const startStr = formatTimeInTimezone(startTime, branding.timezone);
+  const endStr = formatTimeInTimezone(endTime, branding.timezone);
+  const zonesStr = zones.slice(0, 5).join(', ') + (zones.length > 5 ? ` +${zones.length - 5} more` : '');
+
+  // Handle REGIONAL mode vs COUNTY mode for display labels
+  const isRegionalMode = county === 'REGIONAL';
+  const coverageLabel = isRegionalMode ? 'Regional Coverage' : `${county} County`;
+  const scopeLabel = isRegionalMode ? 'Coverage' : 'County';
+  const scopeValue = isRegionalMode ? 'Regional (All Zones)' : county;
+
+  // Generate ICS calendar invite with explicit timezone
+  const calendar = icalGenerator({ name: branding.orgName });
+  calendar.createEvent({
+    start: startTime,
+    end: endTime,
+    timezone: branding.timezone,
+    summary: `Dispatcher: ${coverageLabel}`,
+    description: `${branding.orgName} dispatcher coverage\n\n${scopeLabel}: ${scopeValue}\nZones: ${zones.join(', ')}`,
+    organizer: { name: branding.orgName, email: branding.emailFromAddress },
+  });
+
+  try {
+    await sendEmailWithCalendar({
+      to,
+      subject: `Dispatcher Assignment Confirmed: ${coverageLabel} on ${dateStr}`,
+      fromName: branding.emailFromName,
+      fromAddress: branding.emailFromAddress,
+      replyTo: branding.emailReplyTo,
+      calendarContent: calendar.toString(),
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2563eb;">Dispatcher Assignment Confirmed!</h2>
+          <p>Hi ${escapeHtml(dispatcherName)},</p>
+          <p>You've successfully claimed a dispatcher slot. Thank you for stepping up!</p>
+
+          <div style="background: #dbeafe; padding: 16px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #2563eb;">
+            <h3 style="margin-top: 0; color: #1d4ed8;">Your Dispatcher Assignment</h3>
+            <p style="margin: 8px 0;"><strong>${escapeHtml(scopeLabel)}:</strong> ${escapeHtml(scopeValue)}</p>
+            <p style="margin: 8px 0;"><strong>Date:</strong> ${escapeHtml(dateStr)}</p>
+            <p style="margin: 8px 0;"><strong>Time:</strong> ${escapeHtml(startStr)} - ${escapeHtml(endStr)}</p>
+            <p style="margin: 8px 0;"><strong>Zones Covered:</strong> ${escapeHtml(zonesStr)}</p>
+          </div>
+
+          <p><strong>A calendar invite is attached to this email.</strong> Add it to your calendar so you don't forget!</p>
+
+          <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+            As dispatcher, you'll coordinate volunteers ${isRegionalMode ? 'across all zones' : `in ${escapeHtml(county)} County`} during this time slot.<br>
+            If you need to cancel, please do so as soon as possible so another dispatcher can cover.
+          </p>
+
+          ${getEmailFooter(undefined, branding)}
+        </div>
+      `,
+    });
+    logger.email('Dispatcher slot confirmation email sent', { to, county }).catch(() => {});
+  } catch (error) {
+    logger.error('EMAIL', 'Failed to send dispatcher slot confirmation email', { to, error: error instanceof Error ? error.message : 'Unknown' }).catch(() => {});
+  }
+}
+
+// ============================================
+// VOLUNTEER APPLICATION APPROVAL/REJECTION
+// ============================================
+
+interface WelcomeEmailParams {
+  email: string;
+  name: string;
+  role: string;
+}
+
+/**
+ * Send welcome email when volunteer application is approved
+ */
+export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<boolean> {
+  const branding = await getBranding();
+
+  if (!isEmailConfigured(branding)) {
+    console.log('[Email] SES not configured, skipping welcome email');
+    return false;
+  }
+
+  const { email, name, role } = params;
+  const loginUrl = `${APP_URL}/login`;
+
+  // Format role for display
+  const roleDisplay: Record<string, string> = {
+    VOLUNTEER: 'Volunteer',
+    COORDINATOR: 'Coordinator',
+    DISPATCHER: 'Dispatcher',
+    ADMINISTRATOR: 'Administrator',
+  };
+
+  try {
+    await sendEmail({
+      to: email,
+      subject: `Welcome to ${branding.orgName}! Your Account is Approved`,
+      fromName: branding.emailFromName,
+      fromAddress: branding.emailFromAddress,
+      replyTo: branding.emailReplyTo,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: #0891b2; color: white; padding: 16px 24px; border-radius: 8px 8px 0 0;">
+            <h2 style="margin: 0;">${branding.orgName}</h2>
+          </div>
+
+          <div style="border: 1px solid #e5e7eb; border-top: none; padding: 24px; border-radius: 0 0 8px 8px;">
+            <h2 style="color: #059669; margin-top: 0;">🎉 You're Approved!</h2>
+            <p>Hi ${escapeHtml(name)},</p>
+            <p>Great news! Your volunteer application has been approved. Welcome to the ${branding.orgName} team!</p>
+
+            <div style="background: #ecfdf5; padding: 16px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #059669;">
+              <h4 style="margin-top: 0; color: #065f46;">Your Account Details</h4>
+              <p style="margin: 8px 0;"><strong>Role:</strong> ${escapeHtml(roleDisplay[role] || role)}</p>
+              <p style="margin: 8px 0;"><strong>Email:</strong> ${escapeHtml(email)}</p>
+            </div>
+
+            <div style="text-align: center; margin: 32px 0;">
+              <a href="${loginUrl}"
+                 style="display: inline-block; background: #0891b2; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
+                Log In to Get Started
+              </a>
+            </div>
+
+            <div style="background: #f0f9ff; padding: 16px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #0891b2;">
+              <h4 style="margin-top: 0; color: #0369a1;">What's Next?</h4>
+              <ul style="margin: 0; padding-left: 20px; color: #374151;">
+                <li style="margin-bottom: 8px;">Log in and complete your profile</li>
+                <li style="margin-bottom: 8px;">Browse available shifts and sign up</li>
+                <li>Check out any required trainings</li>
+              </ul>
+            </div>
+
+            <p style="color: #6b7280; font-size: 14px;">
+              If you have any questions, don't hesitate to reach out to our coordinators.
+            </p>
+
+            ${getEmailFooter(undefined, branding)}
+          </div>
+        </div>
+      `,
+    });
+    logger.email('Welcome email sent', { to: email }).catch(() => {});
+    return true;
+  } catch (error) {
+    logger.error('EMAIL', 'Failed to send welcome email', { to: email, error: error instanceof Error ? error.message : 'Unknown' }).catch(() => {});
+    return false;
+  }
+}
+
+interface ApplicationRejectedEmailParams {
+  email: string;
+  name: string;
+  rejectionReason?: string | null;
+}
+
+/**
+ * Send email when volunteer application is rejected
+ */
+export async function sendApplicationRejectedEmail(params: ApplicationRejectedEmailParams): Promise<boolean> {
+  const branding = await getBranding();
+
+  if (!isEmailConfigured(branding)) {
+    console.log('[Email] SES not configured, skipping rejection email');
+    return false;
+  }
+
+  const { email, name, rejectionReason } = params;
+
+  try {
+    await sendEmail({
+      to: email,
+      subject: `Update on Your ${branding.orgName} Application`,
+      fromName: branding.emailFromName,
+      fromAddress: branding.emailFromAddress,
+      replyTo: branding.emailReplyTo,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: #6b7280; color: white; padding: 16px 24px; border-radius: 8px 8px 0 0;">
+            <h2 style="margin: 0;">${branding.orgName}</h2>
+          </div>
+
+          <div style="border: 1px solid #e5e7eb; border-top: none; padding: 24px; border-radius: 0 0 8px 8px;">
+            <h2 style="color: #374151; margin-top: 0;">Application Update</h2>
+            <p>Hi ${escapeHtml(name)},</p>
+            <p>Thank you for your interest in volunteering with ${branding.orgName}. After careful review, we're unable to approve your application at this time.</p>
+
+            ${rejectionReason ? `
+              <div style="background: #f3f4f6; padding: 16px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #6b7280;">
+                <h4 style="margin-top: 0; color: #374151;">Reason</h4>
+                <p style="margin: 0; color: #4b5563;">${escapeHtml(rejectionReason)}</p>
+              </div>
+            ` : ''}
+
+            <p>If you have questions about this decision or believe there may have been an error, please don't hesitate to contact us.</p>
+
+            <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+              We appreciate your interest in ${branding.orgName} and wish you all the best.
+            </p>
+
+            ${getEmailFooter(undefined, branding)}
+          </div>
+        </div>
+      `,
+    });
+    logger.email('Application rejected email sent', { to: email }).catch(() => {});
+    return true;
+  } catch (error) {
+    logger.error('EMAIL', 'Failed to send rejection email', { to: email, error: error instanceof Error ? error.message : 'Unknown' }).catch(() => {});
+    return false;
   }
 }

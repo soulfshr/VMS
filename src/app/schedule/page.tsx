@@ -808,6 +808,17 @@ export default function SchedulePage() {
                         </>
                       )}
 
+                      {/* Zone Leads Header */}
+                      <tr key={`${county}-zoneleads-header`} className="bg-green-50">
+                        <td className="border-b border-r border-green-200 px-2 py-2 font-semibold text-green-800 bg-green-100 w-[100px] sticky left-0 z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">
+                          <div className="flex items-center gap-1">
+                            <span>👥</span>
+                            <span className="text-sm">Zone Leads</span>
+                          </div>
+                        </td>
+                        <td colSpan={7} className="border-b border-green-200 bg-green-50"></td>
+                      </tr>
+
                       {/* Time block rows */}
                       {scheduleData.timeBlocks.map(timeBlock => (
                         <tr key={`${county}-${timeBlock.label}`}>

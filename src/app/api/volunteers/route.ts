@@ -22,13 +22,24 @@ export async function GET(request: NextRequest) {
     const zone = searchParams.get('zone');
     const role = searchParams.get('role');
     const search = searchParams.get('search');
-    const status = searchParams.get('status'); // 'active' or 'inactive'
+    const status = searchParams.get('status'); // 'active', 'inactive', 'pending', 'rejected'
     const qualifiedRoleId = searchParams.get('qualifiedRoleId');
     const qualification = searchParams.get('qualification'); // Filter by slug e.g., REGIONAL_LEAD
     const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined;
 
     // Build where clause
     const where: Record<string, unknown> = {};
+
+    // Filter by accountStatus - default to APPROVED unless filtering for pending/rejected
+    if (status === 'pending') {
+      where.accountStatus = 'PENDING';
+      where.isVerified = true; // Only show verified pending users (who have set password)
+    } else if (status === 'rejected') {
+      where.accountStatus = 'REJECTED';
+    } else {
+      // Default: only show approved users
+      where.accountStatus = 'APPROVED';
+    }
 
     // Hide DEVELOPER users from non-developers
     if (!isDeveloper) {
@@ -53,11 +64,13 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // isActive filter only applies to approved users
     if (status === 'active') {
       where.isActive = true;
     } else if (status === 'inactive') {
       where.isActive = false;
     }
+    // pending and rejected statuses don't use isActive filter
 
     // Filter by qualified role ID
     if (qualifiedRoleId && qualifiedRoleId !== 'all') {
@@ -190,6 +203,11 @@ export async function GET(request: NextRequest) {
       isActive: v.isActive,
       isVerified: v.isVerified,
       createdAt: v.createdAt,
+      // Account status fields for pending review
+      accountStatus: v.accountStatus,
+      applicationDate: v.applicationDate,
+      intakeResponses: v.intakeResponses,
+      rejectionReason: v.rejectionReason,
       // Only include lastLoginAt for developers
       ...(isDeveloper && { lastLoginAt: v.lastLoginAt }),
       qualifiedRoles: v.userQualifications.map(uq => ({
@@ -231,11 +249,21 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    // Get count of pending applications (verified users with PENDING status)
+    const pendingCount = await prisma.user.count({
+      where: {
+        accountStatus: 'PENDING',
+        isVerified: true,
+        ...(isDeveloper ? {} : { role: { not: 'DEVELOPER' } }),
+      },
+    });
+
     return NextResponse.json({
       volunteers: result,
       zones,
       qualifiedRoles,
       total: result.length,
+      pendingCount,
     });
   } catch (error) {
     console.error('Error fetching volunteers:', error);

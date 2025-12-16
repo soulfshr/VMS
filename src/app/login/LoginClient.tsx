@@ -139,15 +139,28 @@ export default function LoginClient() {
           </p>
         </div>
 
-        {/* Request Access */}
-        <div className="mt-4 text-center">
+        {/* Create Account */}
+        <div className="mt-6 text-center">
           <p className="text-sm text-gray-600">
-            Interested in learning about how you can help?{' '}
-            <a
-              href="mailto:triangle.dispatch.group@gmail.com"
+            New volunteer?{' '}
+            <Link
+              href="/signup"
               className="text-cyan-600 hover:text-cyan-700 font-medium"
             >
-              Email triangle.dispatch.group@gmail.com
+              Create an account
+            </Link>
+          </p>
+        </div>
+
+        {/* Contact */}
+        <div className="mt-4 text-center">
+          <p className="text-xs text-gray-500">
+            Questions?{' '}
+            <a
+              href="mailto:triangle.dispatch.group@gmail.com"
+              className="text-cyan-600 hover:text-cyan-700"
+            >
+              triangle.dispatch.group@gmail.com
             </a>
           </p>
         </div>

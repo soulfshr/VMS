@@ -15,6 +15,7 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get('type');
     const typeConfigId = searchParams.get('typeConfigId');
     const zoneId = searchParams.get('zoneId');
+    const qualifiedRoleId = searchParams.get('qualifiedRoleId');
     const status = searchParams.get('status') || 'PUBLISHED';
     const includeMyShifts = searchParams.get('myShifts') === 'true';
 
@@ -23,9 +24,16 @@ export async function GET(request: NextRequest) {
     const schedulingMode = settings?.schedulingMode || 'SIMPLE';
 
     // In SIMPLE mode, only DISPATCHER or ZONE_LEAD qualified users (or admins) can see shifts
-    const isAdmin = ['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role);
-    const hasLeadQualification = user.qualifications?.some(q =>
-      q === 'DISPATCHER' || q === 'ZONE_LEAD'
+    const isAdmin = ['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role);
+
+    // Check user's qualified roles from the database
+    const userQualifications = await prisma.userQualification.findMany({
+      where: { userId: user.id },
+      include: { qualifiedRole: { select: { slug: true } } },
+    });
+    // Slugs are stored as uppercase with underscores (e.g., ZONE_LEAD, DISPATCHER)
+    const hasLeadQualification = userQualifications.some(uq =>
+      uq.qualifiedRole.slug === 'DISPATCHER' || uq.qualifiedRole.slug === 'ZONE_LEAD'
     );
 
     // If SIMPLE mode and user is not admin and doesn't have lead qualifications,
@@ -46,14 +54,46 @@ export async function GET(request: NextRequest) {
       where.zoneId = zoneId;
     }
 
+    // Filter by qualified role - shows shifts that have at least one volunteer with this role
+    if (qualifiedRoleId && qualifiedRoleId !== 'all') {
+      // Look up the role to check if it's zone-lead (which uses isZoneLead flag)
+      const role = await prisma.qualifiedRole.findUnique({
+        where: { id: qualifiedRoleId },
+        select: { slug: true },
+      });
+
+      if (role?.slug === 'ZONE_LEAD') {
+        // Zone leads are marked with isZoneLead: true
+        where.volunteers = {
+          some: {
+            isZoneLead: true,
+          },
+        };
+      } else if (role?.slug === 'DISPATCHER') {
+        // Dispatchers are stored in DispatcherAssignment, not ShiftVolunteer
+        // Skip this filter - we'd need a different query approach
+        // For now, just skip filtering (leave where.volunteers unset)
+      } else {
+        // For other roles, check qualifiedRoleId on volunteers
+        where.volunteers = {
+          some: {
+            qualifiedRoleId: qualifiedRoleId,
+          },
+        };
+      }
+    }
+
     if (status !== 'all') {
       where.status = status;
     }
 
-    // Only show future shifts by default (unless showing all for calendar)
+    // Only show today and future shifts by default (unless showing all for calendar)
     if (status !== 'all') {
+      // Use start of today (midnight) to include today's shifts
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
       where.date = {
-        gte: new Date(),
+        gte: today,
       };
     }
 

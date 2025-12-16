@@ -102,6 +102,13 @@ enum EmailSendStatus {
   FAILED
 }
 
+// Account approval status for volunteer signup workflow
+enum AccountStatus {
+  PENDING   // Application submitted, awaiting review
+  APPROVED  // Approved by coordinator/admin
+  REJECTED  // Application rejected
+}
+
 // ============================================
 // QUALIFIED ROLES (Admin-configurable shift positions)
 // ============================================
@@ -297,6 +304,16 @@ model User {
   resetToken          String?   @unique     // Password reset token (UUID)
   resetTokenExpiresAt DateTime?             // Token expiration time
   lastLoginAt         DateTime?             // Last successful login timestamp
+
+  // Account approval workflow (volunteer signup)
+  accountStatus       AccountStatus @default(APPROVED)  // APPROVED for existing users
+  applicationDate     DateTime?             // When signup form was submitted
+  approvedById        String?               // Coordinator/Admin who approved
+  approvedBy          User?     @relation("ApprovedBy", fields: [approvedById], references: [id])
+  approvedUsers       User[]    @relation("ApprovedBy")  // Users this person approved
+  approvedAt          DateTime?             // When account was approved
+  rejectionReason     String?               // Optional reason if rejected
+  intakeResponses     Json?                 // Flexible JSON for intake form answers
 
   // Relationships
   zones             UserZone[]

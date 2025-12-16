@@ -20,9 +20,16 @@ export async function GET(
     // Check scheduling mode - in SIMPLE mode, restrict access for non-qualified users
     const settings = await prisma.organizationSettings.findFirst();
     const schedulingMode = settings?.schedulingMode || 'SIMPLE';
-    const isAdmin = ['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role);
-    const hasLeadQualification = user.qualifications?.some(q =>
-      q === 'DISPATCHER' || q === 'ZONE_LEAD'
+    const isAdmin = ['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role);
+
+    // Check user's qualified roles from the database
+    const userQualifications = await prisma.userQualification.findMany({
+      where: { userId: user.id },
+      include: { qualifiedRole: { select: { slug: true } } },
+    });
+    // Slugs are stored as uppercase with underscores (e.g., ZONE_LEAD, DISPATCHER)
+    const hasLeadQualification = userQualifications.some(uq =>
+      uq.qualifiedRole.slug === 'DISPATCHER' || uq.qualifiedRole.slug === 'ZONE_LEAD'
     );
 
     const shift = await prisma.shift.findUnique({

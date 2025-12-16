@@ -440,6 +440,7 @@ function ShiftsPageContent() {
   const [filterZone, setFilterZone] = useState<string>('all');
   const [filterPendingOnly, setFilterPendingOnly] = useState<boolean>(false);
   const [rsvpingShiftId, setRsvpingShiftId] = useState<string | null>(null);
+  const [autoConfirmRsvp, setAutoConfirmRsvp] = useState<boolean>(false);
 
   // Selection state for coordinators (with shift+click range selection)
   const selectableShifts = shifts.filter(s => s.status !== 'CANCELLED');
@@ -503,7 +504,7 @@ function ShiftsPageContent() {
       fetch('/api/auth/session').then(res => res.json()),
       fetch('/api/zones').then(res => res.json()),
       fetch('/api/shift-types').then(res => res.json()).catch(() => []),
-      fetch('/api/settings/public').then(res => res.json()).catch(() => ({ schedulingMode: 'SIMPLE' })),
+      fetch('/api/settings/public').then(res => res.json()).catch(() => ({ schedulingMode: 'SIMPLE', autoConfirmRsvp: false })),
     ])
       .then(([sessionData, zonesData, shiftTypesData, settingsData]) => {
         if (!sessionData.user) {
@@ -519,6 +520,9 @@ function ShiftsPageContent() {
         }
         if (settingsData?.schedulingMode) {
           setSchedulingMode(settingsData.schedulingMode);
+        }
+        if (settingsData?.autoConfirmRsvp !== undefined) {
+          setAutoConfirmRsvp(settingsData.autoConfirmRsvp);
         }
         setIsLoading(false);
       })
@@ -750,8 +754,8 @@ function ShiftsPageContent() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Browse Shifts</h1>
-            <p className="text-gray-600">Find and sign up for available volunteer shifts</p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Manage Shifts</h1>
+            <p className="text-gray-600">Create, delete, and edit shifts here</p>
           </div>
           <div className="flex items-center gap-3">
             <Link
@@ -857,7 +861,7 @@ function ShiftsPageContent() {
                   ))}
                 </select>
               </div>
-              {canCreateShift && (
+              {canCreateShift && !autoConfirmRsvp && (
                 <div className="flex items-center">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -1019,14 +1023,6 @@ function ShiftsPageContent() {
                           >
                             {rsvpingShiftId === shift.id ? '...' : 'Cancel'}
                           </button>
-                        ) : shift.spotsLeft > 0 ? (
-                          <button
-                            onClick={() => handleSignUpClick(shift)}
-                            disabled={rsvpingShiftId === shift.id}
-                            className="text-xs px-3 py-1 bg-cyan-600 text-white rounded hover:bg-cyan-700 transition-colors disabled:opacity-50"
-                          >
-                            {rsvpingShiftId === shift.id ? '...' : 'Sign Up'}
-                          </button>
                         ) : null}
                         {canCreateShift && shift.status !== 'CANCELLED' && (
                           <>
@@ -1141,19 +1137,7 @@ function ShiftsPageContent() {
                         {rsvpingShiftId === shift.id ? 'Canceling...' : 'Cancel RSVP'}
                       </button>
                     </div>
-                  ) : shift.spotsLeft > 0 ? (
-                    <button
-                      onClick={() => handleSignUpClick(shift)}
-                      disabled={rsvpingShiftId === shift.id}
-                      className="w-full py-2 px-4 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors text-sm font-medium disabled:opacity-50"
-                    >
-                      {rsvpingShiftId === shift.id ? 'Signing up...' : 'Sign Up'}
-                    </button>
-                  ) : (
-                    <div className="text-center py-2 px-4 bg-gray-100 text-gray-500 rounded-lg text-sm font-medium">
-                      Shift Full
-                    </div>
-                  )}
+                  ) : null}
 
                   {/* Coordinator: Edit and Manage links (not for cancelled shifts) */}
                   {canCreateShift && shift.status !== 'CANCELLED' && (

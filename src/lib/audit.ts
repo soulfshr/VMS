@@ -26,6 +26,7 @@ export type AuditEntityType =
   | 'POI'
   | 'POICategory'
   | 'EmailBlast'
+  | 'DispatcherAssignment'
   | 'Auth';
 
 // Action types

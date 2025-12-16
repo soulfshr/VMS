@@ -53,6 +53,11 @@ interface Volunteer {
   completedTrainings: Training[];
   upcomingShifts: UpcomingShift[];
   totalConfirmedShifts: number;
+  // Pending application fields
+  accountStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+  applicationDate?: string | null;
+  intakeResponses?: Record<string, unknown> | null;
+  rejectionReason?: string | null;
 }
 
 interface VolunteersData {
@@ -60,6 +65,7 @@ interface VolunteersData {
   zones: Zone[];
   qualifiedRoles: QualifiedRole[];
   total: number;
+  pendingCount: number;
 }
 
 interface ImportResult {
@@ -163,6 +169,17 @@ export default function VolunteersPage() {
     removeQualifiedRoles: [],
     addZones: [],
     removeZones: [],
+  });
+
+  // Pending review modal state
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewingVolunteer, setReviewingVolunteer] = useState<Volunteer | null>(null);
+  const [isProcessingReview, setIsProcessingReview] = useState(false);
+  const [reviewForm, setReviewForm] = useState({
+    role: 'VOLUNTEER',
+    qualifiedRoleIds: [] as string[],
+    zoneIds: [] as string[],
+    rejectionReason: '',
   });
 
   // Multi-select with shift+click support
@@ -345,6 +362,84 @@ export default function VolunteersPage() {
       alert('Failed to update qualified roles');
     } finally {
       setUpdatingQualifications(null);
+    }
+  };
+
+  // Open review modal for pending volunteer
+  const openReviewModal = (volunteer: Volunteer) => {
+    setReviewingVolunteer(volunteer);
+    setReviewForm({
+      role: 'VOLUNTEER',
+      qualifiedRoleIds: [],
+      zoneIds: volunteer.zones?.map(z => z.id) || [],
+      rejectionReason: '',
+    });
+    setShowReviewModal(true);
+  };
+
+  // Handle approval of pending application
+  const handleApproveApplication = async () => {
+    if (!reviewingVolunteer) return;
+
+    setIsProcessingReview(true);
+    try {
+      const res = await fetch(`/api/volunteers/${reviewingVolunteer.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'approve',
+          role: reviewForm.role,
+          qualifiedRoleIds: reviewForm.qualifiedRoleIds,
+          zoneIds: reviewForm.zoneIds,
+        }),
+      });
+
+      if (res.ok) {
+        // Refresh the list
+        fetchVolunteers();
+        setShowReviewModal(false);
+        setReviewingVolunteer(null);
+      } else {
+        const error = await res.json();
+        alert(error.error || 'Failed to approve application');
+      }
+    } catch (error) {
+      console.error('Error approving application:', error);
+      alert('Failed to approve application');
+    } finally {
+      setIsProcessingReview(false);
+    }
+  };
+
+  // Handle rejection of pending application
+  const handleRejectApplication = async () => {
+    if (!reviewingVolunteer) return;
+
+    setIsProcessingReview(true);
+    try {
+      const res = await fetch(`/api/volunteers/${reviewingVolunteer.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'reject',
+          rejectionReason: reviewForm.rejectionReason || null,
+        }),
+      });
+
+      if (res.ok) {
+        // Refresh the list
+        fetchVolunteers();
+        setShowReviewModal(false);
+        setReviewingVolunteer(null);
+      } else {
+        const error = await res.json();
+        alert(error.error || 'Failed to reject application');
+      }
+    } catch (error) {
+      console.error('Error rejecting application:', error);
+      alert('Failed to reject application');
+    } finally {
+      setIsProcessingReview(false);
     }
   };
 
@@ -979,9 +1074,13 @@ export default function VolunteersPage() {
                 onChange={e => setStatusFilter(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
               >
-                <option value="all">All</option>
+                <option value="all">All Approved</option>
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
+                {(data?.pendingCount ?? 0) > 0 && (
+                  <option value="pending">Pending Review ({data?.pendingCount})</option>
+                )}
+                <option value="rejected">Rejected</option>
               </select>
             </div>
           </div>
@@ -1265,7 +1364,19 @@ export default function VolunteersPage() {
                           <div className="text-xs text-gray-500">completed</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center" onClick={e => e.stopPropagation()}>
-                          {isAdmin ? (
+                          {/* Show Review button for pending volunteers */}
+                          {volunteer.accountStatus === 'PENDING' ? (
+                            <button
+                              onClick={() => openReviewModal(volunteer)}
+                              className="px-3 py-1.5 bg-yellow-100 text-yellow-800 rounded-lg text-xs font-medium hover:bg-yellow-200 transition-colors"
+                            >
+                              Review
+                            </button>
+                          ) : volunteer.accountStatus === 'REJECTED' ? (
+                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                              Rejected
+                            </span>
+                          ) : isAdmin ? (
                             <button
                               onClick={() => handleToggleActive(volunteer.id, !volunteer.isActive)}
                               className={`px-2 py-1 rounded-full text-xs font-medium transition-colors ${
@@ -2372,6 +2483,225 @@ Jane Smith,jane@example.com,555-5678,COORDINATOR,Spanish,Zone 3`}
                   className="flex-1 px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isBulkEditing ? 'Applying Changes...' : `Apply to ${selectedCount} Volunteer${selectedCount > 1 ? 's' : ''}`}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Review Pending Application Modal */}
+      {showReviewModal && reviewingVolunteer && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold text-gray-900">
+                  Review Application: {reviewingVolunteer.name}
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowReviewModal(false);
+                    setReviewingVolunteer(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Applicant Info */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h3 className="font-semibold text-gray-900 mb-3">Contact Information</h3>
+                  <div className="space-y-2 text-sm">
+                    <p><span className="text-gray-500">Name:</span> <span className="font-medium">{reviewingVolunteer.name}</span></p>
+                    <p><span className="text-gray-500">Email:</span> <span className="font-medium">{reviewingVolunteer.email}</span></p>
+                    {reviewingVolunteer.phone && (
+                      <p><span className="text-gray-500">Phone:</span> <span className="font-medium">{reviewingVolunteer.phone}</span></p>
+                    )}
+                    {reviewingVolunteer.signalHandle && (
+                      <p><span className="text-gray-500">Signal:</span> <span className="font-medium">{reviewingVolunteer.signalHandle}</span></p>
+                    )}
+                    <p><span className="text-gray-500">Language:</span> <span className="font-medium">{reviewingVolunteer.primaryLanguage}</span></p>
+                    {reviewingVolunteer.applicationDate && (
+                      <p><span className="text-gray-500">Applied:</span> <span className="font-medium">{formatDate(reviewingVolunteer.applicationDate)}</span></p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h3 className="font-semibold text-gray-900 mb-3">Zone Preferences</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {reviewingVolunteer.zones.map((zone, idx) => (
+                      <span
+                        key={zone.id}
+                        className={`px-2 py-1 rounded text-xs font-medium ${
+                          idx === 0 ? 'bg-cyan-100 text-cyan-800' : 'bg-gray-100 text-gray-800'
+                        }`}
+                      >
+                        {zone.name} {idx === 0 && '(Primary)'}
+                      </span>
+                    ))}
+                    {reviewingVolunteer.zones.length === 0 && (
+                      <span className="text-sm text-gray-500">No zones selected</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Intake Responses */}
+              {reviewingVolunteer.intakeResponses && Object.keys(reviewingVolunteer.intakeResponses).length > 0 && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                  <h3 className="font-semibold text-blue-900 mb-3">Background Questions</h3>
+                  <div className="space-y-3 text-sm">
+                    {Object.entries(reviewingVolunteer.intakeResponses).map(([question, answer]) => (
+                      <div key={question}>
+                        <p className="text-blue-700 font-medium">{question}</p>
+                        <p className="text-blue-900 mt-1">{String(answer)}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Approval Form */}
+              <div className="border-t border-gray-200 pt-6 space-y-4">
+                <h3 className="font-semibold text-gray-900">Set Role & Qualifications (for approval)</h3>
+
+                {/* Role Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">User Type</label>
+                  <select
+                    value={reviewForm.role}
+                    onChange={(e) => setReviewForm(prev => ({ ...prev, role: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  >
+                    <option value="VOLUNTEER">Volunteer</option>
+                    <option value="COORDINATOR">Coordinator</option>
+                    <option value="DISPATCHER">Dispatcher</option>
+                    <option value="ADMINISTRATOR">Administrator</option>
+                  </select>
+                </div>
+
+                {/* Qualified Roles */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Qualifications</label>
+                  <div className="flex flex-wrap gap-2">
+                    {(data?.qualifiedRoles || []).map(qr => (
+                      <label
+                        key={qr.id}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer transition-colors ${
+                          reviewForm.qualifiedRoleIds.includes(qr.id)
+                            ? 'bg-cyan-50 border-2 border-cyan-500'
+                            : 'bg-gray-50 border border-gray-200 hover:bg-gray-100'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={reviewForm.qualifiedRoleIds.includes(qr.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setReviewForm(prev => ({
+                                ...prev,
+                                qualifiedRoleIds: [...prev.qualifiedRoleIds, qr.id],
+                              }));
+                            } else {
+                              setReviewForm(prev => ({
+                                ...prev,
+                                qualifiedRoleIds: prev.qualifiedRoleIds.filter(id => id !== qr.id),
+                              }));
+                            }
+                          }}
+                          className="w-4 h-4 text-cyan-600 rounded focus:ring-cyan-500"
+                        />
+                        <span className="text-sm font-medium" style={{ color: qr.color }}>
+                          {qr.name}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Zone Assignment */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Zone Assignments</label>
+                  <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
+                    {(data?.zones || []).map(zone => (
+                      <label
+                        key={zone.id}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer transition-colors ${
+                          reviewForm.zoneIds.includes(zone.id)
+                            ? 'bg-cyan-50 border-2 border-cyan-500'
+                            : 'bg-gray-50 border border-gray-200 hover:bg-gray-100'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={reviewForm.zoneIds.includes(zone.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setReviewForm(prev => ({
+                                ...prev,
+                                zoneIds: [...prev.zoneIds, zone.id],
+                              }));
+                            } else {
+                              setReviewForm(prev => ({
+                                ...prev,
+                                zoneIds: prev.zoneIds.filter(id => id !== zone.id),
+                              }));
+                            }
+                          }}
+                          className="w-4 h-4 text-cyan-600 rounded focus:ring-cyan-500"
+                        />
+                        <span className="text-sm">{zone.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Rejection Reason (for rejecting) */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Rejection Reason (optional, only used if rejecting)
+                  </label>
+                  <textarea
+                    value={reviewForm.rejectionReason}
+                    onChange={(e) => setReviewForm(prev => ({ ...prev, rejectionReason: e.target.value }))}
+                    placeholder="Provide a reason if rejecting the application..."
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  />
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 mt-6 pt-4 border-t border-gray-200">
+                <button
+                  onClick={() => {
+                    setShowReviewModal(false);
+                    setReviewingVolunteer(null);
+                  }}
+                  disabled={isProcessingReview}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleRejectApplication}
+                  disabled={isProcessingReview}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isProcessingReview ? 'Processing...' : 'Reject'}
+                </button>
+                <button
+                  onClick={handleApproveApplication}
+                  disabled={isProcessingReview}
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isProcessingReview ? 'Processing...' : 'Approve'}
                 </button>
               </div>
             </div>

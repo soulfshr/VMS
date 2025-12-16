@@ -18,6 +18,9 @@ export const authConfig: NextAuthConfig = {
         '/about',
         '/forgot-password',
         '/reset-password',
+        '/signup',
+        '/set-password',
+        '/pending',
       ];
 
       // Check if current path starts with any public route
@@ -30,12 +33,27 @@ export const authConfig: NextAuthConfig = {
                           pathname.startsWith('/api/auth/');
 
       if (isPublicRoute || isPublicApi) {
+        // If logged in with PENDING/REJECTED status and trying to access login/signup,
+        // redirect to pending page
+        if (isLoggedIn && (pathname === '/login' || pathname === '/signup')) {
+          const accountStatus = (auth?.user as { accountStatus?: string })?.accountStatus;
+          if (accountStatus === 'PENDING' || accountStatus === 'REJECTED') {
+            return Response.redirect(new URL('/pending', nextUrl));
+          }
+        }
         return true;
       }
 
       // Protected routes require authentication
       if (!isLoggedIn) {
         return false; // Redirect to login
+      }
+
+      // Check account status for logged-in users accessing protected routes
+      const accountStatus = (auth?.user as { accountStatus?: string })?.accountStatus;
+      if (accountStatus === 'PENDING' || accountStatus === 'REJECTED') {
+        // Redirect PENDING/REJECTED users to /pending page
+        return Response.redirect(new URL('/pending', nextUrl));
       }
 
       return true;

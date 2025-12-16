@@ -292,7 +292,10 @@ export default function AssignmentModal({ cell, zones: allZones, onClose, onSave
   };
 
   const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
+    // Parse as local date (YYYY-MM-DD), not UTC
+    // new Date('2025-12-16') parses as midnight UTC, causing off-by-one in local timezones
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const date = new Date(year, month - 1, day); // month is 0-indexed
     return date.toLocaleDateString('en-US', {
       weekday: 'long',
       month: 'long',

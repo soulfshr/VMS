@@ -94,6 +94,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           role: user.role,
           zone: primaryZone,
           qualifications,
+          accountStatus: user.accountStatus,
         };
       },
     }),
@@ -108,6 +109,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.role = user.role;
         token.zone = user.zone;
         token.qualifications = user.qualifications;
+        token.accountStatus = user.accountStatus;
       }
       return token;
     },
@@ -120,6 +122,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.role = token.role as 'VOLUNTEER' | 'COORDINATOR' | 'DISPATCHER' | 'ADMINISTRATOR';
         session.user.zone = token.zone as string | undefined;
         session.user.qualifications = (token.qualifications || []) as ('VERIFIER' | 'ZONE_LEAD' | 'DISPATCHER')[];
+        session.user.accountStatus = token.accountStatus as 'PENDING' | 'APPROVED' | 'REJECTED' | undefined;
       }
       return session;
     },

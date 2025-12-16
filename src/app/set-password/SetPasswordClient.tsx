@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 
-export default function ResetPasswordClient() {
+export default function SetPasswordClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
@@ -15,6 +15,7 @@ export default function ResetPasswordClient() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isNewSignup, setIsNewSignup] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,9 +65,12 @@ export default function ResetPasswordClient() {
       }
 
       setIsSuccess(true);
+      setIsNewSignup(data.isNewSignup || false);
+
+      // Redirect to login after a delay
       setTimeout(() => {
-        router.push('/login');
-      }, 2000);
+        router.push(data.isNewSignup ? '/pending' : '/login');
+      }, 3000);
     } catch {
       setError('An error occurred. Please try again.');
     } finally {
@@ -106,13 +110,13 @@ export default function ResetPasswordClient() {
             </div>
             <h2 className="text-lg font-semibold text-gray-900 mb-2">Invalid Link</h2>
             <p className="text-gray-600 mb-6">
-              This password reset link is invalid or missing. Please request a new one.
+              This verification link is invalid or missing. Please check your email for the correct link.
             </p>
             <Link
-              href="/forgot-password"
+              href="/login"
               className="inline-block px-6 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors"
             >
-              Request New Link
+              Return to Login
             </Link>
           </div>
         </div>
@@ -133,10 +137,10 @@ export default function ResetPasswordClient() {
             className="mx-auto mb-4"
           />
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Set New Password
+            Set Your Password
           </h1>
           <p className="text-gray-600">
-            Choose a strong password for your account
+            Create a secure password to complete your account setup
           </p>
         </div>
 
@@ -144,9 +148,9 @@ export default function ResetPasswordClient() {
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           {isSuccess ? (
             <div className="text-center py-4">
-              <div className="w-16 h-16 bg-cyan-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg
-                  className="w-8 h-8 text-cyan-600"
+                  className="w-8 h-8 text-green-600"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -159,10 +163,30 @@ export default function ResetPasswordClient() {
                   />
                 </svg>
               </div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-2">Password Updated!</h2>
-              <p className="text-gray-600">
-                Redirecting you to login...
-              </p>
+              <h2 className="text-lg font-semibold text-gray-900 mb-2">
+                {isNewSignup ? 'Email Verified!' : 'Password Set!'}
+              </h2>
+              {isNewSignup ? (
+                <>
+                  <p className="text-gray-600 mb-4">
+                    Your email has been verified and password set successfully.
+                  </p>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-left">
+                    <h3 className="font-semibold text-blue-800 mb-1">What happens next?</h3>
+                    <p className="text-sm text-blue-700">
+                      Our team will review your application and notify you once approved.
+                      You&apos;ll receive a welcome email when your account is ready.
+                    </p>
+                  </div>
+                  <p className="text-sm text-gray-500 mt-4">
+                    Redirecting to application status page...
+                  </p>
+                </>
+              ) : (
+                <p className="text-gray-600">
+                  Redirecting you to login...
+                </p>
+              )}
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
@@ -174,7 +198,7 @@ export default function ResetPasswordClient() {
 
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                  New Password <span aria-hidden="true">*</span>
+                  Password <span aria-hidden="true">*</span>
                   <span className="sr-only">(required)</span>
                 </label>
                 <input

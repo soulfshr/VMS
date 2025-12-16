@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import type { DevUser } from '@/types/auth';
 
@@ -293,7 +294,7 @@ export default function SettingsProfilePage() {
           <div>
             <span className="font-medium text-gray-900">Email Notifications</span>
             <p className="text-sm text-gray-600 mt-1">
-              Receive email notifications for shift signups, confirmations, cancellations, and ICE sighting alerts.
+              Receive email notifications for shift signups, confirmations, cancellations, and general updates.
             </p>
           </div>
         </label>
@@ -303,7 +304,7 @@ export default function SettingsProfilePage() {
       <div className="p-6">
         <h3 className="font-semibold text-gray-900 mb-2">Weekly Availability</h3>
         <p className="text-sm text-gray-600 mb-4">
-          Select your recurring availability to help coordinators schedule shifts.
+          In general, what is your availability during the week?
         </p>
         <div className="overflow-x-auto">
           <table className="text-sm">
@@ -348,7 +349,15 @@ export default function SettingsProfilePage() {
 
       {/* Zone Preferences */}
       <div className="p-6">
-        <h3 className="font-semibold text-gray-900 mb-2">Zone Preferences</h3>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="font-semibold text-gray-900">Zone Preferences</h3>
+          <Link
+            href="/map"
+            className="text-sm text-cyan-600 hover:text-cyan-700"
+          >
+            View zone map →
+          </Link>
+        </div>
         <p className="text-sm text-gray-600 mb-4">
           Select zones you are willing to volunteer in. Click a selected zone again to make it your primary.
         </p>
