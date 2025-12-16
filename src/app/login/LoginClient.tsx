@@ -131,14 +131,6 @@ export default function LoginClient() {
           </form>
         </div>
 
-        {/* First-time User Note */}
-        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h3 className="font-semibold text-blue-800 mb-1">Already an active volunteer, but first time with this app?</h3>
-          <p className="text-sm text-blue-700">
-            Use &quot;Forgot password?&quot; above to set up your account password.
-          </p>
-        </div>
-
         {/* Create Account */}
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600">
