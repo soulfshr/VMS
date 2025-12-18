@@ -298,6 +298,10 @@ model User {
   emailNotifications Boolean  @default(true)  // Can opt out of non-critical emails
   unsubscribeToken   String?  @unique         // Token for one-click unsubscribe
 
+  // Shift reminder preferences
+  shiftReminder24h   Boolean  @default(true)  // Email reminder 24 hours before shift
+  shiftReminder1h    Boolean  @default(true)  // Email reminder 1 hour before shift
+
   // Authentication
   passwordHash        String?               // Hashed password (bcryptjs)
   passwordSetAt       DateTime?             // When password was last set
@@ -342,6 +346,12 @@ model User {
   regionalLeadAssignments        RegionalLeadAssignment[] @relation("RegionalLeadAssignments")
   regionalLeadAssignmentsCreated RegionalLeadAssignment[] @relation("RegionalLeadAssignmentsCreated")
 
+  // Coverage grid signups
+  coverageSignups   CoverageSignup[]
+
+  // Coverage override audit trail
+  coverageOverridesCreated CoverageOverride[] @relation("CoverageOverrideCreatedBy")
+
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 }
@@ -369,6 +379,9 @@ model Zone {
   shifts      Shift[]
   trainingSessions TrainingSession[]
   pois        PointOfInterest[]
+  coverageConfigs  CoverageConfig[]
+  coverageSignups  CoverageSignup[]
+  coverageOverrides CoverageOverride[]
 
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
@@ -1133,4 +1146,100 @@ model QuizAttempt {
 
   @@index([quizId])
   @@index([userId])
+}
+
+// ============================================
+// COVERAGE GRID (Flexible 2-hour scheduling)
+// ============================================
+
+enum CoverageRoleType {
+  DISPATCHER
+  ZONE_LEAD
+  VERIFIER
+  DISPATCH_COORDINATOR  // Regional role - one per time slot (no zone)
+}
+
+// Override types for date-specific coverage exceptions
+enum CoverageOverrideType {
+  CLOSURE             // No coverage needed this day
+  ADJUST_REQUIREMENTS // Change volunteer counts for this day
+  SPECIAL_EVENT       // Notes/context for a special day (no config changes)
+}
+
+// Configuration for what time slots exist per zone/day
+// One config per zone per day of week (7 configs per zone max)
+model CoverageConfig {
+  id           String   @id @default(cuid())
+  zoneId       String
+  zone         Zone     @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  dayOfWeek    Int      // 0=Sunday, 1=Monday, etc.
+
+  // Time blocks enabled for this zone/day
+  // JSON: [{start: 6, end: 8, minVols: 2, needsLead: true, needsDispatcher: true}, ...]
+  slots        Json
+
+  isActive     Boolean  @default(true)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([zoneId, dayOfWeek])
+  @@index([zoneId])
+}
+
+// Individual volunteer signups for coverage slots
+model CoverageSignup {
+  id              String           @id @default(cuid())
+  date            DateTime         @db.Date
+  zoneId          String?          // Optional - null for regional roles (DISPATCH_COORDINATOR)
+  zone            Zone?            @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  startHour       Int              // 6, 8, 10, 12, 14, 16
+  endHour         Int              // 8, 10, 12, 14, 16, 18
+
+  userId          String
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roleType        CoverageRoleType // DISPATCHER, ZONE_LEAD, VERIFIER, DISPATCH_COORDINATOR
+  status          RSVPStatus       @default(CONFIRMED)
+
+  createdAt       DateTime         @default(now())
+  confirmedAt     DateTime?
+
+  // Note: Only one ZONE_LEAD/DISPATCHER per zone slot, one DISPATCH_COORDINATOR per time slot
+  // These constraints are enforced in API logic (Prisma doesn't support conditional unique constraints)
+  // Zone-based signups: one per user per zone per slot
+  // Coordinator signups: one coordinator total per time slot (zoneId = null)
+  @@unique([date, zoneId, startHour, userId])
+  @@index([date, zoneId])
+  @@index([date, startHour, roleType])  // For coordinator lookups
+  @@index([userId])
+}
+
+// Date-specific overrides for coverage requirements
+// Used for holidays, closures, special events, or temporary requirement changes
+model CoverageOverride {
+  id           String   @id @default(cuid())
+  date         DateTime @db.Date
+  zoneId       String?  // null = applies to all zones (e.g., regional holiday closure)
+  zone         Zone?    @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+
+  // Override type determines how to interpret this override
+  overrideType CoverageOverrideType
+
+  // For ADJUST_REQUIREMENTS - override specific slot requirements
+  // JSON: [{startHour: 8, endHour: 10, minVols: 4, needsLead: true, needsDispatcher: true}, ...]
+  // If null for ADJUST_REQUIREMENTS, disables all slots for this zone/date
+  slotOverrides Json?
+
+  // Human-readable reason for this override
+  reason       String?  // "Christmas Day", "Election Day - Extra Coverage", "Training Event"
+
+  // Audit trail
+  createdById  String
+  createdBy    User     @relation("CoverageOverrideCreatedBy", fields: [createdById], references: [id])
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([date, zoneId])  // Only one override per date per zone (null zoneId = global)
+  @@index([date])
 }

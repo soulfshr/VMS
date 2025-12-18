@@ -69,6 +69,24 @@ export default function CoordinatorPage() {
           </div>
         </Link>
 
+        {/* Coverage Config Card */}
+        <Link
+          href="/coordinator/coverage-config"
+          className="bg-white rounded-xl border border-gray-200 p-6 hover:border-cyan-300 hover:shadow-md transition-all group"
+        >
+          <div className="flex items-start gap-4">
+            <div className="text-3xl">📊</div>
+            <div>
+              <h3 className="font-semibold text-gray-900 group-hover:text-cyan-700">
+                Coverage Config
+              </h3>
+              <p className="text-sm text-gray-600 mt-1">
+                Configure zone coverage requirements, time slots, and date overrides
+              </p>
+            </div>
+          </div>
+        </Link>
+
         {/* Quick Links */}
         <div className="bg-white rounded-xl border border-gray-200 p-6">
           <h3 className="font-semibold text-gray-900 mb-4">Quick Links</h3>
