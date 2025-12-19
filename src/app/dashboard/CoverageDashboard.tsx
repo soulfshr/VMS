@@ -60,6 +60,7 @@ interface WeekRoleStats {
   zoneLeads: RoleStats;
   dispatchers: RoleStats;
   verifiers: RoleStats;
+  coordinators: RoleStats;
 }
 
 interface CoverageSummary {
@@ -347,15 +348,16 @@ export default function CoverageDashboard() {
       {/* Triangle Coverage Summary (Coordinators Only) */}
       {isLeader && data.coverageSummary && (
         <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-2">
             <h2 className="font-semibold text-gray-900">Triangle Coverage Summary</h2>
             <Link
               href="/coverage"
               className="text-sm text-cyan-700 hover:text-cyan-900"
             >
-              View Grid →
+              View Schedule →
             </Link>
           </div>
+          <p className="text-xs text-gray-500 mb-4">Filled / needed 2-hour slots across all zones</p>
 
           <div className="grid grid-cols-2 gap-6">
             {/* This Week */}
@@ -443,6 +445,35 @@ export default function CoverageDashboard() {
                         style={{
                           width: `${data.coverageSummary.thisWeek.verifiers.needed > 0
                             ? Math.round((data.coverageSummary.thisWeek.verifiers.filled / data.coverageSummary.thisWeek.verifiers.needed) * 100)
+                            : 0}%`
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+                {/* Coordinators */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">🪄</span>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Coordinators</span>
+                      <span className={data.coverageSummary.thisWeek.coordinators.filled === data.coverageSummary.thisWeek.coordinators.needed ? 'text-green-600' : 'text-gray-900'}>
+                        {data.coverageSummary.thisWeek.coordinators.filled}/{data.coverageSummary.thisWeek.coordinators.needed}
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                      <div
+                        className={`h-1.5 rounded-full ${
+                          data.coverageSummary.thisWeek.coordinators.needed > 0 &&
+                          data.coverageSummary.thisWeek.coordinators.filled / data.coverageSummary.thisWeek.coordinators.needed >= 0.8
+                            ? 'bg-green-500'
+                            : data.coverageSummary.thisWeek.coordinators.filled / data.coverageSummary.thisWeek.coordinators.needed >= 0.5
+                            ? 'bg-yellow-500'
+                            : 'bg-red-500'
+                        }`}
+                        style={{
+                          width: `${data.coverageSummary.thisWeek.coordinators.needed > 0
+                            ? Math.round((data.coverageSummary.thisWeek.coordinators.filled / data.coverageSummary.thisWeek.coordinators.needed) * 100)
                             : 0}%`
                         }}
                       />
@@ -543,6 +574,35 @@ export default function CoverageDashboard() {
                     </div>
                   </div>
                 </div>
+                {/* Coordinators */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">🪄</span>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Coordinators</span>
+                      <span className={data.coverageSummary.nextWeek.coordinators.filled === data.coverageSummary.nextWeek.coordinators.needed ? 'text-green-600' : 'text-gray-900'}>
+                        {data.coverageSummary.nextWeek.coordinators.filled}/{data.coverageSummary.nextWeek.coordinators.needed}
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                      <div
+                        className={`h-1.5 rounded-full ${
+                          data.coverageSummary.nextWeek.coordinators.needed > 0 &&
+                          data.coverageSummary.nextWeek.coordinators.filled / data.coverageSummary.nextWeek.coordinators.needed >= 0.8
+                            ? 'bg-green-500'
+                            : data.coverageSummary.nextWeek.coordinators.filled / data.coverageSummary.nextWeek.coordinators.needed >= 0.5
+                            ? 'bg-yellow-500'
+                            : 'bg-red-500'
+                        }`}
+                        style={{
+                          width: `${data.coverageSummary.nextWeek.coordinators.needed > 0
+                            ? Math.round((data.coverageSummary.nextWeek.coordinators.filled / data.coverageSummary.nextWeek.coordinators.needed) * 100)
+                            : 0}%`
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -569,7 +629,7 @@ export default function CoverageDashboard() {
                   href="/coverage"
                   className="text-sm text-cyan-700 hover:text-cyan-900"
                 >
-                  View Grid →
+                  View Schedule →
                 </Link>
               </div>
 

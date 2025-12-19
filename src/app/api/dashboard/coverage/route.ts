@@ -427,6 +427,7 @@ interface WeekRoleStats {
   zoneLeads: { needed: number; filled: number };
   dispatchers: { needed: number; filled: number };
   verifiers: { needed: number; filled: number };
+  coordinators: { needed: number; filled: number };
 }
 
 /**
@@ -447,6 +448,7 @@ function calculateWeekStats(
     zoneLeads: { needed: 0, filled: 0 },
     dispatchers: { needed: 0, filled: 0 },
     verifiers: { needed: 0, filled: 0 },
+    coordinators: { needed: 0, filled: 0 },
   };
 
   for (const dateStr of weekDates) {
@@ -456,6 +458,9 @@ function calculateWeekStats(
     const dayOfWeek = getDayOfWeekFromDateString(dateStr);
     const daySignups = signupsByDate.get(dateStr) || [];
     const isToday = dateStr === todayStr;
+
+    // Track unique time slots for coordinator coverage (regional, not per-zone)
+    const coordinatorSlots = new Set<number>();
 
     for (const zone of zones) {
       const config = zone.coverageConfigs.find(c => c.dayOfWeek === dayOfWeek);
@@ -467,6 +472,9 @@ function calculateWeekStats(
         // Skip slots that have already ended today
         // (slot.end is the hour the slot ends, e.g., 10 for 8-10am)
         if (isToday && slot.end <= currentHour) continue;
+
+        // Track unique time slots for coordinators
+        coordinatorSlots.add(slot.start);
 
         const slotSignups = daySignups.filter(
           s => s.zoneId === zone.id && s.startHour === slot.start
@@ -495,6 +503,18 @@ function calculateWeekStats(
           slotSignups.filter(s => s.roleType === 'VERIFIER').length,
           minVols
         );
+      }
+    }
+
+    // Count coordinator coverage (1 needed per unique time slot, regional)
+    for (const startHour of coordinatorSlots) {
+      stats.coordinators.needed++;
+      // Regional coordinator signups have zoneId = null
+      const hasCoordinator = daySignups.some(
+        s => s.zoneId === null && s.startHour === startHour && s.roleType === 'DISPATCH_COORDINATOR'
+      );
+      if (hasCoordinator) {
+        stats.coordinators.filled++;
       }
     }
   }
