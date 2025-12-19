@@ -17,6 +17,7 @@ interface Signup {
   userName: string;
   roleType: 'DISPATCHER' | 'ZONE_LEAD' | 'VERIFIER';
   status: string;
+  isCurrentUser: boolean;
 }
 
 interface ZoneSlot {
@@ -127,7 +128,8 @@ export default function SlotModal({
   const zoneLead = slot.signups.find(s => s.roleType === 'ZONE_LEAD');
   const verifiers = slot.signups.filter(s => s.roleType === 'VERIFIER');
 
-  const userSignup = slot.signups.find(s => s.userId === currentUser.id);
+  // Use isCurrentUser flag from server (more reliable than client-side ID comparison)
+  const userSignup = slot.signups.find(s => s.isCurrentUser);
   const isSignedUp = !!userSignup;
 
   // Check user qualifications
@@ -350,13 +352,13 @@ export default function SlotModal({
                 <div
                   key={signup.id}
                   className={`flex items-center gap-2 text-sm ${
-                    signup.userId === currentUser.id ? 'font-medium text-cyan-700' : 'text-gray-700'
+                    signup.isCurrentUser ? 'font-medium text-cyan-700' : 'text-gray-700'
                   }`}
                 >
                   {getRoleIcon(signup.roleType)}
                   <span>
                     {signup.userName}
-                    {signup.userId === currentUser.id && ' (You)'}
+                    {signup.isCurrentUser && ' (You)'}
                   </span>
                   <span className="text-gray-400 ml-auto">{getRoleLabel(signup.roleType)}</span>
                 </div>

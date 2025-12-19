@@ -21,6 +21,7 @@ interface Signup {
   userName: string;
   roleType: 'DISPATCHER' | 'ZONE_LEAD' | 'VERIFIER';
   status: string;
+  isCurrentUser: boolean;
 }
 
 interface ZoneSlotData {

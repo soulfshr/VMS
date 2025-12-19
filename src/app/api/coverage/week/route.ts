@@ -349,6 +349,7 @@ export async function GET(request: NextRequest) {
                 userName: s.user.name,
                 roleType: s.roleType as 'DISPATCHER' | 'ZONE_LEAD' | 'VERIFIER',
                 status: s.status,
+                isCurrentUser: s.user.id === user.id,
               })),
               coverage,
               needsDispatcher: slotConfig.needsDispatcher && !hasDispatcher,
