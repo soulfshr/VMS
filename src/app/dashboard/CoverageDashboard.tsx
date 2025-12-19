@@ -108,7 +108,7 @@ export default function CoverageDashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [openingsTab, setOpeningsTab] = useState<'zoneLead' | 'verifier' | 'dispatcher' | 'coordinator'>('zoneLead');
+  const [openingsTab, setOpeningsTab] = useState<'zoneLead' | 'verifier' | 'dispatcher' | 'coordinator'>('coordinator');
   const [upcomingTrainings, setUpcomingTrainings] = useState<UpcomingTraining[]>([]);
   const [signingUp, setSigningUp] = useState<string | null>(null);
 
@@ -133,15 +133,16 @@ export default function CoverageDashboard() {
       setData(result);
 
       // Auto-select tab based on available openings and qualifications
+      // Priority: Coordinator > Dispatcher > Zone Lead > Verifier
       const qualSlugs = result.stats.qualifications.map((q: Qualification) => q.slug);
-      if (qualSlugs.includes('ZONE_LEAD') && result.openings.zoneLeadSlots.length > 0) {
+      if ((qualSlugs.includes('REGIONAL_LEAD') || qualSlugs.includes('DISPATCH_COORDINATOR')) && result.openings.coordinatorSlots.length > 0) {
+        setOpeningsTab('coordinator');
+      } else if (qualSlugs.includes('DISPATCHER') && result.openings.dispatcherSlots.length > 0) {
+        setOpeningsTab('dispatcher');
+      } else if (qualSlugs.includes('ZONE_LEAD') && result.openings.zoneLeadSlots.length > 0) {
         setOpeningsTab('zoneLead');
       } else if (qualSlugs.includes('VERIFIER') && result.openings.verifierSlots.length > 0) {
         setOpeningsTab('verifier');
-      } else if (qualSlugs.includes('DISPATCHER') && result.openings.dispatcherSlots.length > 0) {
-        setOpeningsTab('dispatcher');
-      } else if ((qualSlugs.includes('REGIONAL_LEAD') || qualSlugs.includes('DISPATCH_COORDINATOR')) && result.openings.coordinatorSlots.length > 0) {
-        setOpeningsTab('coordinator');
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load dashboard');
