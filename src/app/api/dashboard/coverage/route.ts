@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { getDbUserWithZones } from '@/lib/user';
 import {
   getTodayET,
+  getCurrentHourET,
   getCurrentWeekMondayET,
   getWeekBoundaries,
   getWeekDates,
@@ -422,11 +423,96 @@ async function getOpeningsForUser(
   };
 }
 
+interface WeekRoleStats {
+  zoneLeads: { needed: number; filled: number };
+  dispatchers: { needed: number; filled: number };
+  verifiers: { needed: number; filled: number };
+}
+
+/**
+ * Calculate role-based coverage stats for a week
+ * Excludes slots that have already passed (based on todayStr and currentHour)
+ */
+function calculateWeekStats(
+  weekDates: string[],
+  zones: Array<{
+    id: string;
+    coverageConfigs: Array<{ dayOfWeek: number; slots: unknown }>;
+  }>,
+  signupsByDate: Map<string, Array<{ zoneId: string | null; startHour: number; roleType: string }>>,
+  todayStr: string,
+  currentHour: number
+): WeekRoleStats {
+  const stats: WeekRoleStats = {
+    zoneLeads: { needed: 0, filled: 0 },
+    dispatchers: { needed: 0, filled: 0 },
+    verifiers: { needed: 0, filled: 0 },
+  };
+
+  for (const dateStr of weekDates) {
+    // Skip past dates entirely
+    if (dateStr < todayStr) continue;
+
+    const dayOfWeek = getDayOfWeekFromDateString(dateStr);
+    const daySignups = signupsByDate.get(dateStr) || [];
+    const isToday = dateStr === todayStr;
+
+    for (const zone of zones) {
+      const config = zone.coverageConfigs.find(c => c.dayOfWeek === dayOfWeek);
+      if (!config) continue;
+
+      const slots = config.slots as unknown as SlotConfig[];
+
+      for (const slot of slots) {
+        // Skip slots that have already ended today
+        // (slot.end is the hour the slot ends, e.g., 10 for 8-10am)
+        if (isToday && slot.end <= currentHour) continue;
+
+        const slotSignups = daySignups.filter(
+          s => s.zoneId === zone.id && s.startHour === slot.start
+        );
+
+        // Zone Leads
+        if (slot.needsLead) {
+          stats.zoneLeads.needed++;
+          if (slotSignups.some(s => s.roleType === 'ZONE_LEAD')) {
+            stats.zoneLeads.filled++;
+          }
+        }
+
+        // Dispatchers
+        if (slot.needsDispatcher) {
+          stats.dispatchers.needed++;
+          if (slotSignups.some(s => s.roleType === 'DISPATCHER')) {
+            stats.dispatchers.filled++;
+          }
+        }
+
+        // Verifiers
+        const minVols = slot.minVols || 0;
+        stats.verifiers.needed += minVols;
+        stats.verifiers.filled += Math.min(
+          slotSignups.filter(s => s.roleType === 'VERIFIER').length,
+          minVols
+        );
+      }
+    }
+  }
+
+  return stats;
+}
+
 /**
  * Get coverage summary for coordinators
  * Uses date strings to avoid timezone issues
+ * Returns role-based coverage stats (Zone Leads, Dispatchers, Verifiers)
+ * Only includes slots that haven't passed yet (future slots)
  */
 async function getCoverageSummary(weekStart: Date, weekEnd: Date) {
+  // Get current time info for filtering past slots
+  const todayStr = getTodayET();
+  const currentHour = getCurrentHourET();
+
   // Get all zones with configs
   const zones = await prisma.zone.findMany({
     where: { isActive: true },
@@ -453,49 +539,12 @@ async function getCoverageSummary(weekStart: Date, weekEnd: Date) {
     signupsByDate.get(signupDateStr)!.push(signup);
   }
 
-  // Calculate this week stats
-  let totalSlots = 0;
-  let filledSlots = 0;
-  let criticalGaps = 0;
-
   // Get the monday date string from weekStart and generate week dates
   const mondayStr = dateToString(weekStart);
   const weekDates = getWeekDates(mondayStr);
 
-  for (const dateStr of weekDates) {
-    const dayOfWeek = getDayOfWeekFromDateString(dateStr);
-    const daySignups = signupsByDate.get(dateStr) || [];
-
-    for (const zone of zones) {
-      const config = zone.coverageConfigs.find(c => c.dayOfWeek === dayOfWeek);
-      if (!config) continue;
-
-      const slots = config.slots as unknown as SlotConfig[];
-
-      for (const slot of slots) {
-        totalSlots++;
-
-        const slotSignups = daySignups.filter(
-          s => s.zoneId === zone.id && s.startHour === slot.start
-        );
-
-        const hasZoneLead = slotSignups.some(s => s.roleType === 'ZONE_LEAD');
-        const hasDispatcher = slotSignups.some(s => s.roleType === 'DISPATCHER');
-        const verifierCount = slotSignups.filter(s => s.roleType === 'VERIFIER').length;
-
-        // Check if slot is fully covered
-        const zoneleadOk = !slot.needsLead || hasZoneLead;
-        const dispatcherOk = !slot.needsDispatcher || hasDispatcher;
-        const verifiersOk = verifierCount >= slot.minVols;
-
-        if (zoneleadOk && dispatcherOk && verifiersOk) {
-          filledSlots++;
-        } else if (slotSignups.length === 0) {
-          criticalGaps++;
-        }
-      }
-    }
-  }
+  // Calculate this week role stats (excluding past slots)
+  const thisWeekStats = calculateWeekStats(weekDates, zones, signupsByDate, todayStr, currentHour);
 
   // Calculate next week stats using date strings
   const nextMondayStr = addDays(mondayStr, 7);
@@ -518,58 +567,12 @@ async function getCoverageSummary(weekStart: Date, weekEnd: Date) {
     nextSignupsByDate.get(signupDateStr)!.push(signup);
   }
 
-  let nextTotalSlots = 0;
-  let nextFilledSlots = 0;
-  let nextCriticalGaps = 0;
-
   const nextWeekDates = getWeekDates(nextMondayStr);
-
-  for (const dateStr of nextWeekDates) {
-    const dayOfWeek = getDayOfWeekFromDateString(dateStr);
-    const daySignups = nextSignupsByDate.get(dateStr) || [];
-
-    for (const zone of zones) {
-      const config = zone.coverageConfigs.find(c => c.dayOfWeek === dayOfWeek);
-      if (!config) continue;
-
-      const slots = config.slots as unknown as SlotConfig[];
-
-      for (const slot of slots) {
-        nextTotalSlots++;
-
-        const slotSignups = daySignups.filter(
-          s => s.zoneId === zone.id && s.startHour === slot.start
-        );
-
-        const hasZoneLead = slotSignups.some(s => s.roleType === 'ZONE_LEAD');
-        const hasDispatcher = slotSignups.some(s => s.roleType === 'DISPATCHER');
-        const verifierCount = slotSignups.filter(s => s.roleType === 'VERIFIER').length;
-
-        const zoneleadOk = !slot.needsLead || hasZoneLead;
-        const dispatcherOk = !slot.needsDispatcher || hasDispatcher;
-        const verifiersOk = verifierCount >= slot.minVols;
-
-        if (zoneleadOk && dispatcherOk && verifiersOk) {
-          nextFilledSlots++;
-        } else if (slotSignups.length === 0) {
-          nextCriticalGaps++;
-        }
-      }
-    }
-  }
+  // Next week is entirely in the future, so pass todayStr (all dates will be >= todayStr)
+  const nextWeekStats = calculateWeekStats(nextWeekDates, zones, nextSignupsByDate, todayStr, currentHour);
 
   return {
-    thisWeek: {
-      totalSlots,
-      filledSlots,
-      criticalGaps,
-      coveragePercent: totalSlots > 0 ? Math.round((filledSlots / totalSlots) * 100) : 0,
-    },
-    nextWeek: {
-      totalSlots: nextTotalSlots,
-      filledSlots: nextFilledSlots,
-      criticalGaps: nextCriticalGaps,
-      coveragePercent: nextTotalSlots > 0 ? Math.round((nextFilledSlots / nextTotalSlots) * 100) : 0,
-    },
+    thisWeek: thisWeekStats,
+    nextWeek: nextWeekStats,
   };
 }

@@ -25,6 +25,20 @@ export function getTodayET(): string {
 }
 
 /**
+ * Get current hour (0-23) in Eastern Time.
+ * Use this for determining which time slots have already passed today.
+ */
+export function getCurrentHourET(): number {
+  const now = new Date();
+  const hourStr = now.toLocaleString('en-US', {
+    timeZone: ORG_TIMEZONE,
+    hour: 'numeric',
+    hour12: false,
+  });
+  return parseInt(hourStr, 10);
+}
+
+/**
  * Get current date as a Date object at midnight UTC.
  * Use this when you need a Date object for database queries.
  */

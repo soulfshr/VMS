@@ -51,19 +51,20 @@ interface Qualification {
   color: string;
 }
 
+interface RoleStats {
+  needed: number;
+  filled: number;
+}
+
+interface WeekRoleStats {
+  zoneLeads: RoleStats;
+  dispatchers: RoleStats;
+  verifiers: RoleStats;
+}
+
 interface CoverageSummary {
-  thisWeek: {
-    totalSlots: number;
-    filledSlots: number;
-    criticalGaps: number;
-    coveragePercent: number;
-  };
-  nextWeek: {
-    totalSlots: number;
-    filledSlots: number;
-    criticalGaps: number;
-    coveragePercent: number;
-  };
+  thisWeek: WeekRoleStats;
+  nextWeek: WeekRoleStats;
 }
 
 interface DashboardData {
@@ -343,6 +344,211 @@ export default function CoverageDashboard() {
         </div>
       </div>
 
+      {/* Triangle Coverage Summary (Coordinators Only) */}
+      {isLeader && data.coverageSummary && (
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold text-gray-900">Triangle Coverage Summary</h2>
+            <Link
+              href="/coverage"
+              className="text-sm text-cyan-700 hover:text-cyan-900"
+            >
+              View Grid →
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-2 gap-6">
+            {/* This Week */}
+            <div>
+              <div className="text-sm font-medium text-gray-700 mb-3">This Week</div>
+              <div className="space-y-2">
+                {/* Zone Leads */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">👑</span>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Zone Leads</span>
+                      <span className={data.coverageSummary.thisWeek.zoneLeads.filled === data.coverageSummary.thisWeek.zoneLeads.needed ? 'text-green-600' : 'text-gray-900'}>
+                        {data.coverageSummary.thisWeek.zoneLeads.filled}/{data.coverageSummary.thisWeek.zoneLeads.needed}
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                      <div
+                        className={`h-1.5 rounded-full ${
+                          data.coverageSummary.thisWeek.zoneLeads.needed > 0 &&
+                          data.coverageSummary.thisWeek.zoneLeads.filled / data.coverageSummary.thisWeek.zoneLeads.needed >= 0.8
+                            ? 'bg-green-500'
+                            : data.coverageSummary.thisWeek.zoneLeads.filled / data.coverageSummary.thisWeek.zoneLeads.needed >= 0.5
+                            ? 'bg-yellow-500'
+                            : 'bg-red-500'
+                        }`}
+                        style={{
+                          width: `${data.coverageSummary.thisWeek.zoneLeads.needed > 0
+                            ? Math.round((data.coverageSummary.thisWeek.zoneLeads.filled / data.coverageSummary.thisWeek.zoneLeads.needed) * 100)
+                            : 0}%`
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+                {/* Dispatchers */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">📡</span>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Dispatchers</span>
+                      <span className={data.coverageSummary.thisWeek.dispatchers.filled === data.coverageSummary.thisWeek.dispatchers.needed ? 'text-green-600' : 'text-gray-900'}>
+                        {data.coverageSummary.thisWeek.dispatchers.filled}/{data.coverageSummary.thisWeek.dispatchers.needed}
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                      <div
+                        className={`h-1.5 rounded-full ${
+                          data.coverageSummary.thisWeek.dispatchers.needed > 0 &&
+                          data.coverageSummary.thisWeek.dispatchers.filled / data.coverageSummary.thisWeek.dispatchers.needed >= 0.8
+                            ? 'bg-green-500'
+                            : data.coverageSummary.thisWeek.dispatchers.filled / data.coverageSummary.thisWeek.dispatchers.needed >= 0.5
+                            ? 'bg-yellow-500'
+                            : 'bg-red-500'
+                        }`}
+                        style={{
+                          width: `${data.coverageSummary.thisWeek.dispatchers.needed > 0
+                            ? Math.round((data.coverageSummary.thisWeek.dispatchers.filled / data.coverageSummary.thisWeek.dispatchers.needed) * 100)
+                            : 0}%`
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+                {/* Verifiers */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">📋</span>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Verifiers</span>
+                      <span className={data.coverageSummary.thisWeek.verifiers.filled === data.coverageSummary.thisWeek.verifiers.needed ? 'text-green-600' : 'text-gray-900'}>
+                        {data.coverageSummary.thisWeek.verifiers.filled}/{data.coverageSummary.thisWeek.verifiers.needed}
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                      <div
+                        className={`h-1.5 rounded-full ${
+                          data.coverageSummary.thisWeek.verifiers.needed > 0 &&
+                          data.coverageSummary.thisWeek.verifiers.filled / data.coverageSummary.thisWeek.verifiers.needed >= 0.8
+                            ? 'bg-green-500'
+                            : data.coverageSummary.thisWeek.verifiers.filled / data.coverageSummary.thisWeek.verifiers.needed >= 0.5
+                            ? 'bg-yellow-500'
+                            : 'bg-red-500'
+                        }`}
+                        style={{
+                          width: `${data.coverageSummary.thisWeek.verifiers.needed > 0
+                            ? Math.round((data.coverageSummary.thisWeek.verifiers.filled / data.coverageSummary.thisWeek.verifiers.needed) * 100)
+                            : 0}%`
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Next Week */}
+            <div>
+              <div className="text-sm font-medium text-gray-700 mb-3">Next Week</div>
+              <div className="space-y-2">
+                {/* Zone Leads */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">👑</span>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Zone Leads</span>
+                      <span className={data.coverageSummary.nextWeek.zoneLeads.filled === data.coverageSummary.nextWeek.zoneLeads.needed ? 'text-green-600' : 'text-gray-900'}>
+                        {data.coverageSummary.nextWeek.zoneLeads.filled}/{data.coverageSummary.nextWeek.zoneLeads.needed}
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                      <div
+                        className={`h-1.5 rounded-full ${
+                          data.coverageSummary.nextWeek.zoneLeads.needed > 0 &&
+                          data.coverageSummary.nextWeek.zoneLeads.filled / data.coverageSummary.nextWeek.zoneLeads.needed >= 0.8
+                            ? 'bg-green-500'
+                            : data.coverageSummary.nextWeek.zoneLeads.filled / data.coverageSummary.nextWeek.zoneLeads.needed >= 0.5
+                            ? 'bg-yellow-500'
+                            : 'bg-red-500'
+                        }`}
+                        style={{
+                          width: `${data.coverageSummary.nextWeek.zoneLeads.needed > 0
+                            ? Math.round((data.coverageSummary.nextWeek.zoneLeads.filled / data.coverageSummary.nextWeek.zoneLeads.needed) * 100)
+                            : 0}%`
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+                {/* Dispatchers */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">📡</span>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Dispatchers</span>
+                      <span className={data.coverageSummary.nextWeek.dispatchers.filled === data.coverageSummary.nextWeek.dispatchers.needed ? 'text-green-600' : 'text-gray-900'}>
+                        {data.coverageSummary.nextWeek.dispatchers.filled}/{data.coverageSummary.nextWeek.dispatchers.needed}
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                      <div
+                        className={`h-1.5 rounded-full ${
+                          data.coverageSummary.nextWeek.dispatchers.needed > 0 &&
+                          data.coverageSummary.nextWeek.dispatchers.filled / data.coverageSummary.nextWeek.dispatchers.needed >= 0.8
+                            ? 'bg-green-500'
+                            : data.coverageSummary.nextWeek.dispatchers.filled / data.coverageSummary.nextWeek.dispatchers.needed >= 0.5
+                            ? 'bg-yellow-500'
+                            : 'bg-red-500'
+                        }`}
+                        style={{
+                          width: `${data.coverageSummary.nextWeek.dispatchers.needed > 0
+                            ? Math.round((data.coverageSummary.nextWeek.dispatchers.filled / data.coverageSummary.nextWeek.dispatchers.needed) * 100)
+                            : 0}%`
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+                {/* Verifiers */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">📋</span>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Verifiers</span>
+                      <span className={data.coverageSummary.nextWeek.verifiers.filled === data.coverageSummary.nextWeek.verifiers.needed ? 'text-green-600' : 'text-gray-900'}>
+                        {data.coverageSummary.nextWeek.verifiers.filled}/{data.coverageSummary.nextWeek.verifiers.needed}
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                      <div
+                        className={`h-1.5 rounded-full ${
+                          data.coverageSummary.nextWeek.verifiers.needed > 0 &&
+                          data.coverageSummary.nextWeek.verifiers.filled / data.coverageSummary.nextWeek.verifiers.needed >= 0.8
+                            ? 'bg-green-500'
+                            : data.coverageSummary.nextWeek.verifiers.filled / data.coverageSummary.nextWeek.verifiers.needed >= 0.5
+                            ? 'bg-yellow-500'
+                            : 'bg-red-500'
+                        }`}
+                        style={{
+                          width: `${data.coverageSummary.nextWeek.verifiers.needed > 0
+                            ? Math.round((data.coverageSummary.nextWeek.verifiers.filled / data.coverageSummary.nextWeek.verifiers.needed) * 100)
+                            : 0}%`
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content - Left Column */}
         <div className="lg:col-span-2 space-y-6">
@@ -471,73 +677,6 @@ export default function CoverageDashboard() {
               </div>
             )}
           </div>
-
-          {/* Coverage Summary (Coordinators Only) */}
-          {isLeader && data.coverageSummary && (
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-semibold text-gray-900">Coverage Summary</h2>
-                <Link
-                  href="/coverage"
-                  className="text-sm text-cyan-700 hover:text-cyan-900"
-                >
-                  View Grid →
-                </Link>
-              </div>
-
-              <div className="grid grid-cols-2 gap-6">
-                {/* This Week */}
-                <div>
-                  <div className="text-sm text-gray-600 mb-2">This Week</div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="text-2xl font-bold text-gray-900">
-                      {data.coverageSummary.thisWeek.coveragePercent}%
-                    </div>
-                    <div className="text-sm text-gray-500">filled</div>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
-                    <div
-                      className="bg-cyan-600 h-2 rounded-full"
-                      style={{ width: `${data.coverageSummary.thisWeek.coveragePercent}%` }}
-                    />
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    {data.coverageSummary.thisWeek.filledSlots}/{data.coverageSummary.thisWeek.totalSlots} slots
-                    {data.coverageSummary.thisWeek.criticalGaps > 0 && (
-                      <span className="text-red-600 ml-2">
-                        ({data.coverageSummary.thisWeek.criticalGaps} critical)
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Next Week */}
-                <div>
-                  <div className="text-sm text-gray-600 mb-2">Next Week</div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="text-2xl font-bold text-gray-900">
-                      {data.coverageSummary.nextWeek.coveragePercent}%
-                    </div>
-                    <div className="text-sm text-gray-500">filled</div>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
-                    <div
-                      className="bg-cyan-600 h-2 rounded-full"
-                      style={{ width: `${data.coverageSummary.nextWeek.coveragePercent}%` }}
-                    />
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    {data.coverageSummary.nextWeek.filledSlots}/{data.coverageSummary.nextWeek.totalSlots} slots
-                    {data.coverageSummary.nextWeek.criticalGaps > 0 && (
-                      <span className="text-red-600 ml-2">
-                        ({data.coverageSummary.nextWeek.criticalGaps} critical)
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Sidebar - Right Column */}
