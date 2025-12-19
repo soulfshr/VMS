@@ -34,7 +34,7 @@ export default function PrivacyPolicyPage() {
             <h4 className="font-medium text-gray-700 mt-4 mb-2">Volunteer Account Information</h4>
             <p className="text-gray-600 mb-2">When you register as a volunteer, we collect:</p>
             <ul className="list-disc list-inside text-gray-600 mb-4 space-y-1">
-              <li><strong>Contact Information:</strong> Preferred name (display name you choose), email address, and phone number</li>
+              <li><strong>Contact Information:</strong> Preferred name (display name you choose), email address, phone number, and/or Signal ID</li>
               <li><strong>Language Preferences:</strong> Primary language and additional languages spoken</li>
               <li><strong>Zone Preferences:</strong> Geographic zones where you prefer to volunteer (Durham, Orange, and Wake counties)</li>
             </ul>
@@ -51,7 +51,7 @@ export default function PrivacyPolicyPage() {
             <h4 className="font-medium text-gray-700 mt-4 mb-2">Device and Usage Information</h4>
             <p className="text-gray-600 mb-2">When you access the VMS, we may automatically collect:</p>
             <ul className="list-disc list-inside text-gray-600 mb-4 space-y-1">
-              <li><strong>Browser and Device Information:</strong> Browser type, operating system, and device identifiers</li>
+              <li><strong>Browser and Device Information:</strong> Browser type and operating system</li>
               <li><strong>Access Logs:</strong> Date and time of access, pages visited, and actions taken within the Service</li>
               <li><strong>Session Information:</strong> Authentication tokens stored in secure, HTTP-only cookies</li>
             </ul>
