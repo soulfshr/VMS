@@ -741,7 +741,7 @@ export default function CoverageClient() {
         {/* My Signups Section */}
         {user && (
           <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">My Upcoming Coverage</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">My Upcoming Commitments</h2>
             <MySignups userId={user.id} refreshKey={signupRefreshKey} onUpdate={fetchCoverage} />
           </div>
         )}
