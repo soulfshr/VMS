@@ -200,11 +200,13 @@ export default function SlotModal({
   const getRoleIcon = (roleType: string) => {
     switch (roleType) {
       case 'DISPATCHER':
-        return <span className="text-lg">&#128222;</span>;
+        return <span className="text-lg">📡</span>;
       case 'ZONE_LEAD':
-        return <span className="text-lg">&#128081;</span>;
+        return <span className="text-lg">👑</span>;
+      case 'DISPATCH_COORDINATOR':
+        return <span className="text-lg">🪄</span>;
       default:
-        return <span className="text-lg">&#128101;</span>;
+        return <span className="text-lg">📋</span>;
     }
   };
 

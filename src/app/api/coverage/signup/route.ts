@@ -338,16 +338,25 @@ export async function GET(request: NextRequest) {
     const startDateParam = searchParams.get('startDate');
     const endDateParam = searchParams.get('endDate');
 
+    // Default to today and future (upcoming signups only)
+    const todayStr = getTodayET();
+    const todayDate = parseDateStringToUTC(todayStr);
+
     const where: Prisma.CoverageSignupWhereInput = {
       userId: user.id,
       status: { in: [RSVPStatus.CONFIRMED, RSVPStatus.PENDING] },
+      date: { gte: todayDate }, // Default: only today and future
     };
 
+    // Override date filter if explicit params provided
     if (startDateParam || endDateParam) {
       where.date = {};
       if (startDateParam) {
         // Parse as UTC midnight to match database storage
         (where.date as Prisma.DateTimeFilter).gte = parseDateStringToUTC(startDateParam);
+      } else {
+        // If only endDate provided, still default to today as start
+        (where.date as Prisma.DateTimeFilter).gte = todayDate;
       }
       if (endDateParam) {
         // Parse as UTC end of day for inclusive range

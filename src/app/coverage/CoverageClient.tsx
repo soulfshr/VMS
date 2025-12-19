@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import type { DevUser } from '@/types/auth';
 import SlotModal from './SlotModal';
 import CoordinatorModal from './CoordinatorModal';
+import { isBeforeToday } from '@/lib/dates';
 
 interface SlotConfig {
   start: number;
@@ -848,13 +849,13 @@ function MySignups({ userId, refreshKey, onUpdate }: { userId: string; refreshKe
   const getRoleIcon = (roleType: string) => {
     switch (roleType) {
       case 'DISPATCHER':
-        return <span title="Dispatcher">&#128222;</span>;
+        return <span title="Dispatcher">📡</span>;
       case 'ZONE_LEAD':
-        return <span title="Zone Lead">&#128081;</span>;
+        return <span title="Zone Lead">👑</span>;
       case 'DISPATCH_COORDINATOR':
-        return <span title="Dispatch Coordinator">&#128081;</span>;
+        return <span title="Dispatch Coordinator">🪄</span>;
       default:
-        return <span title="Verifier">&#128101;</span>;
+        return <span title="Verifier">📋</span>;
     }
   };
 
@@ -893,12 +894,14 @@ function MySignups({ userId, refreshKey, onUpdate }: { userId: string; refreshKe
               </div>
             </div>
           </div>
-          <button
-            onClick={() => handleCancel(signup.id)}
-            className="text-red-600 hover:text-red-800 text-sm font-medium"
-          >
-            Cancel
-          </button>
+          {!isBeforeToday(signup.date) && (
+            <button
+              onClick={() => handleCancel(signup.id)}
+              className="text-red-600 hover:text-red-800 text-sm font-medium"
+            >
+              Cancel
+            </button>
+          )}
         </div>
       ))}
       {signups.length > 5 && (

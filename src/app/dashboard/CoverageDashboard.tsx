@@ -258,11 +258,11 @@ export default function CoverageDashboard() {
       case 'ZONE_LEAD':
         return '👑';
       case 'VERIFIER':
-        return '✓';
+        return '📋';
       case 'DISPATCHER':
-        return '📞';
+        return '📡';
       case 'DISPATCH_COORDINATOR':
-        return '🎯';
+        return '🪄';
       default:
         return '';
     }
@@ -388,7 +388,7 @@ export default function CoverageDashboard() {
                   {/* Dispatcher */}
                   {data.nextSlot.dispatcher && (
                     <div className="flex items-center gap-2 text-sm text-blue-700">
-                      <span>📞</span>
+                      <span>📡</span>
                       <span>{data.nextSlot.dispatcher.name}</span>
                       <span className="text-gray-500">(Dispatcher)</span>
                     </div>
@@ -396,7 +396,7 @@ export default function CoverageDashboard() {
                   {/* Coordinator */}
                   {data.nextSlot.coordinator && (
                     <div className="flex items-center gap-2 text-sm text-purple-700">
-                      <span>🎯</span>
+                      <span>🪄</span>
                       <span>{data.nextSlot.coordinator.name}</span>
                       <span className="text-gray-500">(Coordinator)</span>
                     </div>

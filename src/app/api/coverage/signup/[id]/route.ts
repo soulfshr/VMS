@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { sendCoverageCancellationEmail } from '@/lib/email';
+import { dateToString, isBeforeToday } from '@/lib/dates';
 
 /**
  * DELETE /api/coverage/signup/[id]
@@ -37,11 +38,12 @@ export async function DELETE(
     }
 
     // Check ownership (users can only cancel their own signups)
-    // Admins and coordinators can cancel any signup
+    // Admins, coordinators, and developers can cancel any signup
     const canCancel =
       signup.userId === user.id ||
       user.role === 'ADMINISTRATOR' ||
-      user.role === 'COORDINATOR';
+      user.role === 'COORDINATOR' ||
+      user.role === 'DEVELOPER';
 
     if (!canCancel) {
       return NextResponse.json(
@@ -50,13 +52,9 @@ export async function DELETE(
       );
     }
 
-    // Don't allow canceling past signups
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const signupDate = new Date(signup.date);
-    signupDate.setHours(0, 0, 0, 0);
-
-    if (signupDate < today) {
+    // Don't allow canceling past signups (use Eastern Time for "today")
+    const signupDateStr = dateToString(signup.date);
+    if (isBeforeToday(signupDateStr)) {
       return NextResponse.json(
         { error: 'Cannot cancel past signups' },
         { status: 400 }
