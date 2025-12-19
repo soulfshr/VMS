@@ -107,6 +107,16 @@ function formatDateLocal(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+// Get today's date as YYYY-MM-DD string in user's local timezone
+function getTodayLocal(): string {
+  return new Date().toLocaleDateString('en-CA'); // 'en-CA' gives YYYY-MM-DD format
+}
+
+// Check if a date string (YYYY-MM-DD) is before today
+function isDatePast(dateStr: string): boolean {
+  return dateStr < getTodayLocal();
+}
+
 function formatTimeLabel(hour: number): string {
   if (hour === 0) return '12am';
   if (hour < 12) return `${hour}am`;
@@ -502,14 +512,8 @@ export default function CoverageClient() {
                       const filledCount = coordDay?.filledCount || 0;
                       const totalCount = coordDay?.totalCount || 0;
 
-                      // Check if date is in the past
-                      const today = new Date();
-                      today.setHours(0, 0, 0, 0);
-                      const slotDate = new Date(dateStr + 'T00:00:00');
-                      const isPast = slotDate < today;
-
                       // Show "Past" label for past dates
-                      if (isPast) {
+                      if (isDatePast(dateStr)) {
                         return (
                           <td
                             key={dateStr}
@@ -560,12 +564,7 @@ export default function CoverageClient() {
                         {weekDates.map(date => {
                           const dateStr = formatDateLocal(date);
                           const dayData = weekData.days.find(d => d.date === dateStr);
-
-                          // Check if date is in the past
-                          const today = new Date();
-                          today.setHours(0, 0, 0, 0);
-                          const slotDate = new Date(dateStr + 'T00:00:00');
-                          const isPast = slotDate < today;
+                          const isPast = isDatePast(dateStr);
 
                           if (!dayData || !dayData.isActive) {
                             return (
@@ -643,12 +642,7 @@ export default function CoverageClient() {
                           {weekDates.map(date => {
                             const dateStr = formatDateLocal(date);
                             const dayData = weekData.days.find(d => d.date === dateStr);
-
-                            // Check if date is in the past
-                            const today = new Date();
-                            today.setHours(0, 0, 0, 0);
-                            const slotDate = new Date(dateStr + 'T00:00:00');
-                            const isPast = slotDate < today;
+                            const isPast = isDatePast(dateStr);
 
                             if (!dayData || !dayData.isActive) {
                               return (

@@ -34,7 +34,7 @@ export default function PrivacyPolicyPage() {
             <h4 className="font-medium text-gray-700 mt-4 mb-2">Volunteer Account Information</h4>
             <p className="text-gray-600 mb-2">When you register as a volunteer, we collect:</p>
             <ul className="list-disc list-inside text-gray-600 mb-4 space-y-1">
-              <li><strong>Contact Information:</strong> Full name, email address, and phone number</li>
+              <li><strong>Contact Information:</strong> Preferred name (display name you choose), email address, and phone number</li>
               <li><strong>Language Preferences:</strong> Primary language and additional languages spoken</li>
               <li><strong>Zone Preferences:</strong> Geographic zones where you prefer to volunteer (Durham, Orange, and Wake counties)</li>
             </ul>
@@ -55,6 +55,13 @@ export default function PrivacyPolicyPage() {
               <li><strong>Access Logs:</strong> Date and time of access, pages visited, and actions taken within the Service</li>
               <li><strong>Session Information:</strong> Authentication tokens stored in secure, HTTP-only cookies</li>
             </ul>
+
+            <hr className="my-6" />
+
+            <h2 className="text-xl font-semibold text-gray-900 mt-8 mb-4">Cookies &amp; Tracking Technologies</h2>
+            <p className="text-gray-600 mb-4">
+              We use strictly necessary cookies and similar technologies to keep you signed in, secure your session, and remember preferences such as language and zone filters. These cookies are first-party, short-lived, and are not shared with advertisers. We do not run third-party behavioral advertising or analytics scripts inside the VMS. You can control cookies through your browser settings, but disabling essential cookies may prevent certain features from working.
+            </p>
 
             <hr className="my-6" />
 
@@ -96,7 +103,7 @@ export default function PrivacyPolicyPage() {
             </ul>
 
             <h3 className="text-lg font-medium text-gray-800 mt-6 mb-3">With Third-Party Service Providers</h3>
-            <p className="text-gray-600 mb-2">We use the following third-party services to operate the VMS:</p>
+            <p className="text-gray-600 mb-2">We use the following third-party services to operate the VMS (this list represents our primary processors and may be updated as our infrastructure evolves):</p>
 
             <div className="overflow-x-auto mb-4">
               <table className="min-w-full text-sm border border-gray-200">
@@ -150,48 +157,24 @@ export default function PrivacyPolicyPage() {
             <hr className="my-6" />
 
             <h2 className="text-xl font-semibold text-gray-900 mt-8 mb-4">Data Security</h2>
-            <p className="text-gray-600 mb-4">We implement comprehensive technical and organizational measures to protect your personal information. Our security practices meet or exceed industry standards for protecting sensitive data.</p>
+            <p className="text-gray-600 mb-4">
+              We implement layered technical and organizational safeguards to keep personal information confidential, including encryption, network and application controls, and monitoring. While the specifics of our controls evolve as risks change, the principles below remain constant.
+            </p>
 
-            <h3 className="text-lg font-medium text-gray-800 mt-6 mb-3">Encryption Standards</h3>
+            <h3 className="text-lg font-medium text-gray-800 mt-6 mb-3">Technical Safeguards</h3>
             <ul className="list-disc list-inside text-gray-600 mb-4 space-y-1">
-              <li><strong>Encryption in Transit:</strong> All data transmitted between your browser and our servers is encrypted using TLS 1.2 or higher with strong cipher suites. We enforce HTTPS on all connections and use HSTS (HTTP Strict Transport Security) to prevent downgrade attacks.</li>
-              <li><strong>Encryption at Rest:</strong> All database data is encrypted at rest using AES-256 encryption. Our database provider (Neon) implements transparent data encryption (TDE) for all stored data, including backups.</li>
-              <li><strong>Password Security:</strong> User passwords are never stored in plain text. We use bcrypt with a cost factor of 12 for password hashing, making brute-force attacks computationally infeasible.</li>
-              <li><strong>Token Security:</strong> Sensitive tokens (password reset, email verification) are cryptographically hashed using SHA-256 before storage and expire after a limited time window.</li>
+              <li>All traffic to the VMS is protected with modern HTTPS/TLS encryption, and sensitive data stored in our databases and backups remains encrypted at rest.</li>
+              <li>User passwords and authentication tokens are hashed or encrypted using industry-standard algorithms before storage, and verification tokens expire automatically.</li>
+              <li>Role-based access control ensures volunteers, coordinators, dispatchers, and administrators only see the information required for their duties.</li>
+              <li>We validate and sanitize user input, impose rate limits, and apply standard security headers to reduce the risk of common web attacks.</li>
             </ul>
 
-            <h3 className="text-lg font-medium text-gray-800 mt-6 mb-3">Infrastructure Security</h3>
+            <h3 className="text-lg font-medium text-gray-800 mt-6 mb-3">Operational Safeguards</h3>
             <ul className="list-disc list-inside text-gray-600 mb-4 space-y-1">
-              <li><strong>Secure Hosting:</strong> Our application is hosted on Vercel, which maintains SOC 2 Type II compliance and implements enterprise-grade security controls including network isolation and DDoS protection.</li>
-              <li><strong>Database Security:</strong> Our PostgreSQL database is hosted on Neon, which provides SOC 2 Type II certified infrastructure with automatic failover, point-in-time recovery, and encrypted connections.</li>
-              <li><strong>Environment Isolation:</strong> Development, staging, and production environments are fully isolated with separate databases and credentials to prevent accidental data exposure.</li>
-              <li><strong>Secrets Management:</strong> All sensitive credentials and API keys are stored as encrypted environment variables, never in source code.</li>
-            </ul>
-
-            <h3 className="text-lg font-medium text-gray-800 mt-6 mb-3">Application Security</h3>
-            <ul className="list-disc list-inside text-gray-600 mb-4 space-y-1">
-              <li><strong>Secure Authentication:</strong> We use industry-standard authentication protocols with secure, HTTP-only session cookies that cannot be accessed by client-side scripts.</li>
-              <li><strong>Access Controls:</strong> Role-based access control (RBAC) ensures users can only view and modify information appropriate to their assigned role (Volunteer, Coordinator, Dispatcher, Administrator).</li>
-              <li><strong>Input Validation:</strong> All user inputs are validated and sanitized to prevent SQL injection, cross-site scripting (XSS), and other injection attacks.</li>
-              <li><strong>Rate Limiting:</strong> We implement rate limiting on authentication endpoints and public forms to prevent brute-force attacks and abuse.</li>
-              <li><strong>Security Headers:</strong> We implement comprehensive security headers including Content Security Policy (CSP), X-Frame-Options, X-Content-Type-Options, and Referrer-Policy.</li>
-              <li><strong>CSRF Protection:</strong> Cross-site request forgery protection is implemented on all state-changing operations.</li>
-            </ul>
-
-            <h3 className="text-lg font-medium text-gray-800 mt-6 mb-3">Monitoring and Incident Response</h3>
-            <ul className="list-disc list-inside text-gray-600 mb-4 space-y-1">
-              <li><strong>Security Logging:</strong> We maintain security logs for authentication events, access attempts, and administrative actions.</li>
-              <li><strong>Anomaly Detection:</strong> Unusual patterns of access or failed authentication attempts trigger alerts for review.</li>
-              <li><strong>Incident Response:</strong> We have procedures in place to respond to security incidents, including notification of affected users when required by law.</li>
-              <li><strong>Regular Updates:</strong> We keep all software dependencies updated to address known security vulnerabilities.</li>
-            </ul>
-
-            <h3 className="text-lg font-medium text-gray-800 mt-6 mb-3">Third-Party Security Compliance</h3>
-            <p className="text-gray-600 mb-2">Our infrastructure providers maintain the following security certifications:</p>
-            <ul className="list-disc list-inside text-gray-600 mb-4 space-y-1">
-              <li><strong>Vercel:</strong> SOC 2 Type II, GDPR compliant</li>
-              <li><strong>Neon (Database):</strong> SOC 2 Type II certified</li>
-              <li><strong>Amazon SES (Email):</strong> SOC 1/2/3, ISO 27001, PCI DSS compliant</li>
+              <li>Production infrastructure is hosted with providers that maintain independent security certifications (including SOC 2 Type II), and environments are isolated so test data never mingles with production.</li>
+              <li>Access to infrastructure and keys is limited to authorized personnel and protected through secrets management and audit logging.</li>
+              <li>We review unusual sign-in attempts, track administrative changes, and follow an incident response process that includes notifying affected users when required by law.</li>
+              <li>Dependencies and platform components are patched regularly to address known vulnerabilities.</li>
             </ul>
 
             <hr className="my-6" />
@@ -201,8 +184,8 @@ export default function PrivacyPolicyPage() {
               We retain your information for as long as necessary to fulfill the purposes outlined in this Privacy Policy, unless a longer retention period is required or permitted by law.
             </p>
             <ul className="list-disc list-inside text-gray-600 mb-4 space-y-1">
-              <li><strong>Volunteer Accounts:</strong> Account information is retained while your account is active and for a reasonable period thereafter</li>
-              <li><strong>Shift and Training Records:</strong> Participation records are retained for historical tracking and reporting purposes</li>
+              <li><strong>Volunteer Accounts:</strong> Account information is retained while your account is active and for up to 24 months after inactivity unless we are legally required to keep it longer.</li>
+              <li><strong>Shift and Training Records:</strong> Participation records are retained for at least 36 months to support operational reporting and safety reviews, after which they may be archived or anonymized.</li>
             </ul>
             <p className="text-gray-600 mb-4">
               To request deletion of your data, please contact us using the information provided below.
@@ -227,6 +210,11 @@ export default function PrivacyPolicyPage() {
               <li>Some information may be retained in anonymized form for statistical purposes</li>
               <li>Deletion of your account will remove your ability to participate as a volunteer</li>
             </ul>
+
+            <h3 className="text-lg font-medium text-gray-800 mt-6 mb-3">Additional Privacy Rights</h3>
+            <p className="text-gray-600 mb-2">
+              Depending on where you live, you may be entitled to additional rights such as data portability, objection or restriction of processing, the right to opt out of certain disclosures, or the right to lodge a complaint with your local supervisory authority. We will honor applicable requests when they are submitted through the contact information below and may need to verify your identity before fulfilling them.
+            </p>
 
             <h3 className="text-lg font-medium text-gray-800 mt-6 mb-3">Email Communications</h3>
             <p className="text-gray-600 mb-4">

@@ -9,6 +9,7 @@ const coordinatorNavItems = [
   { href: '/coordinator', label: 'Overview', icon: '📊' },
   { href: '/shifts', label: 'Shifts', icon: '📅' },
   { href: '/coordinator/email-blast', label: 'Email Blast', icon: '📧' },
+  { href: '/coordinator/activity', label: 'Activity Log', icon: '📋' },
 ];
 
 export default function CoordinatorLayout({

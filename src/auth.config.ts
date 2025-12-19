@@ -42,6 +42,8 @@ export const authConfig: NextAuthConfig = {
         '/',
         '/login',
         '/about',
+        '/privacy',
+        '/terms',
         '/forgot-password',
         '/reset-password',
         '/signup',

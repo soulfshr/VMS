@@ -51,6 +51,16 @@ function formatDateLocal(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+// Get today's date as YYYY-MM-DD string in user's local timezone
+function getTodayLocal(): string {
+  return new Date().toLocaleDateString('en-CA'); // 'en-CA' gives YYYY-MM-DD format
+}
+
+// Check if a date string (YYYY-MM-DD) is before today
+function isDatePast(dateStr: string): boolean {
+  return dateStr < getTodayLocal();
+}
+
 // Selection key format: "YYYY-MM-DD-HH" (date and start hour)
 type SelectionKey = string;
 
@@ -185,11 +195,8 @@ export default function CoordinatorModal({
     const key = makeSelectionKey(dateStr, startHour);
     const coordinator = signupLookup.get(key);
 
-    // Past date check
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const slotDate = new Date(dateStr + 'T00:00:00');
-    if (slotDate < today) return false;
+    // Past date check using string comparison
+    if (isDatePast(dateStr)) return false;
 
     // Slot is available if no coordinator assigned
     return !coordinator;
@@ -285,17 +292,14 @@ export default function CoordinatorModal({
 
   // Calculate stats based on hourly slots (future only - today or later)
   const stats = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
     let totalSlots = 0;
     let filledSlots = 0;
 
     for (const date of weekDates) {
-      // Skip past days
-      if (date < today) continue;
-
       const dateStr = formatDateLocal(date);
+      // Skip past days using string comparison
+      if (isDatePast(dateStr)) continue;
+
       for (const slot of COORDINATOR_HOURLY_SLOTS) {
         totalSlots++;
         const key = makeSelectionKey(dateStr, slot.start);
@@ -446,11 +450,8 @@ export default function CoordinatorModal({
                       const signupId = userSignups.get(key);
                       const isSelected = selectedSlots.has(key);
 
-                      // Check if date is in the past
-                      const today = new Date();
-                      today.setHours(0, 0, 0, 0);
-                      const slotDate = new Date(dateStr + 'T00:00:00');
-                      const isPast = slotDate < today;
+                      // Check if date is in the past using string comparison
+                      const isPast = isDatePast(dateStr);
 
                       // User is signed up for this slot
                       if (isUserSignup && signupId) {

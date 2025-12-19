@@ -2,6 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { CoverageOverrideType } from '@/generated/prisma/client';
+import {
+  getCurrentWeekMondayET,
+  getMondayOfWeek,
+  getWeekDates,
+  getWeekBoundaries,
+  getTodayET,
+  getDayOfWeekFromDateString,
+  dateToString,
+} from '@/lib/dates';
 
 interface SlotConfig {
   start: number;
@@ -61,24 +70,16 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const dateParam = searchParams.get('date');
 
-    // Default to current week's Monday
-    let weekStart: Date;
-    if (dateParam) {
-      weekStart = new Date(dateParam);
-    } else {
-      weekStart = new Date();
-    }
+    // Default to current week's Monday (in Eastern Time)
+    const mondayStr = dateParam
+      ? getMondayOfWeek(dateParam)
+      : getCurrentWeekMondayET();
 
-    // Adjust to Monday of the week
-    const day = weekStart.getDay();
-    const diff = weekStart.getDate() - day + (day === 0 ? -6 : 1);
-    weekStart = new Date(weekStart.setDate(diff));
-    weekStart.setHours(0, 0, 0, 0);
+    // Get week boundaries as UTC Date objects for database queries
+    const { weekStart, weekEnd } = getWeekBoundaries(mondayStr);
 
-    // Calculate week end (Sunday)
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekEnd.getDate() + 6);
-    weekEnd.setHours(23, 59, 59, 999);
+    // Get array of date strings for the week
+    const weekDates = getWeekDates(mondayStr);
 
     // Get all active zones with their configs
     const zones = await prisma.zone.findMany({
@@ -163,13 +164,13 @@ export async function GET(request: NextRequest) {
     // Key format: "YYYY-MM-DD" for global overrides, "YYYY-MM-DD-zoneId" for zone-specific
     const overrideIndex = new Map<string, typeof overrides[0]>();
     for (const override of overrides) {
-      const dateStr = override.date.toISOString().split('T')[0];
+      const overrideDateStr = dateToString(override.date);
       if (override.zoneId) {
         // Zone-specific override
-        overrideIndex.set(`${dateStr}-${override.zoneId}`, override);
+        overrideIndex.set(`${overrideDateStr}-${override.zoneId}`, override);
       } else {
         // Global override (applies to all zones)
-        overrideIndex.set(dateStr, override);
+        overrideIndex.set(overrideDateStr, override);
       }
     }
 
@@ -179,19 +180,11 @@ export async function GET(request: NextRequest) {
       return overrideIndex.get(`${dateStr}-${zoneId}`) || overrideIndex.get(dateStr) || null;
     };
 
-    // Build the response structure
-    const weekDates: string[] = [];
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(weekStart);
-      date.setDate(date.getDate() + i);
-      weekDates.push(date.toISOString().split('T')[0]);
-    }
-
     // Index signups by date/zone/hour for quick lookup
     const signupIndex = new Map<string, typeof signups>();
     for (const signup of signups) {
-      const dateStr = signup.date.toISOString().split('T')[0];
-      const key = `${dateStr}-${signup.zoneId}-${signup.startHour}`;
+      const signupDateStr = dateToString(signup.date);
+      const key = `${signupDateStr}-${signup.zoneId}-${signup.startHour}`;
       if (!signupIndex.has(key)) {
         signupIndex.set(key, []);
       }
@@ -201,8 +194,8 @@ export async function GET(request: NextRequest) {
     // Index coordinator signups by date/hour for quick lookup
     const coordinatorIndex = new Map<string, typeof coordinatorSignups[0] | null>();
     for (const signup of coordinatorSignups) {
-      const dateStr = signup.date.toISOString().split('T')[0];
-      const key = `${dateStr}-${signup.startHour}`;
+      const coordDateStr = dateToString(signup.date);
+      const key = `${coordDateStr}-${signup.startHour}`;
       coordinatorIndex.set(key, signup);
     }
 
@@ -239,8 +232,7 @@ export async function GET(request: NextRequest) {
 
     // Build days array with flattened slots
     const days = weekDates.map(dateStr => {
-      const date = new Date(dateStr + 'T00:00:00');
-      const dayOfWeek = date.getDay();
+      const dayOfWeek = getDayOfWeekFromDateString(dateStr);
 
       // Check for global closure override for this date
       const globalOverride = overrideIndex.get(dateStr);
@@ -372,11 +364,11 @@ export async function GET(request: NextRequest) {
       // Collect override info for this day
       const dayOverrides: CoverageOverrideData[] = [];
       for (const override of overrides) {
-        const overrideDateStr = override.date.toISOString().split('T')[0];
-        if (overrideDateStr === dateStr) {
+        const overrideDayStr = dateToString(override.date);
+        if (overrideDayStr === dateStr) {
           dayOverrides.push({
             id: override.id,
-            date: overrideDateStr,
+            date: overrideDayStr,
             zoneId: override.zoneId,
             overrideType: override.overrideType,
             slotOverrides: override.slotOverrides as SlotOverride[] | null,
@@ -396,10 +388,8 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    // Calculate aggregate stats (only count future slots - today or later)
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayStr = today.toISOString().split('T')[0];
+    // Calculate aggregate stats (only count future slots - today or later in Eastern Time)
+    const todayStr = getTodayET();
 
     let totalSlots = 0;
     let coveredSlots = 0;
@@ -460,8 +450,8 @@ export async function GET(request: NextRequest) {
       .reduce((acc, day) => acc + day.filledCount, 0);
 
     return NextResponse.json({
-      startDate: weekStart.toISOString().split('T')[0],
-      endDate: weekEnd.toISOString().split('T')[0],
+      startDate: mondayStr,
+      endDate: weekDates[6], // Sunday
       days,
       counties,
       timeSlots,

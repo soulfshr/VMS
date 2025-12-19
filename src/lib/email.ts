@@ -1,5 +1,5 @@
 import { SESClient, SendEmailCommand, SendRawEmailCommand } from '@aws-sdk/client-ses';
-import icalGenerator from 'ical-generator';
+import icalGenerator, { ICalCalendarMethod, ICalEventStatus } from 'ical-generator';
 import crypto from 'crypto';
 import { prisma } from '@/lib/db';
 import { escapeHtml, escapeHtmlPreserveBreaks } from '@/lib/html-escape';
@@ -189,6 +189,7 @@ async function sendEmail(params: {
 /**
  * Send an email with ICS calendar attachment via AWS SES
  * Uses SendRawEmailCommand for MIME multipart support
+ * @param calendarMethod - 'REQUEST' for new/updated events, 'CANCEL' for cancellations
  */
 async function sendEmailWithCalendar(params: {
   to: string;
@@ -198,9 +199,10 @@ async function sendEmailWithCalendar(params: {
   fromAddress: string;
   replyTo?: string;
   calendarContent: string;
+  calendarMethod?: 'REQUEST' | 'CANCEL';
   unsubscribeToken?: string;
 }): Promise<void> {
-  const { to, subject, html, fromName, fromAddress, replyTo, calendarContent, unsubscribeToken } = params;
+  const { to, subject, html, fromName, fromAddress, replyTo, calendarContent, calendarMethod = 'REQUEST', unsubscribeToken } = params;
 
   const boundary = `----=_Part_${Date.now()}_${Math.random().toString(36).substring(2)}`;
 
@@ -212,11 +214,14 @@ async function sendEmailWithCalendar(params: {
     ? `From: ${encodedFromName} <${fromAddress}>`
     : `From: ${fromAddress}`;
 
-  console.log('[Email] Sending calendar email with From:', fromHeader);
+  console.log('[Email] Sending calendar email with From:', fromHeader, 'Method:', calendarMethod);
 
   // Normalize HTML: remove all newlines and extra whitespace to create single-line HTML
   // This avoids MIME line ending issues while keeping the email readable
   const normalizedHtml = html.replace(/\s+/g, ' ').trim();
+
+  // Filename based on method
+  const filename = calendarMethod === 'CANCEL' ? 'cancel.ics' : 'invite.ics';
 
   // Build raw MIME message
   // Note: List-Unsubscribe headers removed as they can cause MIME parsing issues
@@ -236,8 +241,8 @@ async function sendEmailWithCalendar(params: {
     normalizedHtml,
     '',
     `--${boundary}`,
-    `Content-Type: text/calendar; charset=UTF-8; method=REQUEST`,
-    `Content-Disposition: attachment; filename="invite.ics"`,
+    `Content-Type: text/calendar; charset=UTF-8; method=${calendarMethod}`,
+    `Content-Disposition: attachment; filename="${filename}"`,
     `Content-Transfer-Encoding: 7bit`,
     '',
     calendarContent,
@@ -1682,5 +1687,198 @@ export async function sendApplicationRejectedEmail(params: ApplicationRejectedEm
   } catch (error) {
     logger.error('EMAIL', 'Failed to send rejection email', { to: email, error: error instanceof Error ? error.message : 'Unknown' }).catch(() => {});
     return false;
+  }
+}
+
+// ============================================
+// COVERAGE SLOT SIGNUP EMAILS
+// ============================================
+
+interface CoverageSignupEmailParams {
+  to: string;
+  volunteerName: string;
+  zoneName: string;
+  county: string;
+  date: Date;
+  startHour: number;
+  endHour: number;
+  roleType: 'DISPATCHER' | 'ZONE_LEAD' | 'VERIFIER';
+  unsubscribeToken?: string;
+}
+
+// Format hour to time string (e.g., 6 -> "6:00 AM", 14 -> "2:00 PM")
+function formatHourToTime(hour: number): string {
+  if (hour === 0) return '12:00 AM';
+  if (hour < 12) return `${hour}:00 AM`;
+  if (hour === 12) return '12:00 PM';
+  return `${hour - 12}:00 PM`;
+}
+
+// Get role display name
+function getRoleDisplayName(roleType: string): string {
+  switch (roleType) {
+    case 'DISPATCHER': return 'Dispatcher';
+    case 'ZONE_LEAD': return 'Zone Lead';
+    case 'VERIFIER': return 'Verifier';
+    default: return roleType;
+  }
+}
+
+/**
+ * Send confirmation email when volunteer signs up for a coverage slot
+ * Includes ICS calendar invite attachment
+ */
+export async function sendCoverageSignupConfirmationEmail(params: CoverageSignupEmailParams): Promise<void> {
+  const branding = await getBranding();
+
+  if (!isEmailConfigured(branding)) {
+    console.log('[Email] SES not configured, skipping coverage signup confirmation email');
+    return;
+  }
+
+  const { to, volunteerName, zoneName, county, date, startHour, endHour, roleType, unsubscribeToken } = params;
+
+  const dateStr = formatDateInTimezone(date, branding.timezone);
+  const startStr = formatHourToTime(startHour);
+  const endStr = formatHourToTime(endHour);
+  const roleDisplay = getRoleDisplayName(roleType);
+
+  // Create start and end times for calendar event
+  const startTime = new Date(date);
+  startTime.setHours(startHour, 0, 0, 0);
+  const endTime = new Date(date);
+  endTime.setHours(endHour, 0, 0, 0);
+
+  // Generate ICS calendar invite
+  const calendar = icalGenerator({ name: branding.orgName });
+  calendar.createEvent({
+    start: startTime,
+    end: endTime,
+    timezone: branding.timezone,
+    summary: `Coverage: ${zoneName} (${roleDisplay})`,
+    description: `${branding.orgName} coverage slot\n\nZone: ${zoneName}\nCounty: ${county}\nRole: ${roleDisplay}`,
+    organizer: { name: branding.orgName, email: branding.emailFromAddress },
+  });
+
+  try {
+    await sendEmailWithCalendar({
+      to,
+      subject: `Coverage Confirmed: ${zoneName} on ${dateStr}`,
+      fromName: branding.emailFromName,
+      fromAddress: branding.emailFromAddress,
+      replyTo: branding.emailReplyTo,
+      unsubscribeToken,
+      calendarContent: calendar.toString(),
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #0891b2;">Coverage Slot Confirmed!</h2>
+          <p>Hi ${escapeHtml(volunteerName)},</p>
+          <p>You've successfully signed up for a coverage slot. Thank you for volunteering!</p>
+
+          <div style="background: #cffafe; padding: 16px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #0891b2;">
+            <h3 style="margin-top: 0; color: #065f46;">Your Coverage Slot</h3>
+            <p style="margin: 8px 0;"><strong>Zone:</strong> ${escapeHtml(zoneName)}</p>
+            <p style="margin: 8px 0;"><strong>County:</strong> ${escapeHtml(county)}</p>
+            <p style="margin: 8px 0;"><strong>Date:</strong> ${escapeHtml(dateStr)}</p>
+            <p style="margin: 8px 0;"><strong>Time:</strong> ${escapeHtml(startStr)} - ${escapeHtml(endStr)}</p>
+            <p style="margin: 8px 0;"><strong>Role:</strong> ${escapeHtml(roleDisplay)}</p>
+          </div>
+
+          <p><strong>A calendar invite is attached to this email.</strong> Add it to your calendar so you don't forget!</p>
+
+          <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+            Thank you for volunteering with ${escapeHtml(branding.orgName)}!<br>
+            If you need to cancel, please do so as soon as possible via the Coverage page.
+          </p>
+
+          ${getEmailFooter(unsubscribeToken, branding)}
+        </div>
+      `,
+    });
+    logger.email('Coverage signup confirmation email sent', { to, zoneName, roleType }).catch(() => {});
+  } catch (error) {
+    logger.error('EMAIL', 'Failed to send coverage signup confirmation email', { to, error: error instanceof Error ? error.message : 'Unknown' }).catch(() => {});
+  }
+}
+
+/**
+ * Send email when volunteer cancels their coverage signup
+ * Includes ICS calendar cancellation attachment to remove the event from calendar
+ */
+export async function sendCoverageCancellationEmail(params: CoverageSignupEmailParams): Promise<void> {
+  const branding = await getBranding();
+
+  if (!isEmailConfigured(branding)) {
+    console.log('[Email] SES not configured, skipping coverage cancellation email');
+    return;
+  }
+
+  const { to, volunteerName, zoneName, county, date, startHour, endHour, roleType, unsubscribeToken } = params;
+
+  const dateStr = formatDateInTimezone(date, branding.timezone);
+  const startStr = formatHourToTime(startHour);
+  const endStr = formatHourToTime(endHour);
+  const roleDisplay = getRoleDisplayName(roleType);
+
+  // Create start and end times for calendar event
+  const startTime = new Date(date);
+  startTime.setHours(startHour, 0, 0, 0);
+  const endTime = new Date(date);
+  endTime.setHours(endHour, 0, 0, 0);
+
+  // Generate ICS calendar cancellation
+  // Using method: CANCEL and status: CANCELLED to tell calendar apps to remove the event
+  const calendar = icalGenerator({ name: branding.orgName, method: ICalCalendarMethod.CANCEL });
+  calendar.createEvent({
+    start: startTime,
+    end: endTime,
+    timezone: branding.timezone,
+    summary: `Coverage: ${zoneName} (${roleDisplay})`,
+    description: `CANCELLED - ${branding.orgName} coverage slot\n\nZone: ${zoneName}\nCounty: ${county}\nRole: ${roleDisplay}`,
+    organizer: { name: branding.orgName, email: branding.emailFromAddress },
+    status: ICalEventStatus.CANCELLED,
+    sequence: 1, // Higher sequence number indicates an update
+  });
+
+  try {
+    await sendEmailWithCalendar({
+      to,
+      subject: `Coverage Cancelled: ${zoneName}`,
+      fromName: branding.emailFromName,
+      fromAddress: branding.emailFromAddress,
+      replyTo: branding.emailReplyTo,
+      unsubscribeToken,
+      calendarContent: calendar.toString(),
+      calendarMethod: 'CANCEL',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #dc2626;">Coverage Cancellation Confirmed</h2>
+          <p>Hi ${escapeHtml(volunteerName)},</p>
+          <p>Your coverage signup has been cancelled.</p>
+
+          <div style="background: #fef2f2; padding: 16px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #dc2626;">
+            <h3 style="margin-top: 0; color: #991b1b;">Cancelled Slot</h3>
+            <p style="margin: 8px 0;"><strong>Zone:</strong> ${escapeHtml(zoneName)}</p>
+            <p style="margin: 8px 0;"><strong>County:</strong> ${escapeHtml(county)}</p>
+            <p style="margin: 8px 0;"><strong>Date:</strong> ${escapeHtml(dateStr)}</p>
+            <p style="margin: 8px 0;"><strong>Time:</strong> ${escapeHtml(startStr)} - ${escapeHtml(endStr)}</p>
+            <p style="margin: 8px 0;"><strong>Role:</strong> ${escapeHtml(roleDisplay)}</p>
+          </div>
+
+          <p><strong>A calendar cancellation is attached to this email.</strong> Your calendar should automatically remove the event.</p>
+
+          <p>If you'd like to sign up for a different slot, please visit the Coverage page.</p>
+
+          <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+            Thank you for letting us know. We hope to see you at a future coverage slot!
+          </p>
+
+          ${getEmailFooter(unsubscribeToken, branding)}
+        </div>
+      `,
+    });
+    logger.email('Coverage cancellation email with calendar sent', { to, zoneName }).catch(() => {});
+  } catch (error) {
+    logger.error('EMAIL', 'Failed to send coverage cancellation email', { to, error: error instanceof Error ? error.message : 'Unknown' }).catch(() => {});
   }
 }

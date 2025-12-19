@@ -4,6 +4,13 @@ import { getDbUser } from '@/lib/user';
 import { CoverageRoleType, RSVPStatus } from '@/generated/prisma/enums';
 import type { Prisma } from '@/generated/prisma/client';
 import { sendCoverageSignupConfirmationEmail } from '@/lib/email';
+import {
+  getTodayET,
+  parseDateStringToUTC,
+  getDayOfWeekFromDateString,
+  dateToString,
+  isBeforeToday,
+} from '@/lib/dates';
 
 /**
  * POST /api/coverage/signup
@@ -74,14 +81,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Parse date
-    const signupDate = new Date(date);
-    signupDate.setHours(0, 0, 0, 0);
+    // Parse date as UTC midnight (database stores dates as @db.Date = UTC midnight)
+    // The incoming 'date' should be a YYYY-MM-DD string
+    const dateStr = date as string;
+    const signupDate = parseDateStringToUTC(dateStr);
 
-    // Don't allow signups for past dates
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (signupDate < today) {
+    // Don't allow signups for past dates (compare using Eastern Time for "today")
+    if (isBeforeToday(dateStr)) {
       return NextResponse.json(
         { error: 'Cannot sign up for past dates' },
         { status: 400 }
@@ -165,7 +171,7 @@ export async function POST(request: NextRequest) {
         success: true,
         signup: {
           id: signup.id,
-          date: signup.date.toISOString().split('T')[0],
+          date: dateToString(signup.date),
           zoneId: null,
           zoneName: 'Regional Coordinator',
           startHour: signup.startHour,
@@ -188,8 +194,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if slot config exists for this day
-    const dayOfWeek = signupDate.getDay();
+    // Check if slot config exists for this day (use date string for timezone-safe calculation)
+    const dayOfWeek = getDayOfWeekFromDateString(dateStr);
     const config = await prisma.coverageConfig.findUnique({
       where: {
         zoneId_dayOfWeek: {
@@ -301,7 +307,7 @@ export async function POST(request: NextRequest) {
       success: true,
       signup: {
         id: signup.id,
-        date: signup.date.toISOString().split('T')[0],
+        date: dateToString(signup.date),
         zoneId: signup.zoneId,
         zoneName: signup.zone!.name,
         startHour: signup.startHour,
@@ -340,10 +346,14 @@ export async function GET(request: NextRequest) {
     if (startDateParam || endDateParam) {
       where.date = {};
       if (startDateParam) {
-        (where.date as Prisma.DateTimeFilter).gte = new Date(startDateParam);
+        // Parse as UTC midnight to match database storage
+        (where.date as Prisma.DateTimeFilter).gte = parseDateStringToUTC(startDateParam);
       }
       if (endDateParam) {
-        (where.date as Prisma.DateTimeFilter).lte = new Date(endDateParam);
+        // Parse as UTC end of day for inclusive range
+        const endDate = parseDateStringToUTC(endDateParam);
+        endDate.setUTCHours(23, 59, 59, 999);
+        (where.date as Prisma.DateTimeFilter).lte = endDate;
       }
     }
 
@@ -363,7 +373,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       signups: signups.map(s => ({
         id: s.id,
-        date: s.date.toISOString().split('T')[0],
+        date: dateToString(s.date),
         zoneId: s.zoneId,
         zoneName: s.zone?.name || (s.roleType === 'DISPATCH_COORDINATOR' ? 'Regional Coordinator' : 'Unknown'),
         county: s.zone?.county || (s.roleType === 'DISPATCH_COORDINATOR' ? 'Triangle Region' : null),

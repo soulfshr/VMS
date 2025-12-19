@@ -2517,7 +2517,7 @@ Jane Smith,jane@example.com,555-5678,COORDINATOR,Spanish,Zone 3`}
                 <div className="bg-gray-50 rounded-lg p-4">
                   <h3 className="font-semibold text-gray-900 mb-3">Contact Information</h3>
                   <div className="space-y-2 text-sm">
-                    <p><span className="text-gray-500">Name:</span> <span className="font-medium">{reviewingVolunteer.name}</span></p>
+                    <p><span className="text-gray-500">Preferred Name:</span> <span className="font-medium">{reviewingVolunteer.name}</span></p>
                     <p><span className="text-gray-500">Email:</span> <span className="font-medium">{reviewingVolunteer.email}</span></p>
                     {reviewingVolunteer.phone && (
                       <p><span className="text-gray-500">Phone:</span> <span className="font-medium">{reviewingVolunteer.phone}</span></p>

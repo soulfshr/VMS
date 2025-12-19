@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Weekly Coverage Overview</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f7f9fc;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #6b7280;
+      --border: #e2e8f0;
+      --primary: #0ea5e9;
+      --amber: #f59e0b;
+      --green: #22c55e;
+      --red: #ef4444;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      padding: 32px clamp(18px, 6vw, 60px) 60px;
+    }
+
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(26px, 4vw, 36px);
+    }
+
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .filters button,
+    .filters select {
+      border: 1px solid var(--border);
+      background: white;
+      border-radius: 999px;
+      padding: 8px 14px;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .calendar {
+      background: var(--card);
+      border-radius: 24px;
+      box-shadow: 0 18px 60px rgba(15, 23, 42, 0.08);
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      min-width: 900px;
+    }
+
+    thead th {
+      text-align: left;
+      padding: 18px;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+
+    tbody td {
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 16px;
+      vertical-align: top;
+    }
+
+    tbody td:first-child {
+      font-weight: 600;
+      color: var(--muted);
+      background: #f8fafc;
+      position: sticky;
+      left: 0;
+      z-index: 2;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    tbody td:last-child {
+      border-right: none;
+    }
+
+    .day-group {
+      border-top: 1px solid var(--border);
+      background: #fefefe;
+    }
+
+    .day-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px;
+      border-bottom: 1px solid var(--border);
+      background: #fdfdfd;
+    }
+
+    .day-header strong {
+      font-size: 16px;
+    }
+
+    .grid {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .block-chip {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      background: #f8fafc;
+      position: relative;
+    }
+
+    .block-chip[data-status="full"] {
+      background: #ecfdf5;
+      color: #047857;
+    }
+
+    .block-chip[data-status="low"] {
+      background: #fff7ed;
+      color: #b45309;
+    }
+
+    .block-chip[data-status="critical"] {
+      background: #fef2f2;
+      color: #b91c1c;
+    }
+
+    .hover-card {
+      position: absolute;
+      left: 0;
+      top: 110%;
+      width: 240px;
+      background: white;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      box-shadow: 0 18px 45px rgba(15, 23, 42, 0.18);
+      padding: 12px;
+      color: var(--text);
+      font-size: 12px;
+      line-height: 1.4;
+      display: none;
+      z-index: 10;
+    }
+
+    .hover-card strong {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+
+    .block-chip:hover .hover-card {
+      display: block;
+    }
+
+    .stats-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+
+    .stat-card {
+      flex: 1;
+      min-width: 180px;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      padding: 12px 16px;
+      background: white;
+    }
+
+    .stat-label {
+      font-size: 13px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .stat-value {
+      font-size: 20px;
+      font-weight: 700;
+      margin-top: 6px;
+    }
+
+    .week-trend {
+      margin-top: 24px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .trend-card {
+      background: white;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      padding: 14px;
+    }
+
+    .trend-card h3 {
+      margin: 0;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+    }
+
+    .trend-value {
+      font-size: 26px;
+      font-weight: 700;
+      margin: 10px 0 0;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Weekly Coverage Grid</h1>
+      <p style="margin: 4px 0 0; color: var(--muted);">Hover any block to inspect that 2-hour window for the day.</p>
+    </div>
+    <div class="filters">
+      <button>&larr; Previous week</button>
+      <button>Jan 13 – Jan 19 &darr;</button>
+      <button>Next week &rarr;</button>
+      <select>
+        <option>All Roles</option>
+        <option>Verifier</option>
+        <option>Zone Lead</option>
+        <option>Dispatcher</option>
+      </select>
+      <select>
+        <option>All Zones</option>
+        <option>Durham Central</option>
+        <option>East Raleigh</option>
+        <option>Chapel Hill</option>
+      </select>
+    </div>
+  </header>
+
+  <section class="calendar">
+    <table>
+      <thead>
+        <tr>
+          <th>Time Block</th>
+          <th>Monday</th>
+          <th>Tuesday</th>
+          <th>Wednesday</th>
+          <th>Thursday</th>
+          <th>Friday</th>
+          <th>Saturday</th>
+          <th>Sunday</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>6 – 8 AM</td>
+          <td>
+            <div class="grid">
+              <div class="block-chip" data-status="full">
+                Durham <span>100%</span>
+                <div class="hover-card">
+                  <strong>Durham · Mon 6 – 8 AM</strong>
+                  2 Verifiers · 1 Zone Lead · Dispatcher confirmed<br>
+                  Last signup: 32 min ago
+                </div>
+              </div>
+              <div class="block-chip" data-status="low">
+                East Raleigh <span>66%</span>
+                <div class="hover-card">
+                  <strong>East Raleigh · Mon 6 – 8 AM</strong>
+                  Need 1 verifier to reach target. Auto-reminder sent to preferred volunteers.
+                </div>
+              </div>
+              <div class="block-chip" data-status="critical">
+                Chapel Hill <span>33%</span>
+                <div class="hover-card">
+                  <strong>Chapel Hill · Mon 6 – 8 AM</strong>
+                  Only Zone Lead confirmed. Suggested action: blast to Chapel Hill cohort + Signal ping.
+                </div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="grid">
+              <div class="block-chip" data-status="low">
+                Durham <span>80%</span>
+                <div class="hover-card">
+                  <strong>Durham · Tue 6 – 8 AM</strong>
+                  Needs one dispatcher. Offer multi-block incentives to cover 6 – 10 AM.
+                </div>
+              </div>
+              <div class="block-chip" data-status="full">
+                East Raleigh <span>100%</span>
+                <div class="hover-card">
+                  <strong>East Raleigh · Tue 6 – 8 AM</strong>
+                  Fully staffed with backups. Consider reassigning surplus volunteer to Chapel Hill.
+                </div>
+              </div>
+              <div class="block-chip" data-status="critical">
+                Chapel Hill <span>0%</span>
+                <div class="hover-card">
+                  <strong>Chapel Hill · Tue 6 – 8 AM</strong>
+                  No coverage. Flagged in daily digest for coordinator follow-up.
+                </div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="grid">
+              <div class="block-chip" data-status="full">Durham <span>100%</span></div>
+              <div class="block-chip" data-status="full">East Raleigh <span>100%</span></div>
+              <div class="block-chip" data-status="low">Chapel Hill <span>66%</span></div>
+            </div>
+          </td>
+          <td>
+            <div class="grid">
+              <div class="block-chip" data-status="full">Durham <span>100%</span></div>
+              <div class="block-chip" data-status="low">East Raleigh <span>75%</span></div>
+              <div class="block-chip" data-status="critical">Chapel Hill <span>33%</span></div>
+            </div>
+          </td>
+          <td>
+            <div class="grid">
+              <div class="block-chip" data-status="low">Durham <span>66%</span></div>
+              <div class="block-chip" data-status="full">East Raleigh <span>100%</span></div>
+              <div class="block-chip" data-status="critical">Chapel Hill <span>0%</span></div>
+            </div>
+          </td>
+          <td>
+            <div style="color: var(--muted); font-size: 13px;">Planned downtime</div>
+          </td>
+          <td>
+            <div style="color: var(--muted); font-size: 13px;">Planned downtime</div>
+          </td>
+        </tr>
+
+        <tr>
+          <td>8 – 10 AM</td>
+          <td>
+            <div class="grid">
+              <div class="block-chip" data-status="full">Durham <span>100%</span></div>
+              <div class="block-chip" data-status="full">East Raleigh <span>100%</span></div>
+              <div class="block-chip" data-status="low">Chapel Hill <span>66%</span></div>
+            </div>
+          </td>
+          <td>
+            <div class="grid">
+              <div class="block-chip" data-status="low">Durham <span>75%</span></div>
+              <div class="block-chip" data-status="low">East Raleigh <span>75%</span></div>
+              <div class="block-chip" data-status="critical">Chapel Hill <span>33%</span></div>
+            </div>
+          </td>
+          <td>
+            <div class="grid">
+              <div class="block-chip" data-status="full">Durham <span>100%</span></div>
+              <div class="block-chip" data-status="full">East Raleigh <span>100%</span></div>
+              <div class="block-chip" data-status="full">Chapel Hill <span>100%</span></div>
+            </div>
+          </td>
+          <td>
+            <div class="grid">
+              <div class="block-chip" data-status="low">Durham <span>80%</span></div>
+              <div class="block-chip" data-status="critical">East Raleigh <span>40%</span></div>
+              <div class="block-chip" data-status="critical">Chapel Hill <span>0%</span></div>
+            </div>
+          </td>
+          <td>
+            <div class="grid">
+              <div class="block-chip" data-status="full">Durham <span>100%</span></div>
+              <div class="block-chip" data-status="full">East Raleigh <span>100%</span></div>
+              <div class="block-chip" data-status="low">Chapel Hill <span>66%</span></div>
+            </div>
+          </td>
+          <td colspan="2" style="text-align: center; font-size: 13px; color: var(--muted);">
+            Weekend coverage managed ad-hoc.
+          </td>
+        </tr>
+
+        <tr>
+          <td>10 – 12 PM</td>
+          <td>
+            <div class="grid">
+              <div class="block-chip" data-status="critical">Durham <span>50%</span></div>
+              <div class="block-chip" data-status="full">East Raleigh <span>100%</span></div>
+              <div class="block-chip" data-status="critical">Chapel Hill <span>33%</span></div>
+            </div>
+          </td>
+          <td>
+            <div class="grid">
+              <div class="block-chip" data-status="low">Durham <span>80%</span></div>
+              <div class="block-chip" data-status="low">East Raleigh <span>66%</span></div>
+              <div class="block-chip" data-status="critical">Chapel Hill <span>0%</span></div>
+            </div>
+          </td>
+          <td>
+            <div class="grid">
+              <div class="block-chip" data-status="full">Durham <span>100%</span></div>
+              <div class="block-chip" data-status="low">East Raleigh <span>66%</span></div>
+              <div class="block-chip" data-status="full">Chapel Hill <span>100%</span></div>
+            </div>
+          </td>
+          <td>
+            <div class="grid">
+              <div class="block-chip" data-status="critical">Durham <span>40%</span></div>
+              <div class="block-chip" data-status="critical">East Raleigh <span>33%</span></div>
+              <div class="block-chip" data-status="critical">Chapel Hill <span>0%</span></div>
+            </div>
+          </td>
+          <td>
+            <div class="grid">
+              <div class="block-chip" data-status="low">Durham <span>66%</span></div>
+              <div class="block-chip" data-status="low">East Raleigh <span>66%</span></div>
+              <div class="block-chip" data-status="critical">Chapel Hill <span>33%</span></div>
+            </div>
+          </td>
+          <td colspan="2" style="text-align: center; color: var(--muted);">Weekend slots still forming.</td>
+        </tr>
+
+        <tr>
+          <td colspan="8" style="text-align: center; color: var(--muted); padding: 18px;">
+            Additional rows would continue for 12 – 2 PM, 2 – 4 PM, and 4 – 6 PM blocks.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Week Fill Rate</div>
+      <div class="stat-value">78%</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Critical Gaps</div>
+      <div class="stat-value" style="color: var(--red);">12 blocks</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Requests Sent</div>
+      <div class="stat-value">34 targeted</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">New Volunteers</div>
+      <div class="stat-value" style="color: var(--green);">+9 this week</div>
+    </div>
+  </section>
+
+  <section class="week-trend">
+    <div class="trend-card">
+      <h3>Durham Coverage Trend</h3>
+      <div class="trend-value">85% avg</div>
+    </div>
+    <div class="trend-card">
+      <h3>East Raleigh Coverage Trend</h3>
+      <div class="trend-value">90% avg</div>
+    </div>
+    <div class="trend-card">
+      <h3>Chapel Hill Coverage Trend</h3>
+      <div class="trend-value" style="color: var(--amber);">52% avg</div>
+    </div>
+    <div class="trend-card">
+      <h3>Volunteer Hours Scheduled</h3>
+      <div class="trend-value">214 hrs</div>
+    </div>
+  </section>
+</body>
+</html>

@@ -134,16 +134,16 @@ export default function Header() {
                 >
                   My Dashboard
                 </Link>
-                {/* 2. Triangle Schedule */}
+                {/* 2. Triangle Coverage Schedule (2-hour slots) */}
                 <Link
-                  href="/schedule"
+                  href="/coverage"
                   className={`text-sm font-medium transition-colors ${
-                    pathname.startsWith('/schedule')
+                    pathname.startsWith('/coverage')
                       ? 'text-cyan-700'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  Triangle Schedule
+                  Triangle Coverage Schedule
                 </Link>
                 {/* 3. Map (all users) */}
                 <Link
@@ -404,13 +404,13 @@ export default function Header() {
                 >
                   My Dashboard
                 </Link>
-                {/* 2. Triangle Schedule */}
+                {/* 2. Triangle Coverage Schedule (2-hour slots) */}
                 <Link
-                  href="/schedule"
+                  href="/coverage"
                   className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  Triangle Schedule
+                  Triangle Coverage Schedule
                 </Link>
                 {/* 3. Map (all users) */}
                 <Link

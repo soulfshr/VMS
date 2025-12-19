@@ -64,6 +64,8 @@ export async function PUT(request: NextRequest) {
       emergencyContact,
       emergencyPhone,
       emailNotifications,
+      shiftReminder24h,
+      shiftReminder1h,
     } = body;
 
     // Build update data
@@ -81,6 +83,12 @@ export async function PUT(request: NextRequest) {
       if (emailNotifications && !dbUser.unsubscribeToken) {
         updateData.unsubscribeToken = generateUnsubscribeToken();
       }
+    }
+    if (typeof shiftReminder24h === 'boolean') {
+      updateData.shiftReminder24h = shiftReminder24h;
+    }
+    if (typeof shiftReminder1h === 'boolean') {
+      updateData.shiftReminder1h = shiftReminder1h;
     }
 
     const updatedUser = await prisma.user.update({

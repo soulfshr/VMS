@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Coverage Grid Concept</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f4f5f7;
+      --card: #ffffff;
+      --gray: #6b7280;
+      --cyan: #06b6d4;
+      --green: #22c55e;
+      --amber: #fbbf24;
+      --red: #ef4444;
+      --border: #d1d5db;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: #111827;
+    }
+
+    header {
+      padding: 32px 40px 0;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 28px;
+    }
+
+    p {
+      margin: 6px 0 0;
+      color: var(--gray);
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 12px;
+      padding: 20px 40px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .toolbar button,
+    .toolbar select {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: white;
+      color: #111827;
+      padding: 10px 16px;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .grid-wrapper {
+      margin: 0 auto;
+      padding: 0 40px 60px;
+      max-width: 1200px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--card);
+      box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    th,
+    td {
+      border: 1px solid var(--border);
+      padding: 16px;
+      vertical-align: top;
+    }
+
+    th {
+      background: #f8fafc;
+      font-weight: 600;
+      text-align: left;
+    }
+
+    .time-slot {
+      font-weight: 600;
+      color: #0f172a;
+    }
+
+    .cell-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .status-pill {
+      padding: 2px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #0f172a;
+      background: #e0f2fe;
+    }
+
+    .role-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .role-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f1f5f9;
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+
+    .role-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .role-name {
+      font-weight: 600;
+    }
+
+    .role-target {
+      font-size: 12px;
+      color: var(--gray);
+    }
+
+    .role-status {
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      color: white;
+    }
+
+    .status-green {
+      background: var(--green);
+    }
+
+    .status-amber {
+      background: var(--amber);
+      color: #78350f;
+    }
+
+    .status-red {
+      background: var(--red);
+    }
+
+    .cell-footer {
+      margin-top: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .cell-footer button {
+      border: none;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .primary {
+      background: var(--cyan);
+      color: white;
+    }
+
+    .secondary {
+      background: transparent;
+      color: var(--gray);
+    }
+
+    @media (max-width: 900px) {
+      th:first-child,
+      td:first-child {
+        position: sticky;
+        left: 0;
+        background: #f8fafc;
+        min-width: 90px;
+      }
+
+      table {
+        display: block;
+        overflow-x: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Daily Coverage Grid</h1>
+    <p>Tap a cell to manage coverage for that zone and time block.</p>
+  </header>
+
+  <div class="toolbar">
+    <button>&larr;</button>
+    <div style="font-weight: 600;">Tue, Jan 14</div>
+    <button>&rarr;</button>
+    <select>
+      <option>All Roles</option>
+      <option>Verifier</option>
+      <option>Zone Lead</option>
+      <option>Dispatcher</option>
+    </select>
+    <select>
+      <option>All Zones</option>
+      <option>Durham Central</option>
+      <option>East Raleigh</option>
+      <option>Chapel Hill</option>
+    </select>
+  </div>
+
+  <div class="grid-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Durham Central</th>
+          <th>East Raleigh</th>
+          <th>Chapel Hill</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="time-slot">6 – 8 AM</td>
+          <td>
+            <div class="cell-header">
+              <div class="status-pill">2 / 3 roles filled</div>
+              <span class="status-amber">Needs attention</span>
+            </div>
+            <div class="role-list">
+              <div class="role-row">
+                <div class="role-info">
+                  <span class="role-name">Verifier</span>
+                  <span class="role-target">1 / 2 assigned</span>
+                </div>
+                <span class="role-status status-amber">1 open</span>
+              </div>
+              <div class="role-row">
+                <div class="role-info">
+                  <span class="role-name">Zone Lead</span>
+                  <span class="role-target">Filled</span>
+                </div>
+                <span class="role-status status-green">Covered</span>
+              </div>
+              <div class="role-row">
+                <div class="role-info">
+                  <span class="role-name">Dispatcher</span>
+                  <span class="role-target">0 / 1 assigned</span>
+                </div>
+                <span class="role-status status-red">Urgent</span>
+              </div>
+            </div>
+            <div class="cell-footer">
+              <button class="secondary">View details</button>
+              <button class="primary">Fill slots</button>
+            </div>
+          </td>
+          <td>
+            <div class="cell-header">
+              <div class="status-pill">3 / 3 roles filled</div>
+              <span class="status-green">Fully covered</span>
+            </div>
+            <div class="role-list">
+              <div class="role-row">
+                <div class="role-info">
+                  <span class="role-name">Verifier</span>
+                  <span class="role-target">2 / 2 assigned</span>
+                </div>
+                <span class="role-status status-green">Covered</span>
+              </div>
+              <div class="role-row">
+                <div class="role-info">
+                  <span class="role-name">Zone Lead</span>
+                  <span class="role-target">Filled</span>
+                </div>
+                <span class="role-status status-green">Covered</span>
+              </div>
+              <div class="role-row">
+                <div class="role-info">
+                  <span class="role-name">Dispatcher</span>
+                  <span class="role-target">1 / 1 assigned</span>
+                </div>
+                <span class="role-status status-green">Covered</span>
+              </div>
+            </div>
+            <div class="cell-footer">
+              <button class="secondary">View roster</button>
+              <button class="primary">Invite backups</button>
+            </div>
+          </td>
+          <td>
+            <div class="cell-header">
+              <div class="status-pill">1 / 3 roles filled</div>
+              <span class="status-red">Critical gaps</span>
+            </div>
+            <div class="role-list">
+              <div class="role-row">
+                <div class="role-info">
+                  <span class="role-name">Verifier</span>
+                  <span class="role-target">0 / 2 assigned</span>
+                </div>
+                  <span class="role-status status-red">Unfilled</span>
+              </div>
+              <div class="role-row">
+                <div class="role-info">
+                  <span class="role-name">Zone Lead</span>
+                  <span class="role-target">Filled</span>
+                </div>
+                <span class="role-status status-green">Covered</span>
+              </div>
+              <div class="role-row">
+                <div class="role-info">
+                  <span class="role-name">Dispatcher</span>
+                  <span class="role-target">0 / 1 assigned</span>
+                </div>
+                <span class="role-status status-red">Urgent</span>
+              </div>
+            </div>
+            <div class="cell-footer">
+              <button class="secondary">View details</button>
+              <button class="primary">Request help</button>
+            </div>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="time-slot">8 – 10 AM</td>
+          <td>
+            <div class="cell-header">
+              <div class="status-pill">3 / 3 roles filled</div>
+              <span class="status-green">Fully covered</span>
+            </div>
+            <div class="role-list">
+              <div class="role-row">
+                <div class="role-info">
+                  <span class="role-name">Verifier</span>
+                  <span class="role-target">2 / 2 assigned</span>
+                </div>
+                <span class="role-status status-green">Covered</span>
+              </div>
+              <div class="role-row">
+                <div class="role-info">
+                  <span class="role-name">Zone Lead</span>
+                  <span class="role-target">Filled</span>
+                </div>
+                <span class="role-status status-green">Covered</span>
+              </div>
+              <div class="role-row">
+                <div class="role-info">
+                  <span class="role-name">Dispatcher</span>
+                  <span class="role-target">1 / 1 assigned</span>
+                </div>
+                <span class="role-status status-green">Covered</span>
+              </div>
+            </div>
+            <div class="cell-footer">
+              <button class="secondary">View roster</button>
+              <button class="primary">Invite backups</button>
+            </div>
+          </td>
+          <td>
+            <div class="cell-header">
+              <div class="status-pill">2 / 3 roles filled</div>
+              <span class="status-amber">Needs attention</span>
+            </div>
+            <div class="role-list">
+              <div class="role-row">
+                <div class="role-info">
+                  <span class="role-name">Verifier</span>
+                  <span class="role-target">1 / 2 assigned</span>
+                </div>
+                <span class="role-status status-amber">1 open</span>
+              </div>
+              <div class="role-row">
+                <div class="role-info">
+                  <span class="role-name">Zone Lead</span>
+                  <span class="role-target">Filled</span>
+                </div>
+                <span class="role-status status-green">Covered</span>
+              </div>
+              <div class="role-row">
+                <div class="role-info">
+                  <span class="role-name">Dispatcher</span>
+                  <span class="role-target">0 / 1 assigned</span>
+                </div>
+                <span class="role-status status-red">Urgent</span>
+              </div>
+            </div>
+            <div class="cell-footer">
+              <button class="secondary">View details</button>
+              <button class="primary">Fill slots</button>
+            </div>
+          </td>
+          <td>
+            <div class="cell-header">
+              <div class="status-pill">3 / 3 roles filled</div>
+              <span class="status-green">Fully covered</span>
+            </div>
+            <div class="role-list">
+              <div class="role-row">
+                <div class="role-info">
+                  <span class="role-name">Verifier</span>
+                  <span class="role-target">2 / 2 assigned</span>
+                </div>
+                <span class="role-status status-green">Covered</span>
+              </div>
+              <div class="role-row">
+                <div class="role-info">
+                  <span class="role-name">Zone Lead</span>
+                  <span class="role-target">Filled</span>
+                </div>
+                <span class="role-status status-green">Covered</span>
+              </div>
+              <div class="role-row">
+                <div class="role-info">
+                  <span class="role-name">Dispatcher</span>
+                  <span class="role-target">1 / 1 assigned</span>
+                </div>
+                <span class="role-status status-green">Covered</span>
+              </div>
+            </div>
+            <div class="cell-footer">
+              <button class="secondary">View roster</button>
+              <button class="primary">Invite backups</button>
+            </div>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="time-slot">10 – 12 PM</td>
+          <td>
+            <div class="cell-header">
+              <div class="status-pill">1 / 3 roles filled</div>
+              <span class="status-red">Critical gaps</span>
+            </div>
+            <div class="role-list">
+              <div class="role-row">
+                <div class="role-info">
+                  <span class="role-name">Verifier</span>
+                  <span class="role-target">0 / 2 assigned</span>
+                </div>
+                <span class="role-status status-red">Unfilled</span>
+              </div>
+              <div class="role-row">
+                <div class="role-info">
+                  <span class="role-name">Zone Lead</span>
+                  <span class="role-target">Filled</span>
+                </div>
+                <span class="role-status status-green">Covered</span>
+              </div>
+              <div class="role-row">
+                <div class="role-info">
+                  <span class="role-name">Dispatcher</span>
+                  <span class="role-target">0 / 1 assigned</span>
+                </div>
+                <span class="role-status status-red">Urgent</span>
+              </div>
+            </div>
+            <div class="cell-footer">
+              <button class="secondary">View details</button>
+              <button class="primary">Request help</button>
+            </div>
+          </td>
+          <td>
+            <div class="cell-header">
+              <div class="status-pill">2 / 3 roles filled</div>
+              <span class="status-amber">Needs attention</span>
+            </div>
+            <div class="role-list">
+              <div class="role-row">
+                <div class="role-info">
+                  <span class="role-name">Verifier</span>
+                  <span class="role-target">1 / 2 assigned</span>
+                </div>
+                <span class="role-status status-amber">1 open</span>
+              </div>
+              <div class="role-row">
+                <div class="role-info">
+                  <span class="role-name">Zone Lead</span>
+                  <span class="role-target">Filled</span>
+                </div>
+                <span class="role-status status-green">Covered</span>
+              </div>
+              <div class="role-row">
+                <div class="role-info">
+                  <span class="role-name">Dispatcher</span>
+                  <span class="role-target">0 / 1 assigned</span>
+                </div>
+                <span class="role-status status-red">Urgent</span>
+              </div>
+            </div>
+            <div class="cell-footer">
+              <button class="secondary">View details</button>
+              <button class="primary">Fill slots</button>
+            </div>
+          </td>
+          <td>
+            <div class="cell-header">
+              <div class="status-pill">3 / 3 roles filled</div>
+              <span class="status-green">Fully covered</span>
+            </div>
+            <div class="role-list">
+              <div class="role-row">
+                <div class="role-info">
+                  <span class="role-name">Verifier</span>
+                  <span class="role-target">2 / 2 assigned</span>
+                </div>
+                <span class="role-status status-green">Covered</span>
+              </div>
+              <div class="role-row">
+                <div class="role-info">
+                  <span class="role-name">Zone Lead</span>
+                  <span class="role-target">Filled</span>
+                </div>
+                <span class="role-status status-green">Covered</span>
+              </div>
+              <div class="role-row">
+                <div class="role-info">
+                  <span class="role-name">Dispatcher</span>
+                  <span class="role-target">1 / 1 assigned</span>
+                </div>
+                <span class="role-status status-green">Covered</span>
+              </div>
+            </div>
+            <div class="cell-footer">
+              <button class="secondary">View roster</button>
+              <button class="primary">Invite backups</button>
+            </div>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="time-slot">12 – 2 PM</td>
+          <td colspan="3" style="text-align: center; background: #f8fafc;">
+            (Additional rows would continue for the remaining 2-hour blocks: 12–2 PM, 2–4 PM, 4–6 PM.)
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>

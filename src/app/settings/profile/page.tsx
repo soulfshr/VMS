@@ -46,6 +46,8 @@ export default function SettingsProfilePage() {
   const [signalHandle, setSignalHandle] = useState('');
   const [primaryLanguage, setPrimaryLanguage] = useState('English');
   const [emailNotifications, setEmailNotifications] = useState(true);
+  const [shiftReminder24h, setShiftReminder24h] = useState(true);
+  const [shiftReminder1h, setShiftReminder1h] = useState(true);
   const [selectedZoneIds, setSelectedZoneIds] = useState<string[]>([]);
   const [primaryZoneId, setPrimaryZoneId] = useState<string>('');
   const [availability, setAvailability] = useState<Record<string, boolean>>({});
@@ -67,6 +69,8 @@ export default function SettingsProfilePage() {
           setSignalHandle(profileData.user.signalHandle || '');
           setPrimaryLanguage(profileData.user.primaryLanguage || 'English');
           setEmailNotifications(profileData.user.emailNotifications ?? true);
+          setShiftReminder24h(profileData.user.shiftReminder24h ?? true);
+          setShiftReminder1h(profileData.user.shiftReminder1h ?? true);
         }
 
         if (profileData.allZones) {
@@ -134,6 +138,8 @@ export default function SettingsProfilePage() {
           signalHandle,
           primaryLanguage,
           emailNotifications,
+          shiftReminder24h,
+          shiftReminder1h,
         }),
       });
       if (!profileRes.ok) throw new Error('Failed to save profile');
@@ -284,20 +290,56 @@ export default function SettingsProfilePage() {
       {/* Email Preferences */}
       <div className="p-6">
         <h3 className="font-semibold text-gray-900 mb-4">Email Preferences</h3>
-        <label className="flex items-start gap-3 cursor-pointer max-w-md">
-          <input
-            type="checkbox"
-            checked={emailNotifications}
-            onChange={(e) => setEmailNotifications(e.target.checked)}
-            className="mt-1 w-5 h-5 text-cyan-600 rounded border-gray-300 focus:ring-cyan-500"
-          />
-          <div>
-            <span className="font-medium text-gray-900">Email Notifications</span>
-            <p className="text-sm text-gray-600 mt-1">
-              Receive email notifications for shift signups, confirmations, cancellations, and general updates.
-            </p>
+        <div className="space-y-4 max-w-md">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={emailNotifications}
+              onChange={(e) => setEmailNotifications(e.target.checked)}
+              className="mt-1 w-5 h-5 text-cyan-600 rounded border-gray-300 focus:ring-cyan-500"
+            />
+            <div>
+              <span className="font-medium text-gray-900">Email Notifications</span>
+              <p className="text-sm text-gray-600 mt-1">
+                Receive email notifications for shift signups, confirmations, cancellations, and general updates.
+              </p>
+            </div>
+          </label>
+
+          <div className="border-t border-gray-200 pt-4">
+            <h4 className="font-medium text-gray-900 mb-3">Shift Reminders</h4>
+            <div className="space-y-3">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={shiftReminder24h}
+                  onChange={(e) => setShiftReminder24h(e.target.checked)}
+                  className="mt-1 w-5 h-5 text-cyan-600 rounded border-gray-300 focus:ring-cyan-500"
+                />
+                <div>
+                  <span className="text-gray-900">24-hour reminder</span>
+                  <p className="text-sm text-gray-600">
+                    Receive a reminder email 24 hours before your scheduled shift.
+                  </p>
+                </div>
+              </label>
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={shiftReminder1h}
+                  onChange={(e) => setShiftReminder1h(e.target.checked)}
+                  className="mt-1 w-5 h-5 text-cyan-600 rounded border-gray-300 focus:ring-cyan-500"
+                />
+                <div>
+                  <span className="text-gray-900">1-hour reminder</span>
+                  <p className="text-sm text-gray-600">
+                    Receive a reminder email 1 hour before your scheduled shift.
+                  </p>
+                </div>
+              </label>
+            </div>
           </div>
-        </label>
+        </div>
       </div>
 
       {/* Weekly Availability */}

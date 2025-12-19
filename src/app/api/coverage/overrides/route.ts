@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { CoverageOverrideType } from '@/generated/prisma/client';
+import { parseDateStringToUTC, dateToString } from '@/lib/dates';
 
 /**
  * GET /api/coverage/overrides
@@ -40,11 +41,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Parse dates
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    start.setHours(0, 0, 0, 0);
-    end.setHours(23, 59, 59, 999);
+    // Parse dates as UTC midnight (database stores dates as @db.Date = UTC midnight)
+    const start = parseDateStringToUTC(startDate);
+    const end = parseDateStringToUTC(endDate);
+    end.setUTCHours(23, 59, 59, 999); // End of day for inclusive range
 
     // Build where clause
     const where: {
@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       overrides: overrides.map(o => ({
         id: o.id,
-        date: o.date.toISOString().split('T')[0],
+        date: dateToString(o.date),
         zoneId: o.zoneId,
         zoneName: o.zone?.name || null,
         county: o.zone?.county || null,
@@ -142,14 +142,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate date format
-    const dateObj = new Date(date);
-    if (isNaN(dateObj.getTime())) {
+    // Validate date format (expect YYYY-MM-DD)
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
       return NextResponse.json(
         { error: 'Invalid date format. Use YYYY-MM-DD.' },
         { status: 400 }
       );
     }
+    // Parse as UTC midnight for database storage
+    const dateObj = parseDateStringToUTC(date);
 
     // Validate overrideType
     const validTypes: CoverageOverrideType[] = ['CLOSURE', 'ADJUST_REQUIREMENTS', 'SPECIAL_EVENT'];
@@ -239,7 +240,7 @@ export async function POST(request: NextRequest) {
       success: true,
       override: {
         id: override.id,
-        date: override.date.toISOString().split('T')[0],
+        date: dateToString(override.date),
         zoneId: override.zoneId,
         zoneName: override.zone?.name || null,
         county: override.zone?.county || null,

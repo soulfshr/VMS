@@ -124,7 +124,7 @@ export default function SignupClient() {
 
     if (stepNum === 1) {
       if (!name.trim()) {
-        setError('Please enter your full name');
+        setError('Please enter your preferred name');
         return false;
       }
       if (!email.trim()) {
@@ -304,7 +304,7 @@ export default function SignupClient() {
 
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                  Full Name <span className="text-red-500">*</span>
+                  Preferred Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="name"
@@ -312,8 +312,9 @@ export default function SignupClient() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition-colors"
-                  placeholder="Enter your full name"
+                  placeholder="How you'd like to be called"
                 />
+                <p className="text-xs text-gray-500 mt-1">This name will be visible to other volunteers</p>
               </div>
 
               <div>
