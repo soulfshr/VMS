@@ -36,7 +36,7 @@ export default function PrivacyPolicyPage() {
             <ul className="list-disc list-inside text-gray-600 mb-4 space-y-1">
               <li><strong>Contact Information:</strong> Preferred name (display name you choose), email address, phone number, and/or Signal ID</li>
               <li><strong>Language Preferences:</strong> Primary language and additional languages spoken</li>
-              <li><strong>Zone Preferences:</strong> Geographic zones where you prefer to volunteer (Durham, Orange, and Wake counties)</li>
+              <li><strong>Zone Preferences:</strong> Geographic zones where you prefer to volunteer</li>
             </ul>
 
             <h4 className="font-medium text-gray-700 mt-4 mb-2">Volunteer Activity Information</h4>
@@ -232,7 +232,7 @@ export default function PrivacyPolicyPage() {
 
             <h2 className="text-xl font-semibold text-gray-900 mt-8 mb-4">Geographic Scope</h2>
             <p className="text-gray-600 mb-4">
-              The VMS is designed for use in North Carolina, specifically in Durham, Orange, and Wake counties. The Service is hosted in the United States, and all data is processed and stored within the United States.
+              The Service is hosted in the United States, and all data is processed and stored within the United States.
             </p>
 
             <hr className="my-6" />
