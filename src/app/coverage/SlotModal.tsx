@@ -38,6 +38,7 @@ interface SlotModalProps {
   userPrimaryZoneId?: string | null; // User's primary zone from API
   currentUser: DevUser;
   userQualifications: string[];
+  schedulingMode?: 'SIMPLE' | 'FULL';
   onClose: () => void;
   onUpdate: () => void;
 }
@@ -76,9 +77,11 @@ export default function SlotModal({
   userPrimaryZoneId,
   currentUser,
   userQualifications,
+  schedulingMode = 'SIMPLE',
   onClose,
   onUpdate,
 }: SlotModalProps) {
+  const isSimpleMode = schedulingMode === 'SIMPLE';
   // Find user's primary zone or use initialZoneId or first zone
   const defaultZoneId = useMemo(() => {
     // First priority: explicit initialZoneId (from clicking a specific zone cell)
@@ -138,9 +141,10 @@ export default function SlotModal({
   const isQualifiedVerifier = userQualifications.includes('VERIFIER');
 
   // Check what the user can sign up for (must have qualification AND slot must be available)
+  // In SIMPLE mode, verifier signups are hidden
   const canSignUpAsDispatcher = !dispatcher && slot.config.needsDispatcher && !isSignedUp && isQualifiedDispatcher;
   const canSignUpAsZoneLead = !zoneLead && slot.config.needsLead && !isSignedUp && isQualifiedZoneLead;
-  const canSignUpAsVerifier = verifiers.length < slot.config.minVols && !isSignedUp && isQualifiedVerifier;
+  const canSignUpAsVerifier = !isSimpleMode && verifiers.length < slot.config.minVols && !isSignedUp && isQualifiedVerifier;
 
   const handleSignup = async (roleType: 'DISPATCHER' | 'ZONE_LEAD' | 'VERIFIER') => {
     setLoading(true);
@@ -316,7 +320,7 @@ export default function SlotModal({
 
         {/* Status overview */}
         <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-          <div className="grid grid-cols-3 gap-4 text-center">
+          <div className={`grid ${isSimpleMode ? 'grid-cols-2' : 'grid-cols-3'} gap-4 text-center`}>
             <div>
               <div className="text-lg">{getRoleIcon('DISPATCHER')}</div>
               <div className="text-xs text-gray-500 mt-1">Dispatcher</div>
@@ -331,13 +335,15 @@ export default function SlotModal({
                 {zoneLead ? zoneLead.userName.split(' ')[0] : 'OPEN'}
               </div>
             </div>
-            <div>
-              <div className="text-lg">{getRoleIcon('VERIFIER')}</div>
-              <div className="text-xs text-gray-500 mt-1">Verifiers</div>
-              <div className={`text-sm font-medium ${verifiers.length >= slot.config.minVols ? 'text-green-600' : 'text-yellow-600'}`}>
-                {verifiers.length} of {slot.config.minVols}
+            {!isSimpleMode && (
+              <div>
+                <div className="text-lg">{getRoleIcon('VERIFIER')}</div>
+                <div className="text-xs text-gray-500 mt-1">Verifiers</div>
+                <div className={`text-sm font-medium ${verifiers.length >= slot.config.minVols ? 'text-green-600' : 'text-yellow-600'}`}>
+                  {verifiers.length} of {slot.config.minVols}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
@@ -427,7 +433,8 @@ export default function SlotModal({
                     'You need qualifications to sign up for coverage slots.'
                   ) : (
                     // Check if positions are filled vs user just not qualified
-                    (!isQualifiedDispatcher && !isQualifiedZoneLead && !isQualifiedVerifier) ? (
+                    // In SIMPLE mode, only check dispatcher and zone lead qualifications
+                    (!isQualifiedDispatcher && !isQualifiedZoneLead && (isSimpleMode || !isQualifiedVerifier)) ? (
                       'You are not qualified for any available positions.'
                     ) : (
                       'All positions you are qualified for are filled.'

@@ -100,6 +100,7 @@ interface WeekData {
   };
   userQualifications?: string[];
   userPrimaryZone?: { id: string; name: string } | null;
+  schedulingMode?: 'SIMPLE' | 'FULL';
 }
 
 function formatDateLocal(date: Date): string {
@@ -756,6 +757,7 @@ export default function CoverageClient() {
           userPrimaryZoneId={weekData?.userPrimaryZone?.id}
           currentUser={user}
           userQualifications={userQualifications}
+          schedulingMode={weekData?.schedulingMode || 'SIMPLE'}
           onClose={() => {
             setModalOpen(false);
             setSelectedSlotData(null);

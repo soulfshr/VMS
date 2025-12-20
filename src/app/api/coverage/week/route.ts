@@ -52,6 +52,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Fetch organization settings for scheduling mode
+    const settings = await prisma.organizationSettings.findFirst();
+    const schedulingMode = settings?.schedulingMode || 'SIMPLE';
+    const isSimpleMode = schedulingMode === 'SIMPLE';
+
     // Fetch user's qualifications
     const userQualifications = await prisma.userQualification.findMany({
       where: { userId: user.id },
@@ -312,12 +317,13 @@ export async function GET(request: NextRequest) {
             const zoneLead = slotSignups.find(s => s.roleType === 'ZONE_LEAD');
             const verifiers = slotSignups.filter(s => s.roleType === 'VERIFIER');
 
-            const volunteersNeeded = slotConfig.minVols;
-            const volunteersFilled = verifiers.length;
+            // In SIMPLE mode, exclude verifiers from counts
+            const volunteersNeeded = isSimpleMode ? 0 : slotConfig.minVols;
+            const volunteersFilled = isSimpleMode ? 0 : verifiers.length;
             const hasDispatcher = !!dispatcher;
             const hasZoneLead = !!zoneLead;
 
-            // Calculate coverage status
+            // Calculate coverage status (exclude verifiers in SIMPLE mode)
             let coverage: 'full' | 'partial' | 'none';
             const totalNeeded =
               (slotConfig.needsDispatcher ? 1 : 0) +
@@ -336,6 +342,11 @@ export async function GET(request: NextRequest) {
               coverage = 'none';
             }
 
+            // Filter signups to exclude verifiers in SIMPLE mode
+            const filteredSignups = isSimpleMode
+              ? slotSignups.filter(s => s.roleType !== 'VERIFIER')
+              : slotSignups;
+
             slots.push({
               zoneId: zone.id,
               zoneName: zone.name,
@@ -343,7 +354,7 @@ export async function GET(request: NextRequest) {
               startHour: slotConfig.start,
               endHour: slotConfig.end,
               config: slotConfig,
-              signups: slotSignups.map(s => ({
+              signups: filteredSignups.map(s => ({
                 id: s.id,
                 userId: s.user.id,
                 userName: s.user.name,
@@ -468,6 +479,7 @@ export async function GET(request: NextRequest) {
       },
       userQualifications: userQualificationSlugs,
       userPrimaryZone: primaryZoneId ? { id: primaryZoneId, name: primaryZoneName } : null,
+      schedulingMode,
     });
   } catch (error) {
     console.error('Error fetching coverage week:', error);
