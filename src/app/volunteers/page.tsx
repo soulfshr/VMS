@@ -44,6 +44,7 @@ interface Volunteer {
   role: string;
   primaryLanguage: string;
   otherLanguages: string[];
+  notes: string | null;
   isActive: boolean;
   isVerified: boolean;
   createdAt: string;
@@ -150,6 +151,7 @@ export default function VolunteersPage() {
     signalHandle: '',
     primaryLanguage: 'English',
     otherLanguages: [] as string[],
+    notes: '',
   });
   const [editVolunteerError, setEditVolunteerError] = useState<string | null>(null);
   const [savingVolunteerEdit, setSavingVolunteerEdit] = useState(false);
@@ -778,6 +780,7 @@ export default function VolunteersPage() {
       signalHandle: volunteer.signalHandle || '',
       primaryLanguage: volunteer.primaryLanguage,
       otherLanguages: volunteer.otherLanguages || [],
+      notes: volunteer.notes || '',
     });
     setEditVolunteerError(null);
     setShowEditModal(true);
@@ -794,6 +797,7 @@ export default function VolunteersPage() {
       signalHandle: '',
       primaryLanguage: 'English',
       otherLanguages: [],
+      notes: '',
     });
     setEditVolunteerError(null);
   };
@@ -816,6 +820,7 @@ export default function VolunteersPage() {
           signalHandle: editVolunteerForm.signalHandle || null,
           primaryLanguage: editVolunteerForm.primaryLanguage,
           otherLanguages: editVolunteerForm.otherLanguages,
+          notes: editVolunteerForm.notes || null,
         }),
       });
 
@@ -839,6 +844,7 @@ export default function VolunteersPage() {
                   signalHandle: editVolunteerForm.signalHandle || null,
                   primaryLanguage: editVolunteerForm.primaryLanguage,
                   otherLanguages: editVolunteerForm.otherLanguages,
+                  notes: editVolunteerForm.notes || null,
                 }
               : v
           ),
@@ -1210,6 +1216,9 @@ export default function VolunteersPage() {
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
                     </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Notes
+                    </th>
                     {isDeveloper && (
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Last Login
@@ -1397,6 +1406,15 @@ export default function VolunteersPage() {
                             </span>
                           )}
                         </td>
+                        <td className="px-6 py-4 text-sm text-gray-500 max-w-xs">
+                          {volunteer.notes ? (
+                            <span className="line-clamp-2" title={volunteer.notes}>
+                              {volunteer.notes}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400 italic">-</span>
+                          )}
+                        </td>
                         {isDeveloper && (
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {volunteer.lastLoginAt
@@ -1415,7 +1433,7 @@ export default function VolunteersPage() {
                       {/* Expanded Details */}
                       {expandedVolunteer === volunteer.id && (
                         <tr key={`${volunteer.id}-details`}>
-                          <td colSpan={isAdmin ? 8 : (isDeveloper ? 8 : 7)} className="px-6 py-4 bg-gray-50">
+                          <td colSpan={isAdmin ? 9 : (isDeveloper ? 9 : 8)} className="px-6 py-4 bg-gray-50">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                               {/* Upcoming Shifts */}
                               <div>
@@ -2193,6 +2211,21 @@ Jane Smith,jane@example.com,555-5678,COORDINATOR,Spanish,Zone 3`}
                       ))
                     }
                   </select>
+                </div>
+
+                {/* Notes */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Notes
+                  </label>
+                  <textarea
+                    value={editVolunteerForm.notes}
+                    onChange={(e) => setEditVolunteerForm(prev => ({ ...prev, notes: e.target.value }))}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                    placeholder="Internal notes about this volunteer..."
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Only visible to Coordinators and above</p>
                 </div>
 
                 {/* Submit buttons */}

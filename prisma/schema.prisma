@@ -285,6 +285,7 @@ model User {
   // Volunteer-specific fields
   primaryLanguage   String    @default("English")
   otherLanguages    String[]
+  notes             String?   // Internal notes about this volunteer (Coordinator+ only)
   emergencyContact  String?
   emergencyPhone    String?
   backgroundCheckDate DateTime?

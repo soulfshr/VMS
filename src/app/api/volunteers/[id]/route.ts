@@ -33,10 +33,10 @@ export async function PATCH(
 
     // Non-admins have limited fields they can update
     if (!hasFullAccess) {
-      // Coordinators can approve/reject applications and manage qualifications/zones
+      // Coordinators can approve/reject applications, manage qualifications/zones, and edit notes
       // Dispatchers can only update qualifications
       const allowedFields = isCoordinator
-        ? ['qualifiedRoleIds', 'zoneIds', 'action', 'role', 'rejectionReason']
+        ? ['qualifiedRoleIds', 'zoneIds', 'action', 'role', 'rejectionReason', 'notes']
         : ['qualifiedRoleIds'];
       const providedFields = Object.keys(body);
       const disallowedFields = providedFields.filter(f => !allowedFields.includes(f));
@@ -223,6 +223,7 @@ export async function PATCH(
       signalHandle?: string | null;
       primaryLanguage?: string;
       otherLanguages?: string[];
+      notes?: string | null;
     } = {};
 
     if (body.role !== undefined) {
@@ -278,6 +279,10 @@ export async function PATCH(
 
     if (body.otherLanguages !== undefined) {
       updateData.otherLanguages = body.otherLanguages;
+    }
+
+    if (body.notes !== undefined) {
+      updateData.notes = body.notes || null;
     }
 
     // Handle zones update
@@ -365,6 +370,7 @@ export async function PATCH(
         role: true,
         primaryLanguage: true,
         otherLanguages: true,
+        notes: true,
         isActive: true,
         isVerified: true,
         userQualifications: {

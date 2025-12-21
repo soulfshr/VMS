@@ -200,6 +200,7 @@ export async function GET(request: NextRequest) {
       role: v.role,
       primaryLanguage: v.primaryLanguage,
       otherLanguages: v.otherLanguages,
+      notes: v.notes,
       isActive: v.isActive,
       isVerified: v.isVerified,
       createdAt: v.createdAt,
