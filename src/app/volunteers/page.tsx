@@ -1107,13 +1107,13 @@ export default function VolunteersPage() {
             </div>
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
               <p className="text-3xl font-bold text-blue-600">
-                {data.volunteers.filter(v => v.completedTrainings.some(t => t.slug === 'DISPATCHER')).length}
+                {data.volunteers.filter(v => v.qualifiedRoles.some(r => r.slug === 'DISPATCHER')).length}
               </p>
               <p className="text-sm text-gray-600">Qualified Dispatchers</p>
             </div>
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
               <p className="text-3xl font-bold text-purple-600">
-                {data.volunteers.filter(v => v.completedTrainings.some(t => t.slug === 'ZONE_LEAD')).length}
+                {data.volunteers.filter(v => v.qualifiedRoles.some(r => r.slug === 'ZONE_LEAD')).length}
               </p>
               <p className="text-sm text-gray-600">Qualified Zone Leads</p>
             </div>
