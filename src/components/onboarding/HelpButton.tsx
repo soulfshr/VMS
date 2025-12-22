@@ -13,7 +13,7 @@ interface HelpButtonProps {
 function getPageName(pathname: string): string {
   if (pathname === '/dashboard' || pathname === '/') return 'dashboard';
   if (pathname.startsWith('/shifts')) return 'shifts';
-  if (pathname.startsWith('/schedule')) return 'schedule';
+  if (pathname.startsWith('/coverage')) return 'coverage';
   if (pathname.startsWith('/profile')) return 'profile';
   if (pathname.startsWith('/volunteers')) return 'volunteers';
   if (pathname.startsWith('/trainings')) return 'trainings';

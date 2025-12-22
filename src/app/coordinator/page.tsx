@@ -112,10 +112,10 @@ export default function CoordinatorPage() {
               <span>👥</span> View Volunteers
             </Link>
             <Link
-              href="/schedule"
+              href="/coverage"
               className="flex items-center gap-2 text-sm text-gray-600 hover:text-cyan-700"
             >
-              <span>🗓️</span> Weekly Schedule
+              <span>🗓️</span> Coverage Schedule
             </Link>
           </div>
         </div>

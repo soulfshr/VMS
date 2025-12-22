@@ -643,8 +643,8 @@ export default function DashboardClient() {
 
   // Get footer link based on active tab
   const getOpeningsFooterLink = () => {
-    // All tabs link to the main schedule page
-    return '/schedule';
+    // All tabs link to the coverage schedule page
+    return '/coverage';
   };
 
   const getOpeningsFooterText = () => {
@@ -1126,7 +1126,7 @@ export default function DashboardClient() {
                 <div className="p-4 border-b border-gray-200 flex justify-between items-center">
                   <h2 className="font-semibold text-gray-900">Shift Coverage Summary</h2>
                   <Link
-                    href="/schedule"
+                    href="/coverage"
                     className="text-sm text-cyan-600 hover:text-cyan-700"
                   >
                     View schedule →

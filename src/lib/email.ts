@@ -1427,7 +1427,7 @@ export async function sendWeeklyDigestEmail(params: WeeklyDigestEmailParams): Pr
 
             <!-- CTA Button -->
             <div style="text-align: center; margin: 24px 0;">
-              <a href="${APP_URL}/schedule"
+              <a href="${APP_URL}/coverage"
                  style="display: inline-block; background: #0891b2; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold;">
                 View Full Schedule
               </a>
