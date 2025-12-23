@@ -88,12 +88,9 @@ export interface WeeklyDigestData {
 // GET /api/cron/weekly-digest
 // Triggered by Vercel cron hourly on Sundays, checks configured send time
 export async function GET(request: NextRequest) {
-  // Allow test mode with secret or in development
-  const testSecret = request.nextUrl.searchParams.get('secret');
-  const isTestMode = request.nextUrl.searchParams.get('test') === 'true' && (
-    process.env.NODE_ENV === 'development' ||
-    (process.env.CRON_SECRET && testSecret === process.env.CRON_SECRET)
-  );
+  // Test mode only available in development
+  const isTestMode = request.nextUrl.searchParams.get('test') === 'true' &&
+    process.env.NODE_ENV === 'development';
 
   // Verify cron request
   if (!isTestMode && !verifyCronRequest(request)) {

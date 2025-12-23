@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
 
     if (user.role !== 'DEVELOPER') {
       console.log('[Training Upload] Forbidden - user role is:', user.role);
-      return NextResponse.json({ error: 'Forbidden', role: user.role }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const body = await request.json();
