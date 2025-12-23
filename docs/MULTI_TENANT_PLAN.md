@@ -2,6 +2,7 @@
 
 > **Status:** Planning (not yet implemented)
 > **Created:** 2025-12-03
+> **Updated:** 2025-12-23
 > **Purpose:** Make VMS portable to other organizations (e.g., New Orleans)
 > **Platform Domain:** `ripple-vms.com`
 
@@ -10,9 +11,76 @@
 Transform Siembra NC VMS into **Ripple VMS**, a multi-tenant platform where each organization gets their own subdomain with admin-configurable settings.
 
 **URL Structure:** `<organization>.ripple-vms.com`
-- `siembra.ripple-vms.com` → Siembra NC
+- `nc.ripple-vms.com` → Siembra NC (current production)
 - `neworleans.ripple-vms.com` → New Orleans RDN
 - `app.ripple-vms.com` → Platform landing/marketing page
+
+---
+
+## Current State (December 2025)
+
+Before implementing multi-tenancy, note what already exists:
+
+### OrganizationSettings (Already Implemented as Singleton)
+```prisma
+model OrganizationSettings {
+  // Branding (already exists)
+  orgName          String   @default("RippleVMS")
+  emailFromName    String   @default("RippleVMS")
+  emailFromAddress String   @default("")
+  emailReplyTo     String   @default("")
+  emailFooter      String   @default("RippleVMS Team")
+
+  // Feature toggles (already exists)
+  featureTrainings  Boolean?
+  featureSightings  Boolean?
+
+  // Scheduling (already exists)
+  schedulingMode    String  @default("SIMPLE")  // SIMPLE or FULL
+  dispatcherSchedulingMode String @default("ZONE")
+
+  // Email digest (already exists)
+  weeklyDigestEnabled  Boolean @default(false)
+  weeklyDigestSendHour Int     @default(18)
+
+  // Other existing fields...
+  autoConfirmRsvp, timezone, maxUploadSizeMb, maxUploadsPerReport
+}
+```
+
+### What Needs to be Added to OrganizationSettings
+```prisma
+model OrganizationSettings {
+  // NEW: Link to organization (convert from singleton)
+  organizationId      String   @unique
+  organization        Organization @relation(...)
+
+  // NEW: Branding (not yet in schema)
+  logoUrl             String?
+  primaryColor        String?  @default("#0d9488")
+  secondaryColor      String?
+
+  // NEW: Contact info (currently hardcoded in UI)
+  hotlineNumber       String?   // Currently: 336-543-0353
+  supportEmail        String?   // Currently hardcoded
+
+  // NEW: Maps integration
+  mapEmbedUrl         String?   // Google My Maps embed URL
+}
+```
+
+### QualifiedRole System (Replaces Qualification Enum)
+The codebase now uses a fully dynamic `QualifiedRole` system instead of the `Qualification` enum. This needs to be org-scoped:
+```prisma
+model QualifiedRole {
+  // NEW: Add org scope
+  organizationId  String
+  organization    Organization @relation(...)
+
+  // Existing fields
+  name, slug, description, color, isActive, sortOrder...
+}
+```
 
 ---
 
@@ -25,9 +93,11 @@ Organization (new root entity)
 ├── OrganizationMember (joins Users to Orgs with per-org roles)
 ├── OrganizationSettings (expanded from current singleton)
 ├── Zones
-├── Shifts
-├── Trainings
+├── Shifts / CoverageSignups
+├── Trainings / TrainingModules (Training Center)
 ├── ICE Sightings
+├── QualifiedRoles (admin-configurable positions)
+├── IntakeQuestions (signup form questions)
 └── ... all operational data
 ```
 
@@ -39,7 +109,7 @@ Organization (new root entity)
 model Organization {
   id              String   @id @default(cuid())
   name            String                        // Display name: "Siembra NC"
-  slug            String   @unique              // Subdomain: "siembra" → siembra.ripple-vms.com
+  slug            String   @unique              // Subdomain: "nc" → nc.ripple-vms.com
 
   // Contact info
   email           String?
@@ -50,21 +120,26 @@ model Organization {
   isActive        Boolean  @default(true)
 
   // Relationships
-  members         OrganizationMember[]
-  settings        OrganizationSettings?
-  zones           Zone[]
-  shifts          Shift[]
-  trainings       Training[]
-  trainingTypes   TrainingType[]
-  shiftTypes      ShiftTypeConfig[]
-  sightings       IceSighting[]
+  members             OrganizationMember[]
+  settings            OrganizationSettings?
+  zones               Zone[]
+  shifts              Shift[]
+  trainings           Training[]
+  trainingTypes       TrainingType[]
+  trainingModules     TrainingModule[]      // Training Center
+  shiftTypes          ShiftTypeConfig[]
+  sightings           IceSighting[]
+  qualifiedRoles      QualifiedRole[]       // Admin-configurable positions
+  intakeQuestions     IntakeQuestion[]      // Signup form questions
+  coverageConfigs     CoverageConfig[]      // Coverage grid
+  poiCategories       POICategory[]         // Points of interest
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
 
-// Slug validation: lowercase alphanumeric + hyphens, 3-30 chars
-// Reserved slugs: app, www, api, admin, support, help, mail, email
+// Slug validation: lowercase alphanumeric + hyphens, 2-30 chars
+// Reserved slugs: app, www, api, admin, support, help, mail, email, dev
 
 model OrganizationMember {
   id              String   @id @default(cuid())
@@ -74,60 +149,25 @@ model OrganizationMember {
   user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
-  // Per-org role (not global)
+  // Per-org role (moved from User.role)
   role            Role         @default(VOLUNTEER)
-  qualifications  Qualification[]
 
-  // Per-org zone assignment
+  // Per-org qualifications (via UserQualification)
+  userQualifications UserQualification[]
+
+  // Per-org settings
   primaryZoneId   String?
   primaryZone     Zone?        @relation("PrimaryZone", fields: [primaryZoneId], references: [id])
+  notes           String?      // Internal notes about this member
+
+  // Account status for this org
+  accountStatus   AccountStatus @default(APPROVED)
+  intakeResponses Json?        // Signup form responses
 
   joinedAt        DateTime     @default(now())
 
   @@unique([userId, organizationId])
   @@index([organizationId])
-}
-```
-
-### Expanded OrganizationSettings
-
-```prisma
-model OrganizationSettings {
-  id                  String   @id @default(cuid())
-  organizationId      String   @unique
-  organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  // Current fields
-  autoConfirmRsvp     Boolean  @default(false)
-  timezone            String   @default("America/New_York")
-  maxUploadSizeMb     Int      @default(50)
-  maxUploadsPerReport Int      @default(5)
-
-  // NEW: Branding
-  logoUrl             String?
-  primaryColor        String?  // Hex color
-  secondaryColor      String?
-  footerText          String?
-
-  // NEW: Contact
-  supportEmail        String?
-  hotlineNumber       String?
-
-  // NEW: Feature toggles
-  enableIceSightings  Boolean  @default(true)
-  enableTraining      Boolean  @default(true)
-  enableDispatching   Boolean  @default(true)
-
-  // NEW: External integrations
-  mapEmbedUrl         String?  // Google My Maps embed
-
-  // NEW: Notifications
-  notifyOnNewSighting Boolean  @default(true)
-  notifyOnRsvp        Boolean  @default(true)
-  emailSenderName     String?  // e.g., "Siembra NC VMS"
-
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
 }
 ```
 
@@ -139,14 +179,35 @@ model OrganizationSettings {
 
 | Model | Notes |
 |-------|-------|
+| **Core Operations** | |
 | Zone | Geographic areas per org |
-| Shift | Shifts per org |
+| Shift | Shifts per org (legacy system) |
+| ShiftTypeConfig | Shift types per org |
+| DispatcherAssignment | Dispatcher scheduling per org |
+| RegionalLeadAssignment | Regional lead scheduling per org |
+| **Coverage Grid (New)** | |
+| CoverageConfig | Weekly slot configuration per zone |
+| CoverageSignup | Volunteer slot signups |
+| CoverageOverride | Date-specific exceptions |
+| **Training System** | |
 | Training | Training definitions per org |
 | TrainingType | Training types per org |
-| TrainingSession | Sessions per org |
-| ShiftTypeConfig | Shift types per org |
+| TrainingSession | Scheduled sessions per org |
+| **Training Center (LMS)** | |
+| TrainingModule | Interactive training modules |
+| ModuleSection | Sections within modules |
+| ModuleQuiz | Quiz configurations |
+| QuizQuestion | Quiz questions |
+| QuizOption | Quiz answer options |
+| **Qualifications** | |
+| QualifiedRole | Admin-configurable positions |
+| **Sightings** | |
 | IceSighting | Sightings reported to org |
-| DispatcherAssignment | Assignments per org |
+| **POI System** | |
+| POICategory | Point of interest categories |
+| PointOfInterest | Points of interest |
+| **Signup & Config** | |
+| IntakeQuestion | Signup form questions |
 | Availability | User availability per org |
 | UserZone | Zone membership per user-org |
 | UserTraining | Training records per user-org |
@@ -158,28 +219,38 @@ model OrganizationSettings {
 | ShiftVolunteer | Shift.organizationId |
 | TrainingSessionAttendee | TrainingSession.organizationId |
 | SightingMedia | IceSighting.organizationId |
-| ShiftTypeRoleRequirement | ShiftTypeConfig.organizationId |
+| ShiftTypeQualifiedRoleRequirement | ShiftTypeConfig.organizationId |
+| ModuleEnrollment | TrainingModule.organizationId |
+| SectionProgress | ModuleEnrollment → TrainingModule.organizationId |
+| QuizAttempt | ModuleQuiz → ModuleSection → TrainingModule.organizationId |
+| UserQualification | QualifiedRole.organizationId (or OrganizationMember) |
+| EmailBlastRecipient | EmailBlast.organizationId |
 
 ### Global (No organizationId)
 
 | Model | Reason |
 |-------|--------|
 | User | Users can belong to multiple orgs |
+| SystemLog | Platform-wide monitoring (org context in metadata) |
+| AuditLog | Platform-wide audit trail (org context in metadata) |
+| HealthCheck | Platform health monitoring |
+| AlertState | Platform alert management |
 
 ---
 
 ## Hardcoded Content to Make Configurable
 
-| Currently Hardcoded | Location | New Source |
-|---------------------|----------|------------|
-| "Siembra NC" | 26+ files | `organization.name` |
-| 336-543-0353 | page.tsx, report/page.tsx | `settings.hotlineNumber` |
-| support@siembranc.org | HelpDrawer.tsx | `settings.supportEmail` |
-| America/New_York | email.ts, schema.prisma | `settings.timezone` |
-| Google Maps embed ID | page.tsx, about/page.tsx | `settings.mapEmbedUrl` |
-| siembra-logo.webp | Header, Footer | `settings.logoUrl` |
-| Teal color (#0d9488) | Multiple components | `settings.primaryColor` |
-| Signal group links | seed.ts | Per-zone admin config |
+| Currently Hardcoded | Location | Count | New Source |
+|---------------------|----------|-------|------------|
+| "Siembra NC" / organization name | 35+ files | Many | `organization.name` |
+| 336-543-0353 (hotline) | report/page.tsx, resources/page.tsx | ~3 | `settings.hotlineNumber` |
+| support email | HelpDrawer.tsx | ~1 | `settings.supportEmail` |
+| America/New_York | email.ts, schema.prisma | ~5 | `settings.timezone` |
+| Google Maps embed ID | about/page.tsx | ~2 | `settings.mapEmbedUrl` |
+| Logo images | Header, Footer, emails | ~5 | `settings.logoUrl` |
+| Teal color (#0d9488) | tailwind.config.ts, components | Many | `settings.primaryColor` |
+| Signal group links | seed.ts, zone admin | Per-zone | Zone.signalGroup (already exists) |
+| Coverage time slots (6-8, 8-10, etc.) | CoverageGrid components | ~3 | Consider making configurable |
 
 ---
 
@@ -188,10 +259,11 @@ model OrganizationSettings {
 Each organization gets a subdomain of `ripple-vms.com`:
 
 ```
-siembra.ripple-vms.com      → Siembra NC (slug: "siembra")
+nc.ripple-vms.com           → Siembra NC (slug: "nc")
 neworleans.ripple-vms.com   → New Orleans RDN (slug: "neworleans")
 app.ripple-vms.com          → Platform landing page
 www.ripple-vms.com          → Redirect to app.ripple-vms.com
+dev-nc.ripple-vms.com       → Dev environment (reserved)
 ```
 
 ### Subdomain Resolution
@@ -199,11 +271,11 @@ www.ripple-vms.com          → Redirect to app.ripple-vms.com
 ```typescript
 // src/lib/org-resolver.ts
 export async function getOrgFromSubdomain(hostname: string): Promise<Organization | null> {
-  // Extract subdomain: "siembra.ripple-vms.com" → "siembra"
+  // Extract subdomain: "nc.ripple-vms.com" → "nc"
   const subdomain = hostname.split('.')[0];
 
   // Skip platform subdomains
-  if (['app', 'www', 'api'].includes(subdomain)) {
+  if (['app', 'www', 'api', 'dev', 'dev-nc'].includes(subdomain)) {
     return null;
   }
 
@@ -233,7 +305,7 @@ export async function getOrgFromSubdomain(hostname: string): Promise<Organizatio
 
 Organizations can optionally map their own domain:
 ```
-vms.siembranc.org → siembra.ripple-vms.com
+vms.siembranc.org → nc.ripple-vms.com
 vms.nolardn.org   → neworleans.ripple-vms.com
 ```
 
@@ -253,14 +325,16 @@ This requires:
 /admin/zones                  - Already exists, scope to org
 /admin/shift-types            - Already exists, scope to org
 /admin/training-types         - Already exists, scope to org
-/admin/settings               - Expand with new options
+/admin/qualified-roles        - Already exists, scope to org
+/admin/intake-questions       - Already exists, scope to org
+/admin/settings               - Expand with new branding options
 ```
 
 ---
 
 ## API Route Changes
 
-All 36 API routes need org-scoping. Pattern:
+All **~100 API routes** need org-scoping. Pattern:
 
 ```typescript
 // Before (single-tenant)
@@ -300,8 +374,15 @@ export async function getOrgUser(organizationId: string) {
     include: {
       user: true,
       organization: { include: { settings: true } },
+      userQualifications: { include: { qualifiedRole: true } },
     },
   });
+}
+
+// Get org from current request context (subdomain)
+export async function getOrgFromRequest(request: NextRequest) {
+  const hostname = request.headers.get('host') || '';
+  return getOrgFromSubdomain(hostname);
 }
 ```
 
@@ -309,32 +390,55 @@ export async function getOrgUser(organizationId: string) {
 
 ## Implementation Phases
 
-### Phase 1: Schema Foundation
-- [ ] Add `Organization` and `OrganizationMember` models
-- [ ] Add `organizationId` to all scoped models
-- [ ] Expand `OrganizationSettings` with new fields
-- [ ] Create migration that assigns existing data to "Siembra NC" org
-- [ ] Existing users become OrganizationMembers with current roles
+### Phase 1: Core Foundation (~1.5 weeks)
+- [ ] Add `Organization` model
+- [ ] Add `organizationId` to core models first (minimal breaking changes):
+  - Zone, QualifiedRole, ShiftTypeConfig, TrainingType
+  - POICategory, IntakeQuestion
+- [ ] Create migration seeding "Siembra NC" as first org
+- [ ] Update OrganizationSettings to link to Organization
 
-### Phase 2: Auth & API Updates
-- [ ] Create `src/lib/org-user.ts` helper functions
-- [ ] Add org context to session/cookies
-- [ ] Update all 36 API routes to filter by organizationId
+### Phase 2: User Membership (~1 week)
+- [ ] Add `OrganizationMember` model
+- [ ] Move `role` from User to OrganizationMember
+- [ ] Move UserQualification to scope via OrganizationMember
+- [ ] Migrate existing users to OrganizationMembers for "Siembra NC"
+
+### Phase 3: Operational Data (~2 weeks)
+- [ ] Add `organizationId` to:
+  - Shift, Training, TrainingSession
+  - DispatcherAssignment, RegionalLeadAssignment
+  - IceSighting
+  - CoverageConfig, CoverageSignup, CoverageOverride
+- [ ] Update all ~100 API routes to filter by organizationId
 - [ ] Add org authorization middleware
 
-### Phase 3: Admin UI
+### Phase 4: Training Center (~1 week)
+- [ ] Add `organizationId` to Training Center models:
+  - TrainingModule, ModuleSection, ModuleQuiz
+  - QuizQuestion, QuizOption
+- [ ] Update S3 paths to include org prefix for video isolation
+- [ ] Scope enrollment/progress tracking to org
+
+### Phase 5: Auth & Context (~1 week)
+- [ ] Create `src/lib/org-user.ts` helper functions
+- [ ] Add org context to session/cookies
+- [ ] Implement subdomain resolution middleware
+- [ ] Update auth flow for multi-org users
+
+### Phase 6: Admin UI (~1 week)
 - [ ] Organization settings page (name, contact, branding)
 - [ ] Member management (invite, roles, remove)
 - [ ] Feature toggles UI
 - [ ] Expand existing admin pages for org scope
 
-### Phase 4: Frontend Updates
-- [ ] Add org selector/switcher in navigation
+### Phase 7: Frontend Updates (~1 week)
+- [ ] Add org selector/switcher in navigation (for multi-org users)
 - [ ] Update all data fetching to include organizationId
 - [ ] Dynamic branding (logo, colors) from settings
-- [ ] Replace hardcoded strings with database lookups
+- [ ] Replace 35+ hardcoded strings with database lookups
 
-### Phase 5: Onboarding & Testing
+### Phase 8: Onboarding & Testing (~1 week)
 - [ ] Org creation flow (see Organization Onboarding section below)
 - [ ] Initial setup wizard (zones, shift types)
 - [ ] Test with second org (New Orleans)
@@ -347,12 +451,14 @@ export async function getOrgUser(organizationId: string) {
 ```sql
 -- 1. Create Organization table
 -- 2. Create OrganizationMember table
--- 3. Insert "Siembra NC" as first organization
--- 4. Create OrganizationMembers from existing Users
--- 5. Add organizationId column to Zone, Shift, etc.
--- 6. Update all records to reference Siembra NC org
--- 7. Add NOT NULL constraint to organizationId columns
--- 8. Create indexes on organizationId fields
+-- 3. Insert "Siembra NC" as first organization (slug: "nc")
+-- 4. Link existing OrganizationSettings to "Siembra NC"
+-- 5. Create OrganizationMembers from existing Users (copy role)
+-- 6. Add organizationId column to Zone, Shift, etc.
+-- 7. Update all records to reference "Siembra NC" org
+-- 8. Add NOT NULL constraint to organizationId columns
+-- 9. Create indexes on organizationId fields
+-- 10. Move UserQualification to scope via OrganizationMember
 ```
 
 ---
@@ -367,25 +473,42 @@ export async function getOrgUser(organizationId: string) {
 ### Performance
 - Add indexes on all organizationId fields
 - Composite indexes for common queries:
-  - `@@index([organizationId, date])` on Shift
-  - `@@index([organizationId, isActive])` on Zone
+  - `@@index([organizationId, date])` on Shift, CoverageSignup
+  - `@@index([organizationId, isActive])` on Zone, QualifiedRole
+  - `@@index([organizationId, status])` on IceSighting
 
 ### Public Routes
-- ICE sighting report page needs org context
-- Options: org selector, subdomain detection, or org-specific URLs
+- ICE sighting report page needs org context from subdomain
+- Public zone stats API needs org scoping
+- Signup page needs org context for IntakeQuestions
+
+### Training Center Considerations
+- **Video storage**: Use org-prefixed S3 paths (`training/{orgId}/videos/...`)
+- **Module isolation**: Fully isolated per org initially
+- **Future**: Template library for sharing modules between orgs
+
+### Monitoring & Logs
+- SystemLog and AuditLog remain platform-wide
+- Include `organizationId` in metadata for filtering
+- Consider per-org log retention policies
 
 ---
 
-## Effort Estimate
+## Effort Estimate (Revised)
 
 | Phase | Effort |
 |-------|--------|
-| Schema & Migration | ~1 week |
-| Auth & API Updates | ~1.5 weeks |
+| Core Foundation | ~1.5 weeks |
+| User Membership | ~1 week |
+| Operational Data | ~2 weeks |
+| Training Center | ~1 week |
+| Auth & Context | ~1 week |
 | Admin UI | ~1 week |
-| Frontend Updates | ~0.5 week |
-| Testing & Polish | ~0.5 week |
-| **Total** | **~4-5 weeks** |
+| Frontend Updates | ~1 week |
+| Onboarding & Testing | ~1 week |
+| **Total** | **~9-10 weeks** |
+
+*Note: Original estimate was 4-5 weeks for 36 API routes. Current codebase has ~100 routes and significantly more features (Training Center, Coverage Grid, QualifiedRole system, etc.)*
 
 ---
 
@@ -416,7 +539,7 @@ _dmarc.ripple-vms.com → TXT → "v=DMARC1; p=quarantine; rua=mailto:dmarc@ripp
 ripple-vms.com → MX → inbound-smtp.us-east-1.amazonaws.com (priority 10)
 ```
 
-**Key Point:** Verifying `ripple-vms.com` in SES automatically allows sending from **any subdomain** (e.g., `siembra.ripple-vms.com`, `neworleans.ripple-vms.com`). No additional verification needed per organization.
+**Key Point:** Verifying `ripple-vms.com` in SES automatically allows sending from **any subdomain** (e.g., `nc.ripple-vms.com`, `neworleans.ripple-vms.com`). No additional verification needed per organization.
 
 ### Email Sending Pattern
 
@@ -424,7 +547,7 @@ Each organization's emails use a **subdomain-based sender address**:
 
 | Organization | Sender Address | Display Name |
 |--------------|----------------|--------------|
-| Siembra NC | `noreply@siembra.ripple-vms.com` | "Siembra NC" |
+| Siembra NC | `noreply@nc.ripple-vms.com` | "Siembra NC" |
 | New Orleans | `noreply@neworleans.ripple-vms.com` | "New Orleans RDN" |
 | Platform | `noreply@ripple-vms.com` | "Ripple VMS" |
 
@@ -432,24 +555,24 @@ Each organization's emails use a **subdomain-based sender address**:
 ```typescript
 // src/lib/email.ts
 function getEmailFrom(organization: Organization): string {
-  const senderName = organization.settings?.emailSenderName || organization.name;
+  const senderName = organization.settings?.emailFromName || organization.name;
   const senderAddress = `noreply@${organization.slug}.ripple-vms.com`;
   return `"${senderName}" <${senderAddress}>`;
 }
 
-// Example output: "Siembra NC" <noreply@siembra.ripple-vms.com>
+// Example output: "Siembra NC" <noreply@nc.ripple-vms.com>
 ```
 
-### OrganizationSettings Email Fields
+### OrganizationSettings Email Fields (Already Exist)
 
 ```prisma
 model OrganizationSettings {
-  // ... existing fields ...
-
-  // Email customization
-  emailSenderName     String?   // Display name (e.g., "Siembra NC")
-  replyToEmail        String?   // Optional reply-to address
-  emailFooterText     String?   // Custom footer for emails
+  // Already implemented
+  orgName          String   @default("RippleVMS")
+  emailFromName    String   @default("RippleVMS")
+  emailFromAddress String   @default("")
+  emailReplyTo     String   @default("")
+  emailFooter      String   @default("RippleVMS Team")
 }
 ```
 
@@ -533,8 +656,8 @@ New organizations go through a guided onboarding wizard that combines structured
 ```
 
 **Validation:**
-- Slug: lowercase alphanumeric + hyphens, 3-30 chars, unique
-- Reserved slugs blocked: `app`, `www`, `api`, `admin`, `support`, `help`, `mail`, `email`
+- Slug: lowercase alphanumeric + hyphens, 2-30 chars, unique
+- Reserved slugs blocked: `app`, `www`, `api`, `admin`, `support`, `help`, `mail`, `email`, `dev`, `dev-nc`
 
 #### Step 2: Choose a Template (Structured Selection)
 
@@ -566,11 +689,11 @@ New organizations go through a guided onboarding wizard that combines structured
 
 **Template Presets:**
 
-| Template | Shift Types | Features | Qualifications |
-|----------|-------------|----------|----------------|
-| **Rapid Response** | Patrol, Hotline, On-Call Support | ICE Sightings ✓, Training ✓, Dispatching ✓ | Verifier, Zone Lead, Dispatcher |
-| **Legal Observer** | Court Watch, Street Team, Documentation | ICE Sightings ✗, Training ✓, Dispatching ✗ | Observer, Lead Observer |
-| **Mutual Aid** | Distribution, Outreach, Transport | ICE Sightings ✗, Training ✓, Dispatching ✗ | Volunteer, Team Lead |
+| Template | Shift Types | Features | Qualified Roles |
+|----------|-------------|----------|-----------------|
+| **Rapid Response** | Patrol, Hotline, On-Call Support | ICE Sightings ✓, Training ✓, Coverage Grid ✓ | Verifier, Zone Lead, Dispatcher |
+| **Legal Observer** | Court Watch, Street Team, Documentation | ICE Sightings ✗, Training ✓, Coverage Grid ✗ | Observer, Lead Observer |
+| **Mutual Aid** | Distribution, Outreach, Transport | ICE Sightings ✗, Training ✓, Coverage Grid ✗ | Volunteer, Team Lead |
 | **Custom** | (none - configure manually) | All optional | (none - configure manually) |
 
 #### Step 3: Geographic Coverage (AI-Assisted)
@@ -752,7 +875,7 @@ If using a template, shift types are pre-populated:
 │  ✓ 3 shift types (Patrol, Hotline, On-Call Support)        │
 │  ✓ 4 training modules                                       │
 │  ✓ ICE Sighting reports enabled                             │
-│  ✓ Dispatcher assignments enabled                           │
+│  ✓ Coverage grid enabled                                    │
 │                                                             │
 │  Admin: Maria Santos (maria@nolardn.org)                    │
 │                                                             │
@@ -801,7 +924,7 @@ interface OnboardingSession {
     description: string;
     qualificationGranted?: string;
   }[];
-  qualifications: string[];
+  qualifiedRoles: string[];
 
   // Step 6: Branding
   logoUrl?: string;
@@ -875,12 +998,12 @@ After completing onboarding:
 
 2. **Guided tour** on first login showing:
    - Dashboard overview
-   - How to create shifts
+   - How to create shifts / coverage grid
    - How to invite volunteers
    - Admin settings location
 
 3. **Sample data option** (optional):
-   - Create a few example shifts
+   - Create a few example coverage signups
    - Add placeholder training sessions
    - Helps org understand the system before going live
 
@@ -897,3 +1020,5 @@ After completing onboarding:
 - [ ] AI-assisted zone boundary suggestions using mapping APIs
 - [ ] Import existing volunteer lists (CSV upload)
 - [ ] Clone organization setup (copy config from existing org)
+- [ ] Training module template library (share modules between orgs)
+- [ ] Configurable coverage time slots (not just 6-18 by 2-hour blocks)
