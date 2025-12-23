@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { sendVerifyEmailAndSetPasswordEmail } from '@/lib/email';
 import crypto from 'crypto';
 import { checkRateLimitAsync, getClientIp, rateLimitResponse } from '@/lib/rate-limit';
+import { getOrgIdForCreate } from '@/lib/org-context';
 
 /**
  * Hash a reset token using SHA-256
@@ -24,6 +25,9 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // Get organization context for multi-tenant support
+    const orgId = await getOrgIdForCreate();
+
     const body = await request.json();
     const {
       name,
@@ -84,9 +88,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify zones exist
+    // Verify zones exist and belong to the current organization
     const zones = await prisma.zone.findMany({
-      where: { id: { in: zoneIds }, isActive: true },
+      where: {
+        id: { in: zoneIds },
+        isActive: true,
+        // Multi-tenant: scope to current org (or null for legacy data)
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
     });
 
     if (zones.length !== zoneIds.length) {
@@ -109,6 +120,7 @@ export async function POST(request: NextRequest) {
     // Create the user with PENDING status
     const user = await prisma.user.create({
       data: {
+        organizationId: orgId, // Multi-tenant: associate user with current org
         email: normalizedEmail,
         name: name.trim(),
         phone: phone?.trim() || null,

@@ -1,11 +1,21 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { getCurrentOrgId } from '@/lib/org-context';
 
 // GET /api/intake-questions - Public endpoint to get active intake questions for signup form
+// Scoped to current organization (from subdomain)
 export async function GET() {
   try {
+    const orgId = await getCurrentOrgId();
+
     const questions = await prisma.intakeQuestion.findMany({
-      where: { isActive: true },
+      where: {
+        isActive: true,
+        // Multi-tenant: scope to current org (or null for legacy data)
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
       select: {
         id: true,

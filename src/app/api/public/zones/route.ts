@@ -1,11 +1,20 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { getCurrentOrgId } from '@/lib/org-context';
 
-// GET /api/public/zones - Get all active zones (public, no auth required)
+// GET /api/public/zones - Get all active zones for current org (public, no auth required)
 export async function GET() {
   try {
+    const orgId = await getCurrentOrgId();
+
     const zones = await prisma.zone.findMany({
-      where: { isActive: true },
+      where: {
+        isActive: true,
+        // Multi-tenant: scope to current org (or null for legacy data)
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
       select: {
         id: true,
         name: true,
