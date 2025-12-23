@@ -8,6 +8,7 @@ import {
   sendShiftCancellationEmail,
 } from '@/lib/email';
 import { auditCreate, auditUpdate, auditDelete, toAuditUser } from '@/lib/audit';
+import { getCurrentOrgId } from '@/lib/org-context';
 
 // POST /api/shifts/[id]/rsvp - RSVP to a shift
 export async function POST(
@@ -91,8 +92,15 @@ export async function POST(
       );
     }
 
-    // Check organization settings for auto-confirm
-    const orgSettings = await prisma.organizationSettings.findFirst();
+    const orgId = await getCurrentOrgId();
+
+    // Check organization settings for auto-confirm (scoped to org)
+    const orgSettings = await prisma.organizationSettings.findFirst({
+      where: orgId
+        ? { OR: [{ organizationId: orgId }, { organizationId: null }] }
+        : { organizationId: null },
+      orderBy: { organizationId: 'desc' }, // Prefer org-specific over null
+    });
     const autoConfirm = orgSettings?.autoConfirmRsvp ?? false;
 
     // Create RSVP with status based on auto-confirm setting

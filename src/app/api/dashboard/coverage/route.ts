@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUserWithZones } from '@/lib/user';
+import { getCurrentOrgId } from '@/lib/org-context';
 import {
   getTodayET,
   getCurrentHourET,
@@ -186,10 +187,16 @@ export async function GET() {
     }
 
     // Get openings based on user's qualifications
-    const openings = await getOpeningsForUser(user, qualSlugs, primaryZone?.id || null);
+    const orgId = await getCurrentOrgId() ?? null;
+    const openings = await getOpeningsForUser(user, qualSlugs, primaryZone?.id || null, orgId);
 
-    // Get organization settings for autoConfirmRsvp and schedulingMode
-    const settings = await prisma.organizationSettings.findFirst();
+    // Get organization settings for autoConfirmRsvp and schedulingMode (scoped to org)
+    const settings = await prisma.organizationSettings.findFirst({
+      where: orgId
+        ? { OR: [{ organizationId: orgId }, { organizationId: null }] }
+        : { organizationId: null },
+      orderBy: { organizationId: 'desc' }, // Prefer org-specific over null
+    });
     const autoConfirmRsvp = settings?.autoConfirmRsvp ?? true;
     const schedulingMode = settings?.schedulingMode || 'SIMPLE';
     const isSimpleMode = schedulingMode === 'SIMPLE';
@@ -198,7 +205,7 @@ export async function GET() {
     let coverageSummary = null;
     const isLeader = ['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role);
     if (isLeader) {
-      coverageSummary = await getCoverageSummary(weekStart, weekEnd, isSimpleMode);
+      coverageSummary = await getCoverageSummary(weekStart, weekEnd, isSimpleMode, orgId);
     }
 
     return NextResponse.json({
@@ -236,7 +243,8 @@ export async function GET() {
 async function getOpeningsForUser(
   user: { id: string; zones: Array<{ zone: { id: string } }> },
   qualSlugs: string[],
-  primaryZoneId: string | null
+  primaryZoneId: string | null,
+  orgId: string | null
 ): Promise<{
   zoneLeadSlots: SlotOpening[];
   verifierSlots: SlotOpening[];
@@ -252,9 +260,14 @@ async function getOpeningsForUser(
 
   const userZoneIds = user.zones.map(uz => uz.zone.id);
 
-  // Get all zone configs for the next 2 weeks
+  // Get all zone configs for the next 2 weeks (scoped to org)
   const zones = await prisma.zone.findMany({
-    where: { isActive: true },
+    where: {
+      isActive: true,
+      OR: orgId
+        ? [{ organizationId: orgId }, { organizationId: null }]
+        : [{ organizationId: null }],
+    },
     include: {
       coverageConfigs: { where: { isActive: true } },
     },
@@ -536,14 +549,19 @@ function calculateWeekStats(
  * Only includes slots that haven't passed yet (future slots)
  * When isSimpleMode is true, verifier stats are excluded
  */
-async function getCoverageSummary(weekStart: Date, weekEnd: Date, isSimpleMode: boolean = false) {
+async function getCoverageSummary(weekStart: Date, weekEnd: Date, isSimpleMode: boolean = false, orgId: string | null = null) {
   // Get current time info for filtering past slots
   const todayStr = getTodayET();
   const currentHour = getCurrentHourET();
 
-  // Get all zones with configs
+  // Get all zones with configs (scoped to org)
   const zones = await prisma.zone.findMany({
-    where: { isActive: true },
+    where: {
+      isActive: true,
+      OR: orgId
+        ? [{ organizationId: orgId }, { organizationId: null }]
+        : [{ organizationId: null }],
+    },
     include: {
       coverageConfigs: { where: { isActive: true } },
     },

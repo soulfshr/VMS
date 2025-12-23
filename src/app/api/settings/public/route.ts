@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
+import { getCurrentOrgId } from '@/lib/org-context';
 
 // GET /api/settings/public - Get public settings (scheduling mode, etc.)
 // Available to any authenticated user
@@ -11,8 +12,15 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get organization settings
-    const settings = await prisma.organizationSettings.findFirst();
+    const orgId = await getCurrentOrgId();
+
+    // Get organization settings (scoped to org)
+    const settings = await prisma.organizationSettings.findFirst({
+      where: orgId
+        ? { OR: [{ organizationId: orgId }, { organizationId: null }] }
+        : { organizationId: null },
+      orderBy: { organizationId: 'desc' }, // Prefer org-specific over null
+    });
 
     return NextResponse.json({
       schedulingMode: settings?.schedulingMode || 'SIMPLE',

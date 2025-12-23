@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
+import { getCurrentOrgId } from '@/lib/org-context';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -54,8 +55,15 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // Check organization settings for auto-confirm
-    const orgSettings = await prisma.organizationSettings.findFirst();
+    const orgId = await getCurrentOrgId();
+
+    // Check organization settings for auto-confirm (scoped to org)
+    const orgSettings = await prisma.organizationSettings.findFirst({
+      where: orgId
+        ? { OR: [{ organizationId: orgId }, { organizationId: null }] }
+        : { organizationId: null },
+      orderBy: { organizationId: 'desc' }, // Prefer org-specific over null
+    });
     const autoConfirm = orgSettings?.autoConfirmRsvp ?? false;
 
     // Create attendance record

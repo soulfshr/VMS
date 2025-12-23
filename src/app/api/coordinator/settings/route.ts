@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
+import { getCurrentOrgId, getOrgIdForCreate } from '@/lib/org-context';
 
 // GET /api/coordinator/settings - Get scheduling settings
 export async function GET() {
@@ -14,11 +15,20 @@ export async function GET() {
       return NextResponse.json({ error: 'Coordinator access required' }, { status: 403 });
     }
 
-    // Get or create settings singleton
-    let settings = await prisma.organizationSettings.findFirst();
+    const orgId = await getCurrentOrgId();
+
+    // Get or create settings (scoped to org)
+    let settings = await prisma.organizationSettings.findFirst({
+      where: orgId
+        ? { OR: [{ organizationId: orgId }, { organizationId: null }] }
+        : { organizationId: null },
+      orderBy: { organizationId: 'desc' }, // Prefer org-specific over null
+    });
     if (!settings) {
+      const createOrgId = await getOrgIdForCreate();
       settings = await prisma.organizationSettings.create({
         data: {
+          organizationId: createOrgId,
           autoConfirmRsvp: false,
           timezone: 'America/New_York',
         },
@@ -66,11 +76,20 @@ export async function PUT(request: Request) {
       }
     }
 
-    // Get or create settings singleton
-    let settings = await prisma.organizationSettings.findFirst();
+    const orgId = await getCurrentOrgId();
+
+    // Get or create settings (scoped to org)
+    let settings = await prisma.organizationSettings.findFirst({
+      where: orgId
+        ? { OR: [{ organizationId: orgId }, { organizationId: null }] }
+        : { organizationId: null },
+      orderBy: { organizationId: 'desc' }, // Prefer org-specific over null
+    });
     if (!settings) {
+      const createOrgId = await getOrgIdForCreate();
       settings = await prisma.organizationSettings.create({
         data: {
+          organizationId: createOrgId,
           autoConfirmRsvp: false,
           timezone: 'America/New_York',
           dispatcherSchedulingMode: dispatcherSchedulingMode ?? 'ZONE',
