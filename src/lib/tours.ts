@@ -1,7 +1,7 @@
 // Tour definitions for guided tours
 // Note: react-joyride types are defined locally until React 19 support is added
 
-export type PageName = 'dashboard' | 'shifts' | 'schedule' | 'profile' | 'volunteers' | 'trainings' | 'admin' | 'sightings';
+export type PageName = 'dashboard' | 'shifts' | 'schedule' | 'coverage' | 'profile' | 'volunteers' | 'trainings' | 'admin' | 'sightings';
 
 // Local type definition matching react-joyride's Step interface
 export interface TourStep {
@@ -72,9 +72,21 @@ export const dashboardTour: TourDefinition = {
     ),
     createStep(
       '[data-tour="coverage-overview"]',
-      'Coverage Overview',
-      'Coordinators can see weekly coverage at a glance. Green means fully staffed, yellow is partial, and red needs attention.',
+      'Triangle Coverage Summary',
+      'Leaders see coverage by role: Zone Leads, Dispatchers, Verifiers, and Coordinators. Progress bars show filled vs needed positions for This Week and Next Week.',
       'bottom'
+    ),
+    createStep(
+      '[data-tour="my-commitments"]',
+      'My Upcoming Commitments',
+      'Your confirmed coverage signups appear here. Click "View Schedule" to see the full coverage grid.',
+      'left'
+    ),
+    createStep(
+      '[data-tour="openings-for-you"]',
+      'Openings For You',
+      'Find open slots based on your qualifications. Tabs are prioritized: Coordinator, Dispatcher, Zone Lead, Verifier. Sign up directly from here.',
+      'left'
     ),
   ],
 };
@@ -308,11 +320,61 @@ export const sightingsTour: TourDefinition = {
   ],
 };
 
+export const coverageTour: TourDefinition = {
+  name: 'coverage',
+  title: 'Coverage Page Tour',
+  steps: [
+    createStep(
+      '[data-tour="coverage-header"]',
+      'Coverage Overview',
+      'This page shows volunteer coverage across all zones. Each cell represents a 2-hour time slot with color-coded coverage status.',
+      'bottom'
+    ),
+    createStep(
+      '[data-tour="week-navigation"]',
+      'Week Navigation',
+      'Use these arrows to navigate between weeks. The current week is shown by default.',
+      'bottom'
+    ),
+    createStep(
+      '[data-tour="coverage-legend"]',
+      'Coverage Legend',
+      'Green means fully staffed, yellow is partial coverage (50-80%), and red needs attention (under 50%).',
+      'bottom'
+    ),
+    createStep(
+      '[data-tour="coverage-grid"]',
+      'Coverage Grid',
+      'Click any slot to see who is signed up and available positions. Zones are grouped by county.',
+      'top'
+    ),
+    createStep(
+      '[data-tour="slot-modal"]',
+      'Slot Details',
+      'The slot modal shows current signups for Zone Lead, Dispatcher, Verifiers, and Coordinator. Sign up for positions you are qualified for.',
+      'center'
+    ),
+    createStep(
+      '[data-tour="my-commitments"]',
+      'My Upcoming Commitments',
+      'See your confirmed coverage signups here. Click to view details or cancel if needed.',
+      'left'
+    ),
+    createStep(
+      '[data-tour="openings-tabs"]',
+      'Openings For You',
+      'Find open positions based on your qualifications. Tabs are ordered by priority: Coordinator, Dispatcher, Zone Lead, Verifier.',
+      'left'
+    ),
+  ],
+};
+
 // Map of all tours
 export const tours: Record<PageName, TourDefinition> = {
   dashboard: dashboardTour,
   shifts: shiftsTour,
   schedule: scheduleTour,
+  coverage: coverageTour,
   profile: profileTour,
   volunteers: volunteersTour,
   trainings: trainingsTour,
@@ -339,6 +401,8 @@ export function filterStepsForRole(steps: TourStep[], role: string): TourStep[] 
     '[data-tour="sightings-list"]',
     '[data-tour="sighting-actions"]',
     '[data-tour="map-view"]',
+    '[data-tour="coverage-grid"]',
+    '[data-tour="slot-modal"]',
   ];
 
   const adminTargets = [

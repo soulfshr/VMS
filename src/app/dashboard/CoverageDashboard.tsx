@@ -85,6 +85,7 @@ interface DashboardData {
   };
   coverageSummary: CoverageSummary | null;
   autoConfirmRsvp: boolean;
+  schedulingMode?: 'SIMPLE' | 'FULL';
   user: {
     id: string;
     name: string;
@@ -288,6 +289,7 @@ export default function CoverageDashboard() {
   }
 
   const isLeader = ['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR', 'DEVELOPER'].includes(data.user.role);
+  const isSimpleMode = data.schedulingMode === 'SIMPLE';
   const qualSlugs = data.stats.qualifications.map(q => q.slug);
 
   // Group signups by date
@@ -423,7 +425,8 @@ export default function CoverageDashboard() {
                     </div>
                   </div>
                 </div>
-                {/* Verifiers */}
+                {/* Verifiers (hidden in SIMPLE mode) */}
+                {!isSimpleMode && (
                 <div className="flex items-center gap-2">
                   <span className="text-sm">📋</span>
                   <div className="flex-1">
@@ -452,6 +455,7 @@ export default function CoverageDashboard() {
                     </div>
                   </div>
                 </div>
+                )}
                 {/* Coordinators */}
                 <div className="flex items-center gap-2">
                   <span className="text-sm">🪄</span>
@@ -546,7 +550,8 @@ export default function CoverageDashboard() {
                     </div>
                   </div>
                 </div>
-                {/* Verifiers */}
+                {/* Verifiers (hidden in SIMPLE mode) */}
+                {!isSimpleMode && (
                 <div className="flex items-center gap-2">
                   <span className="text-sm">📋</span>
                   <div className="flex-1">
@@ -575,6 +580,7 @@ export default function CoverageDashboard() {
                     </div>
                   </div>
                 </div>
+                )}
                 {/* Coordinators */}
                 <div className="flex items-center gap-2">
                   <span className="text-sm">🪄</span>

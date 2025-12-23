@@ -170,7 +170,7 @@ flowchart TB
             <div class="card">
                 <h2>Tech Stack</h2>
                 <div class="tech-grid">
-                    <div class="tech-card"><div class="tech-name">Next.js 16</div><div class="tech-desc">App Router, Server Components</div></div>
+                    <div class="tech-card"><div class="tech-name">Next.js 15.5.9</div><div class="tech-desc">App Router, Server Components</div></div>
                     <div class="tech-card"><div class="tech-name">Prisma ORM</div><div class="tech-desc">Database access & migrations</div></div>
                     <div class="tech-card"><div class="tech-name">Neon PostgreSQL</div><div class="tech-desc">Serverless database</div></div>
                     <div class="tech-card"><div class="tech-name">TypeScript</div><div class="tech-desc">Type-safe JavaScript</div></div>
@@ -350,6 +350,13 @@ erDiagram
                     <div class="api-route"><span class="api-method get">GET</span><span class="api-path">/api/schedule</span><span class="api-desc">Weekly schedule data with dispatchers, leads, backups</span></div>
                     <div class="api-route"><span class="api-method post">POST</span><span class="api-path">/api/dispatcher-assignments</span><span class="api-desc">Create dispatcher assignment</span></div>
                     <div class="api-route"><span class="api-method post">POST</span><span class="api-path">/api/regional-lead-assignments</span><span class="api-desc">Assign dispatch coordinator</span></div>
+                </div>
+                <div class="api-group">
+                    <div class="api-group-title">Coverage</div>
+                    <div class="api-route"><span class="api-method get">GET</span><span class="api-path">/api/coverage/week</span><span class="api-desc">Weekly coverage grid data</span></div>
+                    <div class="api-route"><span class="api-method post">POST</span><span class="api-path">/api/coverage/signup</span><span class="api-desc">Sign up for coverage slot</span></div>
+                    <div class="api-route"><span class="api-method post">POST</span><span class="api-path">/api/coverage/cancel</span><span class="api-desc">Cancel coverage signup</span></div>
+                    <div class="api-route"><span class="api-method get">GET</span><span class="api-path">/api/dashboard/coverage</span><span class="api-desc">Coverage summary stats</span></div>
                 </div>
                 <div class="api-group">
                     <div class="api-group-title">Admin</div>
@@ -545,18 +552,22 @@ graph TD
                 </table>
             </div>
             <div class="card">
-                <h2>Qualified Roles (Shift Positions)</h2>
+                <h2>Qualified Roles (Coverage Positions)</h2>
                 <div class="tech-grid">
-                    <div class="tech-card"><div class="tech-name" style="color: #3b82f6;">Zone Lead</div><div class="tech-desc">Leads volunteers in a zone during a shift</div></div>
-                    <div class="tech-card"><div class="tech-name" style="color: #f97316;">Dispatcher</div><div class="tech-desc">Coordinates real-time during shifts</div></div>
-                    <div class="tech-card"><div class="tech-name" style="color: #22c55e;">Verifier</div><div class="tech-desc">Verifies and confirms sightings</div></div>
+                    <div class="tech-card"><div class="tech-name" style="color: #3b82f6;">👷 Zone Lead</div><div class="tech-desc">Leads field operations in a specific zone</div></div>
+                    <div class="tech-card"><div class="tech-name" style="color: #f97316;">🎧 Dispatcher</div><div class="tech-desc">Coordinates communications for a zone</div></div>
+                    <div class="tech-card"><div class="tech-name" style="color: #22c55e;">📋 Verifier</div><div class="tech-desc">Field volunteers who verify sightings</div></div>
+                    <div class="tech-card"><div class="tech-name" style="color: #a855f7;">🪄 Coordinator</div><div class="tech-desc">Regional coordinators covering all zones</div></div>
                 </div>
+                <p style="margin-top: 1rem; color: var(--text-secondary); font-size: 0.9rem;">
+                    <strong>Scheduling Modes:</strong> SIMPLE mode shows only leaders (Zone Leads, Dispatchers, Coordinators). FULL mode includes Verifiers.
+                </p>
             </div>
         </section>
 
         <footer>
-            <p>RippleVMS Knowledge Graph | Updated December 14, 2025</p>
-            <p style="font-size: 0.85rem; margin-top: 0.5rem;">Next.js 16 | Prisma ORM | PostgreSQL | TypeScript | Tailwind CSS</p>
+            <p>RippleVMS Knowledge Graph | Updated December 19, 2025</p>
+            <p style="font-size: 0.85rem; margin-top: 0.5rem;">Next.js 15.5.9 | Prisma ORM | PostgreSQL | TypeScript | Tailwind CSS</p>
         </footer>
     </div>
 

@@ -10,48 +10,20 @@ interface Zone {
   county: string | null;
 }
 
+interface IntakeQuestion {
+  id: string;
+  question: string;
+  type: 'text' | 'textarea' | 'select';
+  options: string[];
+  required: boolean;
+}
+
 // Days and time slots for availability grid
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const TIME_SLOTS = [
   { label: 'Morning', value: 'MORNING', time: '6am-10am' },
   { label: 'Midday', value: 'MIDDAY', time: '10am-2pm' },
   { label: 'Afternoon', value: 'AFTERNOON', time: '2pm-6pm' },
-];
-
-// Background questions - configurable by stakeholders
-const BACKGROUND_QUESTIONS = [
-  {
-    id: 'experience',
-    question: 'Do you have any prior experience with community organizing or rapid response?',
-    type: 'textarea',
-    required: false,
-  },
-  {
-    id: 'languages',
-    question: 'What languages do you speak fluently (besides English)?',
-    type: 'text',
-    required: false,
-  },
-  {
-    id: 'transportation',
-    question: 'Do you have reliable transportation?',
-    type: 'select',
-    options: ['Yes', 'No', 'Sometimes'],
-    required: true,
-  },
-  {
-    id: 'referral',
-    question: 'How did you hear about us?',
-    type: 'select',
-    options: ['Friend/Family', 'Social Media', 'Community Event', 'News', 'Other'],
-    required: false,
-  },
-  {
-    id: 'motivation',
-    question: 'Why are you interested in volunteering with us?',
-    type: 'textarea',
-    required: false,
-  },
 ];
 
 type AvailabilityGrid = { [key: string]: boolean };
@@ -62,6 +34,7 @@ export default function SignupClient() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [zones, setZones] = useState<Zone[]>([]);
+  const [intakeQuestions, setIntakeQuestions] = useState<IntakeQuestion[]>([]);
 
   // Step 1: Basic Info
   const [name, setName] = useState('');
@@ -78,7 +51,7 @@ export default function SignupClient() {
   // Step 3: Background Questions
   const [backgroundResponses, setBackgroundResponses] = useState<{ [key: string]: string }>({});
 
-  // Fetch zones on mount
+  // Fetch zones and intake questions on mount
   useEffect(() => {
     fetch('/api/public/zones')
       .then(res => res.json())
@@ -88,6 +61,15 @@ export default function SignupClient() {
         }
       })
       .catch(err => console.error('Error fetching zones:', err));
+
+    fetch('/api/intake-questions')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setIntakeQuestions(data);
+        }
+      })
+      .catch(err => console.error('Error fetching intake questions:', err));
   }, []);
 
   const toggleZone = (zoneId: string) => {
@@ -146,7 +128,7 @@ export default function SignupClient() {
 
     if (stepNum === 3) {
       // Check required background questions
-      for (const q of BACKGROUND_QUESTIONS) {
+      for (const q of intakeQuestions) {
         if (q.required && !backgroundResponses[q.id]?.trim()) {
           setError(`Please answer: "${q.question}"`);
           return false;
@@ -482,48 +464,52 @@ export default function SignupClient() {
             <div className="space-y-5">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Tell Us About Yourself</h2>
 
-              {BACKGROUND_QUESTIONS.map((q) => (
-                <div key={q.id}>
-                  <label htmlFor={q.id} className="block text-sm font-medium text-gray-700 mb-1">
-                    {q.question}
-                    {q.required && <span className="text-red-500"> *</span>}
-                  </label>
+              {intakeQuestions.length === 0 ? (
+                <p className="text-gray-500 text-center py-4">No additional questions at this time.</p>
+              ) : (
+                intakeQuestions.map((q) => (
+                  <div key={q.id}>
+                    <label htmlFor={q.id} className="block text-sm font-medium text-gray-700 mb-1">
+                      {q.question}
+                      {q.required && <span className="text-red-500"> *</span>}
+                    </label>
 
-                  {q.type === 'text' && (
-                    <input
-                      id={q.id}
-                      type="text"
-                      value={backgroundResponses[q.id] || ''}
-                      onChange={(e) => handleBackgroundChange(q.id, e.target.value)}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition-colors"
-                    />
-                  )}
+                    {q.type === 'text' && (
+                      <input
+                        id={q.id}
+                        type="text"
+                        value={backgroundResponses[q.id] || ''}
+                        onChange={(e) => handleBackgroundChange(q.id, e.target.value)}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition-colors"
+                      />
+                    )}
 
-                  {q.type === 'textarea' && (
-                    <textarea
-                      id={q.id}
-                      value={backgroundResponses[q.id] || ''}
-                      onChange={(e) => handleBackgroundChange(q.id, e.target.value)}
-                      rows={3}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition-colors resize-none"
-                    />
-                  )}
+                    {q.type === 'textarea' && (
+                      <textarea
+                        id={q.id}
+                        value={backgroundResponses[q.id] || ''}
+                        onChange={(e) => handleBackgroundChange(q.id, e.target.value)}
+                        rows={3}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition-colors resize-none"
+                      />
+                    )}
 
-                  {q.type === 'select' && q.options && (
-                    <select
-                      id={q.id}
-                      value={backgroundResponses[q.id] || ''}
-                      onChange={(e) => handleBackgroundChange(q.id, e.target.value)}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition-colors bg-white"
-                    >
-                      <option value="">Select an option</option>
-                      {q.options.map(opt => (
-                        <option key={opt} value={opt}>{opt}</option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-              ))}
+                    {q.type === 'select' && q.options && q.options.length > 0 && (
+                      <select
+                        id={q.id}
+                        value={backgroundResponses[q.id] || ''}
+                        onChange={(e) => handleBackgroundChange(q.id, e.target.value)}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition-colors bg-white"
+                      >
+                        <option value="">Select an option</option>
+                        {q.options.map(opt => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                ))
+              )}
             </div>
           )}
 

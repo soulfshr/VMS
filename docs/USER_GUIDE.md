@@ -13,12 +13,14 @@ A comprehensive guide to using the Siembra NC Volunteer Management System.
 5. [Shifts](#shifts)
 6. [Trainings](#trainings)
 7. [Schedule](#schedule)
-8. [Volunteers](#volunteers)
-9. [Profile](#profile)
-10. [Admin Panel](#admin-panel)
+8. [Coverage](#coverage)
+9. [Volunteers](#volunteers)
+10. [Profile](#profile)
+11. [Admin Panel](#admin-panel)
     - [Qualified Roles](#qualified-roles)
-11. [Email Blasts](#email-blasts)
-12. [Common Workflows](#common-workflows)
+    - [Coverage Scheduling Mode](#coverage-scheduling-mode)
+12. [Email Blasts](#email-blasts)
+13. [Common Workflows](#common-workflows)
 
 ---
 
@@ -330,6 +332,75 @@ The Schedule page displays dispatchers differently based on the admin-configured
 
 ---
 
+## Coverage
+
+The **Coverage** page provides a comprehensive view of volunteer coverage across all zones, organized by 2-hour time slots.
+
+### Coverage Roles
+
+| Role | Icon | Description |
+|------|------|-------------|
+| **Zone Lead** | 👷 | Leads field operations in a specific zone |
+| **Dispatcher** | 🎧 | Coordinates communications for a zone |
+| **Verifier** | 📋 | Field volunteers who verify sightings |
+| **Coordinator** | 🪄 | Regional coordinators covering all zones |
+
+### Coverage Grid
+
+The weekly coverage grid shows:
+- **Rows**: Zones grouped by county (Durham, Orange, Wake)
+- **Columns**: Days of the week (Mon-Sun)
+- **Cells**: 2-hour time slots with color-coded coverage status
+
+**Color Legend:**
+- 🟢 **Green**: Fully staffed (all required positions filled)
+- 🟡 **Yellow**: Partial coverage (50-80% staffed)
+- 🔴 **Red**: Needs attention (under 50% staffed)
+
+### Signing Up for Coverage
+
+1. Navigate to **Coverage** from the main menu
+2. Find an open slot in your zone
+3. Click the slot cell to open the Slot Modal
+4. Review current signups and open positions
+5. Click **Sign Up** for your qualified role
+6. Your signup will be confirmed (auto-confirm) or pending review
+
+### Coverage Summary Widget (Dashboard)
+
+Leaders see the **Triangle Coverage Summary** on their dashboard showing:
+- **This Week**: Current week's coverage status
+- **Next Week**: Upcoming week's coverage status
+
+Each role shows filled/needed counts with progress bars.
+
+### Scheduling Modes
+
+The system supports two scheduling modes configured in Admin Settings:
+
+| Mode | Description |
+|------|-------------|
+| **Simple - Leaders Only** | Shows only Zone Leads, Dispatchers, and Coordinators. Verifier positions are hidden from coverage maps and excluded from calculations. |
+| **Full** | Shows all roles including Verifiers. Complete coverage tracking for high-activity periods. |
+
+When **Simple** mode is enabled:
+- Verifier columns are hidden in slot modals
+- Verifier rows are hidden in coverage summary
+- Coverage percentages exclude verifier positions
+
+### My Upcoming Commitments
+
+Your dashboard shows **My Upcoming Commitments** listing your confirmed coverage signups for the current and upcoming weeks.
+
+### Openings For You
+
+The **Openings For You** section on the dashboard shows available slots based on your qualifications:
+- Tabs are ordered by priority: Coordinator > Dispatcher > Zone Lead > Verifier
+- Auto-selects your highest qualification by default
+- Click **Sign Up** to quickly claim a slot
+
+---
+
 ## Volunteers
 
 *Available to Coordinators and Administrators only.*
@@ -517,6 +588,27 @@ To change the mode:
 
 **Note:** When switching modes, existing dispatcher assignments are hidden (not deleted). Switching back to a previous mode will restore those assignments.
 
+#### Coverage Scheduling Mode
+
+The VMS supports two coverage scheduling modes to match different operational needs:
+
+| Mode | Description |
+|------|-------------|
+| **Simple - Leaders Only** | For lower-activity periods. Only tracks Zone Leads, Dispatchers, and Coordinators. Verifier positions are hidden from coverage maps and excluded from coverage calculations. |
+| **Full** | For high-activity periods. Tracks all roles including Verifiers. Complete coverage visibility and metrics. |
+
+To change the coverage scheduling mode:
+1. Navigate to **Admin → Settings**
+2. Find the "Coverage Scheduling Mode" section
+3. Select **Simple** or **Full**
+4. Changes take effect immediately across all coverage views
+
+**Impact of Simple mode:**
+- Verifier column hidden in slot modals
+- Verifier row hidden in Coverage Summary widget
+- Coverage percentages recalculated without verifier positions
+- Verifier signups are preserved but hidden (switching back to Full restores visibility)
+
 ---
 
 ## Email Blasts
@@ -673,6 +765,24 @@ Coordinators and Admins can view recent email blast history showing:
 5. **Coordinator** sets date range for sessions to include
 6. **Coordinator** sends the blast
 7. Volunteers receive email with upcoming training table and RSVP link
+
+### Workflow: Signing Up for Coverage
+
+1. **Volunteer** navigates to **Coverage** page
+2. **Volunteer** finds their zone in the weekly grid
+3. **Volunteer** clicks on an available time slot
+4. **Volunteer** reviews current signups in the Slot Modal
+5. **Volunteer** clicks **Sign Up as [Role]** for their qualified position
+6. If auto-confirm is enabled, signup is immediately confirmed
+7. Signup appears in **My Upcoming Commitments** on dashboard
+
+### Workflow: Viewing Coverage Status (Leaders)
+
+1. **Leader** views **Triangle Coverage Summary** on dashboard
+2. **Leader** sees This Week and Next Week coverage by role
+3. **Leader** clicks **View Schedule →** to open full coverage grid
+4. **Leader** identifies gaps (red/yellow slots)
+5. **Leader** can click any slot to see details or sign up qualified volunteers
 
 ### Workflow: Setting Up a New Zone with Boundaries
 

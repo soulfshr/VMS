@@ -12,7 +12,7 @@ export default function PrivacyPolicyPage() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 md:p-12">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Privacy Policy</h1>
           <p className="text-gray-500 mb-8">RippleVMS - Volunteer Management System</p>
-          <p className="text-sm text-gray-500 mb-8">Last Updated: December 7, 2025</p>
+          <p className="text-sm text-gray-500 mb-8">Last Updated: December 23, 2025</p>
 
           <div className="prose prose-gray max-w-none">
             <hr className="my-6" />
@@ -138,7 +138,7 @@ export default function PrivacyPolicyPage() {
                   <tr>
                     <td className="px-4 py-2 border-b"><strong>Upstash Redis</strong></td>
                     <td className="px-4 py-2 border-b">Rate limiting</td>
-                    <td className="px-4 py-2 border-b">IP addresses (temporary, for abuse prevention)</td>
+                    <td className="px-4 py-2 border-b">IP addresses (temporary, for abuse prevention; hashed before any persistent storage)</td>
                   </tr>
                 </tbody>
               </table>

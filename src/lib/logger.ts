@@ -11,6 +11,21 @@
 import { prisma } from '@/lib/db';
 import { LogSeverity, LogCategory } from '@/generated/prisma/enums';
 import type { Prisma } from '@/generated/prisma/client';
+import { createHash } from 'crypto';
+
+/**
+ * Hash an IP address for privacy
+ * Uses SHA-256 with a salt to create a consistent but non-reversible hash
+ * This allows pattern detection (same hash = same IP) without exposing actual IPs
+ */
+function hashIp(ip: string): string {
+  if (!ip || ip === 'unknown') return ip;
+  const salt = process.env.IP_HASH_SALT || 'ripple-vms-default-salt';
+  return createHash('sha256')
+    .update(ip + salt)
+    .digest('hex')
+    .substring(0, 16); // Truncate to 16 chars for readability
+}
 
 interface LogOptions {
   severity: LogSeverity;
@@ -67,13 +82,19 @@ export async function log(options: LogOptions): Promise<void> {
   // Store important events in database (fire and forget - don't await in caller)
   if (DB_SEVERITY_THRESHOLD.includes(severity)) {
     try {
+      // Hash IP address for privacy before storing
+      const contextWithHashedIp = {
+        ...context,
+        ipAddress: context.ipAddress ? hashIp(context.ipAddress) : undefined,
+      };
+
       await prisma.systemLog.create({
         data: {
           severity,
           category,
           message,
           metadata: (metadata || undefined) as Prisma.InputJsonValue | undefined,
-          ...context,
+          ...contextWithHashedIp,
         },
       });
     } catch (err) {

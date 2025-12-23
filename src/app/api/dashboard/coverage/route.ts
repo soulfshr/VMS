@@ -188,16 +188,18 @@ export async function GET() {
     // Get openings based on user's qualifications
     const openings = await getOpeningsForUser(user, qualSlugs, primaryZone?.id || null);
 
+    // Get organization settings for autoConfirmRsvp and schedulingMode
+    const settings = await prisma.organizationSettings.findFirst();
+    const autoConfirmRsvp = settings?.autoConfirmRsvp ?? true;
+    const schedulingMode = settings?.schedulingMode || 'SIMPLE';
+    const isSimpleMode = schedulingMode === 'SIMPLE';
+
     // Get coverage summary (for coordinators)
     let coverageSummary = null;
     const isLeader = ['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role);
     if (isLeader) {
-      coverageSummary = await getCoverageSummary(weekStart, weekEnd);
+      coverageSummary = await getCoverageSummary(weekStart, weekEnd, isSimpleMode);
     }
-
-    // Get organization settings for autoConfirmRsvp
-    const settings = await prisma.organizationSettings.findFirst();
-    const autoConfirmRsvp = settings?.autoConfirmRsvp ?? true;
 
     return NextResponse.json({
       mySignups: formattedSignups,
@@ -215,6 +217,7 @@ export async function GET() {
       openings,
       coverageSummary,
       autoConfirmRsvp,
+      schedulingMode,
       user: {
         id: user.id,
         name: user.name,
@@ -433,6 +436,7 @@ interface WeekRoleStats {
 /**
  * Calculate role-based coverage stats for a week
  * Excludes slots that have already passed (based on todayStr and currentHour)
+ * When isSimpleMode is true, verifier stats are excluded (set to 0)
  */
 function calculateWeekStats(
   weekDates: string[],
@@ -442,7 +446,8 @@ function calculateWeekStats(
   }>,
   signupsByDate: Map<string, Array<{ zoneId: string | null; startHour: number; roleType: string }>>,
   todayStr: string,
-  currentHour: number
+  currentHour: number,
+  isSimpleMode: boolean = false
 ): WeekRoleStats {
   const stats: WeekRoleStats = {
     zoneLeads: { needed: 0, filled: 0 },
@@ -496,13 +501,15 @@ function calculateWeekStats(
           }
         }
 
-        // Verifiers
-        const minVols = slot.minVols || 0;
-        stats.verifiers.needed += minVols;
-        stats.verifiers.filled += Math.min(
-          slotSignups.filter(s => s.roleType === 'VERIFIER').length,
-          minVols
-        );
+        // Verifiers (skip in SIMPLE mode)
+        if (!isSimpleMode) {
+          const minVols = slot.minVols || 0;
+          stats.verifiers.needed += minVols;
+          stats.verifiers.filled += Math.min(
+            slotSignups.filter(s => s.roleType === 'VERIFIER').length,
+            minVols
+          );
+        }
       }
     }
 
@@ -527,8 +534,9 @@ function calculateWeekStats(
  * Uses date strings to avoid timezone issues
  * Returns role-based coverage stats (Zone Leads, Dispatchers, Verifiers)
  * Only includes slots that haven't passed yet (future slots)
+ * When isSimpleMode is true, verifier stats are excluded
  */
-async function getCoverageSummary(weekStart: Date, weekEnd: Date) {
+async function getCoverageSummary(weekStart: Date, weekEnd: Date, isSimpleMode: boolean = false) {
   // Get current time info for filtering past slots
   const todayStr = getTodayET();
   const currentHour = getCurrentHourET();
@@ -564,7 +572,7 @@ async function getCoverageSummary(weekStart: Date, weekEnd: Date) {
   const weekDates = getWeekDates(mondayStr);
 
   // Calculate this week role stats (excluding past slots)
-  const thisWeekStats = calculateWeekStats(weekDates, zones, signupsByDate, todayStr, currentHour);
+  const thisWeekStats = calculateWeekStats(weekDates, zones, signupsByDate, todayStr, currentHour, isSimpleMode);
 
   // Calculate next week stats using date strings
   const nextMondayStr = addDays(mondayStr, 7);
@@ -589,7 +597,7 @@ async function getCoverageSummary(weekStart: Date, weekEnd: Date) {
 
   const nextWeekDates = getWeekDates(nextMondayStr);
   // Next week is entirely in the future, so pass todayStr (all dates will be >= todayStr)
-  const nextWeekStats = calculateWeekStats(nextWeekDates, zones, nextSignupsByDate, todayStr, currentHour);
+  const nextWeekStats = calculateWeekStats(nextWeekDates, zones, nextSignupsByDate, todayStr, currentHour, isSimpleMode);
 
   return {
     thisWeek: thisWeekStats,

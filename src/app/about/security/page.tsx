@@ -268,6 +268,16 @@ export default function SecurityPage() {
                 Code is available for community review
               </p>
             </div>
+
+            <div className="border border-gray-100 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-green-500">✓</span>
+                <h3 className="font-medium text-gray-900">IP Address Privacy</h3>
+              </div>
+              <p className="text-sm text-gray-600">
+                IP addresses are hashed (SHA-256 with unique salt) before storage, preserving pattern detection while protecting your actual IP
+              </p>
+            </div>
           </div>
         </section>
 

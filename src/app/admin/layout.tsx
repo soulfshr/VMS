@@ -7,11 +7,11 @@ import type { DevUser } from '@/types/auth';
 
 const adminNavItems = [
   { href: '/admin', label: 'Dashboard', icon: '📊', adminOnly: true },
-  { href: '/admin/shifts-import', label: 'Bulk Import Shifts', icon: '📥', adminOnly: false },
   { href: '/admin/email-blast', label: 'Email Blast', icon: '📧', adminOnly: false },
   { href: '/admin/qualified-roles', label: 'Qualified Roles', icon: '🏅', adminOnly: true },
   { href: '/admin/shift-types', label: 'Shift Types', icon: '📋', adminOnly: true },
   { href: '/admin/training-types', label: 'Training Types', icon: '🎓', adminOnly: true },
+  { href: '/admin/intake-questions', label: 'Intake Questions', icon: '📝', adminOnly: true },
 ];
 
 export default function AdminLayout({
@@ -37,8 +37,8 @@ export default function AdminLayout({
           router.push('/pending');
           return;
         }
-        // Coordinators can access email-blast and shifts-import, but other admin pages require ADMINISTRATOR/DEVELOPER
-        const isCoordinatorAllowedPage = pathname?.startsWith('/admin/email-blast') || pathname?.startsWith('/admin/shifts-import');
+        // Coordinators can access email-blast, but other admin pages require ADMINISTRATOR/DEVELOPER
+        const isCoordinatorAllowedPage = pathname?.startsWith('/admin/email-blast');
         const allowedRoles = isCoordinatorAllowedPage
           ? ['ADMINISTRATOR', 'DEVELOPER', 'COORDINATOR']
           : ['ADMINISTRATOR', 'DEVELOPER'];
