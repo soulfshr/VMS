@@ -29,8 +29,7 @@ This ensures https://dev-nc.ripple-vms.com always points to the latest preview d
 2. For prod: `vercel --prod` (no alias needed, uses nc.ripple-vms.com automatically)
 
 **Database hosts:**
-- Dev/Preview: `ep-steep-hall-a4jn07l3-pooler`
-- Production: `ep-frosty-wave-a4l37b2r-pooler`
+- Dev/Preview and Production use separate Neon databases (check Vercel env vars)
 
 ### Waking Up Neon Databases
 
