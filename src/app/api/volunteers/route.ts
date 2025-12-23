@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { Role } from '@/generated/prisma/enums';
+import { getCurrentOrgId, getOrgIdForCreate } from '@/lib/org-context';
 
 // GET /api/volunteers - Get all volunteers (Coordinator/Admin only)
 export async function GET(request: NextRequest) {
@@ -18,6 +19,8 @@ export async function GET(request: NextRequest) {
 
     const isDeveloper = user.role === 'DEVELOPER';
 
+    const orgId = await getCurrentOrgId();
+
     const searchParams = request.nextUrl.searchParams;
     const zone = searchParams.get('zone');
     const role = searchParams.get('role');
@@ -27,8 +30,13 @@ export async function GET(request: NextRequest) {
     const qualification = searchParams.get('qualification'); // Filter by slug e.g., REGIONAL_LEAD
     const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined;
 
-    // Build where clause
-    const where: Record<string, unknown> = {};
+    // Build where clause with org scoping
+    const where: Record<string, unknown> = {
+      // Multi-tenant: scope to current org (or null for legacy data)
+      OR: orgId
+        ? [{ organizationId: orgId }, { organizationId: null }]
+        : [{ organizationId: null }],
+    };
 
     // Filter by accountStatus - default to APPROVED unless filtering for pending/rejected
     if (status === 'pending') {
@@ -179,9 +187,14 @@ export async function GET(request: NextRequest) {
       ...(limit && { take: limit }),
     });
 
-    // Get all zones for filtering
+    // Get all zones for filtering (scoped to current org)
     const zones = await prisma.zone.findMany({
-      where: { isActive: true },
+      where: {
+        isActive: true,
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
       orderBy: { name: 'asc' },
       select: {
         id: true,
@@ -238,9 +251,14 @@ export async function GET(request: NextRequest) {
       totalConfirmedShifts: v._count.shiftVolunteers,
     }));
 
-    // Get all qualified roles for editing
+    // Get all qualified roles for editing (scoped to current org)
     const qualifiedRoles = await prisma.qualifiedRole.findMany({
-      where: { isActive: true },
+      where: {
+        isActive: true,
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
       orderBy: { sortOrder: 'asc' },
       select: {
         id: true,
@@ -250,12 +268,15 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Get count of pending applications (verified users with PENDING status)
+    // Get count of pending applications (verified users with PENDING status, scoped to org)
     const pendingCount = await prisma.user.count({
       where: {
         accountStatus: 'PENDING',
         isVerified: true,
         ...(isDeveloper ? {} : { role: { not: 'DEVELOPER' } }),
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
       },
     });
 
@@ -295,21 +316,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const orgId = await getOrgIdForCreate();
+
     const results = {
       created: 0,
       updated: 0,
       errors: [] as { row: number; email: string; error: string }[],
     };
 
-    // Get all zones for mapping
+    // Get all zones for mapping (scoped to current org)
     const zones = await prisma.zone.findMany({
+      where: {
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
       select: { id: true, name: true },
     });
     const zoneMap = new Map(zones.map(z => [z.name.toLowerCase(), z.id]));
 
-    // Get all qualified roles for mapping
+    // Get all qualified roles for mapping (scoped to current org)
     const qualifiedRoles = await prisma.qualifiedRole.findMany({
-      where: { isActive: true },
+      where: {
+        isActive: true,
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
       select: { id: true, slug: true, isDefaultForNewUsers: true },
     });
     const qualifiedRoleMap = new Map(qualifiedRoles.map(qr => [qr.slug.toUpperCase(), qr.id]));
@@ -430,9 +463,12 @@ export async function POST(request: NextRequest) {
 
           results.updated++;
         } else {
-          // Create new user
+          // Create new user with organization
           const newUser = await prisma.user.create({
-            data: userData,
+            data: {
+              ...userData,
+              organizationId: orgId,
+            },
           });
 
           // Add zone assignments if provided

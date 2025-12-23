@@ -4,6 +4,7 @@ import { getDbUser } from '@/lib/user';
 import { Role, AccountStatus } from '@/generated/prisma/enums';
 import { auditUpdate, auditDelete, toAuditUser } from '@/lib/audit';
 import { sendWelcomeEmail, sendApplicationRejectedEmail } from '@/lib/email';
+import { getCurrentOrgId } from '@/lib/org-context';
 
 // PATCH /api/volunteers/[id] - Update a volunteer
 // - ADMINISTRATOR, DEVELOPER: Can update all fields
@@ -29,6 +30,7 @@ export async function PATCH(
     }
 
     const { id } = await params;
+    const orgId = await getCurrentOrgId();
     const body = await request.json();
 
     // Non-admins have limited fields they can update
@@ -48,9 +50,14 @@ export async function PATCH(
       }
     }
 
-    // Find the volunteer
-    const volunteer = await prisma.user.findUnique({
-      where: { id },
+    // Find the volunteer (scoped to current org)
+    const volunteer = await prisma.user.findFirst({
+      where: {
+        id,
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
     });
 
     if (!volunteer) {
@@ -424,9 +431,16 @@ export async function GET(
     }
 
     const { id } = await params;
+    const orgId = await getCurrentOrgId();
 
-    const volunteer = await prisma.user.findUnique({
-      where: { id },
+    const volunteer = await prisma.user.findFirst({
+      where: {
+        id,
+        // Multi-tenant: verify volunteer belongs to current org
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
       include: {
         zones: {
           include: {
@@ -556,6 +570,7 @@ export async function DELETE(
     }
 
     const { id } = await params;
+    const orgId = await getCurrentOrgId();
 
     // Prevent admin from deleting themselves
     if (id === user.id) {
@@ -565,9 +580,14 @@ export async function DELETE(
       );
     }
 
-    // Check if volunteer exists
-    const volunteer = await prisma.user.findUnique({
-      where: { id },
+    // Check if volunteer exists and belongs to current org
+    const volunteer = await prisma.user.findFirst({
+      where: {
+        id,
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
     });
 
     if (!volunteer) {
