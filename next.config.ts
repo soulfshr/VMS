@@ -15,12 +15,6 @@ const nextConfig: NextConfig = {
   // Redirects for consolidated settings
   async redirects() {
     return [
-      // Temporary: redirect landing page to login
-      {
-        source: '/',
-        destination: '/login',
-        permanent: false,
-      },
       {
         source: '/profile',
         destination: '/settings/profile',
