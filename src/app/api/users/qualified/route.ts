@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { Qualification } from '@/generated/prisma/enums';
+import { getCurrentOrgId } from '@/lib/org-context';
 
 // GET /api/users/qualified - Get users qualified for a specific role
 // Based on qualifications array OR completed training sessions
@@ -24,11 +25,19 @@ export async function GET(request: NextRequest) {
     const qualification = role as Qualification; // DISPATCHER or ZONE_LEAD
     const trainingTypeSlug = role === 'DISPATCHER' ? 'DISPATCHER' : 'ZONE_LEAD';
 
+    const orgId = await getCurrentOrgId();
+
     // Find users who have the qualification (via userQualifications OR old qualifications array OR training)
     const qualifiedUsers = await prisma.user.findMany({
       where: {
-        isActive: true,
-        OR: [
+        AND: [
+          { isActive: true },
+          // Org scoping
+          orgId
+            ? { OR: [{ organizationId: orgId }, { organizationId: null }] }
+            : { organizationId: null },
+          // Qualification criteria
+          { OR: [
           // Method 1: Has qualification via NEW userQualifications table (preferred)
           {
             userQualifications: {
@@ -59,6 +68,7 @@ export async function GET(request: NextRequest) {
               },
             },
           },
+        ] },
         ],
         // Zone preferences no longer restrict assignment eligibility
         // Any qualified zone lead can be assigned to any zone from the schedule page

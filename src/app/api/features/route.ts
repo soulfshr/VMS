@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { getCurrentOrgId } from '@/lib/org-context';
 
 // Environment variable defaults
 const ENV_DEFAULTS = {
@@ -10,8 +11,15 @@ const ENV_DEFAULTS = {
 // GET /api/features - Get resolved feature flags (public endpoint)
 export async function GET() {
   try {
-    // Get settings (if they exist)
-    const settings = await prisma.organizationSettings.findFirst();
+    const orgId = await getCurrentOrgId();
+
+    // Get settings (if they exist) - scoped to org
+    const settings = await prisma.organizationSettings.findFirst({
+      where: orgId
+        ? { OR: [{ organizationId: orgId }, { organizationId: null }] }
+        : { organizationId: null },
+      orderBy: { organizationId: 'desc' }, // Prefer org-specific over null
+    });
 
     // Resolve feature flags: database override takes precedence over env vars
     const features = {

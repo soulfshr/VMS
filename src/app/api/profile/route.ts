@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUserWithZones } from '@/lib/user';
 import { generateUnsubscribeToken } from '@/lib/email';
+import { getCurrentOrgId } from '@/lib/org-context';
 
 // GET /api/profile - Get current user's profile
 export async function GET() {
@@ -28,9 +29,16 @@ export async function GET() {
       },
     });
 
-    // Get all available zones for preferences
+    const orgId = await getCurrentOrgId();
+
+    // Get all available zones for preferences (scoped to org)
     const allZones = await prisma.zone.findMany({
-      where: { isActive: true },
+      where: {
+        isActive: true,
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
       orderBy: [{ county: 'asc' }, { name: 'asc' }],
     });
 

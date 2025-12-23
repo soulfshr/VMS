@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
+import { getCurrentOrgId, getOrgIdForCreate } from '@/lib/org-context';
 
 // GET /api/admin/poi-categories - List all POI categories
 export async function GET() {
@@ -10,7 +11,14 @@ export async function GET() {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
+    const orgId = await getCurrentOrgId();
+
     const categories = await prisma.pOICategory.findMany({
+      where: {
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       include: {
         _count: {
@@ -65,8 +73,11 @@ export async function POST(request: NextRequest) {
       _max: { sortOrder: true },
     });
 
+    const orgId = await getOrgIdForCreate();
+
     const category = await prisma.pOICategory.create({
       data: {
+        organizationId: orgId,
         name,
         slug: slug.toUpperCase(),
         description: description || null,
