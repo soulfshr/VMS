@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
+import { getCurrentOrgId } from '@/lib/org-context';
 
 // GET /api/pois - Get active POIs for map display (authenticated users only)
 export async function GET(request: NextRequest) {
@@ -14,12 +15,17 @@ export async function GET(request: NextRequest) {
     const categoryId = searchParams.get('category');
     const zoneId = searchParams.get('zone');
 
-    // Build where clause - only active POIs with active categories
+    const orgId = await getCurrentOrgId();
+
+    // Build where clause - only active POIs with active categories (scoped to org)
     const where: Record<string, unknown> = {
       isActive: true,
       category: {
         isActive: true,
       },
+      OR: orgId
+        ? [{ organizationId: orgId }, { organizationId: null }]
+        : [{ organizationId: null }],
     };
 
     if (categoryId && categoryId !== 'all') {
@@ -59,9 +65,14 @@ export async function GET(request: NextRequest) {
       ],
     });
 
-    // Get active categories for filtering
+    // Get active categories for filtering (scoped to org)
     const categories = await prisma.pOICategory.findMany({
-      where: { isActive: true },
+      where: {
+        isActive: true,
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
       orderBy: { sortOrder: 'asc' },
       select: {
         id: true,

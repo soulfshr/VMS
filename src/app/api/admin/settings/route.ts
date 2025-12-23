@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { auditUpdate, toAuditUser } from '@/lib/audit';
+import { getCurrentOrgId, getOrgIdForCreate } from '@/lib/org-context';
 
 // GET /api/admin/settings - Get organization settings
 export async function GET() {
@@ -15,11 +16,17 @@ export async function GET() {
       return NextResponse.json({ error: 'Admin or Developer access required' }, { status: 403 });
     }
 
-    // Get or create settings singleton
-    let settings = await prisma.organizationSettings.findFirst();
+    const orgId = await getCurrentOrgId();
+
+    // Get or create settings singleton (scoped to org)
+    let settings = await prisma.organizationSettings.findFirst({
+      where: orgId ? { organizationId: orgId } : {},
+    });
     if (!settings) {
+      const createOrgId = await getOrgIdForCreate();
       settings = await prisma.organizationSettings.create({
         data: {
+          organizationId: createOrgId,
           autoConfirmRsvp: false,
           timezone: 'America/New_York',
         },
@@ -140,13 +147,19 @@ export async function PUT(request: Request) {
       }
     }
 
-    // Get or create settings singleton
-    let settings = await prisma.organizationSettings.findFirst();
+    const orgId = await getCurrentOrgId();
+
+    // Get or create settings singleton (scoped to org)
+    let settings = await prisma.organizationSettings.findFirst({
+      where: orgId ? { organizationId: orgId } : {},
+    });
     const previousSettings = settings ? { ...settings } : null;
 
     if (!settings) {
+      const createOrgId = await getOrgIdForCreate();
       settings = await prisma.organizationSettings.create({
         data: {
+          organizationId: createOrgId,
           autoConfirmRsvp: autoConfirmRsvp ?? false,
           timezone: timezone ?? 'America/New_York',
           maxUploadSizeMb: maxUploadSizeMb ?? 50,
