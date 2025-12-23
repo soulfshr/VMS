@@ -110,13 +110,59 @@ enum AccountStatus {
 }
 
 // ============================================
+// ORGANIZATION (Multi-tenant root entity)
+// ============================================
+
+model Organization {
+  id              String   @id @default(cuid())
+  name            String                        // Display name: "Siembra NC"
+  slug            String   @unique              // Subdomain: "nc" → nc.ripple-vms.com
+
+  // Contact info
+  email           String?
+  phone           String?                       // Hotline number
+  website         String?
+
+  // Status
+  isActive        Boolean  @default(true)
+
+  // Relationships
+  settings            OrganizationSettings?
+  users               User[]
+  zones               Zone[]
+  shifts              Shift[]
+  trainings           Training[]
+  trainingTypes       TrainingType[]
+  trainingModules     TrainingModule[]
+  trainingSessions    TrainingSession[]
+  shiftTypes          ShiftTypeConfig[]
+  sightings           IceSighting[]
+  qualifiedRoles      QualifiedRole[]
+  intakeQuestions     IntakeQuestion[]
+  coverageConfigs     CoverageConfig[]
+  coverageSignups     CoverageSignup[]
+  coverageOverrides   CoverageOverride[]
+  poiCategories       POICategory[]
+  pois                PointOfInterest[]
+  dispatcherAssignments    DispatcherAssignment[]
+  regionalLeadAssignments  RegionalLeadAssignment[]
+  emailBlasts         EmailBlast[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// Slug validation: lowercase alphanumeric + hyphens, 2-30 chars
+// Reserved slugs: app, www, api, admin, support, help, mail, email, dev, dev-nc
+
+// ============================================
 // QUALIFIED ROLES (Admin-configurable shift positions)
 // ============================================
 
 model QualifiedRole {
   id                    String   @id @default(cuid())
-  name                  String   @unique  // "Verifier", "Zone Lead", "Dispatcher"
-  slug                  String   @unique  // "VERIFIER", "ZONE_LEAD", "DISPATCHER"
+  name                  String   // "Verifier", "Zone Lead", "Dispatcher"
+  slug                  String   // "VERIFIER", "ZONE_LEAD", "DISPATCHER"
   description           String?
   color                 String   @default("#6366f1")  // Indigo by default
 
@@ -124,6 +170,10 @@ model QualifiedRole {
   isDefaultForNewUsers  Boolean  @default(false)  // Auto-assign to new users
   countsTowardMinimum   Boolean  @default(true)   // If false, volunteers with this role don't count toward shift min/max
   sortOrder             Int      @default(0)
+
+  // Multi-tenant: Organization scope
+  organizationId        String?
+  organization          Organization? @relation(fields: [organizationId], references: [id])
 
   // Relations
   userQualifications    UserQualification[]
@@ -134,6 +184,11 @@ model QualifiedRole {
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+
+  // Unique per org (name and slug unique within each organization)
+  @@unique([organizationId, name])
+  @@unique([organizationId, slug])
+  @@index([organizationId])
 }
 
 // Junction table for User qualified roles
@@ -163,6 +218,10 @@ model UserQualification {
 model OrganizationSettings {
   id              String   @id @default(cuid())
 
+  // Multi-tenant: Link to organization (nullable during migration)
+  organizationId   String?  @unique
+  organization     Organization? @relation(fields: [organizationId], references: [id])
+
   // Branding Settings (configurable by admin)
   orgName          String   @default("RippleVMS")      // Organization name used in emails
   emailFromName    String   @default("RippleVMS")      // "From" name in emails
@@ -170,10 +229,22 @@ model OrganizationSettings {
   emailReplyTo     String   @default("")               // Reply-to email address (where replies go)
   emailFooter      String   @default("RippleVMS Team") // Footer text in emails
 
+  // NEW: Visual branding
+  logoUrl          String?                             // URL to organization logo
+  primaryColor     String?  @default("#0d9488")        // Primary brand color (teal)
+  secondaryColor   String?                             // Secondary brand color
+
+  // NEW: Contact info (previously hardcoded)
+  hotlineNumber    String?                             // Public hotline number
+  supportEmail     String?                             // Support email address
+
+  // NEW: Maps integration
+  mapEmbedUrl      String?                             // Google My Maps embed URL
+
   // RSVP Settings
   autoConfirmRsvp Boolean  @default(false)  // If true, RSVPs are immediately confirmed
 
-  // Future settings
+  // Timezone
   timezone        String   @default("America/New_York")
 
   // Upload settings for ICE sighting reports
@@ -219,8 +290,14 @@ model IntakeQuestion {
   isActive    Boolean  @default(true)
   sortOrder   Int      @default(0)
 
+  // Multi-tenant: Organization scope
+  organizationId  String?
+  organization    Organization? @relation(fields: [organizationId], references: [id])
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([organizationId])
 }
 
 // ============================================
@@ -229,8 +306,8 @@ model IntakeQuestion {
 
 model ShiftTypeConfig {
   id              String   @id @default(cuid())
-  name            String   @unique  // "Patrol", "Collection", "Court Watch"
-  slug            String   @unique  // "PATROL", "COLLECTION" - for compatibility/API use
+  name            String   // "Patrol", "Collection", "Court Watch"
+  slug            String   // "PATROL", "COLLECTION" - for compatibility/API use
   description     String?
   color           String   @default("#3b82f6")  // Hex color for UI display
 
@@ -242,6 +319,10 @@ model ShiftTypeConfig {
   isActive        Boolean  @default(true)
   sortOrder       Int      @default(0)
 
+  // Multi-tenant: Organization scope
+  organizationId  String?
+  organization    Organization? @relation(fields: [organizationId], references: [id])
+
   // Relationships
   qualificationRequirements ShiftTypeQualificationRequirement[]  // DEPRECATED
   qualifiedRoleRequirements ShiftTypeQualifiedRoleRequirement[] @relation("ShiftTypeQualifiedRoleReqs")  // NEW
@@ -249,6 +330,11 @@ model ShiftTypeConfig {
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+
+  // Unique per org
+  @@unique([organizationId, name])
+  @@unique([organizationId, slug])
+  @@index([organizationId])
 }
 
 // DEPRECATED: Use ShiftTypeQualifiedRoleRequirement instead
@@ -290,6 +376,11 @@ model User {
   signalHandle      String?   // Signal username/handle for coordination
   role              Role      @default(VOLUNTEER)
   profileImageUrl   String?
+
+  // Multi-tenant: Organization membership (simple single-org approach initially)
+  // Future: OrganizationMember model for multi-org users with per-org roles
+  organizationId    String?
+  organization      Organization? @relation(fields: [organizationId], references: [id])
 
   // DEPRECATED: Use qualifications instead (kept for migration)
   qualifiedRoles    Role[]
@@ -372,6 +463,8 @@ model User {
 
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
+
+  @@index([organizationId])
 }
 
 // ============================================
@@ -380,7 +473,7 @@ model User {
 
 model Zone {
   id          String     @id @default(cuid())
-  name        String     @unique  // e.g., "Durham 1", "Wake 3"
+  name        String     // e.g., "Durham 1", "Wake 3"
   county      String?    // Durham, Orange, Wake
   description String?
   signalGroup String?    // Signal group invite link
@@ -391,6 +484,10 @@ model Zone {
   color       String     @default("#3b82f6")  // Fill color (hex)
   fillOpacity Float      @default(0.3)        // 0-1 opacity
   strokeWeight Int       @default(2)          // Border width in pixels
+
+  // Multi-tenant: Organization scope
+  organizationId  String?
+  organization    Organization? @relation(fields: [organizationId], references: [id])
 
   // Relationships
   users       UserZone[]
@@ -403,6 +500,10 @@ model Zone {
 
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+
+  // Unique per org
+  @@unique([organizationId, name])
+  @@index([organizationId])
 }
 
 // Many-to-many: Users can belong to multiple zones
@@ -434,11 +535,17 @@ model Training {
   requiredForRoles  Role[]
   requiredForShiftTypes ShiftType[]
 
+  // Multi-tenant: Organization scope
+  organizationId    String?
+  organization      Organization? @relation(fields: [organizationId], references: [id])
+
   // Relationships
   completions       UserTraining[]
 
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
+
+  @@index([organizationId])
 }
 
 model UserTraining {
@@ -465,8 +572,8 @@ model UserTraining {
 
 model TrainingType {
   id              String   @id @default(cuid())
-  name            String   @unique  // "Verifier", "Zone Lead", "Dispatcher"
-  slug            String   @unique  // "VERIFIER", "ZONE_LEAD", "DISPATCHER"
+  name            String   // "Verifier", "Zone Lead", "Dispatcher"
+  slug            String   // "VERIFIER", "ZONE_LEAD", "DISPATCHER"
   description     String?
   color           String   @default("#8b5cf6")  // Purple by default
 
@@ -486,11 +593,20 @@ model TrainingType {
   isActive        Boolean  @default(true)
   sortOrder       Int      @default(0)
 
+  // Multi-tenant: Organization scope
+  organizationId  String?
+  organization    Organization? @relation(fields: [organizationId], references: [id])
+
   // Relationships
   sessions        TrainingSession[]
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+
+  // Unique per org
+  @@unique([organizationId, name])
+  @@unique([organizationId, slug])
+  @@index([organizationId])
 }
 
 model TrainingSession {
@@ -519,6 +635,10 @@ model TrainingSession {
   // Status (reuse ShiftStatus enum)
   status          ShiftStatus  @default(DRAFT)
 
+  // Multi-tenant: Organization scope
+  organizationId  String?
+  organization    Organization? @relation(fields: [organizationId], references: [id])
+
   // Relationships
   createdById     String
   createdBy       User         @relation("TrainingCreatedBy", fields: [createdById], references: [id])
@@ -526,6 +646,8 @@ model TrainingSession {
 
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
+
+  @@index([organizationId, date])
 }
 
 model TrainingSessionAttendee {
@@ -610,6 +732,10 @@ model Shift {
   // Status
   status          ShiftStatus @default(DRAFT)
 
+  // Multi-tenant: Organization scope
+  organizationId  String?
+  organization    Organization? @relation(fields: [organizationId], references: [id])
+
   // Relationships
   createdById     String
   createdBy       User        @relation("CreatedBy", fields: [createdById], references: [id])
@@ -618,7 +744,7 @@ model Shift {
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
-  @@index([date, status])
+  @@index([organizationId, date, status])
   @@index([zoneId])
 }
 
@@ -676,13 +802,17 @@ model DispatcherAssignment {
   isBackup      Boolean   @default(false)  // Primary vs backup dispatcher
   notes         String?   // e.g., "only available until 8am"
 
+  // Multi-tenant: Organization scope
+  organizationId  String?
+  organization    Organization? @relation(fields: [organizationId], references: [id])
+
   // Tracking
   createdById   String
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
   @@unique([userId, county, date, startTime])  // One assignment per user/county/time
-  @@index([county, date])
+  @@index([organizationId, county, date])
 }
 
 // ============================================
@@ -701,6 +831,10 @@ model RegionalLeadAssignment {
   isPrimary   Boolean  @default(false)
   notes       String?
 
+  // Multi-tenant: Organization scope
+  organizationId  String?
+  organization    Organization? @relation(fields: [organizationId], references: [id])
+
   // Audit
   createdById String?
   createdBy   User?    @relation("RegionalLeadAssignmentsCreated", fields: [createdById], references: [id])
@@ -709,7 +843,7 @@ model RegionalLeadAssignment {
   updatedAt   DateTime @updatedAt
 
   @@unique([userId, date])  // One user can only be assigned once per day
-  @@index([date])
+  @@index([organizationId, date])
 }
 
 // ============================================
@@ -740,13 +874,17 @@ model IceSighting {
   notes       String?        // Dispatcher notes
   assignedToId String?       // Dispatcher ID handling this
 
+  // Multi-tenant: Organization scope
+  organizationId  String?
+  organization    Organization? @relation(fields: [organizationId], references: [id])
+
   // Relations
   media       SightingMedia[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  @@index([status])
+  @@index([organizationId, status])
   @@index([observedAt])
 }
 
@@ -787,6 +925,10 @@ model EmailBlast {
   sentById    String
   sentBy      User     @relation("EmailBlastSentBy", fields: [sentById], references: [id])
 
+  // Multi-tenant: Organization scope
+  organizationId  String?
+  organization    Organization? @relation(fields: [organizationId], references: [id])
+
   status      EmailBlastStatus @default(PENDING)
   sentAt      DateTime?
   createdAt   DateTime @default(now())
@@ -794,7 +936,7 @@ model EmailBlast {
 
   recipients  EmailBlastRecipient[]
 
-  @@index([status])
+  @@index([organizationId, status])
   @@index([sentAt])
 }
 
@@ -821,18 +963,26 @@ model EmailBlastRecipient {
 
 model POICategory {
   id          String   @id @default(cuid())
-  name        String   @unique  // "ICE/Enforcement", "Schools", "Safe Spaces"
-  slug        String   @unique  // "ICE_ENFORCEMENT", "SCHOOLS", "SAFE_SPACES"
+  name        String   // "ICE/Enforcement", "Schools", "Safe Spaces"
+  slug        String   // "ICE_ENFORCEMENT", "SCHOOLS", "SAFE_SPACES"
   description String?
   color       String   @default("#6366f1")  // For map markers
   icon        String?  // Optional icon name (e.g., "shield", "school", "heart")
   sortOrder   Int      @default(0)
   isActive    Boolean  @default(true)
 
+  // Multi-tenant: Organization scope
+  organizationId  String?
+  organization    Organization? @relation(fields: [organizationId], references: [id])
+
   pois        PointOfInterest[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@unique([organizationId, name])
+  @@unique([organizationId, slug])
+  @@index([organizationId])
 }
 
 model PointOfInterest {
@@ -856,6 +1006,10 @@ model PointOfInterest {
   zoneId      String?
   zone        Zone?       @relation(fields: [zoneId], references: [id])
 
+  // Multi-tenant: Organization scope
+  organizationId  String?
+  organization    Organization? @relation(fields: [organizationId], references: [id])
+
   // Audit
   createdById String
   createdBy   User        @relation("POICreatedBy", fields: [createdById], references: [id])
@@ -864,7 +1018,7 @@ model PointOfInterest {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
-  @@index([categoryId])
+  @@index([organizationId, categoryId])
   @@index([zoneId])
   @@index([isActive])
 }
@@ -999,12 +1153,18 @@ model TrainingModule {
   grantsQualifiedRoleId String?
   grantsQualifiedRole   QualifiedRole? @relation("ModuleGrantsQualifiedRole", fields: [grantsQualifiedRoleId], references: [id])
 
+  // Multi-tenant: Organization scope
+  organizationId  String?
+  organization    Organization? @relation(fields: [organizationId], references: [id])
+
   // Relations
   sections        ModuleSection[]
   enrollments     ModuleEnrollment[]
 
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+
+  @@index([organizationId])
 }
 
 // Module Section - a segment within a module (video, text, or quiz)
@@ -1198,11 +1358,15 @@ model CoverageConfig {
 
   isActive     Boolean  @default(true)
 
+  // Multi-tenant: Organization scope
+  organizationId  String?
+  organization    Organization? @relation(fields: [organizationId], references: [id])
+
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   @@unique([zoneId, dayOfWeek])
-  @@index([zoneId])
+  @@index([organizationId, zoneId])
 }
 
 // Individual volunteer signups for coverage slots
@@ -1219,6 +1383,10 @@ model CoverageSignup {
   roleType        CoverageRoleType // DISPATCHER, ZONE_LEAD, VERIFIER, DISPATCH_COORDINATOR
   status          RSVPStatus       @default(CONFIRMED)
 
+  // Multi-tenant: Organization scope
+  organizationId  String?
+  organization    Organization? @relation(fields: [organizationId], references: [id])
+
   createdAt       DateTime         @default(now())
   confirmedAt     DateTime?
 
@@ -1227,7 +1395,7 @@ model CoverageSignup {
   // Zone-based signups: one per user per zone per slot
   // Coordinator signups: one coordinator total per time slot (zoneId = null)
   @@unique([date, zoneId, startHour, userId])
-  @@index([date, zoneId])
+  @@index([organizationId, date, zoneId])
   @@index([date, startHour, roleType])  // For coordinator lookups
   @@index([userId])
 }
@@ -1251,6 +1419,10 @@ model CoverageOverride {
   // Human-readable reason for this override
   reason       String?  // "Christmas Day", "Election Day - Extra Coverage", "Training Event"
 
+  // Multi-tenant: Organization scope
+  organizationId  String?
+  organization    Organization? @relation(fields: [organizationId], references: [id])
+
   // Audit trail
   createdById  String
   createdBy    User     @relation("CoverageOverrideCreatedBy", fields: [createdById], references: [id])
@@ -1259,5 +1431,5 @@ model CoverageOverride {
   updatedAt    DateTime @updatedAt
 
   @@unique([date, zoneId])  // Only one override per date per zone (null zoneId = global)
-  @@index([date])
+  @@index([organizationId, date])
 }
