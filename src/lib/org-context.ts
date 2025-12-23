@@ -194,7 +194,7 @@ export async function orgScope(): Promise<{ organizationId: string } | { OR: Arr
  * Create a Prisma where clause that strictly scopes to the current organization
  * Does NOT include legacy null records - use for new queries after migration
  */
-export async function strictOrgScope(): Promise<{ organizationId: string } | {}> {
+export async function strictOrgScope(): Promise<{ organizationId: string } | Record<string, never>> {
   const orgId = await getCurrentOrgId();
 
   if (orgId) {
