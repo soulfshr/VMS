@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import type { Prisma } from '@/generated/prisma/client';
+import { getCurrentOrgId } from '@/lib/org-context';
 
 /**
  * GET /api/coverage/config
@@ -28,7 +29,20 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const zoneId = searchParams.get('zoneId');
 
-    const where = zoneId ? { zoneId } : {};
+    const orgId = await getCurrentOrgId();
+
+    // Build where clause with org scoping via zone relation
+    const where: Record<string, unknown> = {
+      zone: {
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
+    };
+
+    if (zoneId) {
+      where.zoneId = zoneId;
+    }
 
     const configs = await prisma.coverageConfig.findMany({
       where,

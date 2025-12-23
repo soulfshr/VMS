@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
+import { getCurrentOrgId } from '@/lib/org-context';
 
 // GET /api/shift-types - List active shift types (for dropdowns/filters)
 export async function GET() {
@@ -10,9 +11,14 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const orgId = await getCurrentOrgId();
+
     const shiftTypes = await prisma.shiftTypeConfig.findMany({
       where: {
         isActive: true,
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
       },
       select: {
         id: true,
