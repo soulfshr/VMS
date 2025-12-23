@@ -30,6 +30,21 @@ export default function Header() {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [showWelcome, setShowWelcome] = useState(false);
   const [envMismatch, setEnvMismatch] = useState<'dev-serving-prod' | 'prod-serving-dev' | null>(null);
+  const [primarySchedulingModel, setPrimarySchedulingModel] = useState<'COVERAGE_GRID' | 'SHIFTS'>('COVERAGE_GRID');
+
+  // Fetch public settings to determine scheduling model
+  useEffect(() => {
+    if (status === 'authenticated') {
+      fetch('/api/settings/public')
+        .then(res => res.json())
+        .then(data => {
+          if (data.primarySchedulingModel) {
+            setPrimarySchedulingModel(data.primarySchedulingModel);
+          }
+        })
+        .catch(err => console.error('Failed to fetch public settings:', err));
+    }
+  }, [status]);
 
   // Mark component as mounted after hydration
   useEffect(() => {
@@ -134,16 +149,16 @@ export default function Header() {
                 >
                   My Dashboard
                 </Link>
-                {/* 2. Triangle Coverage Schedule (2-hour slots) */}
+                {/* 2. Schedule - Coverage Grid or Shifts based on org setting */}
                 <Link
-                  href="/coverage"
+                  href={primarySchedulingModel === 'SHIFTS' ? '/shifts' : '/coverage'}
                   className={`text-sm font-medium transition-colors ${
-                    pathname.startsWith('/coverage')
+                    (primarySchedulingModel === 'SHIFTS' ? pathname.startsWith('/shifts') : pathname.startsWith('/coverage'))
                       ? 'text-cyan-700'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  Triangle Coverage Schedule
+                  {primarySchedulingModel === 'SHIFTS' ? 'Schedule' : 'Coverage Schedule'}
                 </Link>
                 {/* 3. Map (all users) */}
                 <Link
@@ -404,13 +419,13 @@ export default function Header() {
                 >
                   My Dashboard
                 </Link>
-                {/* 2. Triangle Coverage Schedule (2-hour slots) */}
+                {/* 2. Schedule - Coverage Grid or Shifts based on org setting */}
                 <Link
-                  href="/coverage"
+                  href={primarySchedulingModel === 'SHIFTS' ? '/shifts' : '/coverage'}
                   className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  Triangle Coverage Schedule
+                  {primarySchedulingModel === 'SHIFTS' ? 'Schedule' : 'Coverage Schedule'}
                 </Link>
                 {/* 3. Map (all users) */}
                 <Link

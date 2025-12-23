@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 
 interface OrgStats {
   users: number;
@@ -192,15 +193,12 @@ export default function OrganizationsPage() {
           <h1 className="text-2xl font-bold text-gray-900">Organizations</h1>
           <p className="text-gray-600 mt-1">Manage all organizations across the platform</p>
         </div>
-        <button
-          onClick={() => {
-            resetForm();
-            setShowCreateModal(true);
-          }}
+        <Link
+          href="/developer/organizations/setup"
           className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
         >
           + New Organization
-        </button>
+        </Link>
       </div>
 
       {/* Organization Cards */}

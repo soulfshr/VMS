@@ -24,6 +24,7 @@ export async function GET() {
 
     return NextResponse.json({
       schedulingMode: settings?.schedulingMode || 'SIMPLE',
+      primarySchedulingModel: settings?.primarySchedulingModel || 'COVERAGE_GRID',
       autoConfirmRsvp: settings?.autoConfirmRsvp || false,
     });
   } catch (error) {

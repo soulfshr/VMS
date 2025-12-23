@@ -266,6 +266,11 @@ model OrganizationSettings {
   // FULL = Show all volunteers with self-signup
   schedulingMode            String  @default("SIMPLE")
 
+  // Primary scheduling model for this organization
+  // COVERAGE_GRID = Fixed 2-hour slots, zone-based (Siembra NC style)
+  // SHIFTS = Event-based with variable times (AWCLO, AWCE style)
+  primarySchedulingModel    String  @default("COVERAGE_GRID")
+
   // Developer-only settings
   feedbackEmail     String?   // Email address for receiving user feedback (Developer configurable)
 
@@ -735,6 +740,12 @@ model Shift {
   // Multi-tenant: Organization scope
   organizationId  String?
   organization    Organization? @relation(fields: [organizationId], references: [id])
+
+  // Exception flagging for role requirement violations
+  hasRoleException      Boolean   @default(false)  // True if role requirements aren't met
+  exceptionNotes        String?                     // Auto-generated description of the issue
+  exceptionReviewedById String?                     // Coordinator who reviewed and dismissed
+  exceptionReviewedAt   DateTime?                   // When exception was reviewed
 
   // Relationships
   createdById     String
