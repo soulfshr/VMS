@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { createHourExtractor, createDateStringExtractor, formatHour } from '@/lib/timezone';
+import { getCurrentOrgId } from '@/lib/org-context';
 
 interface TimeBlock {
   startTime: string;      // Eastern time format "6:00"
@@ -127,10 +128,16 @@ export async function GET(request: NextRequest) {
     // Add 1 day buffer to end date for timezone safety
     end.setUTCDate(end.getUTCDate() + 1);
 
-    // Build query filters
+    const orgId = await getCurrentOrgId();
+
+    // Build query filters with org scoping
     const shiftsWhere: Record<string, unknown> = {
       date: { gte: start, lte: end },
       status: 'PUBLISHED',
+      // Multi-tenant: scope to current org (or null for legacy data)
+      OR: orgId
+        ? [{ organizationId: orgId }, { organizationId: null }]
+        : [{ organizationId: null }],
     };
     if (county && county !== 'all') {
       shiftsWhere.zone = { county };
@@ -138,6 +145,9 @@ export async function GET(request: NextRequest) {
 
     const dispatcherWhere: Record<string, unknown> = {
       date: { gte: start, lte: end },
+      OR: orgId
+        ? [{ organizationId: orgId }, { organizationId: null }]
+        : [{ organizationId: null }],
     };
     if (county && county !== 'all') {
       dispatcherWhere.county = county;
@@ -146,18 +156,29 @@ export async function GET(request: NextRequest) {
     // Regional lead assignments (day-level, no county filter)
     const regionalLeadWhere: Record<string, unknown> = {
       date: { gte: start, lte: end },
+      OR: orgId
+        ? [{ organizationId: orgId }, { organizationId: null }]
+        : [{ organizationId: null }],
     };
 
     // Regional backup dispatchers (county = 'REGIONAL', available region-wide)
     const regionalBackupWhere: Record<string, unknown> = {
       date: { gte: start, lte: end },
       county: 'REGIONAL',
+      OR: orgId
+        ? [{ organizationId: orgId }, { organizationId: null }]
+        : [{ organizationId: null }],
     };
 
     // Run all queries in PARALLEL for better performance
     const [zones, shifts, dispatcherAssignments, regionalLeadAssignments, regionalBackupAssignments, settings] = await Promise.all([
       prisma.zone.findMany({
-        where: { isActive: true },
+        where: {
+          isActive: true,
+          OR: orgId
+            ? [{ organizationId: orgId }, { organizationId: null }]
+            : [{ organizationId: null }],
+        },
         orderBy: { name: 'asc' },
       }),
       prisma.shift.findMany({
@@ -220,7 +241,9 @@ export async function GET(request: NextRequest) {
         },
         orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
       }),
-      prisma.organizationSettings.findFirst(),
+      prisma.organizationSettings.findFirst({
+        where: orgId ? { organizationId: orgId } : {},
+      }),
     ]);
 
     // Get dispatcher scheduling mode (default to ZONE for backwards compatibility)
@@ -238,6 +261,9 @@ export async function GET(request: NextRequest) {
         where: {
           date: { gte: start, lte: end },
           county: 'ALL',
+          OR: orgId
+            ? [{ organizationId: orgId }, { organizationId: null }]
+            : [{ organizationId: null }],
         },
         include: {
           user: {

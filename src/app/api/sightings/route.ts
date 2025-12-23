@@ -4,6 +4,7 @@ import { getDbUser } from '@/lib/user';
 import { SightingStatus } from '@/generated/prisma/enums';
 import { sendSightingNotificationToDispatchers } from '@/lib/email';
 import { checkRateLimitAsync, getClientIp, RATE_LIMITS, rateLimitResponse } from '@/lib/rate-limit';
+import { getCurrentOrgId, getOrgIdForCreate } from '@/lib/org-context';
 
 // POST /api/sightings - Create a new ICE sighting report
 // - PUBLIC submissions (unauthenticated): All SALUTE fields required, status = NEW
@@ -62,9 +63,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Get org context for the sighting
+    const orgId = await getOrgIdForCreate();
+
     // Create the sighting with media
     const sighting = await prisma.iceSighting.create({
       data: {
+        organizationId: orgId,
         // SALUTE fields - use empty string for required fields if not provided (dispatcher mode)
         size: size || '',
         activity: activity || '',
@@ -166,8 +171,15 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status');
     const limit = searchParams.get('limit');
 
-    // Build filter conditions
-    const where: Record<string, unknown> = {};
+    const orgId = await getCurrentOrgId();
+
+    // Build filter conditions with org scoping
+    const where: Record<string, unknown> = {
+      // Multi-tenant: scope to current org (or null for legacy data)
+      OR: orgId
+        ? [{ organizationId: orgId }, { organizationId: null }]
+        : [{ organizationId: null }],
+    };
 
     if (status && status !== 'all') {
       where.status = status;
@@ -184,9 +196,14 @@ export async function GET(request: NextRequest) {
       take: limit ? parseInt(limit, 10) : undefined,
     });
 
-    // Get counts by status for dashboard
+    // Get counts by status for dashboard (scoped to org)
     const counts = await prisma.iceSighting.groupBy({
       by: ['status'],
+      where: {
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
       _count: true,
     });
 

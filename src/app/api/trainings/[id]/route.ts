@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
+import { getCurrentOrgId } from '@/lib/org-context';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -15,9 +16,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     const { id } = await params;
+    const orgId = await getCurrentOrgId();
 
-    const session = await prisma.trainingSession.findUnique({
-      where: { id },
+    const session = await prisma.trainingSession.findFirst({
+      where: {
+        id,
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
       include: {
         trainingType: {
           include: {
@@ -78,11 +85,17 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
 
     const { id } = await params;
+    const orgId = await getCurrentOrgId();
     const body = await request.json();
 
-    // Check if session exists
-    const existing = await prisma.trainingSession.findUnique({
-      where: { id },
+    // Check if session exists and belongs to current org
+    const existing = await prisma.trainingSession.findFirst({
+      where: {
+        id,
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
     });
     if (!existing) {
       return NextResponse.json({ error: 'Training session not found' }, { status: 404 });
@@ -146,10 +159,16 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     const { id } = await params;
+    const orgId = await getCurrentOrgId();
 
-    // Check if session exists
-    const existing = await prisma.trainingSession.findUnique({
-      where: { id },
+    // Check if session exists and belongs to current org
+    const existing = await prisma.trainingSession.findFirst({
+      where: {
+        id,
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
       include: {
         attendees: true,
       },

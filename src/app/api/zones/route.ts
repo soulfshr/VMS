@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
+import { getCurrentOrgId, getOrgIdForCreate } from '@/lib/org-context';
 
 // GET /api/zones - List all zones (authenticated)
 export async function GET(request: NextRequest) {
@@ -10,11 +11,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const orgId = await getCurrentOrgId();
+
     const searchParams = request.nextUrl.searchParams;
     const includeInactive = searchParams.get('includeInactive') === 'true';
 
     const zones = await prisma.zone.findMany({
-      where: includeInactive ? {} : { isActive: true },
+      where: {
+        ...(includeInactive ? {} : { isActive: true }),
+        // Multi-tenant: scope to current org (or null for legacy data)
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
       orderBy: [
         { county: 'asc' },
         { name: 'asc' },
@@ -47,8 +56,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Name is required' }, { status: 400 });
     }
 
+    const orgId = await getOrgIdForCreate();
+
     const zone = await prisma.zone.create({
       data: {
+        organizationId: orgId,
         name,
         county: county || null,
         description: description || null,

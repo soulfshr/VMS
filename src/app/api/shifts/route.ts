@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { auditCreate, toAuditUser } from '@/lib/audit';
+import { getCurrentOrgId, getOrgIdForCreate } from '@/lib/org-context';
 
 // GET /api/shifts - List shifts with filters
 export async function GET(request: NextRequest) {
@@ -19,8 +20,12 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status') || 'PUBLISHED';
     const includeMyShifts = searchParams.get('myShifts') === 'true';
 
+    const orgId = await getCurrentOrgId();
+
     // Check scheduling mode - in SIMPLE mode, only show shifts to qualified users
-    const settings = await prisma.organizationSettings.findFirst();
+    const settings = await prisma.organizationSettings.findFirst({
+      where: orgId ? { organizationId: orgId } : {},
+    });
     const schedulingMode = settings?.schedulingMode || 'SIMPLE';
 
     // In SIMPLE mode, only DISPATCHER or ZONE_LEAD qualified users (or admins) can see shifts
@@ -40,8 +45,13 @@ export async function GET(request: NextRequest) {
     // only show shifts they're already signed up for
     const simpleRestricted = schedulingMode === 'SIMPLE' && !isAdmin && !hasLeadQualification;
 
-    // Build filter conditions
-    const where: Record<string, unknown> = {};
+    // Build filter conditions with org scoping
+    const where: Record<string, unknown> = {
+      // Multi-tenant: scope to current org (or null for legacy data)
+      OR: orgId
+        ? [{ organizationId: orgId }, { organizationId: null }]
+        : [{ organizationId: null }],
+    };
 
     // Support both old enum filter and new typeConfigId filter
     if (typeConfigId && typeConfigId !== 'all') {
@@ -275,9 +285,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Look up the ShiftTypeConfig by slug to get its ID
+    const orgId = await getOrgIdForCreate();
+
+    // Look up the ShiftTypeConfig by slug to get its ID (scoped to current org)
     const typeConfig = await prisma.shiftTypeConfig.findFirst({
-      where: { slug: type },
+      where: {
+        slug: type,
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
     });
     const typeConfigId = typeConfig?.id || null;
 
@@ -303,6 +320,7 @@ export async function POST(request: NextRequest) {
         shiftEndTime.setUTCHours(endHour, endMinute, 0, 0);
 
         return {
+          organizationId: orgId,
           type,
           typeConfigId,
           title,
@@ -342,6 +360,7 @@ export async function POST(request: NextRequest) {
     // Single shift creation
     const shift = await prisma.shift.create({
       data: {
+        organizationId: orgId,
         type,
         typeConfigId,
         title,

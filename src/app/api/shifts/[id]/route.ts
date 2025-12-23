@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { ShiftType, ShiftStatus } from '@/generated/prisma/enums';
 import { auditUpdate, toAuditUser } from '@/lib/audit';
+import { getCurrentOrgId } from '@/lib/org-context';
 
 // GET /api/shifts/[id] - Get single shift with volunteers
 export async function GET(
@@ -16,9 +17,12 @@ export async function GET(
     }
 
     const { id } = await params;
+    const orgId = await getCurrentOrgId();
 
     // Check scheduling mode - in SIMPLE mode, restrict access for non-qualified users
-    const settings = await prisma.organizationSettings.findFirst();
+    const settings = await prisma.organizationSettings.findFirst({
+      where: orgId ? { organizationId: orgId } : {},
+    });
     const schedulingMode = settings?.schedulingMode || 'SIMPLE';
     const isAdmin = ['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role);
 
@@ -32,8 +36,14 @@ export async function GET(
       uq.qualifiedRole.slug === 'DISPATCHER' || uq.qualifiedRole.slug === 'ZONE_LEAD'
     );
 
-    const shift = await prisma.shift.findUnique({
-      where: { id },
+    const shift = await prisma.shift.findFirst({
+      where: {
+        id,
+        // Multi-tenant: verify shift belongs to current org
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
       include: {
         zone: true,
         typeConfig: {
@@ -133,11 +143,17 @@ export async function PUT(
     }
 
     const { id } = await params;
+    const orgId = await getCurrentOrgId();
     const body = await request.json();
 
-    // Check if shift exists
-    const existing = await prisma.shift.findUnique({
-      where: { id },
+    // Check if shift exists and belongs to current org
+    const existing = await prisma.shift.findFirst({
+      where: {
+        id,
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
     });
 
     if (!existing) {

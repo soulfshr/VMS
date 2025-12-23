@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
+import { getCurrentOrgId, getOrgIdForCreate } from '@/lib/org-context';
 
 // GET /api/trainings - List training sessions with filters
 export async function GET(request: NextRequest) {
@@ -10,6 +11,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const orgId = await getCurrentOrgId();
+
     const searchParams = request.nextUrl.searchParams;
     const typeId = searchParams.get('typeId');
     const status = searchParams.get('status') || 'PUBLISHED';
@@ -17,8 +20,13 @@ export async function GET(request: NextRequest) {
     const upcoming = searchParams.get('upcoming') === 'true';
     const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined;
 
-    // Build where clause
-    const where: Record<string, unknown> = {};
+    // Build where clause with org scoping
+    const where: Record<string, unknown> = {
+      // Multi-tenant: scope to current org (or null for legacy data)
+      OR: orgId
+        ? [{ organizationId: orgId }, { organizationId: null }]
+        : [{ organizationId: null }],
+    };
 
     if (typeId && typeId !== 'all') {
       where.trainingTypeId = typeId;
@@ -119,9 +127,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify training type exists
-    const trainingType = await prisma.trainingType.findUnique({
-      where: { id: trainingTypeId },
+    const orgId = await getOrgIdForCreate();
+
+    // Verify training type exists and belongs to current org
+    const trainingType = await prisma.trainingType.findFirst({
+      where: {
+        id: trainingTypeId,
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
     });
     if (!trainingType) {
       return NextResponse.json({ error: 'Training type not found' }, { status: 404 });
@@ -129,6 +144,7 @@ export async function POST(request: NextRequest) {
 
     const session = await prisma.trainingSession.create({
       data: {
+        organizationId: orgId,
         trainingTypeId,
         title,
         description: description || null,

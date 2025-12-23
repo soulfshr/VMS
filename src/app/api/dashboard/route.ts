@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUserWithZones } from '@/lib/user';
 import { getOrgTimezone, createHourExtractor } from '@/lib/timezone';
+import { getCurrentOrgId } from '@/lib/org-context';
 
 // GET /api/dashboard - Get dashboard data for current user
 export async function GET() {
@@ -159,8 +160,13 @@ export async function GET() {
     // Get user's zone IDs for filtering
     const userZoneIds = user.zones.map(uz => uz.zone.id);
 
+    // Get org context for org-scoped queries
+    const orgId = await getCurrentOrgId();
+
     // Check scheduling mode - in SIMPLE mode, only show available shifts to leads
-    const settings = await prisma.organizationSettings.findFirst();
+    const settings = await prisma.organizationSettings.findFirst({
+      where: orgId ? { organizationId: orgId } : {},
+    });
     const schedulingMode = settings?.schedulingMode || 'SIMPLE';
     const isAdmin = ['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role);
 
@@ -503,7 +509,9 @@ export async function GET() {
     }
 
     // Get organization settings for autoConfirmRsvp
-    const orgSettings = await prisma.organizationSettings.findFirst();
+    const orgSettings = await prisma.organizationSettings.findFirst({
+      where: orgId ? { organizationId: orgId } : {},
+    });
     const autoConfirmRsvp = orgSettings?.autoConfirmRsvp ?? false;
 
     // Coordinator/Admin stats

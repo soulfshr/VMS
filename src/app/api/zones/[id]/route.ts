@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
+import { getCurrentOrgId } from '@/lib/org-context';
 
 // GET /api/zones/[id] - Get a single zone
 export async function GET(
@@ -14,9 +15,15 @@ export async function GET(
     }
 
     const { id } = await params;
+    const orgId = await getCurrentOrgId();
 
-    const zone = await prisma.zone.findUnique({
-      where: { id },
+    const zone = await prisma.zone.findFirst({
+      where: {
+        id,
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
     });
 
     if (!zone) {
@@ -46,11 +53,17 @@ export async function PATCH(
     }
 
     const { id } = await params;
+    const orgId = await getCurrentOrgId();
     const body = await request.json();
 
-    // Check if zone exists
-    const existingZone = await prisma.zone.findUnique({
-      where: { id },
+    // Check if zone exists and belongs to current org
+    const existingZone = await prisma.zone.findFirst({
+      where: {
+        id,
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
     });
 
     if (!existingZone) {
@@ -98,10 +111,16 @@ export async function DELETE(
     }
 
     const { id } = await params;
+    const orgId = await getCurrentOrgId();
 
-    // Check if zone exists
-    const existingZone = await prisma.zone.findUnique({
-      where: { id },
+    // Check if zone exists and belongs to current org
+    const existingZone = await prisma.zone.findFirst({
+      where: {
+        id,
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
     });
 
     if (!existingZone) {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { SightingStatus, SightingDisposition } from '@/generated/prisma/enums';
+import { getCurrentOrgId } from '@/lib/org-context';
 
 // GET /api/sightings/[id] - Get a single sighting (requires authentication)
 export async function GET(
@@ -21,9 +22,15 @@ export async function GET(
     }
 
     const { id } = await params;
+    const orgId = await getCurrentOrgId();
 
-    const sighting = await prisma.iceSighting.findUnique({
-      where: { id },
+    const sighting = await prisma.iceSighting.findFirst({
+      where: {
+        id,
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
       include: {
         media: true,
       },
@@ -61,6 +68,7 @@ export async function PATCH(
     }
 
     const { id } = await params;
+    const orgId = await getCurrentOrgId();
     const body = await request.json();
 
     const {
@@ -101,8 +109,14 @@ export async function PATCH(
     if (assignedToId !== undefined) updateData.assignedToId = assignedToId;
 
     // SALUTE fields - only allow editing for non-closed sightings
-    const existingSighting = await prisma.iceSighting.findUnique({
-      where: { id },
+    // Check if sighting exists and belongs to current org
+    const existingSighting = await prisma.iceSighting.findFirst({
+      where: {
+        id,
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
       select: { status: true },
     });
 
