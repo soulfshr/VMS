@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { getOrgTimezone, parseDisplayDate } from '@/lib/timezone';
+import { getCurrentOrgId, getOrgIdForCreate } from '@/lib/org-context';
 
 // GET /api/dispatcher-assignments - List dispatcher assignments with filters
 export async function GET(request: NextRequest) {
@@ -16,8 +17,14 @@ export async function GET(request: NextRequest) {
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
 
-    // Build filter conditions
-    const where: Record<string, unknown> = {};
+    const orgId = await getCurrentOrgId();
+
+    // Build filter conditions with org scoping
+    const where: Record<string, unknown> = {
+      OR: orgId
+        ? [{ organizationId: orgId }, { organizationId: null }]
+        : [{ organizationId: null }],
+    };
 
     if (county && county !== 'all') {
       where.county = county;
@@ -121,6 +128,8 @@ export async function POST(request: NextRequest) {
     const parsedStartTime = new Date(startTime);
     const parsedEndTime = new Date(endTime);
 
+    const orgId = await getOrgIdForCreate();
+
     const assignment = await prisma.dispatcherAssignment.upsert({
       where: {
         userId_county_date_startTime: {
@@ -137,6 +146,7 @@ export async function POST(request: NextRequest) {
         createdById: user.id,
       },
       create: {
+        organizationId: orgId,
         userId,
         county,
         date: parsedDate,

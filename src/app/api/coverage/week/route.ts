@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { CoverageOverrideType } from '@/generated/prisma/client';
+import { getCurrentOrgId } from '@/lib/org-context';
 import {
   getCurrentWeekMondayET,
   getMondayOfWeek,
@@ -52,8 +53,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const orgId = await getCurrentOrgId();
+
     // Fetch organization settings for scheduling mode
-    const settings = await prisma.organizationSettings.findFirst();
+    const settings = await prisma.organizationSettings.findFirst({
+      where: orgId ? { organizationId: orgId } : {},
+    });
     const schedulingMode = settings?.schedulingMode || 'SIMPLE';
     const isSimpleMode = schedulingMode === 'SIMPLE';
 
@@ -86,9 +91,14 @@ export async function GET(request: NextRequest) {
     // Get array of date strings for the week
     const weekDates = getWeekDates(mondayStr);
 
-    // Get all active zones with their configs
+    // Get all active zones with their configs (scoped to org)
     const zones = await prisma.zone.findMany({
-      where: { isActive: true },
+      where: {
+        isActive: true,
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
       include: {
         coverageConfigs: {
           where: { isActive: true },
@@ -109,6 +119,9 @@ export async function GET(request: NextRequest) {
         },
         status: { in: ['CONFIRMED', 'PENDING'] },
         zoneId: { not: null },  // Zone-based signups only
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
       },
       include: {
         user: {
@@ -138,6 +151,9 @@ export async function GET(request: NextRequest) {
         status: { in: ['CONFIRMED', 'PENDING'] },
         zoneId: null,  // Regional coordinator signups
         roleType: 'DISPATCH_COORDINATOR',
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
       },
       include: {
         user: {
@@ -150,13 +166,16 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Get all coverage overrides for the week
+    // Get all coverage overrides for the week (scoped to org)
     const overrides = await prisma.coverageOverride.findMany({
       where: {
         date: {
           gte: weekStart,
           lte: weekEnd,
         },
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
       },
       include: {
         zone: {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
+import { getCurrentOrgId, getOrgIdForCreate } from '@/lib/org-context';
 
 // GET /api/regional-lead-assignments - List regional lead assignments with filters
 export async function GET(request: NextRequest) {
@@ -14,8 +15,14 @@ export async function GET(request: NextRequest) {
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
 
-    // Build filter conditions
-    const where: Record<string, unknown> = {};
+    const orgId = await getCurrentOrgId();
+
+    // Build filter conditions with org scoping
+    const where: Record<string, unknown> = {
+      OR: orgId
+        ? [{ organizationId: orgId }, { organizationId: null }]
+        : [{ organizationId: null }],
+    };
 
     // Parse dates for DATE-only column filtering
     // Use UTC noon to ensure correct date comparison regardless of server timezone
@@ -137,9 +144,12 @@ export async function POST(request: NextRequest) {
     const [year, month, day] = date.split('-').map(Number);
     const dateObj = new Date(Date.UTC(year, month - 1, day, 12, 0, 0, 0));
 
+    const orgId = await getOrgIdForCreate();
+
     // Create the assignment
     const assignment = await prisma.regionalLeadAssignment.create({
       data: {
+        organizationId: orgId,
         userId: targetUserId,
         date: dateObj,
         isPrimary,
