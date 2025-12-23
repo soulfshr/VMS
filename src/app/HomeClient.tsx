@@ -1,30 +1,23 @@
 'use client';
 
-import { useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 
 export default function HomeClient() {
-  const router = useRouter();
   const { data: session, status } = useSession();
 
-  // Redirect logged-in users to dashboard
-  useEffect(() => {
-    if (status === 'authenticated' && session?.user) {
-      router.replace('/dashboard');
-    }
-  }, [status, session, router]);
-
-  // Show loading state while checking auth or redirecting
-  if (status === 'loading' || status === 'authenticated') {
+  // Show loading state while checking auth
+  if (status === 'loading') {
     return (
       <div className="min-h-[calc(100vh-200px)] flex items-center justify-center">
         <div className="animate-spin w-8 h-8 border-4 border-cyan-600 border-t-transparent rounded-full" />
       </div>
     );
   }
+
+  // Show different CTA for authenticated users
+  const isAuthenticated = status === 'authenticated' && session?.user;
 
   return (
     <div className="min-h-[calc(100vh-200px)]">
@@ -49,21 +42,32 @@ export default function HomeClient() {
       <section className="bg-gradient-to-br from-cyan-600 to-cyan-800 text-white py-12">
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-xl md:text-2xl font-medium text-cyan-100 mb-6 max-w-2xl mx-auto">
-            Coordinating community volunteers to monitor, document, and respond to immigration enforcement activities in North Carolina&apos;s Triangle region.
+            A volunteer management platform for community organizations coordinating rapid response, monitoring, and field operations.
           </h1>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/login"
-              className="px-8 py-4 bg-white text-cyan-700 font-semibold rounded-lg hover:bg-cyan-50 transition-colors shadow-lg"
-            >
-              Login
-            </Link>
-            <Link
-              href="/about"
-              className="px-8 py-4 bg-cyan-700 text-white font-semibold rounded-lg hover:bg-cyan-900 transition-colors border border-cyan-500"
-            >
-              Learn More
-            </Link>
+            {isAuthenticated ? (
+              <Link
+                href="/dashboard"
+                className="px-8 py-4 bg-white text-cyan-700 font-semibold rounded-lg hover:bg-cyan-50 transition-colors shadow-lg"
+              >
+                Go to Dashboard
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="px-8 py-4 bg-white text-cyan-700 font-semibold rounded-lg hover:bg-cyan-50 transition-colors shadow-lg"
+                >
+                  Login
+                </Link>
+                <Link
+                  href="/about"
+                  className="px-8 py-4 bg-cyan-700 text-white font-semibold rounded-lg hover:bg-cyan-900 transition-colors border border-cyan-500"
+                >
+                  Learn More
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </section>
@@ -135,7 +139,7 @@ export default function HomeClient() {
               <div>
                 <h3 className="font-semibold text-gray-900 mb-1">Zone Patrol</h3>
                 <p className="text-sm text-gray-600">
-                  Active monitoring of assigned zones in the Triangle area to observe and document activity.
+                  Active monitoring of assigned zones to observe and document activity in your community.
                 </p>
               </div>
             </div>
@@ -225,14 +229,23 @@ export default function HomeClient() {
             Ready to Make a Difference?
           </h2>
           <p className="text-cyan-100 mb-8 max-w-2xl mx-auto">
-            Join our network of dedicated volunteers protecting immigrant communities in the Triangle.
+            Join our network of dedicated volunteers making an impact in communities across the country.
           </p>
-          <Link
-            href="/login"
-            className="inline-block px-8 py-4 bg-white text-cyan-700 font-semibold rounded-lg hover:bg-cyan-50 transition-colors shadow-lg"
-          >
-            Get Started Today
-          </Link>
+          {isAuthenticated ? (
+            <Link
+              href="/dashboard"
+              className="inline-block px-8 py-4 bg-white text-cyan-700 font-semibold rounded-lg hover:bg-cyan-50 transition-colors shadow-lg"
+            >
+              Go to Dashboard
+            </Link>
+          ) : (
+            <Link
+              href="/login"
+              className="inline-block px-8 py-4 bg-white text-cyan-700 font-semibold rounded-lg hover:bg-cyan-50 transition-colors shadow-lg"
+            >
+              Get Started Today
+            </Link>
+          )}
         </div>
       </section>
     </div>
