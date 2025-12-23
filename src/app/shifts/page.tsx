@@ -51,6 +51,10 @@ interface Shift {
   pendingCount: number;
   spotsLeft: number;
   userRsvpStatus: string | null;
+  // Exception fields
+  hasRoleException: boolean;
+  exceptionNotes: string | null;
+  exceptionReviewedAt: string | null;
 }
 
 // Cancel Modal Component
@@ -439,6 +443,7 @@ function ShiftsPageContent() {
   const [filterType, setFilterType] = useState<string>('all');
   const [filterZone, setFilterZone] = useState<string>('all');
   const [filterPendingOnly, setFilterPendingOnly] = useState<boolean>(false);
+  const [filterExceptionsOnly, setFilterExceptionsOnly] = useState<boolean>(false);
   const [rsvpingShiftId, setRsvpingShiftId] = useState<string | null>(null);
   const [autoConfirmRsvp, setAutoConfirmRsvp] = useState<boolean>(false);
 
@@ -733,10 +738,17 @@ function ShiftsPageContent() {
 
   const canCreateShift = user.role === 'COORDINATOR' || user.role === 'DISPATCHER' || user.role === 'ADMINISTRATOR' || user.role === 'DEVELOPER';
 
-  // Filter shifts by pending RSVPs if enabled
-  const filteredShifts = filterPendingOnly
-    ? shifts.filter(shift => shift.pendingCount > 0)
-    : shifts;
+  // Filter shifts by pending RSVPs and/or exceptions if enabled
+  let filteredShifts = shifts;
+  if (filterPendingOnly) {
+    filteredShifts = filteredShifts.filter(shift => shift.pendingCount > 0);
+  }
+  if (filterExceptionsOnly) {
+    // Show shifts with unreviewed exceptions
+    filteredShifts = filteredShifts.filter(shift =>
+      shift.hasRoleException && !shift.exceptionReviewedAt
+    );
+  }
 
   return (
     <>
@@ -876,6 +888,21 @@ function ShiftsPageContent() {
                   </label>
                 </div>
               )}
+              {canCreateShift && (
+                <div className="flex items-center">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={filterExceptionsOnly}
+                      onChange={(e) => setFilterExceptionsOnly(e.target.checked)}
+                      className="w-4 h-4 text-amber-600 rounded focus:ring-amber-500"
+                    />
+                    <span className={`text-sm font-medium ${filterExceptionsOnly ? 'text-amber-600' : 'text-gray-700'}`}>
+                      Exceptions only
+                    </span>
+                  </label>
+                </div>
+              )}
             </div>
             {/* View Toggle - Hidden on mobile (cards forced) */}
             <div className="hidden lg:flex border border-gray-300 rounded-lg overflow-hidden">
@@ -967,12 +994,25 @@ function ShiftsPageContent() {
                         {formatTime(shift.startTime, shift.endTime)}
                       </td>
                       <td className="px-4 py-3">
-                        <Link
-                          href={`/shifts/${shift.id}`}
-                          className="text-sm font-medium text-gray-900 hover:text-cyan-600 transition-colors"
-                        >
-                          {shift.title}
-                        </Link>
+                        <div className="flex items-center gap-2">
+                          <Link
+                            href={`/shifts/${shift.id}`}
+                            className="text-sm font-medium text-gray-900 hover:text-cyan-600 transition-colors"
+                          >
+                            {shift.title}
+                          </Link>
+                          {/* Exception indicator for coordinators */}
+                          {shift.hasRoleException && !shift.exceptionReviewedAt && (
+                            <span
+                              className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded text-xs font-medium"
+                              title={shift.exceptionNotes || 'Role requirements not met'}
+                            >
+                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                              </svg>
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">{shift.zone.name}</td>
                       <td className="px-4 py-3">
@@ -1095,9 +1135,22 @@ function ShiftsPageContent() {
                   </div>
 
                   <Link href={`/shifts/${shift.id}`} className="block group">
-                    <h3 className="font-semibold text-gray-900 mb-1 group-hover:text-cyan-600 transition-colors">
-                      {shift.title}
-                    </h3>
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-semibold text-gray-900 group-hover:text-cyan-600 transition-colors">
+                        {shift.title}
+                      </h3>
+                      {/* Exception indicator for coordinators */}
+                      {shift.hasRoleException && !shift.exceptionReviewedAt && (
+                        <span
+                          className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded text-xs font-medium"
+                          title={shift.exceptionNotes || 'Role requirements not met'}
+                        >
+                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                        </span>
+                      )}
+                    </div>
                   </Link>
                   <p className="text-sm text-gray-500 mb-3">{shift.zone.name}</p>
 

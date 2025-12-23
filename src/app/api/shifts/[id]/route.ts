@@ -119,6 +119,11 @@ export async function GET(
       userRsvpStatus: userRsvp?.status || null,
       userRsvpId: userRsvp?.id || null,
       isCoordinator: ['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role),
+      // Exception fields
+      hasRoleException: shift.hasRoleException,
+      exceptionNotes: shift.exceptionNotes,
+      exceptionReviewedById: shift.exceptionReviewedById,
+      exceptionReviewedAt: shift.exceptionReviewedAt,
     });
   } catch (error) {
     console.error('Error fetching shift:', error);

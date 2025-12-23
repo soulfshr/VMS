@@ -51,6 +51,11 @@ interface Shift {
   spotsLeft: number;
   userRsvpStatus: string | null;
   isCoordinator: boolean;
+  // Exception fields
+  hasRoleException: boolean;
+  exceptionNotes: string | null;
+  exceptionReviewedById: string | null;
+  exceptionReviewedAt: string | null;
 }
 
 export default function ShiftDetailPage() {
@@ -60,6 +65,7 @@ export default function ShiftDetailPage() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
   const [accessRestricted, setAccessRestricted] = useState(false);
+  const [dismissingException, setDismissingException] = useState(false);
 
   useEffect(() => {
     fetchShift();
@@ -123,6 +129,24 @@ export default function ShiftDetailPage() {
       console.error('Error updating status:', error);
     } finally {
       setUpdating(null);
+    }
+  };
+
+  const handleDismissException = async (dismiss: boolean) => {
+    setDismissingException(true);
+    try {
+      const res = await fetch(`/api/shifts/${params.id}/review-exception`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dismiss }),
+      });
+      if (res.ok) {
+        fetchShift();
+      }
+    } catch (error) {
+      console.error('Error updating exception:', error);
+    } finally {
+      setDismissingException(false);
     }
   };
 
@@ -244,6 +268,57 @@ export default function ShiftDetailPage() {
         {shift.description && (
           <div className="border-t pt-4 mt-4">
             <p className="text-gray-700">{shift.description}</p>
+          </div>
+        )}
+
+        {/* Exception Panel (Coordinator Only) */}
+        {shift.isCoordinator && shift.hasRoleException && (
+          <div className={`border-t pt-4 mt-4 ${shift.exceptionReviewedAt ? 'opacity-60' : ''}`}>
+            <div className={`p-4 rounded-lg ${shift.exceptionReviewedAt ? 'bg-gray-50 border border-gray-200' : 'bg-amber-50 border border-amber-200'}`}>
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-3">
+                  <div className={`p-2 rounded-full ${shift.exceptionReviewedAt ? 'bg-gray-200' : 'bg-amber-200'}`}>
+                    <svg className={`w-5 h-5 ${shift.exceptionReviewedAt ? 'text-gray-600' : 'text-amber-700'}`} fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 className={`font-semibold ${shift.exceptionReviewedAt ? 'text-gray-700' : 'text-amber-800'}`}>
+                      {shift.exceptionReviewedAt ? 'Exception Reviewed' : 'Role Requirements Not Met'}
+                    </h4>
+                    {shift.exceptionNotes && (
+                      <p className={`text-sm mt-1 ${shift.exceptionReviewedAt ? 'text-gray-600' : 'text-amber-700'}`}>
+                        {shift.exceptionNotes}
+                      </p>
+                    )}
+                    {shift.exceptionReviewedAt && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Reviewed on {new Date(shift.exceptionReviewedAt).toLocaleDateString()}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  {shift.exceptionReviewedAt ? (
+                    <button
+                      onClick={() => handleDismissException(false)}
+                      disabled={dismissingException}
+                      className="text-sm text-gray-600 hover:text-gray-800 underline disabled:opacity-50"
+                    >
+                      {dismissingException ? 'Updating...' : 'Reopen'}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleDismissException(true)}
+                      disabled={dismissingException}
+                      className="px-3 py-1.5 text-sm font-medium bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50"
+                    >
+                      {dismissingException ? 'Updating...' : 'Dismiss'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         )}
 

@@ -179,6 +179,10 @@ export async function GET(request: NextRequest) {
         spotsLeft: shift.maxVolunteers - confirmedCount,
         userRsvpStatus: userRsvp?.status || null,
         userRsvpId: userRsvp?.id || null,
+        // Exception fields
+        hasRoleException: shift.hasRoleException,
+        exceptionNotes: shift.exceptionNotes,
+        exceptionReviewedAt: shift.exceptionReviewedAt,
       };
     });
 
