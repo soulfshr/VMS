@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { CoverageOverrideType } from '@/generated/prisma/client';
 import { parseDateStringToUTC, dateToString } from '@/lib/dates';
+import { getCurrentOrgId, getOrgIdForCreate } from '@/lib/org-context';
 
 /**
  * GET /api/coverage/overrides
@@ -46,15 +47,17 @@ export async function GET(request: NextRequest) {
     const end = parseDateStringToUTC(endDate);
     end.setUTCHours(23, 59, 59, 999); // End of day for inclusive range
 
-    // Build where clause
-    const where: {
-      date: { gte: Date; lte: Date };
-      zoneId?: string | null;
-    } = {
+    const orgId = await getCurrentOrgId();
+
+    // Build where clause with org scoping
+    const where: Record<string, unknown> = {
       date: {
         gte: start,
         lte: end,
       },
+      OR: orgId
+        ? [{ organizationId: orgId }, { organizationId: null }]
+        : [{ organizationId: null }],
     };
 
     if (zoneId) {
@@ -217,8 +220,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const orgId = await getOrgIdForCreate();
+
     const override = await prisma.coverageOverride.create({
       data: {
+        organizationId: orgId,
         date: dateObj,
         zoneId: zoneId || null,
         overrideType,

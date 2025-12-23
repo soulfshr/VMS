@@ -4,6 +4,7 @@ import { getDbUser } from '@/lib/user';
 import { CoverageRoleType, RSVPStatus } from '@/generated/prisma/enums';
 import type { Prisma } from '@/generated/prisma/client';
 import { sendCoverageSignupConfirmationEmail } from '@/lib/email';
+import { getOrgIdForCreate } from '@/lib/org-context';
 import {
   getTodayET,
   parseDateStringToUTC,
@@ -132,9 +133,12 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      const orgId = await getOrgIdForCreate();
+
       // Create the coordinator signup
       const signup = await prisma.coverageSignup.create({
         data: {
+          organizationId: orgId,
           date: signupDate,
           zoneId: null,
           startHour,
@@ -264,9 +268,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const orgId = await getOrgIdForCreate();
+
     // Create the signup
     const signup = await prisma.coverageSignup.create({
       data: {
+        organizationId: orgId,
         date: signupDate,
         zoneId,
         startHour,
