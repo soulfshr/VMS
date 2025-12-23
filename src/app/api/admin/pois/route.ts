@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
+import { getCurrentOrgId, getOrgIdForCreate } from '@/lib/org-context';
 
 // GET /api/admin/pois - List all POIs with filters
 export async function GET(request: NextRequest) {
@@ -16,8 +17,14 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status'); // 'active', 'inactive', or 'all'
     const search = searchParams.get('search');
 
-    // Build where clause
-    const where: Record<string, unknown> = {};
+    const orgId = await getCurrentOrgId();
+
+    // Build where clause with org scoping
+    const where: Record<string, unknown> = {
+      OR: orgId
+        ? [{ organizationId: orgId }, { organizationId: null }]
+        : [{ organizationId: null }],
+    };
 
     if (categoryId && categoryId !== 'all') {
       where.categoryId = categoryId;
@@ -74,9 +81,14 @@ export async function GET(request: NextRequest) {
       orderBy: [{ isActive: 'desc' }, { name: 'asc' }],
     });
 
-    // Get categories for filter dropdown
+    // Get categories for filter dropdown (scoped to org)
     const categories = await prisma.pOICategory.findMany({
-      where: { isActive: true },
+      where: {
+        isActive: true,
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
       orderBy: { sortOrder: 'asc' },
       select: {
         id: true,
@@ -86,9 +98,14 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Get zones for filter dropdown
+    // Get zones for filter dropdown (scoped to org)
     const zones = await prisma.zone.findMany({
-      where: { isActive: true },
+      where: {
+        isActive: true,
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
       orderBy: { name: 'asc' },
       select: {
         id: true,
@@ -179,8 +196,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const orgId = await getOrgIdForCreate();
+
     const poi = await prisma.pointOfInterest.create({
       data: {
+        organizationId: orgId,
         name,
         description: description || null,
         address: address || null,
