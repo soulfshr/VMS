@@ -12,6 +12,8 @@ export default async function middleware(request: NextRequest) {
   }
 
   // Use NextAuth for all other routes
+  // Organization context is determined from host header in org-context.ts
+  // using getOrgSlugFromHost() - no header injection needed in middleware
   return auth(request as any);
 }
 

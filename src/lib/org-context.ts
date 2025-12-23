@@ -2,7 +2,7 @@
  * Organization Context Helper
  *
  * This module provides utilities for multi-tenant organization context:
- * - Extracting organization from subdomain
+ * - Reading organization from middleware-injected headers
  * - Scoping database queries to current organization
  * - Fallback to default org during migration period
  */
@@ -25,6 +25,7 @@ export const RESERVED_SLUGS = [
 
 /**
  * Extract organization slug from the request hostname
+ * Used as fallback when middleware header is not available
  *
  * Examples:
  * - nc.ripple-vms.com -> 'nc'
@@ -60,10 +61,19 @@ export function getOrgSlugFromHost(host: string): string | null {
 }
 
 /**
- * Get the organization slug from the current request headers
+ * Get the organization slug from the current request
+ * Reads from x-org-slug header set by middleware, with fallback to host parsing
  */
 export async function getOrgSlugFromRequest(): Promise<string | null> {
   const headersList = await headers();
+
+  // Primary: read from middleware-injected header
+  const orgSlug = headersList.get('x-org-slug');
+  if (orgSlug) {
+    return orgSlug;
+  }
+
+  // Fallback: parse from host header (for non-middleware contexts)
   const host = headersList.get('host') || '';
   return getOrgSlugFromHost(host);
 }

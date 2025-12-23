@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get the REGIONAL_LEAD qualified role
-    const regionalLeadRole = await prisma.qualifiedRole.findUnique({
+    const regionalLeadRole = await prisma.qualifiedRole.findFirst({
       where: { slug: 'REGIONAL_LEAD' },
     });
 
