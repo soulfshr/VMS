@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
+import { getCurrentOrgId, getOrgIdForCreate } from '@/lib/org-context';
 
 // GET /api/admin/shift-types - List all shift types (including archived)
 export async function GET() {
@@ -13,7 +14,15 @@ export async function GET() {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
+    const orgId = await getCurrentOrgId();
+
     const shiftTypes = await prisma.shiftTypeConfig.findMany({
+      where: {
+        // Multi-tenant: scope to current org (or null for legacy data)
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
       include: {
         qualificationRequirements: true,  // Keep for backwards compatibility
         qualifiedRoleRequirements: {
@@ -53,6 +62,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
+    const orgId = await getOrgIdForCreate();
+
     const body = await request.json();
     const {
       name,
@@ -71,10 +82,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Name and slug are required' }, { status: 400 });
     }
 
-    // Check for duplicate name or slug
+    // Check for duplicate name or slug within the organization
     const existing = await prisma.shiftTypeConfig.findFirst({
       where: {
         OR: [{ name }, { slug }],
+        AND: {
+          OR: orgId
+            ? [{ organizationId: orgId }, { organizationId: null }]
+            : [{ organizationId: null }],
+        },
       },
     });
     if (existing) {
@@ -87,6 +103,7 @@ export async function POST(request: Request) {
     // Create shift type with qualified role requirements
     const shiftType = await prisma.shiftTypeConfig.create({
       data: {
+        organizationId: orgId,
         name,
         slug: slug.toUpperCase(),
         description: description || null,

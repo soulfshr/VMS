@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
+import { getCurrentOrgId } from '@/lib/org-context';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -18,9 +19,16 @@ export async function GET(request: Request, { params }: RouteParams) {
     }
 
     const { id } = await params;
+    const orgId = await getCurrentOrgId();
 
-    const shiftType = await prisma.shiftTypeConfig.findUnique({
-      where: { id },
+    const shiftType = await prisma.shiftTypeConfig.findFirst({
+      where: {
+        id,
+        // Multi-tenant: verify shift type belongs to current org
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
       include: {
         qualificationRequirements: true,  // Keep for backwards compatibility
         qualifiedRoleRequirements: {
@@ -64,6 +72,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
     }
 
     const { id } = await params;
+    const orgId = await getCurrentOrgId();
     const body = await request.json();
     const {
       name,
@@ -77,18 +86,29 @@ export async function PUT(request: Request, { params }: RouteParams) {
       qualifiedRoleRequirements,
     } = body;
 
-    // Check if shift type exists
-    const existing = await prisma.shiftTypeConfig.findUnique({
-      where: { id },
+    // Check if shift type exists and belongs to current org
+    const existing = await prisma.shiftTypeConfig.findFirst({
+      where: {
+        id,
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
     });
     if (!existing) {
       return NextResponse.json({ error: 'Shift type not found' }, { status: 404 });
     }
 
-    // Check for duplicate name (excluding current)
+    // Check for duplicate name within the organization (excluding current)
     if (name && name !== existing.name) {
       const duplicate = await prisma.shiftTypeConfig.findFirst({
-        where: { name, NOT: { id } },
+        where: {
+          name,
+          NOT: { id },
+          OR: orgId
+            ? [{ organizationId: orgId }, { organizationId: null }]
+            : [{ organizationId: null }],
+        },
       });
       if (duplicate) {
         return NextResponse.json(
@@ -187,10 +207,16 @@ export async function DELETE(request: Request, { params }: RouteParams) {
     }
 
     const { id } = await params;
+    const orgId = await getCurrentOrgId();
 
-    // Check if shift type exists
-    const existing = await prisma.shiftTypeConfig.findUnique({
-      where: { id },
+    // Check if shift type exists and belongs to current org
+    const existing = await prisma.shiftTypeConfig.findFirst({
+      where: {
+        id,
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
       include: {
         _count: {
           select: { shifts: true },

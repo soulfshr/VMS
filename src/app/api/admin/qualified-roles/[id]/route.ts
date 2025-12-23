@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
+import { getCurrentOrgId } from '@/lib/org-context';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -15,9 +16,16 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     const { id } = await params;
+    const orgId = await getCurrentOrgId();
 
-    const qualifiedRole = await prisma.qualifiedRole.findUnique({
-      where: { id },
+    const qualifiedRole = await prisma.qualifiedRole.findFirst({
+      where: {
+        id,
+        // Multi-tenant: verify role belongs to current org
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
       include: {
         _count: {
           select: {
@@ -56,11 +64,17 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
 
     const { id } = await params;
+    const orgId = await getCurrentOrgId();
     const body = await request.json();
 
-    // Check if qualified role exists
-    const existing = await prisma.qualifiedRole.findUnique({
-      where: { id },
+    // Check if qualified role exists and belongs to current org
+    const existing = await prisma.qualifiedRole.findFirst({
+      where: {
+        id,
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
     });
 
     if (!existing) {
@@ -79,11 +93,14 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     } = {};
 
     if (body.name !== undefined) {
-      // Check for duplicate name
+      // Check for duplicate name within the organization
       const duplicate = await prisma.qualifiedRole.findFirst({
         where: {
           name: body.name,
           id: { not: id },
+          OR: orgId
+            ? [{ organizationId: orgId }, { organizationId: null }]
+            : [{ organizationId: null }],
         },
       });
       if (duplicate) {
@@ -150,10 +167,16 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     const { id } = await params;
+    const orgId = await getCurrentOrgId();
 
-    // Check usage
-    const qualifiedRole = await prisma.qualifiedRole.findUnique({
-      where: { id },
+    // Check usage and verify role belongs to current org
+    const qualifiedRole = await prisma.qualifiedRole.findFirst({
+      where: {
+        id,
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
       include: {
         _count: {
           select: {

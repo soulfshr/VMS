@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { auditUpdate, auditDelete, toAuditUser } from '@/lib/audit';
+import { getCurrentOrgId } from '@/lib/org-context';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -19,9 +20,16 @@ export async function GET(request: Request, { params }: RouteParams) {
     }
 
     const { id } = await params;
+    const orgId = await getCurrentOrgId();
 
-    const zone = await prisma.zone.findUnique({
-      where: { id },
+    const zone = await prisma.zone.findFirst({
+      where: {
+        id,
+        // Multi-tenant: verify zone belongs to current org
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
       include: {
         _count: {
           select: {
@@ -55,21 +63,33 @@ export async function PUT(request: Request, { params }: RouteParams) {
     }
 
     const { id } = await params;
+    const orgId = await getCurrentOrgId();
     const body = await request.json();
     const { name, county, description, signalGroup, isActive, color, fillOpacity, strokeWeight, boundaries } = body;
 
-    // Check if zone exists
-    const existing = await prisma.zone.findUnique({
-      where: { id },
+    // Check if zone exists and belongs to current org
+    const existing = await prisma.zone.findFirst({
+      where: {
+        id,
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
     });
     if (!existing) {
       return NextResponse.json({ error: 'Zone not found' }, { status: 404 });
     }
 
-    // Check for duplicate name (excluding current)
+    // Check for duplicate name within the organization (excluding current)
     if (name && name !== existing.name) {
       const duplicate = await prisma.zone.findFirst({
-        where: { name, NOT: { id } },
+        where: {
+          name,
+          NOT: { id },
+          OR: orgId
+            ? [{ organizationId: orgId }, { organizationId: null }]
+            : [{ organizationId: null }],
+        },
       });
       if (duplicate) {
         return NextResponse.json({ error: 'Zone with this name already exists' }, { status: 400 });
@@ -119,10 +139,16 @@ export async function DELETE(request: Request, { params }: RouteParams) {
     }
 
     const { id } = await params;
+    const orgId = await getCurrentOrgId();
 
-    // Check if zone exists
-    const existing = await prisma.zone.findUnique({
-      where: { id },
+    // Check if zone exists and belongs to current org
+    const existing = await prisma.zone.findFirst({
+      where: {
+        id,
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
       include: {
         _count: {
           select: {

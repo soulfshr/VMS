@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
+import { getCurrentOrgId } from '@/lib/org-context';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -18,9 +19,16 @@ export async function GET(request: Request, { params }: RouteParams) {
     }
 
     const { id } = await params;
+    const orgId = await getCurrentOrgId();
 
-    const trainingType = await prisma.trainingType.findUnique({
-      where: { id },
+    const trainingType = await prisma.trainingType.findFirst({
+      where: {
+        id,
+        // Multi-tenant: verify training type belongs to current org
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
       include: {
         grantsQualifiedRole: {
           select: {
@@ -59,6 +67,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
     }
 
     const { id } = await params;
+    const orgId = await getCurrentOrgId();
     const body = await request.json();
     const {
       name,
@@ -72,18 +81,29 @@ export async function PUT(request: Request, { params }: RouteParams) {
       isActive,
     } = body;
 
-    // Check if training type exists
-    const existing = await prisma.trainingType.findUnique({
-      where: { id },
+    // Check if training type exists and belongs to current org
+    const existing = await prisma.trainingType.findFirst({
+      where: {
+        id,
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
     });
     if (!existing) {
       return NextResponse.json({ error: 'Training type not found' }, { status: 404 });
     }
 
-    // Check for duplicate name (excluding current)
+    // Check for duplicate name within the organization (excluding current)
     if (name && name !== existing.name) {
       const duplicate = await prisma.trainingType.findFirst({
-        where: { name, NOT: { id } },
+        where: {
+          name,
+          NOT: { id },
+          OR: orgId
+            ? [{ organizationId: orgId }, { organizationId: null }]
+            : [{ organizationId: null }],
+        },
       });
       if (duplicate) {
         return NextResponse.json(
@@ -138,10 +158,16 @@ export async function DELETE(request: Request, { params }: RouteParams) {
     }
 
     const { id } = await params;
+    const orgId = await getCurrentOrgId();
 
-    // Check if training type exists
-    const existing = await prisma.trainingType.findUnique({
-      where: { id },
+    // Check if training type exists and belongs to current org
+    const existing = await prisma.trainingType.findFirst({
+      where: {
+        id,
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
       include: {
         _count: {
           select: { sessions: true },

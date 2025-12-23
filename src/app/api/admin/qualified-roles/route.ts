@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
+import { getCurrentOrgId, getOrgIdForCreate } from '@/lib/org-context';
 
 // GET /api/admin/qualified-roles - List all qualified roles
 export async function GET() {
@@ -10,7 +11,15 @@ export async function GET() {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
+    const orgId = await getCurrentOrgId();
+
     const qualifiedRoles = await prisma.qualifiedRole.findMany({
+      where: {
+        // Multi-tenant: scope to current org (or null for legacy data)
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       include: {
         _count: {
@@ -39,6 +48,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
+    const orgId = await getOrgIdForCreate();
+
     const body = await request.json();
     const { name, slug, description, color, isDefaultForNewUsers, countsTowardMinimum } = body;
 
@@ -49,10 +60,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check for duplicate name or slug
+    // Check for duplicate name or slug within the organization
     const existing = await prisma.qualifiedRole.findFirst({
       where: {
         OR: [{ name }, { slug: slug.toUpperCase() }],
+        AND: {
+          OR: orgId
+            ? [{ organizationId: orgId }, { organizationId: null }]
+            : [{ organizationId: null }],
+        },
       },
     });
 
@@ -63,13 +79,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get max sort order
+    // Get max sort order within the organization
     const maxSort = await prisma.qualifiedRole.aggregate({
+      where: {
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
       _max: { sortOrder: true },
     });
 
     const qualifiedRole = await prisma.qualifiedRole.create({
       data: {
+        organizationId: orgId,
         name,
         slug: slug.toUpperCase(),
         description: description || null,

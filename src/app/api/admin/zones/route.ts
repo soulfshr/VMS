@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { auditCreate, toAuditUser } from '@/lib/audit';
+import { getCurrentOrgId, getOrgIdForCreate } from '@/lib/org-context';
 
 // GET /api/admin/zones - List all zones (including archived)
 export async function GET() {
@@ -15,7 +16,15 @@ export async function GET() {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
+    const orgId = await getCurrentOrgId();
+
     const zones = await prisma.zone.findMany({
+      where: {
+        // Multi-tenant: scope to current org (or null for legacy data)
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
       include: {
         _count: {
           select: {
@@ -45,6 +54,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
+    const orgId = await getOrgIdForCreate();
+
     const body = await request.json();
     const { name, county, description, signalGroup, color, fillOpacity, strokeWeight, boundaries } = body;
 
@@ -53,9 +64,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Name is required' }, { status: 400 });
     }
 
-    // Check for duplicate name
+    // Check for duplicate name within the organization
     const existing = await prisma.zone.findFirst({
-      where: { name },
+      where: {
+        name,
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
     });
     if (existing) {
       return NextResponse.json({ error: 'Zone with this name already exists' }, { status: 400 });
@@ -63,6 +79,7 @@ export async function POST(request: Request) {
 
     const zone = await prisma.zone.create({
       data: {
+        organizationId: orgId,
         name,
         county: county || null,
         description: description || null,
