@@ -188,7 +188,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.memberships = user.memberships;
       }
 
-      // Refresh membership data on every request
+      // Refresh membership data periodically (not on every request)
+      // This avoids database queries on every page load
+      const REFRESH_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+      const lastRefresh = token.membershipRefreshedAt as number | undefined;
+      const now = Date.now();
+      const shouldRefresh = !lastRefresh || (now - lastRefresh) > REFRESH_INTERVAL_MS;
+
       const memberships = token.memberships as Array<{
         organizationId: string;
         organizationSlug: string;
@@ -197,6 +203,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         accountStatus: string;
       }> | undefined;
 
+      // Always update current org context from headers (fast, no DB)
       if (token.id && memberships && memberships.length > 0) {
         try {
           // Determine current org from request headers
@@ -211,30 +218,36 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             );
 
             if (currentMembership) {
-              // Refresh membership data from database
-              const freshMembership = await prisma.organizationMember.findUnique({
-                where: {
-                  userId_organizationId: {
-                    userId: token.id as string,
-                    organizationId: currentMembership.organizationId,
-                  },
-                },
-                select: {
-                  role: true,
-                  accountStatus: true,
-                  isActive: true,
-                },
-              });
+              // Update org context (no DB query needed)
+              token.currentOrganizationId = currentMembership.organizationId;
+              token.currentOrganizationSlug = currentMembership.organizationSlug;
 
-              if (freshMembership && freshMembership.isActive) {
-                token.currentOrganizationId = currentMembership.organizationId;
-                token.currentOrganizationSlug = currentMembership.organizationSlug;
-                token.role = freshMembership.role;
-                token.accountStatus = freshMembership.accountStatus;
-              } else if (freshMembership && !freshMembership.isActive) {
-                // Membership has been deactivated - clear org context
-                token.currentOrganizationId = undefined;
-                token.currentOrganizationSlug = undefined;
+              // Only refresh from database periodically
+              if (shouldRefresh) {
+                const freshMembership = await prisma.organizationMember.findUnique({
+                  where: {
+                    userId_organizationId: {
+                      userId: token.id as string,
+                      organizationId: currentMembership.organizationId,
+                    },
+                  },
+                  select: {
+                    role: true,
+                    accountStatus: true,
+                    isActive: true,
+                  },
+                });
+
+                if (freshMembership && freshMembership.isActive) {
+                  token.role = freshMembership.role;
+                  token.accountStatus = freshMembership.accountStatus;
+                  token.membershipRefreshedAt = now;
+                } else if (freshMembership && !freshMembership.isActive) {
+                  // Membership has been deactivated - clear org context
+                  token.currentOrganizationId = undefined;
+                  token.currentOrganizationSlug = undefined;
+                  token.membershipRefreshedAt = now;
+                }
               }
             } else {
               // User is not a member of this org - clear org context
@@ -246,8 +259,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         } catch (error) {
           console.error('Error refreshing membership data:', error);
         }
-      } else if (token.id) {
-        // FALLBACK: No memberships, use legacy User fields
+      } else if (token.id && shouldRefresh) {
+        // FALLBACK: No memberships, use legacy User fields (only refresh periodically)
         try {
           const dbUser = await prisma.user.findUnique({
             where: { id: token.id as string },
@@ -256,6 +269,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           if (dbUser) {
             token.accountStatus = dbUser.accountStatus;
             token.role = dbUser.role;
+            token.membershipRefreshedAt = now;
             // Also check if user has been deactivated
             if (!dbUser.isActive) {
               // Return empty token to force re-authentication
