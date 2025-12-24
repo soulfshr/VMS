@@ -485,8 +485,13 @@ export async function GET() {
       ? Math.round((completedTrainings.length / requiredTrainings.length) * 100)
       : 100;
 
-    // Get user's primary zone info
-    const primaryZone = user.zones.find(uz => uz.isPrimary)?.zone;
+    // Get user's primary zone info (filtered to current org)
+    // Filter zones to only those belonging to the current organization
+    const orgFilteredZones = orgId
+      ? user.zones.filter(uz => uz.zone.organizationId === orgId)
+      : user.zones;
+    const primaryZone = orgFilteredZones.find(uz => uz.isPrimary)?.zone
+      || orgFilteredZones[0]?.zone; // Fallback to first zone if no primary in this org
     let zoneStats = null;
 
     if (primaryZone) {
@@ -494,9 +499,10 @@ export async function GET() {
         where: { zoneId: primaryZone.id },
       });
 
-      // Get zone shifts with volunteer counts for open slots calculation
+      // Get zone shifts with volunteer counts for open slots calculation (org-scoped)
       const zoneShifts = await prisma.shift.findMany({
         where: {
+          ...orgScopeFilter,
           zoneId: primaryZone.id,
           date: {
             gte: now,

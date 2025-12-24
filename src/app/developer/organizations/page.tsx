@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
 interface OrgStats {
-  users: number;
+  members: number;   // OrganizationMember count (new multi-org)
+  users: number;     // Legacy User.organizationId count
   zones: number;
   shifts?: number;
   trainingSessions?: number;
@@ -301,8 +302,8 @@ export default function OrganizationsPage() {
             {/* Stats */}
             <div className="mt-4 flex gap-6">
               <div>
-                <div className="text-2xl font-bold text-gray-900">{org.stats.users}</div>
-                <div className="text-sm text-gray-500">Users</div>
+                <div className="text-2xl font-bold text-gray-900">{org.stats.members}</div>
+                <div className="text-sm text-gray-500">Members</div>
               </div>
               <div>
                 <div className="text-2xl font-bold text-gray-900">{org.stats.zones}</div>
@@ -497,14 +498,14 @@ export default function OrganizationsPage() {
               This action cannot be undone.
             </p>
 
-            {deletingOrg.stats.users > 0 && (
+            {deletingOrg.stats.members > 0 && (
               <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-800 text-sm">
-                This organization has {deletingOrg.stats.users} user{deletingOrg.stats.users !== 1 ? 's' : ''}.
-                You must remove all users before deleting, or deactivate the organization instead.
+                This organization has {deletingOrg.stats.members} member{deletingOrg.stats.members !== 1 ? 's' : ''}.
+                You must remove all members before deleting, or deactivate the organization instead.
               </div>
             )}
 
-            {deletingOrg.stats.users === 0 && (
+            {deletingOrg.stats.members === 0 && (
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Type <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded text-red-600">DELETE</span> to confirm
@@ -539,7 +540,7 @@ export default function OrganizationsPage() {
               </button>
               <button
                 onClick={handleDelete}
-                disabled={isDeleting || deletingOrg.stats.users > 0 || deleteConfirmText !== 'DELETE'}
+                disabled={isDeleting || deletingOrg.stats.members > 0 || deleteConfirmText !== 'DELETE'}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isDeleting ? 'Deleting...' : 'Delete Permanently'}

@@ -24,7 +24,8 @@ export async function GET() {
         },
         _count: {
           select: {
-            users: true,
+            members: true,  // Use OrganizationMember count (new multi-org)
+            users: true,    // Keep legacy count for reference
             zones: true,
             shifts: true,
             trainingSessions: true,
@@ -46,7 +47,8 @@ export async function GET() {
         createdAt: org.createdAt,
         settings: org.settings,
         stats: {
-          users: org._count.users,
+          members: org._count.members,  // Preferred: OrganizationMember count
+          users: org._count.users,      // Legacy: User.organizationId count
           zones: org._count.zones,
           shifts: org._count.shifts,
           trainingSessions: org._count.trainingSessions,

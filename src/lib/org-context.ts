@@ -19,7 +19,7 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
  */
 export const RESERVED_SLUGS = [
   'app', 'www', 'api', 'admin', 'support', 'help',
-  'mail', 'email', 'staging', 'test',
+  'mail', 'email', 'staging',
   'localhost', 'static', 'assets', 'cdn'
 ];
 
@@ -143,7 +143,11 @@ export async function getDefaultOrganization() {
 
 /**
  * Get the current organization from the request context
- * Falls back to default organization during migration period
+ *
+ * Subdomain routing:
+ * - If subdomain detected and org exists: return that org
+ * - If subdomain detected but org NOT found: return null (NOT fallback!)
+ * - If no subdomain (localhost/root domain): fallback to default org
  *
  * @returns Organization with settings, or null if not found
  */
@@ -152,10 +156,12 @@ export async function getCurrentOrganization() {
 
   if (slug) {
     const org = await getOrganizationBySlug(slug);
-    if (org) return org;
+    // If subdomain was specified but org not found, return null
+    // This prevents showing default org data on non-existent subdomain
+    return org; // may be null if org doesn't exist
   }
 
-  // Fallback to default org (migration compatibility)
+  // Only fallback to default org when NO subdomain (localhost/root domain)
   return getDefaultOrganization();
 }
 

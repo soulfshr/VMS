@@ -103,6 +103,24 @@ export async function GET() {
     });
     const qualSlugs = userQualifications.map(uq => uq.qualifiedRole.slug);
 
+    // Get all qualified roles for the org (for dynamic labels in UI)
+    const orgQualifiedRoles = await prisma.qualifiedRole.findMany({
+      where: orgId ? { organizationId: orgId } : {},
+      select: { slug: true, name: true, color: true },
+    });
+    // Map role slugs to display names (with fallback defaults)
+    const roleLabels: Record<string, string> = {
+      ZONE_LEAD: 'Zone Leads',
+      DISPATCHER: 'Dispatchers',
+      VERIFIER: 'Verifiers',
+      DISPATCH_COORDINATOR: 'Coordinators',
+    };
+    for (const role of orgQualifiedRoles) {
+      // Use plural form for display (simple pluralization)
+      const pluralName = role.name.endsWith('s') ? role.name : `${role.name}s`;
+      roleLabels[role.slug] = pluralName;
+    }
+
     // Format my signups for response
     const formattedSignups = mySignups.map(s => ({
       id: s.id,
@@ -232,6 +250,7 @@ export async function GET() {
       coverageSummary,
       autoConfirmRsvp,
       schedulingMode,
+      roleLabels, // Dynamic role labels for this org
       user: {
         id: user.id,
         name: user.name,
@@ -572,11 +591,19 @@ async function getCoverageSummary(weekStart: Date, weekEnd: Date, isSimpleMode: 
     },
   });
 
-  // Get all signups for the week
+  // Get all signups for the week (scoped to current org via zone relationship)
+  // Coverage signups are implicitly org-scoped through their zone, but we also
+  // filter by zones we know belong to this org for safety
+  const zoneIds = zones.map(z => z.id);
   const signups = await prisma.coverageSignup.findMany({
     where: {
       date: { gte: weekStart, lte: weekEnd },
       status: { in: ['CONFIRMED', 'PENDING'] },
+      // Scope to zones from this org (zoneId can be null for regional coordinator signups)
+      OR: [
+        { zoneId: { in: zoneIds } },
+        { zoneId: null, ...orgScopeFilter },
+      ],
     },
   });
 
@@ -605,6 +632,11 @@ async function getCoverageSummary(weekStart: Date, weekEnd: Date, isSimpleMode: 
     where: {
       date: { gte: nextWeekStart, lte: nextWeekEnd },
       status: { in: ['CONFIRMED', 'PENDING'] },
+      // Scope to zones from this org
+      OR: [
+        { zoneId: { in: zoneIds } },
+        { zoneId: null, ...orgScopeFilter },
+      ],
     },
   });
 

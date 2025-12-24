@@ -86,6 +86,7 @@ interface DashboardData {
   coverageSummary: CoverageSummary | null;
   autoConfirmRsvp: boolean;
   schedulingMode?: 'SIMPLE' | 'FULL';
+  roleLabels?: Record<string, string>; // Dynamic role labels for this org
   user: {
     id: string;
     name: string;
@@ -348,11 +349,11 @@ export default function CoverageDashboard() {
         </div>
       </div>
 
-      {/* Triangle Coverage Summary (Coordinators Only) */}
+      {/* Coverage Summary (Coordinators Only) */}
       {isLeader && data.coverageSummary && (
         <div className="bg-white rounded-xl border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="font-semibold text-gray-900">Triangle Coverage Summary</h2>
+            <h2 className="font-semibold text-gray-900">Coverage Summary</h2>
             <Link
               href="/coverage"
               className="text-sm text-cyan-700 hover:text-cyan-900"
@@ -367,12 +368,12 @@ export default function CoverageDashboard() {
             <div>
               <div className="text-sm font-medium text-gray-700 mb-3">This Week</div>
               <div className="space-y-2">
-                {/* Zone Leads */}
+                {/* Zone Leads / Shift Leads */}
                 <div className="flex items-center gap-2">
                   <span className="text-sm">👑</span>
                   <div className="flex-1">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Zone Leads</span>
+                      <span className="text-gray-600">{data.roleLabels?.ZONE_LEAD || 'Zone Leads'}</span>
                       <span className={data.coverageSummary.thisWeek.zoneLeads.filled === data.coverageSummary.thisWeek.zoneLeads.needed ? 'text-green-600' : 'text-gray-900'}>
                         {data.coverageSummary.thisWeek.zoneLeads.filled}/{data.coverageSummary.thisWeek.zoneLeads.needed}
                       </span>
@@ -396,12 +397,12 @@ export default function CoverageDashboard() {
                     </div>
                   </div>
                 </div>
-                {/* Dispatchers */}
+                {/* Dispatchers / Escorts */}
                 <div className="flex items-center gap-2">
                   <span className="text-sm">📡</span>
                   <div className="flex-1">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Dispatchers</span>
+                      <span className="text-gray-600">{data.roleLabels?.DISPATCHER || 'Dispatchers'}</span>
                       <span className={data.coverageSummary.thisWeek.dispatchers.filled === data.coverageSummary.thisWeek.dispatchers.needed ? 'text-green-600' : 'text-gray-900'}>
                         {data.coverageSummary.thisWeek.dispatchers.filled}/{data.coverageSummary.thisWeek.dispatchers.needed}
                       </span>
@@ -431,7 +432,7 @@ export default function CoverageDashboard() {
                   <span className="text-sm">📋</span>
                   <div className="flex-1">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Verifiers</span>
+                      <span className="text-gray-600">{data.roleLabels?.VERIFIER || 'Verifiers'}</span>
                       <span className={data.coverageSummary.thisWeek.verifiers.filled === data.coverageSummary.thisWeek.verifiers.needed ? 'text-green-600' : 'text-gray-900'}>
                         {data.coverageSummary.thisWeek.verifiers.filled}/{data.coverageSummary.thisWeek.verifiers.needed}
                       </span>
@@ -461,7 +462,7 @@ export default function CoverageDashboard() {
                   <span className="text-sm">🪄</span>
                   <div className="flex-1">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Coordinators</span>
+                      <span className="text-gray-600">{data.roleLabels?.DISPATCH_COORDINATOR || 'Coordinators'}</span>
                       <span className={data.coverageSummary.thisWeek.coordinators.filled === data.coverageSummary.thisWeek.coordinators.needed ? 'text-green-600' : 'text-gray-900'}>
                         {data.coverageSummary.thisWeek.coordinators.filled}/{data.coverageSummary.thisWeek.coordinators.needed}
                       </span>
@@ -492,12 +493,12 @@ export default function CoverageDashboard() {
             <div>
               <div className="text-sm font-medium text-gray-700 mb-3">Next Week</div>
               <div className="space-y-2">
-                {/* Zone Leads */}
+                {/* Zone Leads / Shift Leads */}
                 <div className="flex items-center gap-2">
                   <span className="text-sm">👑</span>
                   <div className="flex-1">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Zone Leads</span>
+                      <span className="text-gray-600">{data.roleLabels?.ZONE_LEAD || 'Zone Leads'}</span>
                       <span className={data.coverageSummary.nextWeek.zoneLeads.filled === data.coverageSummary.nextWeek.zoneLeads.needed ? 'text-green-600' : 'text-gray-900'}>
                         {data.coverageSummary.nextWeek.zoneLeads.filled}/{data.coverageSummary.nextWeek.zoneLeads.needed}
                       </span>
@@ -521,12 +522,12 @@ export default function CoverageDashboard() {
                     </div>
                   </div>
                 </div>
-                {/* Dispatchers */}
+                {/* Dispatchers / Escorts */}
                 <div className="flex items-center gap-2">
                   <span className="text-sm">📡</span>
                   <div className="flex-1">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Dispatchers</span>
+                      <span className="text-gray-600">{data.roleLabels?.DISPATCHER || 'Dispatchers'}</span>
                       <span className={data.coverageSummary.nextWeek.dispatchers.filled === data.coverageSummary.nextWeek.dispatchers.needed ? 'text-green-600' : 'text-gray-900'}>
                         {data.coverageSummary.nextWeek.dispatchers.filled}/{data.coverageSummary.nextWeek.dispatchers.needed}
                       </span>
@@ -556,7 +557,7 @@ export default function CoverageDashboard() {
                   <span className="text-sm">📋</span>
                   <div className="flex-1">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Verifiers</span>
+                      <span className="text-gray-600">{data.roleLabels?.VERIFIER || 'Verifiers'}</span>
                       <span className={data.coverageSummary.nextWeek.verifiers.filled === data.coverageSummary.nextWeek.verifiers.needed ? 'text-green-600' : 'text-gray-900'}>
                         {data.coverageSummary.nextWeek.verifiers.filled}/{data.coverageSummary.nextWeek.verifiers.needed}
                       </span>
@@ -586,7 +587,7 @@ export default function CoverageDashboard() {
                   <span className="text-sm">🪄</span>
                   <div className="flex-1">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Coordinators</span>
+                      <span className="text-gray-600">{data.roleLabels?.DISPATCH_COORDINATOR || 'Coordinators'}</span>
                       <span className={data.coverageSummary.nextWeek.coordinators.filled === data.coverageSummary.nextWeek.coordinators.needed ? 'text-green-600' : 'text-gray-900'}>
                         {data.coverageSummary.nextWeek.coordinators.filled}/{data.coverageSummary.nextWeek.coordinators.needed}
                       </span>
