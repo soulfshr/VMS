@@ -127,8 +127,38 @@ export default function DeveloperLayout({
         const data = await res.json();
         setCurrentOrgId(data.orgId);
         setCurrentOrgName(data.orgName);
-        // Refresh the page to apply the new org context
-        window.location.reload();
+
+        // Redirect to the new org's subdomain instead of just reloading
+        // This ensures the entire app context uses the correct org
+        if (data.orgSlug && orgId !== '__none__') {
+          const currentHost = window.location.host;
+          const currentProtocol = window.location.protocol;
+
+          // Determine the base domain pattern
+          // e.g., test.dev.ripple-vms.com -> dev.ripple-vms.com
+          // e.g., nc.ripple-vms.com -> ripple-vms.com
+          let baseDomain: string;
+          const hostParts = currentHost.split('.');
+
+          if (hostParts.length === 4 && hostParts[1] === 'dev') {
+            // Dev environment: [slug].dev.ripple-vms.com
+            baseDomain = hostParts.slice(1).join('.');
+          } else if (hostParts.length === 3) {
+            // Production: [slug].ripple-vms.com
+            baseDomain = hostParts.slice(1).join('.');
+          } else {
+            // Localhost or unknown - just reload
+            window.location.reload();
+            return;
+          }
+
+          // Redirect to new subdomain
+          const newUrl = `${currentProtocol}//${data.orgSlug}.${baseDomain}${pathname}`;
+          window.location.href = newUrl;
+        } else {
+          // For __none__ or missing slug, just reload with cookie
+          window.location.reload();
+        }
       }
     } catch (err) {
       console.error('Failed to switch org:', err);

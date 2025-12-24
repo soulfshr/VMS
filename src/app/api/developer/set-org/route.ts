@@ -31,10 +31,11 @@ export async function POST(request: Request) {
 
     // Validate org exists (unless __none__ for orphaned records)
     let orgName = 'No Organization';
+    let orgSlug: string | null = null;
     if (orgId !== '__none__') {
       const org = await prisma.organization.findUnique({
         where: { id: orgId },
-        select: { id: true, name: true, isActive: true },
+        select: { id: true, name: true, slug: true, isActive: true },
       });
 
       if (!org) {
@@ -46,6 +47,7 @@ export async function POST(request: Request) {
       }
 
       orgName = org.name;
+      orgSlug = org.slug;
     }
 
     // Set the cookie
@@ -53,6 +55,7 @@ export async function POST(request: Request) {
       success: true,
       orgId,
       orgName,
+      orgSlug,  // For subdomain redirect
     });
 
     // Security: Improved cookie settings
