@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUserWithZones } from '@/lib/user';
 import { getOrgTimezone, createHourExtractor } from '@/lib/timezone';
-import { getCurrentOrgId } from '@/lib/org-context';
+import { getCurrentOrgId, orgScope } from '@/lib/org-context';
 
 // GET /api/dashboard - Get dashboard data for current user
 export async function GET() {
@@ -18,10 +18,14 @@ export async function GET() {
     const timezone = await getOrgTimezone();
     const getHourInTimezone = createHourExtractor(timezone);
 
+    // Get org scope for filtering queries
+    const orgScopeFilter = await orgScope();
+
     // Get user's upcoming shifts (confirmed, pending, or cancelled but not dismissed)
     // Include cancelled shifts so users can see what was cancelled
     const upcomingShifts = await prisma.shift.findMany({
       where: {
+        ...orgScopeFilter,
         date: { gte: now },
         volunteers: {
           some: {
@@ -47,9 +51,10 @@ export async function GET() {
       take: 10, // Get more to account for cancelled ones
     });
 
-    // Get user's upcoming dispatcher assignments
+    // Get user's upcoming dispatcher assignments (scoped to current org)
     const upcomingDispatcherAssignments = await prisma.dispatcherAssignment.findMany({
       where: {
+        ...orgScopeFilter,
         userId: user.id,
         date: { gte: now },
       },
@@ -60,9 +65,10 @@ export async function GET() {
       take: 10,
     });
 
-    // Get user's upcoming regional lead (dispatch coordinator) assignments
+    // Get user's upcoming regional lead (dispatch coordinator) assignments (scoped to current org)
     const upcomingRegionalLeadAssignments = await prisma.regionalLeadAssignment.findMany({
       where: {
+        ...orgScopeFilter,
         userId: user.id,
         date: { gte: now },
       },
@@ -75,6 +81,7 @@ export async function GET() {
     // Get the next confirmed shift with ALL teammates (for the "Your Next Shift" widget)
     const nextConfirmedShift = await prisma.shift.findFirst({
       where: {
+        ...orgScopeFilter,
         date: { gte: now },
         status: 'PUBLISHED',
         volunteers: {
@@ -123,6 +130,7 @@ export async function GET() {
 
     const dispatchCoordinators = (coordDateStart && coordDateEnd) ? await prisma.regionalLeadAssignment.findMany({
       where: {
+        ...orgScopeFilter,
         date: { gte: coordDateStart, lt: coordDateEnd },
       },
       include: {
@@ -141,6 +149,7 @@ export async function GET() {
     // First fetch all dispatchers for the county/date, then filter by hour
     const candidateDispatchers = (nextConfirmedShift?.zone?.county && shiftDateStart && shiftDateEnd) ? await prisma.dispatcherAssignment.findMany({
       where: {
+        ...orgScopeFilter,
         county: nextConfirmedShift.zone.county,
         date: { gte: shiftDateStart, lt: shiftDateEnd },
         isBackup: false,
@@ -193,6 +202,7 @@ export async function GET() {
 
     const allQualifiedOpenings = canSeeOpenings ? await prisma.shift.findMany({
       where: {
+        ...orgScopeFilter,
         status: 'PUBLISHED',
         date: { gte: now },
         // Exclude shifts user already signed up for
@@ -278,6 +288,7 @@ export async function GET() {
 
       const upcomingShiftsForDispatch = await prisma.shift.findMany({
         where: {
+          ...orgScopeFilter,
           status: 'PUBLISHED',
           date: { gte: now, lt: twoWeeksOut },
         },
@@ -287,9 +298,10 @@ export async function GET() {
         orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
       });
 
-      // Get existing dispatcher assignments
+      // Get existing dispatcher assignments (scoped to current org)
       const existingDispatcherAssignments = await prisma.dispatcherAssignment.findMany({
         where: {
+          ...orgScopeFilter,
           date: { gte: now, lt: twoWeeksOut },
           isBackup: false,
         },
@@ -390,15 +402,17 @@ export async function GET() {
 
       const shiftsForRegionalLead = await prisma.shift.findMany({
         where: {
+          ...orgScopeFilter,
           status: 'PUBLISHED',
           date: { gte: now, lt: twoWeeksOut },
         },
         select: { date: true },
       });
 
-      // Get existing regional lead assignments
+      // Get existing regional lead assignments (scoped to current org)
       const existingRegionalLeadAssignments = await prisma.regionalLeadAssignment.findMany({
         where: {
+          ...orgScopeFilter,
           date: { gte: now, lt: twoWeeksOut },
         },
         select: { date: true },
@@ -434,6 +448,7 @@ export async function GET() {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const completedShifts = await prisma.shift.findMany({
       where: {
+        ...orgScopeFilter,
         status: 'COMPLETED',
         date: {
           gte: startOfMonth,
@@ -522,6 +537,7 @@ export async function GET() {
         where: {
           status: 'PENDING',
           shift: {
+            ...orgScopeFilter,
             date: { gte: now },
           },
         },
@@ -531,6 +547,7 @@ export async function GET() {
       const weekEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
       const thisWeekShifts = await prisma.shift.findMany({
         where: {
+          ...orgScopeFilter,
           status: 'PUBLISHED',
           date: { gte: now, lt: weekEnd },
         },
@@ -542,9 +559,10 @@ export async function GET() {
         },
       });
 
-      // Get dispatcher assignments for this week
+      // Get dispatcher assignments for this week (scoped to current org)
       const dispatcherAssignments = await prisma.dispatcherAssignment.findMany({
         where: {
+          ...orgScopeFilter,
           date: { gte: now, lt: weekEnd },
           isBackup: false,
         },
@@ -655,6 +673,7 @@ export async function GET() {
       // Get this week's shifts with confirmed volunteers (to check zone lead coverage)
       const thisWeekAllShifts = await prisma.shift.findMany({
         where: {
+          ...orgScopeFilter,
           status: 'PUBLISHED',
           date: { gte: thisWeekStart, lt: thisWeekEnd },
         },
@@ -668,6 +687,7 @@ export async function GET() {
       // Get next week's shifts
       const nextWeekAllShifts = await prisma.shift.findMany({
         where: {
+          ...orgScopeFilter,
           status: 'PUBLISHED',
           date: { gte: thisWeekEnd, lt: nextWeekEnd },
         },
@@ -678,20 +698,20 @@ export async function GET() {
         },
       });
 
-      // Get dispatcher assignments for both weeks
+      // Get dispatcher assignments for both weeks (scoped to current org)
       const thisWeekDispatcherAssignments = await prisma.dispatcherAssignment.findMany({
-        where: { date: { gte: thisWeekStart, lt: thisWeekEnd } },
+        where: { ...orgScopeFilter, date: { gte: thisWeekStart, lt: thisWeekEnd } },
       });
       const nextWeekDispatcherAssignments = await prisma.dispatcherAssignment.findMany({
-        where: { date: { gte: thisWeekEnd, lt: nextWeekEnd } },
+        where: { ...orgScopeFilter, date: { gte: thisWeekEnd, lt: nextWeekEnd } },
       });
 
-      // Get regional lead (coordinator) assignments for both weeks
+      // Get regional lead (coordinator) assignments for both weeks (scoped to current org)
       const thisWeekRegionalLeadAssignments = await prisma.regionalLeadAssignment.findMany({
-        where: { date: { gte: thisWeekStart, lt: thisWeekEnd } },
+        where: { ...orgScopeFilter, date: { gte: thisWeekStart, lt: thisWeekEnd } },
       });
       const nextWeekRegionalLeadAssignments = await prisma.regionalLeadAssignment.findMany({
-        where: { date: { gte: thisWeekEnd, lt: nextWeekEnd } },
+        where: { ...orgScopeFilter, date: { gte: thisWeekEnd, lt: nextWeekEnd } },
       });
 
       // Calculate LEADERSHIP coverage for each week

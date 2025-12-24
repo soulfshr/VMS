@@ -148,12 +148,58 @@ model Organization {
   regionalLeadAssignments  RegionalLeadAssignment[]
   emailBlasts         EmailBlast[]
 
+  // NEW: Organization members (multi-org support)
+  members             OrganizationMember[]
+
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
 
 // Slug validation: lowercase alphanumeric + hyphens, 2-30 chars
 // Reserved slugs: app, www, api, admin, support, help, mail, email, dev, dev-nc
+
+// ============================================
+// ORGANIZATION MEMBER (Multi-org membership)
+// ============================================
+
+// Join table for User <-> Organization with per-org role and status
+// Replaces the single User.organizationId pattern for multi-org support
+model OrganizationMember {
+  id              String        @id @default(cuid())
+  userId          String
+  organizationId  String
+
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Per-org role (replaces User.role for org-scoped access)
+  role            Role          @default(VOLUNTEER)
+
+  // Per-org account status (replaces User.accountStatus)
+  accountStatus   AccountStatus @default(PENDING)
+  applicationDate DateTime?
+  approvedById    String?
+  approvedBy      User?         @relation("MemberApprovedBy", fields: [approvedById], references: [id])
+  approvedAt      DateTime?
+  rejectionReason String?
+
+  // Per-org intake responses (from signup form)
+  intakeResponses Json?
+
+  // Per-org notes (coordinator notes about this member)
+  notes           String?
+
+  // Status
+  isActive        Boolean       @default(true)
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@unique([userId, organizationId])
+  @@index([organizationId])
+  @@index([userId])
+  @@index([organizationId, accountStatus])
+}
 
 // ============================================
 // QUALIFIED ROLES (Admin-configurable shift positions)
@@ -382,8 +428,8 @@ model User {
   role              Role      @default(VOLUNTEER)
   profileImageUrl   String?
 
-  // Multi-tenant: Organization membership (simple single-org approach initially)
-  // Future: OrganizationMember model for multi-org users with per-org roles
+  // DEPRECATED: Single-org membership - use OrganizationMember.memberships instead
+  // Kept for backward compatibility during migration
   organizationId    String?
   organization      Organization? @relation(fields: [organizationId], references: [id])
 
@@ -465,6 +511,10 @@ model User {
 
   // Coverage override audit trail
   coverageOverridesCreated CoverageOverride[] @relation("CoverageOverrideCreatedBy")
+
+  // Multi-org memberships (NEW - replaces single organizationId pattern)
+  memberships              OrganizationMember[]
+  approvedMembers          OrganizationMember[] @relation("MemberApprovedBy")
 
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt

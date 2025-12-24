@@ -103,24 +103,61 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Send email notification to all dispatchers (only for public submissions)
+    // Send email notification to dispatchers in this org (only for public submissions)
     if (!isDispatcherEntry) {
       try {
-        // Get all users with DISPATCHER role or DISPATCHER qualification
-        const dispatchers = await prisma.user.findMany({
-          where: {
-            OR: [
-              { role: 'DISPATCHER' },
-              { qualifications: { has: 'DISPATCHER' } },
-            ],
-          },
-          select: {
-            email: true,
-            name: true,
-          },
-        });
+        // Multi-org: Get dispatchers only from the current organization
+        // Use OrganizationMember to find users with DISPATCHER role in this org
+        const dispatcherMembers = orgId
+          ? await prisma.organizationMember.findMany({
+              where: {
+                organizationId: orgId,
+                role: 'DISPATCHER',
+                isActive: true,
+                user: {
+                  isActive: true,
+                  emailNotifications: true,
+                },
+              },
+              select: {
+                user: {
+                  select: { email: true, name: true },
+                },
+              },
+            })
+          : [];
 
-        if (dispatchers.length > 0) {
+        // Also get users with DISPATCHER qualification in this org
+        const qualifiedDispatchers = orgId
+          ? await prisma.userQualification.findMany({
+              where: {
+                qualifiedRole: {
+                  slug: 'DISPATCHER',
+                  organizationId: orgId,
+                },
+                user: {
+                  isActive: true,
+                  emailNotifications: true,
+                },
+              },
+              select: {
+                user: {
+                  select: { email: true, name: true },
+                },
+              },
+            })
+          : [];
+
+        // Combine and dedupe dispatchers
+        const allDispatchers = [
+          ...dispatcherMembers.map(m => m.user),
+          ...qualifiedDispatchers.map(q => q.user),
+        ];
+        const uniqueDispatchers = Array.from(
+          new Map(allDispatchers.map(d => [d.email, d])).values()
+        );
+
+        if (uniqueDispatchers.length > 0) {
           await sendSightingNotificationToDispatchers(
             {
               sightingId: sighting.id,
@@ -132,10 +169,11 @@ export async function POST(request: NextRequest) {
               equipment: sighting.equipment,
               hasMedia: sighting.media.length > 0,
               reporterName: sighting.reporterName,
+              organizationId: orgId,
             },
-            dispatchers.map((d) => ({ email: d.email, name: d.name || 'Dispatcher' }))
+            uniqueDispatchers.map((d) => ({ email: d.email, name: d.name || 'Dispatcher' }))
           );
-          console.log(`[Sightings] Notified ${dispatchers.length} dispatchers of new sighting ${sighting.id}`);
+          console.log(`[Sightings] Notified ${uniqueDispatchers.length} dispatchers of new sighting ${sighting.id}`);
         }
       } catch (emailError) {
         // Don't fail the sighting creation if email fails

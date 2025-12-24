@@ -221,7 +221,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
 /**
  * DELETE /api/developer/organizations/[id]
- * Deactivate an organization (soft delete)
+ * Delete an organization
+ * Use ?hard=true for permanent deletion (requires org to have no users)
+ * Without hard=true, just deactivates (soft delete)
  * Requires DEVELOPER role
  */
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
@@ -232,6 +234,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     const { id } = await params;
+    const { searchParams } = new URL(request.url);
+    const hardDelete = searchParams.get('hard') === 'true';
 
     // Check org exists
     const organization = await prisma.organization.findUnique({
@@ -240,6 +244,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         _count: {
           select: {
             users: true,
+            zones: true,
+            shifts: true,
+            trainingSessions: true,
           },
         },
       },
@@ -252,21 +259,64 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // Soft delete - just deactivate
-    await prisma.organization.update({
-      where: { id },
-      data: { isActive: false },
-    });
+    if (hardDelete) {
+      // Hard delete - only allow if org has no users
+      if (organization._count.users > 0) {
+        return NextResponse.json(
+          { error: `Cannot delete organization with ${organization._count.users} user(s). Remove all users first or deactivate instead.` },
+          { status: 400 }
+        );
+      }
 
-    return NextResponse.json({
-      message: `Organization "${organization.name}" has been deactivated`,
-      deactivated: true,
-      userCount: organization._count.users,
-    });
+      // Delete related data in order (respecting foreign key constraints)
+      await prisma.$transaction(async (tx) => {
+        // Delete organization settings
+        await tx.organizationSettings.deleteMany({
+          where: { organizationId: id },
+        });
+
+        // Delete qualified roles
+        await tx.qualifiedRole.deleteMany({
+          where: { organizationId: id },
+        });
+
+        // Delete shift type configs (and their role requirements cascade)
+        await tx.shiftTypeConfig.deleteMany({
+          where: { organizationId: id },
+        });
+
+        // Delete zones
+        await tx.zone.deleteMany({
+          where: { organizationId: id },
+        });
+
+        // Finally delete the organization
+        await tx.organization.delete({
+          where: { id },
+        });
+      });
+
+      return NextResponse.json({
+        message: `Organization "${organization.name}" has been permanently deleted`,
+        deleted: true,
+      });
+    } else {
+      // Soft delete - just deactivate
+      await prisma.organization.update({
+        where: { id },
+        data: { isActive: false },
+      });
+
+      return NextResponse.json({
+        message: `Organization "${organization.name}" has been deactivated`,
+        deactivated: true,
+        userCount: organization._count.users,
+      });
+    }
   } catch (error) {
-    console.error('Error deactivating organization:', error);
+    console.error('Error deleting organization:', error);
     return NextResponse.json(
-      { error: 'Failed to deactivate organization' },
+      { error: 'Failed to delete organization' },
       { status: 500 }
     );
   }

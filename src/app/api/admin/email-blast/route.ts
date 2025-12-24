@@ -4,6 +4,7 @@ import { getDbUser } from '@/lib/user';
 import { sendBlastEmail, generateUnsubscribeToken, generateShiftListHtml, ShiftForListing, generateTrainingListHtml, TrainingForListing } from '@/lib/email';
 import { Role, Qualification, EmailTemplate, EmailBlastStatus, EmailSendStatus } from '@/generated/prisma/enums';
 import { EmailBlastFilters } from './preview/route';
+import { getCurrentOrgId, orgScope } from '@/lib/org-context';
 
 // Email blast templates
 const TEMPLATES: Record<EmailTemplate, { subject: string; body: string }> = {
@@ -67,63 +68,138 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Build where clause based on filters (same as preview)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: any = {
-      isActive: true,
-      emailNotifications: true,
-    };
+    // Multi-org: Get org context for scoping
+    const orgId = await getCurrentOrgId();
 
-    // Filter by roles - always exclude DEVELOPER users from email blasts
-    if (filters?.roles && filters.roles.length > 0) {
-      // Filter out DEVELOPER from the selected roles
-      const filteredRoles = filters.roles.filter(r => r !== 'DEVELOPER');
-      if (filteredRoles.length > 0) {
-        where.role = { in: filteredRoles as Role[] };
-      } else {
-        // If only DEVELOPER was selected, return no results
-        where.role = { in: [] };
-      }
-    } else {
-      // No role filter - exclude DEVELOPER by default
-      where.role = { not: 'DEVELOPER' };
-    }
+    // Build where clause based on filters
+    // Multi-org: Use OrganizationMember for role-based filtering
+    let recipients: Array<{ id: string; name: string; email: string; unsubscribeToken: string | null }>;
 
-    if (filters?.hasQualifications === 'yes') {
-      where.qualifications = { isEmpty: false };
-    } else if (filters?.hasQualifications === 'no') {
-      where.qualifications = { isEmpty: true };
-    } else if (filters?.qualifications && filters.qualifications.length > 0) {
-      where.qualifications = { hasSome: filters.qualifications as Qualification[] };
-    }
-
-    if (filters?.zones && filters.zones.length > 0) {
-      where.zones = {
-        some: {
-          zoneId: { in: filters.zones },
+    if (orgId) {
+      // Build membership where clause
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const memberWhere: any = {
+        organizationId: orgId,
+        isActive: true,
+        user: {
+          isActive: true,
+          emailNotifications: true,
         },
       };
-    }
 
-    if (filters?.languages && filters.languages.length > 0) {
-      where.OR = filters.languages.map(lang => ({
-        OR: [
-          { primaryLanguage: lang },
-          { otherLanguages: { has: lang } },
-        ],
-      }));
-    }
+      // Filter by roles - always exclude DEVELOPER users from email blasts
+      if (filters?.roles && filters.roles.length > 0) {
+        const filteredRoles = filters.roles.filter(r => r !== 'DEVELOPER');
+        if (filteredRoles.length > 0) {
+          memberWhere.role = { in: filteredRoles as Role[] };
+        } else {
+          memberWhere.role = { in: [] };
+        }
+      } else {
+        memberWhere.role = { not: 'DEVELOPER' };
+      }
 
-    // Get all recipients
-    const recipients = await prisma.user.findMany({
-      where,
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        unsubscribeToken: true,
-      },
-    });
+      // Filter by qualifications via user's userQualifications
+      if (filters?.hasQualifications === 'yes') {
+        memberWhere.user.userQualifications = { some: {} };
+      } else if (filters?.hasQualifications === 'no') {
+        memberWhere.user.userQualifications = { none: {} };
+      } else if (filters?.qualifications && filters.qualifications.length > 0) {
+        memberWhere.user.userQualifications = {
+          some: {
+            qualifiedRole: {
+              slug: { in: filters.qualifications.map((q: string) => q.toUpperCase()) },
+              organizationId: orgId,
+            },
+          },
+        };
+      }
+
+      if (filters?.zones && filters.zones.length > 0) {
+        memberWhere.user.zones = {
+          some: {
+            zoneId: { in: filters.zones },
+          },
+        };
+      }
+
+      if (filters?.languages && filters.languages.length > 0) {
+        memberWhere.user.OR = filters.languages.map((lang: string) => ({
+          OR: [
+            { primaryLanguage: lang },
+            { otherLanguages: { has: lang } },
+          ],
+        }));
+      }
+
+      const memberRecipients = await prisma.organizationMember.findMany({
+        where: memberWhere,
+        select: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              unsubscribeToken: true,
+            },
+          },
+        },
+      });
+      recipients = memberRecipients.map(m => m.user);
+    } else {
+      // Legacy fallback: Query User directly
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const where: any = {
+        isActive: true,
+        emailNotifications: true,
+      };
+
+      if (filters?.roles && filters.roles.length > 0) {
+        const filteredRoles = filters.roles.filter(r => r !== 'DEVELOPER');
+        if (filteredRoles.length > 0) {
+          where.role = { in: filteredRoles as Role[] };
+        } else {
+          where.role = { in: [] };
+        }
+      } else {
+        where.role = { not: 'DEVELOPER' };
+      }
+
+      if (filters?.hasQualifications === 'yes') {
+        where.qualifications = { isEmpty: false };
+      } else if (filters?.hasQualifications === 'no') {
+        where.qualifications = { isEmpty: true };
+      } else if (filters?.qualifications && filters.qualifications.length > 0) {
+        where.qualifications = { hasSome: filters.qualifications as Qualification[] };
+      }
+
+      if (filters?.zones && filters.zones.length > 0) {
+        where.zones = {
+          some: {
+            zoneId: { in: filters.zones },
+          },
+        };
+      }
+
+      if (filters?.languages && filters.languages.length > 0) {
+        where.OR = filters.languages.map((lang: string) => ({
+          OR: [
+            { primaryLanguage: lang },
+            { otherLanguages: { has: lang } },
+          ],
+        }));
+      }
+
+      recipients = await prisma.user.findMany({
+        where,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          unsubscribeToken: true,
+        },
+      });
+    }
 
     if (recipients.length === 0) {
       return NextResponse.json(
@@ -198,6 +274,7 @@ export async function POST(request: NextRequest) {
           const zoneIds = recipientWithZones?.zones.map(z => z.zoneId) || [];
 
           // Build shift query - if user has zones, filter by them; otherwise show all
+          // Multi-org: Scope to current org
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const shiftWhere: any = {
             status: 'PUBLISHED',
@@ -205,6 +282,7 @@ export async function POST(request: NextRequest) {
               gte: scheduleStartDate,
               lte: scheduleEndDate,
             },
+            ...(orgId ? { organizationId: orgId } : {}),
           };
           if (zoneIds.length > 0) {
             shiftWhere.zoneId = { in: zoneIds };
@@ -243,7 +321,7 @@ export async function POST(request: NextRequest) {
 
         // For TRAINING_ANNOUNCEMENT, generate upcoming training sessions listing
         if (template === 'TRAINING_ANNOUNCEMENT') {
-          // Fetch upcoming training sessions with openings
+          // Fetch upcoming training sessions with openings (scoped to current org)
           const trainingSessions = await prisma.trainingSession.findMany({
             where: {
               status: 'PUBLISHED',
@@ -251,6 +329,7 @@ export async function POST(request: NextRequest) {
                 gte: scheduleStartDate,
                 lte: scheduleEndDate,
               },
+              ...(orgId ? { organizationId: orgId } : {}),
             },
             include: {
               trainingType: { select: { name: true } },

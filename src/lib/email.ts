@@ -42,22 +42,30 @@ const DEFAULT_BRANDING: BrandingSettings = {
   timezone: DEFAULT_TIMEZONE,
 };
 
-// Cache for branding settings (refreshes every 5 minutes)
-let brandingCache: { settings: BrandingSettings; timestamp: number } | null = null;
+// Cache for branding settings per org (refreshes every 5 minutes)
+const brandingCacheByOrg: Map<string, { settings: BrandingSettings; timestamp: number }> = new Map();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 /**
  * Get organization branding settings from database
  * Uses caching to avoid hitting DB on every email
+ *
+ * @param orgId - Optional organization ID. If not provided, returns first org settings (legacy behavior)
  */
-async function getBranding(): Promise<BrandingSettings> {
+async function getBranding(orgId?: string): Promise<BrandingSettings> {
+  const cacheKey = orgId || 'default';
+
   // Check cache
-  if (brandingCache && Date.now() - brandingCache.timestamp < CACHE_TTL) {
-    return brandingCache.settings;
+  const cached = brandingCacheByOrg.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.settings;
   }
 
   try {
-    const settings = await prisma.organizationSettings.findFirst();
+    // Multi-org: Query for specific org's settings if orgId provided
+    const settings = await prisma.organizationSettings.findFirst({
+      where: orgId ? { organizationId: orgId } : {},
+    });
     const branding: BrandingSettings = settings ? {
       orgName: settings.orgName,
       emailFromName: settings.emailFromName,
@@ -68,7 +76,7 @@ async function getBranding(): Promise<BrandingSettings> {
     } : DEFAULT_BRANDING;
 
     // Update cache
-    brandingCache = { settings: branding, timestamp: Date.now() };
+    brandingCacheByOrg.set(cacheKey, { settings: branding, timestamp: Date.now() });
     return branding;
   } catch (error) {
     console.error('[Email] Failed to fetch branding settings:', error);
@@ -957,30 +965,49 @@ export async function sendVerifyEmailAndSetPasswordEmail(params: VerifyEmailPara
 interface NewApplicationNotificationParams {
   applicantName: string;
   applicantEmail: string;
+  organizationId?: string; // Multi-org: scope notification to specific org
 }
 
 /**
  * Send notification to coordinators/admins when a new volunteer application is verified
  */
 export async function sendNewApplicationNotification(params: NewApplicationNotificationParams): Promise<boolean> {
-  const branding = await getBranding();
+  const branding = await getBranding(params.organizationId);
 
   if (!isEmailConfigured(branding)) {
     console.log('[Email] SES not configured, skipping new application notification');
     return false;
   }
 
-  const { applicantName, applicantEmail } = params;
+  const { applicantName, applicantEmail, organizationId } = params;
 
-  // Get all coordinators and administrators who have email notifications enabled
-  const recipients = await prisma.user.findMany({
-    where: {
-      role: { in: ['COORDINATOR', 'ADMINISTRATOR'] },
-      isActive: true,
-      emailNotifications: true,
-    },
-    select: { email: true, name: true },
-  });
+  // Get coordinators and administrators who have email notifications enabled
+  // Multi-org: Scope to the specific organization's members
+  const recipients = organizationId
+    ? await prisma.organizationMember.findMany({
+        where: {
+          organizationId,
+          role: { in: ['COORDINATOR', 'ADMINISTRATOR'] },
+          isActive: true,
+          user: {
+            isActive: true,
+            emailNotifications: true,
+          },
+        },
+        select: {
+          user: {
+            select: { email: true, name: true },
+          },
+        },
+      }).then(members => members.map(m => m.user))
+    : await prisma.user.findMany({
+        where: {
+          role: { in: ['COORDINATOR', 'ADMINISTRATOR'] },
+          isActive: true,
+          emailNotifications: true,
+        },
+        select: { email: true, name: true },
+      });
 
   if (recipients.length === 0) {
     console.log('[Email] No coordinators/admins to notify about new application');
@@ -1191,6 +1218,7 @@ interface SightingNotificationParams {
   equipment: string;
   hasMedia: boolean;
   reporterName?: string | null;
+  organizationId?: string; // Multi-org: for org-specific branding
 }
 
 interface DispatcherWithToken {
@@ -1206,7 +1234,8 @@ export async function sendSightingNotificationToDispatchers(
   params: SightingNotificationParams,
   dispatchers: DispatcherWithToken[]
 ): Promise<void> {
-  const branding = await getBranding();
+  // Multi-org: Use org-specific branding
+  const branding = await getBranding(params.organizationId);
 
   if (!isEmailConfigured(branding)) {
     console.log('[Email] SES not configured, skipping sighting notification');

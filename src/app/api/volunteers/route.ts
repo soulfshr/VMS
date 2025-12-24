@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { Role } from '@/generated/prisma/enums';
-import { getCurrentOrgId, getOrgIdForCreate } from '@/lib/org-context';
+import { getCurrentOrgId, getOrgIdForCreate, orgScope } from '@/lib/org-context';
 
 // GET /api/volunteers - Get all volunteers (Coordinator/Admin only)
 export async function GET(request: NextRequest) {
@@ -19,8 +19,6 @@ export async function GET(request: NextRequest) {
 
     const isDeveloper = user.role === 'DEVELOPER';
 
-    const orgId = await getCurrentOrgId();
-
     const searchParams = request.nextUrl.searchParams;
     const zone = searchParams.get('zone');
     const role = searchParams.get('role');
@@ -32,10 +30,9 @@ export async function GET(request: NextRequest) {
 
     // Build where clause with org scoping
     const where: Record<string, unknown> = {
-      // Multi-tenant: scope to current org (or null for legacy data)
-      OR: orgId
-        ? [{ organizationId: orgId }, { organizationId: null }]
-        : [{ organizationId: null }],
+      ...await orgScope(),
+      // Always hide DEVELOPER accounts from volunteer lists
+      role: { not: 'DEVELOPER' },
     };
 
     // Filter by accountStatus - default to APPROVED unless filtering for pending/rejected
@@ -49,11 +46,6 @@ export async function GET(request: NextRequest) {
       where.accountStatus = 'APPROVED';
     }
 
-    // Hide DEVELOPER users from non-developers
-    if (!isDeveloper) {
-      where.role = { not: 'DEVELOPER' };
-    }
-
     if (zone && zone !== 'all') {
       where.zones = {
         some: {
@@ -63,9 +55,9 @@ export async function GET(request: NextRequest) {
     }
 
     if (role && role !== 'all') {
-      // If a specific role filter is selected, use it (but still respect developer exclusion)
-      if (!isDeveloper && role === 'DEVELOPER') {
-        // Non-developers can't filter to see developers - return empty
+      // Filter by specific role (but never show developers)
+      if (role === 'DEVELOPER') {
+        // Can't filter to see developers - return no results
         where.role = 'NONE_MATCH';
       } else {
         where.role = role;
@@ -191,9 +183,7 @@ export async function GET(request: NextRequest) {
     const zones = await prisma.zone.findMany({
       where: {
         isActive: true,
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
+        ...await orgScope(),
       },
       orderBy: { name: 'asc' },
       select: {
@@ -255,9 +245,7 @@ export async function GET(request: NextRequest) {
     const qualifiedRoles = await prisma.qualifiedRole.findMany({
       where: {
         isActive: true,
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
+        ...await orgScope(),
       },
       orderBy: { sortOrder: 'asc' },
       select: {
@@ -273,10 +261,8 @@ export async function GET(request: NextRequest) {
       where: {
         accountStatus: 'PENDING',
         isVerified: true,
-        ...(isDeveloper ? {} : { role: { not: 'DEVELOPER' } }),
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
+        role: { not: 'DEVELOPER' },
+        ...await orgScope(),
       },
     });
 
@@ -326,11 +312,7 @@ export async function POST(request: NextRequest) {
 
     // Get all zones for mapping (scoped to current org)
     const zones = await prisma.zone.findMany({
-      where: {
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
-      },
+      where: await orgScope(),
       select: { id: true, name: true },
     });
     const zoneMap = new Map(zones.map(z => [z.name.toLowerCase(), z.id]));
@@ -339,9 +321,7 @@ export async function POST(request: NextRequest) {
     const qualifiedRoles = await prisma.qualifiedRole.findMany({
       where: {
         isActive: true,
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
+        ...await orgScope(),
       },
       select: { id: true, slug: true, isDefaultForNewUsers: true },
     });
@@ -421,6 +401,29 @@ export async function POST(request: NextRequest) {
             data: userData,
           });
 
+          // Multi-org: Also sync OrganizationMember record if exists
+          if (orgId) {
+            await prisma.organizationMember.upsert({
+              where: {
+                userId_organizationId: {
+                  userId: existingUser.id,
+                  organizationId: orgId,
+                },
+              },
+              update: {
+                role: userData.role,
+                isActive: userData.isActive,
+              },
+              create: {
+                userId: existingUser.id,
+                organizationId: orgId,
+                role: userData.role,
+                accountStatus: 'APPROVED',
+                isActive: userData.isActive,
+              },
+            });
+          }
+
           // Update zones if provided
           if (vol.zones && Array.isArray(vol.zones)) {
             // Remove existing zone assignments
@@ -470,6 +473,19 @@ export async function POST(request: NextRequest) {
               organizationId: orgId,
             },
           });
+
+          // Multi-org: Also create OrganizationMember record
+          if (orgId) {
+            await prisma.organizationMember.create({
+              data: {
+                userId: newUser.id,
+                organizationId: orgId,
+                role: userData.role,
+                accountStatus: 'APPROVED', // Bulk imported users are pre-approved
+                isActive: userData.isActive,
+              },
+            });
+          }
 
           // Add zone assignments if provided
           if (vol.zones && Array.isArray(vol.zones)) {

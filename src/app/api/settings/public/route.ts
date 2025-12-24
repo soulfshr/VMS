@@ -16,10 +16,7 @@ export async function GET() {
 
     // Get organization settings (scoped to org)
     const settings = await prisma.organizationSettings.findFirst({
-      where: orgId
-        ? { OR: [{ organizationId: orgId }, { organizationId: null }] }
-        : { organizationId: null },
-      orderBy: { organizationId: 'desc' }, // Prefer org-specific over null
+      where: orgId ? { organizationId: orgId } : {},
     });
 
     return NextResponse.json({

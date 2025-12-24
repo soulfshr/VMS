@@ -15,10 +15,7 @@ export async function GET() {
 
     // Get settings (if they exist) - scoped to org
     const settings = await prisma.organizationSettings.findFirst({
-      where: orgId
-        ? { OR: [{ organizationId: orgId }, { organizationId: null }] }
-        : { organizationId: null },
-      orderBy: { organizationId: 'desc' }, // Prefer org-specific over null
+      where: orgId ? { organizationId: orgId } : {},
     });
 
     // Resolve feature flags: database override takes precedence over env vars

@@ -59,9 +59,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check user has the required qualification for this role
+    // Check user has the required qualification for this role (scoped to current org)
+    const orgId = await getOrgIdForCreate();
     const userQualifications = await prisma.userQualification.findMany({
-      where: { userId: user.id },
+      where: {
+        userId: user.id,
+        // Multi-org: Only check qualifications from current org's qualified roles
+        qualifiedRole: orgId ? { organizationId: orgId } : {},
+      },
       include: { qualifiedRole: { select: { slug: true } } },
     });
 
@@ -132,8 +137,6 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
-
-      const orgId = await getOrgIdForCreate();
 
       // Create the coordinator signup
       const signup = await prisma.coverageSignup.create({
@@ -267,8 +270,6 @@ export async function POST(request: NextRequest) {
         );
       }
     }
-
-    const orgId = await getOrgIdForCreate();
 
     // Create the signup
     const signup = await prisma.coverageSignup.create({

@@ -4,6 +4,7 @@ import { getDbUser } from '@/lib/user';
 import { getOrgTimezone, parseDisplayDate, createHourExtractor } from '@/lib/timezone';
 import { auditCreate, toAuditUser } from '@/lib/audit';
 import { sendDispatcherSlotConfirmationEmail } from '@/lib/email';
+import { getCurrentOrgId } from '@/lib/org-context';
 
 // POST /api/dispatcher-assignments/claim - Self-assign to an open dispatcher slot
 export async function POST(request: NextRequest) {
@@ -13,9 +14,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Verify user has DISPATCHER qualification
+    const orgId = await getCurrentOrgId();
+
+    // Verify user has DISPATCHER qualification (scoped to current org)
     const userQualifications = await prisma.userQualification.findMany({
-      where: { userId: user.id },
+      where: {
+        userId: user.id,
+        // Multi-org: Only check qualifications from current org's qualified roles
+        qualifiedRole: orgId ? { organizationId: orgId } : {},
+      },
       include: { qualifiedRole: { select: { slug: true } } },
     });
     const hasDispatcherQual = userQualifications.some(uq => uq.qualifiedRole.slug === 'DISPATCHER');

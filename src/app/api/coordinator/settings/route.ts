@@ -19,10 +19,7 @@ export async function GET() {
 
     // Get or create settings (scoped to org)
     let settings = await prisma.organizationSettings.findFirst({
-      where: orgId
-        ? { OR: [{ organizationId: orgId }, { organizationId: null }] }
-        : { organizationId: null },
-      orderBy: { organizationId: 'desc' }, // Prefer org-specific over null
+      where: orgId ? { organizationId: orgId } : {},
     });
     if (!settings) {
       const createOrgId = await getOrgIdForCreate();
@@ -80,10 +77,7 @@ export async function PUT(request: Request) {
 
     // Get or create settings (scoped to org)
     let settings = await prisma.organizationSettings.findFirst({
-      where: orgId
-        ? { OR: [{ organizationId: orgId }, { organizationId: null }] }
-        : { organizationId: null },
-      orderBy: { organizationId: 'desc' }, // Prefer org-specific over null
+      where: orgId ? { organizationId: orgId } : {},
     });
     if (!settings) {
       const createOrgId = await getOrgIdForCreate();

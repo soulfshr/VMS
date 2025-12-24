@@ -7,7 +7,7 @@
  * - Fallback to default org during migration period
  */
 
-import { headers } from 'next/headers';
+import { headers, cookies } from 'next/headers';
 import { prisma } from './db';
 
 // Cache for organization lookups (simple in-memory cache)
@@ -19,7 +19,7 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
  */
 export const RESERVED_SLUGS = [
   'app', 'www', 'api', 'admin', 'support', 'help',
-  'mail', 'email', 'dev', 'dev-nc', 'staging', 'test',
+  'mail', 'email', 'staging', 'test',
   'localhost', 'static', 'assets', 'cdn'
 ];
 
@@ -28,8 +28,10 @@ export const RESERVED_SLUGS = [
  * Used as fallback when middleware header is not available
  *
  * Examples:
- * - nc.ripple-vms.com -> 'nc'
- * - siembra.ripple-vms.com -> 'siembra'
+ * - nc.ripple-vms.com -> 'nc' (production)
+ * - awclo.ripple-vms.com -> 'awclo' (production)
+ * - nc.dev.ripple-vms.com -> 'nc' (dev environment)
+ * - awclo.dev.ripple-vms.com -> 'awclo' (dev environment)
  * - ripple-vms.com -> null (root domain)
  * - localhost:3000 -> null (development)
  */
@@ -42,22 +44,31 @@ export function getOrgSlugFromHost(host: string): string | null {
     return null;
   }
 
-  // Check for subdomain pattern: [slug].ripple-vms.com
+  // Check for subdomain pattern
   const parts = hostname.split('.');
 
-  // Need at least 3 parts for a subdomain (e.g., nc.ripple-vms.com)
-  if (parts.length < 3) {
-    return null;
+  // Dev environment pattern: [slug].dev.ripple-vms.com (4 parts)
+  // e.g., nc.dev.ripple-vms.com -> ['nc', 'dev', 'ripple-vms', 'com']
+  if (parts.length === 4 && parts[1] === 'dev') {
+    const slug = parts[0];
+    if (RESERVED_SLUGS.includes(slug.toLowerCase())) {
+      return null;
+    }
+    return slug.toLowerCase();
   }
 
-  const slug = parts[0];
-
-  // Check if it's a reserved slug
-  if (RESERVED_SLUGS.includes(slug.toLowerCase())) {
-    return null;
+  // Production pattern: [slug].ripple-vms.com (3 parts)
+  // e.g., nc.ripple-vms.com -> ['nc', 'ripple-vms', 'com']
+  if (parts.length === 3) {
+    const slug = parts[0];
+    if (RESERVED_SLUGS.includes(slug.toLowerCase())) {
+      return null;
+    }
+    return slug.toLowerCase();
   }
 
-  return slug.toLowerCase();
+  // No valid subdomain pattern found
+  return null;
 }
 
 /**
@@ -148,18 +159,50 @@ export async function getCurrentOrganization() {
   return getDefaultOrganization();
 }
 
+// Special symbol to indicate "viewing orphaned records only"
+const ORPHANED_RECORDS = '__none__' as const;
+
 /**
  * Get the current organization ID for query scoping
  * Returns undefined for backward compatibility when no org context exists
+ * Returns '__none__' when developer explicitly wants to view orphaned records
+ *
+ * For DEVELOPER users, checks for a dev-org-override cookie first.
+ * This allows developers to switch between orgs without changing subdomains.
  */
 export async function getCurrentOrgId(): Promise<string | undefined> {
+  // Check for developer org override cookie
+  // Security: Only developers can set this cookie via /api/developer/set-org
+  try {
+    const cookieStore = await cookies();
+    const devOverride = cookieStore.get('dev-org-override')?.value;
+
+    if (devOverride) {
+      // Special value for "no org" (viewing orphaned records)
+      // Return the special value so orgScope() can handle it
+      if (devOverride === ORPHANED_RECORDS) {
+        return ORPHANED_RECORDS;
+      }
+      // Return the override org ID directly
+      return devOverride;
+    }
+  } catch {
+    // cookies() may throw in some contexts (like during build)
+    // Fall through to normal org detection
+  }
+
+  // Fall back to subdomain-based detection
   const org = await getCurrentOrganization();
   return org?.id;
 }
 
 /**
  * Create a Prisma where clause that scopes to the current organization
- * Handles null organizationId for backward compatibility during migration
+ * Uses strict scoping - only returns records belonging to the current org
+ *
+ * Special cases:
+ * - If developer selected "__none__", returns { organizationId: null } to show only orphaned records
+ * - If no org context (localhost dev), returns {} to match all records
  *
  * @example
  * const users = await prisma.user.findMany({
@@ -169,33 +212,33 @@ export async function getCurrentOrgId(): Promise<string | undefined> {
  *   }
  * });
  */
-export async function orgScope(): Promise<{ organizationId: string } | { OR: Array<{ organizationId: string | null }> }> {
+export async function orgScope(): Promise<{ organizationId: string | null } | Record<string, never>> {
   const orgId = await getCurrentOrgId();
 
-  if (orgId) {
-    // In multi-tenant mode: scope to current org OR legacy null org
-    return {
-      OR: [
-        { organizationId: orgId },
-        { organizationId: null }, // Include legacy records during migration
-      ],
-    };
+  // Developer explicitly wants to view orphaned records
+  if (orgId === ORPHANED_RECORDS) {
+    return { organizationId: null };
   }
 
-  // No org context: allow all (single-tenant mode / migration period)
-  return {
-    OR: [
-      { organizationId: null },
-    ],
-  };
+  if (orgId) {
+    return { organizationId: orgId };
+  }
+
+  // No org context: return empty (match all - for localhost dev)
+  return {};
 }
 
 /**
  * Create a Prisma where clause that strictly scopes to the current organization
  * Does NOT include legacy null records - use for new queries after migration
  */
-export async function strictOrgScope(): Promise<{ organizationId: string } | Record<string, never>> {
+export async function strictOrgScope(): Promise<{ organizationId: string | null } | Record<string, never>> {
   const orgId = await getCurrentOrgId();
+
+  // Developer explicitly wants to view orphaned records
+  if (orgId === ORPHANED_RECORDS) {
+    return { organizationId: null };
+  }
 
   if (orgId) {
     return { organizationId: orgId };
@@ -208,9 +251,15 @@ export async function strictOrgScope(): Promise<{ organizationId: string } | Rec
 /**
  * Get the organizationId to use when creating new records
  * Returns undefined during migration period (records will have null organizationId)
+ * Note: Returns undefined (not null) for __none__ since we don't create records while viewing orphaned
  */
 export async function getOrgIdForCreate(): Promise<string | undefined> {
-  return getCurrentOrgId();
+  const orgId = await getCurrentOrgId();
+  // Don't use __none__ for creating records
+  if (orgId === ORPHANED_RECORDS) {
+    return undefined;
+  }
+  return orgId;
 }
 
 /**

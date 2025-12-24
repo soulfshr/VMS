@@ -70,15 +70,12 @@ export async function POST(request: NextRequest) {
     // Check if email already exists
     const existingUser = await prisma.user.findUnique({
       where: { email: normalizedEmail },
+      include: {
+        memberships: orgId ? {
+          where: { organizationId: orgId }
+        } : undefined
+      }
     });
-
-    if (existingUser) {
-      // Return generic error to prevent email enumeration
-      return NextResponse.json(
-        { error: 'An account with this email already exists. Please sign in or use forgot password.' },
-        { status: 400 }
-      );
-    }
 
     // Validate zone selection
     if (!zoneIds || !Array.isArray(zoneIds) || zoneIds.length === 0) {
@@ -117,27 +114,93 @@ export async function POST(request: NextRequest) {
     // Generate unsubscribe token
     const unsubscribeToken = crypto.randomBytes(16).toString('hex');
 
-    // Create the user with PENDING status
-    const user = await prisma.user.create({
-      data: {
-        organizationId: orgId, // Multi-tenant: associate user with current org
-        email: normalizedEmail,
-        name: name.trim(),
-        phone: phone?.trim() || null,
-        signalHandle: signalHandle?.trim() || null,
-        primaryLanguage: primaryLanguage || 'English',
-        role: 'VOLUNTEER', // Default role, can be changed by admin during approval
-        accountStatus: 'PENDING',
-        applicationDate: new Date(),
-        isActive: true, // Active but PENDING status controls access
-        isVerified: false, // Will be set to true when they set password
-        intakeResponses: intakeResponses || {},
-        resetToken: hashedToken, // Reuse reset token field for verification
-        resetTokenExpiresAt: tokenExpiresAt,
-        unsubscribeToken,
-        emailNotifications: true,
-      },
-    });
+    let user;
+    let isExistingUser = false;
+
+    if (existingUser) {
+      // User exists - check if they already have a membership in this org
+      if (orgId && existingUser.memberships && existingUser.memberships.length > 0) {
+        // Already has membership in this org
+        return NextResponse.json(
+          { error: 'An account with this email already exists in this organization. Please sign in or use forgot password.' },
+          { status: 400 }
+        );
+      }
+
+      // User exists but no membership in this org - create membership
+      // This allows existing users to join new organizations
+      isExistingUser = true;
+      user = existingUser;
+
+      // Update user profile if they don't have complete info
+      if (!user.phone && phone?.trim()) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            phone: phone.trim(),
+            signalHandle: signalHandle?.trim() || user.signalHandle,
+          }
+        });
+      }
+
+      // Create membership for this org
+      if (orgId) {
+        await prisma.organizationMember.create({
+          data: {
+            userId: user.id,
+            organizationId: orgId,
+            role: 'VOLUNTEER',
+            accountStatus: 'PENDING',
+            applicationDate: new Date(),
+            intakeResponses: intakeResponses || {},
+            isActive: true,
+          }
+        });
+      }
+
+      console.log(`[Signup] Existing user ${normalizedEmail} applying to new org`);
+    } else {
+      // New user - create user and membership
+      user = await prisma.user.create({
+        data: {
+          // DEPRECATED: Keep organizationId for backward compatibility
+          organizationId: orgId,
+          email: normalizedEmail,
+          name: name.trim(),
+          phone: phone?.trim() || null,
+          signalHandle: signalHandle?.trim() || null,
+          primaryLanguage: primaryLanguage || 'English',
+          // DEPRECATED: Keep role/accountStatus on User for backward compatibility
+          role: 'VOLUNTEER',
+          accountStatus: 'PENDING',
+          applicationDate: new Date(),
+          isActive: true,
+          isVerified: false,
+          intakeResponses: intakeResponses || {},
+          resetToken: hashedToken,
+          resetTokenExpiresAt: tokenExpiresAt,
+          unsubscribeToken,
+          emailNotifications: true,
+        },
+      });
+
+      // Create membership for this org (the new way)
+      if (orgId) {
+        await prisma.organizationMember.create({
+          data: {
+            userId: user.id,
+            organizationId: orgId,
+            role: 'VOLUNTEER',
+            accountStatus: 'PENDING',
+            applicationDate: new Date(),
+            intakeResponses: intakeResponses || {},
+            isActive: true,
+          }
+        });
+      }
+
+      console.log(`[Signup] New user ${normalizedEmail} created`);
+    }
 
     // Create zone assignments
     const zoneAssignments = zoneIds.map((zoneId: string) => ({
@@ -146,12 +209,29 @@ export async function POST(request: NextRequest) {
       isPrimary: zoneId === primaryZoneId,
     }));
 
-    await prisma.userZone.createMany({
-      data: zoneAssignments,
-    });
+    // For existing users, skip zones they're already assigned to
+    if (isExistingUser) {
+      const existingZones = await prisma.userZone.findMany({
+        where: { userId: user.id },
+        select: { zoneId: true }
+      });
+      const existingZoneIds = new Set(existingZones.map(z => z.zoneId));
+      const newZoneAssignments = zoneAssignments.filter(
+        (za: { zoneId: string }) => !existingZoneIds.has(za.zoneId)
+      );
+      if (newZoneAssignments.length > 0) {
+        await prisma.userZone.createMany({
+          data: newZoneAssignments,
+        });
+      }
+    } else {
+      await prisma.userZone.createMany({
+        data: zoneAssignments,
+      });
+    }
 
-    // Create availability records if provided
-    if (availability && typeof availability === 'object') {
+    // Create availability records if provided (only for new users)
+    if (!isExistingUser && availability && typeof availability === 'object') {
       const dayMap: { [key: string]: number } = {
         'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6, 'Sun': 0,
       };
@@ -186,24 +266,29 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Send verification email with password setup link
-    const emailSent = await sendVerifyEmailAndSetPasswordEmail({
-      to: normalizedEmail,
-      userName: user.name,
-      verificationToken, // Send unhashed token
-    });
+    // Send verification email with password setup link (only for new users)
+    if (!isExistingUser) {
+      const emailSent = await sendVerifyEmailAndSetPasswordEmail({
+        to: normalizedEmail,
+        userName: user.name,
+        verificationToken,
+      });
 
-    if (!emailSent) {
-      console.error(`[Signup] Failed to send verification email to ${normalizedEmail}`);
-      // Don't fail the signup, but log it
+      if (!emailSent) {
+        console.error(`[Signup] Failed to send verification email to ${normalizedEmail}`);
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: 'Application submitted. Please check your email to verify your address and set your password.',
+      });
+    } else {
+      // Existing user joining new org - they can just log in
+      return NextResponse.json({
+        success: true,
+        message: 'Application submitted. Your request to join this organization is pending approval. You can log in with your existing credentials.',
+      });
     }
-
-    console.log(`[Signup] New application submitted: ${normalizedEmail}`);
-
-    return NextResponse.json({
-      success: true,
-      message: 'Application submitted. Please check your email to verify your address and set your password.',
-    });
   } catch (error) {
     console.error('[Signup] Error:', error);
     return NextResponse.json(

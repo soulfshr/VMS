@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { sendCoverageSignupConfirmationEmail } from '@/lib/email';
+import { getOrgIdForCreate } from '@/lib/org-context';
 
 interface SlotInput {
   date: string;
@@ -106,9 +107,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check user has the required qualification
+    // Multi-org: Get org context for scoping
+    const orgId = await getOrgIdForCreate();
+
+    // Check user has the required qualification (scoped to current org)
     const userQualifications = await prisma.userQualification.findMany({
-      where: { userId: user.id },
+      where: {
+        userId: user.id,
+        // Multi-org: Only check qualifications from current org's qualified roles
+        qualifiedRole: orgId ? { organizationId: orgId } : {},
+      },
       include: { qualifiedRole: { select: { slug: true } } },
     });
 
@@ -150,7 +158,7 @@ export async function POST(request: NextRequest) {
       const signupDate = new Date(slot.date);
       signupDate.setHours(0, 0, 0, 0);
 
-      // Check if slot is already filled
+      // Check if slot is already filled (scoped to current org)
       const existingCoordinator = await prisma.coverageSignup.findFirst({
         where: {
           date: signupDate,
@@ -158,6 +166,7 @@ export async function POST(request: NextRequest) {
           zoneId: null,
           roleType: 'DISPATCH_COORDINATOR',
           status: { in: ['CONFIRMED', 'PENDING'] },
+          ...(orgId ? { organizationId: orgId } : {}),
         },
       });
 
@@ -186,11 +195,12 @@ export async function POST(request: NextRequest) {
     // Wait for all validation to complete
     const validatedSlots = await Promise.all(signupPromises);
 
-    // Create all signups
+    // Create all signups (with org scope)
     const createdSignups = await Promise.all(
       validatedSlots.map(async ({ slot, signupDate }) => {
         return prisma.coverageSignup.create({
           data: {
+            organizationId: orgId,
             date: signupDate,
             zoneId: null,
             startHour: slot.startHour,

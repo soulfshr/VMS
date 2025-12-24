@@ -135,24 +135,29 @@ export async function GET(request: NextRequest) {
     // 3. Calculate next week's date range
     const { start: weekStart, end: weekEnd } = getNextWeekRange(timezone);
 
+    // Multi-org: Scope queries to the org from settings
+    const dataOrgId = settings?.organizationId;
+    const orgScopeFilter = dataOrgId ? { organizationId: dataOrgId } : {};
+
     // 4. Fetch schedule data for the week
     const [zones, counties, shifts, dispatcherAssignments, regionalLeads] = await Promise.all([
-      // Get all active zones
+      // Get all active zones (scoped to org)
       prisma.zone.findMany({
-        where: { isActive: true },
+        where: { isActive: true, ...orgScopeFilter },
         select: { id: true, name: true, county: true },
       }),
-      // Get distinct counties
+      // Get distinct counties (scoped to org)
       prisma.zone.findMany({
-        where: { isActive: true, county: { not: null } },
+        where: { isActive: true, county: { not: null }, ...orgScopeFilter },
         select: { county: true },
         distinct: ['county'],
       }),
-      // Get published shifts for the week
+      // Get published shifts for the week (scoped to org)
       prisma.shift.findMany({
         where: {
           date: { gte: weekStart, lte: weekEnd },
           status: 'PUBLISHED',
+          ...orgScopeFilter,
         },
         include: {
           zone: { select: { id: true, name: true } },
@@ -269,20 +274,54 @@ export async function GET(request: NextRequest) {
     // In test mode, allow filtering by specific email address
     const testEmail = isTestMode ? request.nextUrl.searchParams.get('email') : null;
 
-    const recipients = await prisma.user.findMany({
-      where: {
-        role: { in: ['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR', 'DEVELOPER'] },
-        isActive: true,
-        emailNotifications: true,
-        ...(testEmail ? { email: testEmail } : {}),
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        unsubscribeToken: true,
-      },
-    });
+    // Multi-org: Get recipients via OrganizationMember to respect per-org roles
+    // For cron jobs without org context, we need to get the org from settings
+    const orgId = settings?.organizationId;
+
+    let recipients: Array<{ id: string; email: string; name: string; unsubscribeToken: string | null }>;
+
+    if (orgId) {
+      // Multi-org: Query via OrganizationMember
+      const memberRecipients = await prisma.organizationMember.findMany({
+        where: {
+          organizationId: orgId,
+          role: { in: ['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR', 'DEVELOPER'] },
+          isActive: true,
+          user: {
+            isActive: true,
+            emailNotifications: true,
+            ...(testEmail ? { email: testEmail } : {}),
+          },
+        },
+        select: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              name: true,
+              unsubscribeToken: true,
+            },
+          },
+        },
+      });
+      recipients = memberRecipients.map(m => m.user);
+    } else {
+      // Legacy fallback: Query User directly
+      recipients = await prisma.user.findMany({
+        where: {
+          role: { in: ['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR', 'DEVELOPER'] },
+          isActive: true,
+          emailNotifications: true,
+          ...(testEmail ? { email: testEmail } : {}),
+        },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          unsubscribeToken: true,
+        },
+      });
+    }
 
     if (recipients.length === 0) {
       await logger.info('SYSTEM', 'Weekly digest skipped - no eligible recipients');

@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/db';
+import { getCurrentOrgId } from '@/lib/org-context';
 
 // GET /api/auth/status - Get current user's account status
+// Multi-org aware: Returns org-specific membership status when org context is available
 export async function GET() {
   try {
     const session = await auth();
@@ -14,6 +16,41 @@ export async function GET() {
       );
     }
 
+    const orgId = await getCurrentOrgId();
+
+    // Multi-org: Check membership status for current org
+    if (orgId && session.user.id) {
+      const membership = await prisma.organizationMember.findUnique({
+        where: {
+          userId_organizationId: {
+            userId: session.user.id,
+            organizationId: orgId,
+          },
+        },
+        include: {
+          user: {
+            select: {
+              name: true,
+              isVerified: true,
+            },
+          },
+        },
+      });
+
+      if (membership) {
+        return NextResponse.json({
+          accountStatus: membership.accountStatus,
+          isVerified: membership.user.isVerified,
+          name: membership.user.name,
+          applicationDate: membership.applicationDate,
+          rejectionReason: membership.rejectionReason,
+          // Include org info for context
+          organizationId: orgId,
+        });
+      }
+    }
+
+    // Fallback: Get user directly (legacy behavior)
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
       select: {

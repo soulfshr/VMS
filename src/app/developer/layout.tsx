@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 
@@ -9,6 +9,13 @@ interface User {
   name: string;
   email: string;
   role: string;
+}
+
+interface Organization {
+  id: string;
+  name: string;
+  slug: string;
+  isActive: boolean;
 }
 
 const developerNavItems = [
@@ -31,6 +38,25 @@ export default function DeveloperLayout({
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Org selector state
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [currentOrgId, setCurrentOrgId] = useState<string | null>(null);
+  const [currentOrgName, setCurrentOrgName] = useState<string | null>(null);
+  const [orgDropdownOpen, setOrgDropdownOpen] = useState(false);
+  const [isSwitchingOrg, setIsSwitchingOrg] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setOrgDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   useEffect(() => {
     fetch('/api/auth/session')
       .then(res => res.json())
@@ -51,11 +77,65 @@ export default function DeveloperLayout({
         }
         setUser(data.user);
         setIsLoading(false);
+
+        // Load organizations and current org override
+        fetchOrganizations();
+        fetchCurrentOrg();
       })
       .catch(() => {
         router.push('/login');
       });
   }, [router]);
+
+  const fetchOrganizations = async () => {
+    try {
+      const res = await fetch('/api/developer/organizations');
+      if (res.ok) {
+        const data = await res.json();
+        setOrganizations(data.organizations || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch organizations:', err);
+    }
+  };
+
+  const fetchCurrentOrg = async () => {
+    try {
+      const res = await fetch('/api/developer/set-org');
+      if (res.ok) {
+        const data = await res.json();
+        setCurrentOrgId(data.orgId);
+        setCurrentOrgName(data.orgName);
+      }
+    } catch (err) {
+      console.error('Failed to fetch current org:', err);
+    }
+  };
+
+  const handleOrgSwitch = async (orgId: string) => {
+    setIsSwitchingOrg(true);
+    setOrgDropdownOpen(false);
+
+    try {
+      const res = await fetch('/api/developer/set-org', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orgId }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setCurrentOrgId(data.orgId);
+        setCurrentOrgName(data.orgName);
+        // Refresh the page to apply the new org context
+        window.location.reload();
+      }
+    } catch (err) {
+      console.error('Failed to switch org:', err);
+    } finally {
+      setIsSwitchingOrg(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -99,9 +179,71 @@ export default function DeveloperLayout({
           {/* Sidebar - hidden on mobile */}
           <aside className="hidden md:block w-64 shrink-0">
             <div className="bg-white rounded-xl border border-gray-200 p-4 sticky top-8">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4 px-2">
+              <h2 className="text-lg font-semibold text-gray-900 mb-2 px-2">
                 Developer Console
               </h2>
+
+              {/* Org Selector */}
+              <div className="mb-4 px-2" ref={dropdownRef}>
+                <div className="relative">
+                  <button
+                    onClick={() => setOrgDropdownOpen(!orgDropdownOpen)}
+                    disabled={isSwitchingOrg}
+                    className="w-full flex items-center justify-between gap-2 px-3 py-2 bg-purple-50 border border-purple-200 rounded-lg text-sm font-medium text-purple-700 hover:bg-purple-100 transition-colors disabled:opacity-50"
+                  >
+                    <span className="truncate">
+                      {isSwitchingOrg ? 'Switching...' : (currentOrgName || 'Select Organization')}
+                    </span>
+                    <svg className={`w-4 h-4 transition-transform ${orgDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  {orgDropdownOpen && (
+                    <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto">
+                      {organizations.map(org => (
+                        <button
+                          key={org.id}
+                          onClick={() => handleOrgSwitch(org.id)}
+                          className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2 ${
+                            currentOrgId === org.id ? 'bg-purple-50 text-purple-700' : 'text-gray-700'
+                          }`}
+                        >
+                          {currentOrgId === org.id && (
+                            <svg className="w-4 h-4 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                          <span className={currentOrgId === org.id ? '' : 'ml-6'}>{org.name}</span>
+                          {!org.isActive && (
+                            <span className="ml-auto text-xs text-gray-400">(inactive)</span>
+                          )}
+                        </button>
+                      ))}
+                      <div className="border-t border-gray-100" />
+                      <button
+                        onClick={() => handleOrgSwitch('__none__')}
+                        className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2 ${
+                          currentOrgId === '__none__' ? 'bg-purple-50 text-purple-700' : 'text-gray-500'
+                        }`}
+                      >
+                        {currentOrgId === '__none__' && (
+                          <svg className="w-4 h-4 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                        <span className={currentOrgId === '__none__' ? '' : 'ml-6'}>No Organization (orphaned)</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+                {currentOrgId && (
+                  <p className="mt-1 text-xs text-gray-500 px-1">
+                    Viewing as: {currentOrgName}
+                  </p>
+                )}
+              </div>
+
               <nav className="space-y-1">
                 {developerNavItems.map(item => {
                   const isActive = pathname === item.href;

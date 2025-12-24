@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { Role, Qualification } from '@/generated/prisma/enums';
+import { getCurrentOrgId } from '@/lib/org-context';
 
 export interface EmailBlastFilters {
   roles?: string[];
@@ -27,71 +28,154 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const filters: EmailBlastFilters = body.filters || {};
 
-    // Build where clause based on filters
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: any = {
-      isActive: true,
-      emailNotifications: true, // Respect opt-out preference
-    };
+    // Multi-org: Get org context for scoping
+    const orgId = await getCurrentOrgId();
 
-    // Filter by roles - always exclude DEVELOPER users from email blasts
-    if (filters.roles && filters.roles.length > 0) {
-      // Filter out DEVELOPER from the selected roles
-      const filteredRoles = filters.roles.filter(r => r !== 'DEVELOPER');
-      if (filteredRoles.length > 0) {
-        where.role = { in: filteredRoles as Role[] };
-      } else {
-        // If only DEVELOPER was selected, return no results
-        where.role = { in: [] };
-      }
-    } else {
-      // No role filter - exclude DEVELOPER by default
-      where.role = { not: 'DEVELOPER' };
-    }
+    let count: number;
+    let sample: Array<{ id: string; name: string; email: string; role: string }>;
 
-    // Filter by qualifications
-    if (filters.hasQualifications === 'yes') {
-      where.qualifications = { isEmpty: false };
-    } else if (filters.hasQualifications === 'no') {
-      where.qualifications = { isEmpty: true };
-    } else if (filters.qualifications && filters.qualifications.length > 0) {
-      where.qualifications = { hasSome: filters.qualifications as Qualification[] };
-    }
-
-    // Filter by zones
-    if (filters.zones && filters.zones.length > 0) {
-      where.zones = {
-        some: {
-          zoneId: { in: filters.zones },
+    if (orgId) {
+      // Build membership where clause
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const memberWhere: any = {
+        organizationId: orgId,
+        isActive: true,
+        user: {
+          isActive: true,
+          emailNotifications: true,
         },
       };
-    }
 
-    // Filter by languages
-    if (filters.languages && filters.languages.length > 0) {
-      where.OR = filters.languages.map(lang => ({
-        OR: [
-          { primaryLanguage: lang },
-          { otherLanguages: { has: lang } },
-        ],
+      // Filter by roles - always exclude DEVELOPER users from email blasts
+      if (filters.roles && filters.roles.length > 0) {
+        const filteredRoles = filters.roles.filter(r => r !== 'DEVELOPER');
+        if (filteredRoles.length > 0) {
+          memberWhere.role = { in: filteredRoles as Role[] };
+        } else {
+          memberWhere.role = { in: [] };
+        }
+      } else {
+        memberWhere.role = { not: 'DEVELOPER' };
+      }
+
+      // Filter by qualifications via user's userQualifications
+      if (filters.hasQualifications === 'yes') {
+        memberWhere.user.userQualifications = { some: {} };
+      } else if (filters.hasQualifications === 'no') {
+        memberWhere.user.userQualifications = { none: {} };
+      } else if (filters.qualifications && filters.qualifications.length > 0) {
+        memberWhere.user.userQualifications = {
+          some: {
+            qualifiedRole: {
+              slug: { in: filters.qualifications.map((q: string) => q.toUpperCase()) },
+              organizationId: orgId,
+            },
+          },
+        };
+      }
+
+      if (filters.zones && filters.zones.length > 0) {
+        memberWhere.user.zones = {
+          some: {
+            zoneId: { in: filters.zones },
+          },
+        };
+      }
+
+      if (filters.languages && filters.languages.length > 0) {
+        memberWhere.user.OR = filters.languages.map((lang: string) => ({
+          OR: [
+            { primaryLanguage: lang },
+            { otherLanguages: { has: lang } },
+          ],
+        }));
+      }
+
+      const [memberCount, memberSample] = await Promise.all([
+        prisma.organizationMember.count({ where: memberWhere }),
+        prisma.organizationMember.findMany({
+          where: memberWhere,
+          select: {
+            role: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+          },
+          take: 5,
+          orderBy: { user: { name: 'asc' } },
+        }),
+      ]);
+
+      count = memberCount;
+      sample = memberSample.map(m => ({
+        id: m.user.id,
+        name: m.user.name,
+        email: m.user.email,
+        role: m.role,
       }));
-    }
+    } else {
+      // Legacy fallback: Query User directly
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const where: any = {
+        isActive: true,
+        emailNotifications: true,
+      };
 
-    // Get count and sample of recipients
-    const [count, sample] = await Promise.all([
-      prisma.user.count({ where }),
-      prisma.user.findMany({
-        where,
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          role: true,
-        },
-        take: 5,
-        orderBy: { name: 'asc' },
-      }),
-    ]);
+      if (filters.roles && filters.roles.length > 0) {
+        const filteredRoles = filters.roles.filter(r => r !== 'DEVELOPER');
+        if (filteredRoles.length > 0) {
+          where.role = { in: filteredRoles as Role[] };
+        } else {
+          where.role = { in: [] };
+        }
+      } else {
+        where.role = { not: 'DEVELOPER' };
+      }
+
+      if (filters.hasQualifications === 'yes') {
+        where.qualifications = { isEmpty: false };
+      } else if (filters.hasQualifications === 'no') {
+        where.qualifications = { isEmpty: true };
+      } else if (filters.qualifications && filters.qualifications.length > 0) {
+        where.qualifications = { hasSome: filters.qualifications as Qualification[] };
+      }
+
+      if (filters.zones && filters.zones.length > 0) {
+        where.zones = {
+          some: {
+            zoneId: { in: filters.zones },
+          },
+        };
+      }
+
+      if (filters.languages && filters.languages.length > 0) {
+        where.OR = filters.languages.map((lang: string) => ({
+          OR: [
+            { primaryLanguage: lang },
+            { otherLanguages: { has: lang } },
+          ],
+        }));
+      }
+
+      [count, sample] = await Promise.all([
+        prisma.user.count({ where }),
+        prisma.user.findMany({
+          where,
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+          take: 5,
+          orderBy: { name: 'asc' },
+        }),
+      ]);
+    }
 
     return NextResponse.json({
       count,

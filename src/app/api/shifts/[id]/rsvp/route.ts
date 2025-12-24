@@ -38,11 +38,17 @@ export async function POST(
       // No body or invalid JSON is fine - parameters are optional
     }
 
-    // If requesting zone lead assignment, verify user has the qualification
+    const orgIdForQual = await getCurrentOrgId();
+
+    // If requesting zone lead assignment, verify user has the qualification in current org
     // Slugs are stored as uppercase with underscores (e.g., ZONE_LEAD)
     if (asZoneLead) {
       const userQualifications = await prisma.userQualification.findMany({
-        where: { userId: user.id },
+        where: {
+          userId: user.id,
+          // Multi-org: Only check qualifications from current org's qualified roles
+          qualifiedRole: orgIdForQual ? { organizationId: orgIdForQual } : {},
+        },
         include: { qualifiedRole: { select: { slug: true } } },
       });
       const hasZoneLeadQual = userQualifications.some(uq => uq.qualifiedRole.slug === 'ZONE_LEAD');
@@ -55,9 +61,17 @@ export async function POST(
       }
     }
 
-    // Check if shift exists and is published
-    const shift = await prisma.shift.findUnique({
-      where: { id: shiftId },
+    const orgId = await getCurrentOrgId();
+
+    // Check if shift exists, is published, and belongs to current org
+    const shift = await prisma.shift.findFirst({
+      where: {
+        id: shiftId,
+        // Multi-org: Verify shift belongs to current org (or is legacy with no org)
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
       include: {
         volunteers: true,
       },
@@ -92,14 +106,9 @@ export async function POST(
       );
     }
 
-    const orgId = await getCurrentOrgId();
-
     // Check organization settings for auto-confirm (scoped to org)
     const orgSettings = await prisma.organizationSettings.findFirst({
-      where: orgId
-        ? { OR: [{ organizationId: orgId }, { organizationId: null }] }
-        : { organizationId: null },
-      orderBy: { organizationId: 'desc' }, // Prefer org-specific over null
+      where: orgId ? { organizationId: orgId } : {},
     });
     const autoConfirm = orgSettings?.autoConfirmRsvp ?? false;
 

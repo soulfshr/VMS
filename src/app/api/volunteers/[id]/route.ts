@@ -138,6 +138,23 @@ export async function PATCH(
           },
         });
 
+        // Also update OrganizationMember if it exists (new multi-org system)
+        if (orgId) {
+          await prisma.organizationMember.updateMany({
+            where: {
+              userId: id,
+              organizationId: orgId,
+            },
+            data: {
+              accountStatus: 'APPROVED',
+              role: roleToSet,
+              approvedById: user.id,
+              approvedAt: new Date(),
+              isActive: true,
+            },
+          });
+        }
+
         // Audit log the approval
         await auditUpdate(
           toAuditUser(user),
@@ -181,6 +198,20 @@ export async function PATCH(
             rejectionReason: true,
           },
         });
+
+        // Also update OrganizationMember if it exists (new multi-org system)
+        if (orgId) {
+          await prisma.organizationMember.updateMany({
+            where: {
+              userId: id,
+              organizationId: orgId,
+            },
+            data: {
+              accountStatus: 'REJECTED',
+              rejectionReason,
+            },
+          });
+        }
 
         // Audit log the rejection
         await auditUpdate(
@@ -298,16 +329,21 @@ export async function PATCH(
         return NextResponse.json({ error: 'zoneIds must be an array' }, { status: 400 });
       }
 
-      // Validate that all zone IDs exist
+      // Validate that all zone IDs exist and belong to current org
       if (body.zoneIds.length > 0) {
         const existingZones = await prisma.zone.findMany({
-          where: { id: { in: body.zoneIds }, isActive: true },
+          where: {
+            id: { in: body.zoneIds },
+            isActive: true,
+            // Security: Only allow zones from current org
+            ...(orgId ? { organizationId: orgId } : {}),
+          },
           select: { id: true },
         });
         const existingIds = new Set(existingZones.map(z => z.id));
         const invalidIds = body.zoneIds.filter((zId: string) => !existingIds.has(zId));
         if (invalidIds.length > 0) {
-          return NextResponse.json({ error: `Invalid zone IDs: ${invalidIds.join(', ')}` }, { status: 400 });
+          return NextResponse.json({ error: 'Invalid or unauthorized zone IDs' }, { status: 400 });
         }
       }
 
@@ -334,16 +370,21 @@ export async function PATCH(
         return NextResponse.json({ error: 'qualifiedRoleIds must be an array' }, { status: 400 });
       }
 
-      // Validate that all IDs exist
+      // Validate that all IDs exist and belong to current org
       if (body.qualifiedRoleIds.length > 0) {
         const existingRoles = await prisma.qualifiedRole.findMany({
-          where: { id: { in: body.qualifiedRoleIds }, isActive: true },
+          where: {
+            id: { in: body.qualifiedRoleIds },
+            isActive: true,
+            // Security: Only allow qualified roles from current org
+            ...(orgId ? { organizationId: orgId } : {}),
+          },
           select: { id: true },
         });
         const existingIds = new Set(existingRoles.map(r => r.id));
-        const invalidIds = body.qualifiedRoleIds.filter((id: string) => !existingIds.has(id));
+        const invalidIds = body.qualifiedRoleIds.filter((roleId: string) => !existingIds.has(roleId));
         if (invalidIds.length > 0) {
-          return NextResponse.json({ error: `Invalid qualified role IDs: ${invalidIds.join(', ')}` }, { status: 400 });
+          return NextResponse.json({ error: 'Invalid or unauthorized qualified role IDs' }, { status: 400 });
         }
       }
 

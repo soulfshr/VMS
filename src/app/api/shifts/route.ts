@@ -31,9 +31,13 @@ export async function GET(request: NextRequest) {
     // In SIMPLE mode, only DISPATCHER or ZONE_LEAD qualified users (or admins) can see shifts
     const isAdmin = ['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role);
 
-    // Check user's qualified roles from the database
+    // Check user's qualified roles from the database (scoped to current org)
     const userQualifications = await prisma.userQualification.findMany({
-      where: { userId: user.id },
+      where: {
+        userId: user.id,
+        // Multi-org: Only check qualifications from current org's qualified roles
+        qualifiedRole: orgId ? { organizationId: orgId } : {},
+      },
       include: { qualifiedRole: { select: { slug: true } } },
     });
     // Slugs are stored as uppercase with underscores (e.g., ZONE_LEAD, DISPATCHER)

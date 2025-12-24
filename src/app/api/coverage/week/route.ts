@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { CoverageOverrideType } from '@/generated/prisma/client';
-import { getCurrentOrgId } from '@/lib/org-context';
+import { getCurrentOrgId, orgScope } from '@/lib/org-context';
 import {
   getCurrentWeekMondayET,
   getMondayOfWeek,
@@ -62,9 +62,13 @@ export async function GET(request: NextRequest) {
     const schedulingMode = settings?.schedulingMode || 'SIMPLE';
     const isSimpleMode = schedulingMode === 'SIMPLE';
 
-    // Fetch user's qualifications
+    // Fetch user's qualifications (scoped to current org)
     const userQualifications = await prisma.userQualification.findMany({
-      where: { userId: user.id },
+      where: {
+        userId: user.id,
+        // Multi-org: Only check qualifications from current org's qualified roles
+        qualifiedRole: orgId ? { organizationId: orgId } : {},
+      },
       include: { qualifiedRole: { select: { slug: true } } },
     });
     const userQualificationSlugs = userQualifications.map(uq => uq.qualifiedRole.slug);
@@ -95,9 +99,7 @@ export async function GET(request: NextRequest) {
     const zones = await prisma.zone.findMany({
       where: {
         isActive: true,
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
+        ...await orgScope(),
       },
       include: {
         coverageConfigs: {
@@ -119,9 +121,7 @@ export async function GET(request: NextRequest) {
         },
         status: { in: ['CONFIRMED', 'PENDING'] },
         zoneId: { not: null },  // Zone-based signups only
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
+        ...await orgScope(),
       },
       include: {
         user: {
@@ -151,9 +151,7 @@ export async function GET(request: NextRequest) {
         status: { in: ['CONFIRMED', 'PENDING'] },
         zoneId: null,  // Regional coordinator signups
         roleType: 'DISPATCH_COORDINATOR',
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
+        ...await orgScope(),
       },
       include: {
         user: {
@@ -173,9 +171,7 @@ export async function GET(request: NextRequest) {
           gte: weekStart,
           lte: weekEnd,
         },
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
+        ...await orgScope(),
       },
       include: {
         zone: {

@@ -28,14 +28,13 @@ export async function GET(request: NextRequest) {
     const orgId = await getCurrentOrgId();
 
     // Find users who have the qualification (via userQualifications OR old qualifications array OR training)
+    const orgScopeFilter = orgId ? { organizationId: orgId } : {};
     const qualifiedUsers = await prisma.user.findMany({
       where: {
         AND: [
           { isActive: true },
           // Org scoping
-          orgId
-            ? { OR: [{ organizationId: orgId }, { organizationId: null }] }
-            : { organizationId: null },
+          orgScopeFilter,
           // Qualification criteria
           { OR: [
           // Method 1: Has qualification via NEW userQualifications table (preferred)

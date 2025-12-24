@@ -11,12 +11,29 @@ export async function GET() {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const orgId = await getCurrentOrgId();
+
+    // Security: If org context exists, verify user has active membership in this org
+    // This prevents users from accessing settings of orgs they don't belong to
+    if (orgId && user.role !== 'DEVELOPER') {
+      const membership = await prisma.organizationMember.findUnique({
+        where: {
+          userId_organizationId: {
+            userId: user.id,
+            organizationId: orgId,
+          },
+        },
+      });
+      if (!membership || !membership.isActive) {
+        return NextResponse.json({ error: 'Not a member of this organization' }, { status: 403 });
+      }
+    }
+
     // Allow ADMINISTRATOR and DEVELOPER roles
     if (!['ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
       return NextResponse.json({ error: 'Admin or Developer access required' }, { status: 403 });
     }
-
-    const orgId = await getCurrentOrgId();
 
     // Get or create settings singleton (scoped to org)
     let settings = await prisma.organizationSettings.findFirst({
@@ -47,6 +64,24 @@ export async function PUT(request: Request) {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const orgId = await getCurrentOrgId();
+
+    // Security: If org context exists, verify user has active membership in this org
+    if (orgId && user.role !== 'DEVELOPER') {
+      const membership = await prisma.organizationMember.findUnique({
+        where: {
+          userId_organizationId: {
+            userId: user.id,
+            organizationId: orgId,
+          },
+        },
+      });
+      if (!membership || !membership.isActive) {
+        return NextResponse.json({ error: 'Not a member of this organization' }, { status: 403 });
+      }
+    }
+
     // Allow ADMINISTRATOR and DEVELOPER roles
     if (!['ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
       return NextResponse.json({ error: 'Admin or Developer access required' }, { status: 403 });
@@ -146,8 +181,6 @@ export async function PUT(request: Request) {
         return NextResponse.json({ error: 'Send hour must be between 0 and 23' }, { status: 400 });
       }
     }
-
-    const orgId = await getCurrentOrgId();
 
     // Get or create settings singleton (scoped to org)
     let settings = await prisma.organizationSettings.findFirst({

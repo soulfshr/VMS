@@ -43,6 +43,9 @@ export default function OrganizationsPage() {
   });
   const [isSaving, setIsSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [deletingOrg, setDeletingOrg] = useState<Organization | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
   useEffect(() => {
     fetchOrganizations();
@@ -139,6 +142,32 @@ export default function OrganizationsPage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!deletingOrg) return;
+
+    setIsDeleting(true);
+
+    try {
+      const res = await fetch(`/api/developer/organizations/${deletingOrg.id}?hard=true`, {
+        method: 'DELETE',
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to delete organization');
+      }
+
+      setOrganizations(prev => prev.filter(org => org.id !== deletingOrg.id));
+      setDeletingOrg(null);
+      setDeleteConfirmText('');
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : 'Failed to delete organization');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       name: '',
@@ -193,12 +222,20 @@ export default function OrganizationsPage() {
           <h1 className="text-2xl font-bold text-gray-900">Organizations</h1>
           <p className="text-gray-600 mt-1">Manage all organizations across the platform</p>
         </div>
-        <Link
-          href="/developer/organizations/setup"
-          className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
-        >
-          + New Organization
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/developer/organizations/__none__/users"
+            className="px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors font-medium"
+          >
+            View Orphaned Users
+          </Link>
+          <Link
+            href="/developer/organizations/setup"
+            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
+          >
+            + New Organization
+          </Link>
+        </div>
       </div>
 
       {/* Organization Cards */}
@@ -230,6 +267,12 @@ export default function OrganizationsPage() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                <Link
+                  href={`/developer/organizations/${org.id}/users`}
+                  className="px-3 py-1.5 text-sm text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                >
+                  Users
+                </Link>
                 <button
                   onClick={() => openEditModal(org)}
                   className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
@@ -245,6 +288,12 @@ export default function OrganizationsPage() {
                   }`}
                 >
                   {org.isActive ? 'Deactivate' : 'Activate'}
+                </button>
+                <button
+                  onClick={() => setDeletingOrg(org)}
+                  className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  Delete
                 </button>
               </div>
             </div>
@@ -422,6 +471,78 @@ export default function OrganizationsPage() {
                 className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSaving ? 'Saving...' : editingOrg ? 'Save Changes' : 'Create Organization'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deletingOrg && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => {
+              setDeletingOrg(null);
+              setFormError(null);
+              setDeleteConfirmText('');
+            }}
+          />
+          <div className="relative bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-2">
+              Delete Organization
+            </h2>
+            <p className="text-gray-600 mb-4">
+              Are you sure you want to permanently delete <strong>{deletingOrg.name}</strong>?
+              This action cannot be undone.
+            </p>
+
+            {deletingOrg.stats.users > 0 && (
+              <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-800 text-sm">
+                This organization has {deletingOrg.stats.users} user{deletingOrg.stats.users !== 1 ? 's' : ''}.
+                You must remove all users before deleting, or deactivate the organization instead.
+              </div>
+            )}
+
+            {deletingOrg.stats.users === 0 && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Type <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded text-red-600">DELETE</span> to confirm
+                </label>
+                <input
+                  type="text"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                  placeholder="DELETE"
+                  autoComplete="off"
+                />
+              </div>
+            )}
+
+            {formError && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                {formError}
+              </div>
+            )}
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setDeletingOrg(null);
+                  setFormError(null);
+                  setDeleteConfirmText('');
+                }}
+                className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting || deletingOrg.stats.users > 0 || deleteConfirmText !== 'DELETE'}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isDeleting ? 'Deleting...' : 'Delete Permanently'}
               </button>
             </div>
           </div>

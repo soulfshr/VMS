@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUserWithZones } from '@/lib/user';
-import { getCurrentOrgId } from '@/lib/org-context';
+import { getCurrentOrgId, orgScope } from '@/lib/org-context';
 import {
   getTodayET,
   getCurrentHourET,
@@ -53,6 +53,10 @@ export async function GET() {
     // Get current time for "upcoming" queries
     const now = new Date();
 
+    // Get org scope for filtering queries (used throughout)
+    const orgId = await getCurrentOrgId();
+    const orgScopeFilter = orgId ? { organizationId: orgId } : {};
+
     // Calculate week boundaries for stats (using Eastern Time for "today")
     const todayStr = getTodayET();
     const mondayStr = getCurrentWeekMondayET();
@@ -88,9 +92,13 @@ export async function GET() {
     // Get user's primary zone
     const primaryZone = user.zones.find(uz => uz.isPrimary)?.zone || user.zones[0]?.zone || null;
 
-    // Get user's qualifications
+    // Get user's qualifications (scoped to current org)
     const userQualifications = await prisma.userQualification.findMany({
-      where: { userId: user.id },
+      where: {
+        userId: user.id,
+        // Multi-org: Only check qualifications from current org's qualified roles
+        qualifiedRole: orgId ? { organizationId: orgId } : {},
+      },
       include: { qualifiedRole: { select: { slug: true, name: true, color: true } } },
     });
     const qualSlugs = userQualifications.map(uq => uq.qualifiedRole.slug);
@@ -131,9 +139,11 @@ export async function GET() {
         : Promise.resolve([]);
 
       // Get dispatcher for this zone/slot (if user is not the dispatcher)
+      // Multi-org: Scope to current organization
       const dispatcherQuery = nextSignup.roleType !== 'DISPATCHER' && nextSignup.zoneId
         ? prisma.coverageSignup.findFirst({
             where: {
+              ...orgScopeFilter,
               date: nextSignup.date,
               zoneId: nextSignup.zoneId,
               startHour: nextSignup.startHour,
@@ -146,9 +156,10 @@ export async function GET() {
           })
         : Promise.resolve(null);
 
-      // Get coordinator for this time slot
+      // Get coordinator for this time slot (scoped to current org)
       const coordinatorQuery = prisma.coverageSignup.findFirst({
         where: {
+          ...orgScopeFilter,
           date: nextSignup.date,
           startHour: nextSignup.startHour,
           roleType: 'DISPATCH_COORDINATOR',
@@ -187,15 +198,11 @@ export async function GET() {
     }
 
     // Get openings based on user's qualifications
-    const orgId = await getCurrentOrgId() ?? null;
-    const openings = await getOpeningsForUser(user, qualSlugs, primaryZone?.id || null, orgId);
+    const openings = await getOpeningsForUser(user, qualSlugs, primaryZone?.id || null, orgId ?? null);
 
     // Get organization settings for autoConfirmRsvp and schedulingMode (scoped to org)
     const settings = await prisma.organizationSettings.findFirst({
-      where: orgId
-        ? { OR: [{ organizationId: orgId }, { organizationId: null }] }
-        : { organizationId: null },
-      orderBy: { organizationId: 'desc' }, // Prefer org-specific over null
+      where: orgId ? { organizationId: orgId } : {},
     });
     const autoConfirmRsvp = settings?.autoConfirmRsvp ?? true;
     const schedulingMode = settings?.schedulingMode || 'SIMPLE';
@@ -261,12 +268,11 @@ async function getOpeningsForUser(
   const userZoneIds = user.zones.map(uz => uz.zone.id);
 
   // Get all zone configs for the next 2 weeks (scoped to org)
+  const orgScopeFilter = orgId ? { organizationId: orgId } : {};
   const zones = await prisma.zone.findMany({
     where: {
       isActive: true,
-      OR: orgId
-        ? [{ organizationId: orgId }, { organizationId: null }]
-        : [{ organizationId: null }],
+      ...orgScopeFilter,
     },
     include: {
       coverageConfigs: { where: { isActive: true } },
@@ -555,12 +561,11 @@ async function getCoverageSummary(weekStart: Date, weekEnd: Date, isSimpleMode: 
   const currentHour = getCurrentHourET();
 
   // Get all zones with configs (scoped to org)
+  const orgScopeFilter = orgId ? { organizationId: orgId } : {};
   const zones = await prisma.zone.findMany({
     where: {
       isActive: true,
-      OR: orgId
-        ? [{ organizationId: orgId }, { organizationId: null }]
-        : [{ organizationId: null }],
+      ...orgScopeFilter,
     },
     include: {
       coverageConfigs: { where: { isActive: true } },

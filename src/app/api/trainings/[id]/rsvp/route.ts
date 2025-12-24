@@ -16,10 +16,17 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     const { id: sessionId } = await params;
+    const orgId = await getCurrentOrgId();
 
-    // Check if session exists and is published
-    const session = await prisma.trainingSession.findUnique({
-      where: { id: sessionId },
+    // Check if session exists, is published, and belongs to current org
+    const session = await prisma.trainingSession.findFirst({
+      where: {
+        id: sessionId,
+        // Multi-org: Verify session belongs to current org (or is legacy with no org)
+        OR: orgId
+          ? [{ organizationId: orgId }, { organizationId: null }]
+          : [{ organizationId: null }],
+      },
       include: {
         attendees: true,
         trainingType: true,
@@ -55,14 +62,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const orgId = await getCurrentOrgId();
-
     // Check organization settings for auto-confirm (scoped to org)
     const orgSettings = await prisma.organizationSettings.findFirst({
-      where: orgId
-        ? { OR: [{ organizationId: orgId }, { organizationId: null }] }
-        : { organizationId: null },
-      orderBy: { organizationId: 'desc' }, // Prefer org-specific over null
+      where: orgId ? { organizationId: orgId } : {},
     });
     const autoConfirm = orgSettings?.autoConfirmRsvp ?? false;
 

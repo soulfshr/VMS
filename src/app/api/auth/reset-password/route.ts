@@ -88,9 +88,11 @@ export async function POST(request: NextRequest) {
       console.log(`[Auth] New signup verified: ${user.email}`);
 
       // Send notification to coordinators and admins (fire and forget)
+      // Multi-org: Scope to the user's organization
       sendNewApplicationNotification({
         applicantName: user.name,
         applicantEmail: user.email,
+        organizationId: user.organizationId || undefined,
       }).catch(err => {
         console.error('[Auth] Failed to send new application notification:', err);
       });
