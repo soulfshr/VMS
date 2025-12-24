@@ -10,15 +10,37 @@ import type { User, OrganizationMember, UserQualification, QualifiedRole, Organi
  * MULTI-ORG AWARE: When org context is available, this function overlays
  * the membership role/accountStatus onto the returned user object. This
  * allows existing role checks (user.role) to work correctly with multi-org.
+ *
+ * OPTIMIZATION: If session already has org-specific role (from JWT callback),
+ * we use that instead of querying the membership table again.
  */
 export async function getDbUser(): Promise<User | null> {
   const sessionUser = await getCurrentUser();
   if (!sessionUser) return null;
 
+  // First, get the base user from the database (required for all user data)
+  const dbUser = await prisma.user.findUnique({
+    where: { id: sessionUser.id },
+  });
+
+  if (!dbUser) return null;
+
+  // OPTIMIZATION: If session already has org-specific role from JWT,
+  // use that instead of querying membership table again
+  // The JWT callback already refreshes this data periodically
+  if (sessionUser.currentOrganizationId && sessionUser.role) {
+    return {
+      ...dbUser,
+      role: sessionUser.role,
+      accountStatus: sessionUser.accountStatus || dbUser.accountStatus,
+    };
+  }
+
+  // Legacy path: Get org context and overlay membership data
   const orgId = await getCurrentOrgId();
 
-  // If we have org context, get membership to overlay org-specific data
-  if (orgId) {
+  // If we have org context but not from session, get membership to overlay org-specific data
+  if (orgId && orgId !== '__none__') {
     const membership = await prisma.organizationMember.findUnique({
       where: {
         userId_organizationId: {
@@ -26,28 +48,20 @@ export async function getDbUser(): Promise<User | null> {
           organizationId: orgId,
         },
       },
-      include: {
-        user: true,
-      },
     });
 
     if (membership && membership.isActive) {
       // Return user with membership role/status overlaid
       return {
-        ...membership.user,
+        ...dbUser,
         role: membership.role,
         accountStatus: membership.accountStatus,
         // These are per-org in membership but we keep them on user for compatibility
-        notes: membership.notes ?? membership.user.notes,
-        intakeResponses: membership.intakeResponses ?? membership.user.intakeResponses,
+        notes: membership.notes ?? dbUser.notes,
+        intakeResponses: membership.intakeResponses ?? dbUser.intakeResponses,
       };
     }
   }
-
-  // Fallback: Look up user directly (legacy behavior)
-  const dbUser = await prisma.user.findUnique({
-    where: { id: sessionUser.id },
-  });
 
   return dbUser;
 }
@@ -56,12 +70,11 @@ export async function getDbUser(): Promise<User | null> {
  * Get the database user with their zones
  *
  * MULTI-ORG AWARE: When org context is available, overlays membership role.
+ * OPTIMIZATION: Uses session role if available to avoid extra DB query.
  */
 export async function getDbUserWithZones() {
   const sessionUser = await getCurrentUser();
   if (!sessionUser) return null;
-
-  const orgId = await getCurrentOrgId();
 
   const dbUser = await prisma.user.findUnique({
     where: { id: sessionUser.id },
@@ -81,8 +94,19 @@ export async function getDbUserWithZones() {
 
   if (!dbUser) return null;
 
-  // If we have org context, overlay membership role/status
-  if (orgId) {
+  // OPTIMIZATION: If session already has org-specific role from JWT, use that
+  if (sessionUser.currentOrganizationId && sessionUser.role) {
+    return {
+      ...dbUser,
+      role: sessionUser.role,
+      accountStatus: sessionUser.accountStatus || dbUser.accountStatus,
+    };
+  }
+
+  // Legacy path: Get org context and overlay membership data
+  const orgId = await getCurrentOrgId();
+
+  if (orgId && orgId !== '__none__') {
     const membership = await prisma.organizationMember.findUnique({
       where: {
         userId_organizationId: {
