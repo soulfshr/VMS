@@ -913,6 +913,8 @@ export async function GET() {
       zoneStats,
       coordinatorStats,
       autoConfirmRsvp,
+      // Scheduling mode - SIMPLE (shifts only) vs FULL (shifts + coverage)
+      schedulingMode,
       // Next confirmed shift with all teammates
       nextShift: nextConfirmedShift ? (() => {
         // Get user's volunteer entry for this shift

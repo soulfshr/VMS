@@ -392,6 +392,8 @@ export async function POST(request: NextRequest) {
           otherLanguages: vol.otherLanguages || [],
           isActive: vol.isActive !== false,
           isVerified: vol.isVerified !== false,
+          // Bulk imported users are pre-approved (skip pending workflow)
+          accountStatus: 'APPROVED' as const,
         };
 
         if (existingUser) {

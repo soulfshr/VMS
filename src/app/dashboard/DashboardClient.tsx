@@ -217,6 +217,8 @@ interface DashboardData {
   orgStats?: OrgStats;
   nextShift?: NextShift | null;
   autoConfirmRsvp?: boolean;
+  // Scheduling mode: SIMPLE (shifts only) vs FULL (shifts + coverage/dispatcher/coordinator)
+  schedulingMode?: 'SIMPLE' | 'FULL';
 }
 
 interface UpcomingTraining {
@@ -544,15 +546,17 @@ export default function DashboardClient() {
 
   // Auto-select first available tab when data loads
   // Priority: Dispatch (highest priority) → Shifts (Zone Lead) → Coordinator
+  // In SIMPLE mode, only shifts tab is available
   useEffect(() => {
     if (!dashboardData) return;
 
-    const { qualifiedOpenings, dispatcherSlotOpenings, regionalLeadOpenings } = dashboardData;
+    const { qualifiedOpenings, dispatcherSlotOpenings, regionalLeadOpenings, schedulingMode } = dashboardData;
+    const isFullMode = schedulingMode === 'FULL';
     const hasShifts = qualifiedOpenings && (qualifiedOpenings.userZones.length > 0 || qualifiedOpenings.otherZones.length > 0);
-    const hasDispatch = dispatcherSlotOpenings && dispatcherSlotOpenings.length > 0;
-    const hasCoord = regionalLeadOpenings && regionalLeadOpenings.length > 0;
+    const hasDispatch = isFullMode && dispatcherSlotOpenings && dispatcherSlotOpenings.length > 0;
+    const hasCoord = isFullMode && regionalLeadOpenings && regionalLeadOpenings.length > 0;
 
-    // Dispatch is highest priority
+    // Dispatch is highest priority (only in FULL mode)
     if (hasDispatch) {
       setOpeningsTab('dispatch');
     } else if (hasShifts) {
@@ -580,7 +584,10 @@ export default function DashboardClient() {
     return <WelcomeScreen onComplete={handleWelcomeComplete} userRole={sessionUser.role} userName={sessionUser.name} />;
   }
 
-  const { upcomingShifts, qualifiedOpenings, dispatcherSlotOpenings, dispatcherSchedulingMode, upcomingDispatcherAssignments, regionalLeadOpenings, upcomingRegionalLeadAssignments, volunteerStats, coordinatorStats, zoneStats, orgStats, nextShift, autoConfirmRsvp } = dashboardData;
+  const { upcomingShifts, qualifiedOpenings, dispatcherSlotOpenings, dispatcherSchedulingMode, upcomingDispatcherAssignments, regionalLeadOpenings, upcomingRegionalLeadAssignments, volunteerStats, coordinatorStats, zoneStats, orgStats, nextShift, autoConfirmRsvp, schedulingMode } = dashboardData;
+
+  // In SIMPLE mode, hide dispatcher/coordinator features (only show basic shift info)
+  const isFullSchedulingMode = schedulingMode === 'FULL';
   // Harmonize COORDINATOR and DISPATCHER - both have leadership access
   const isLeader = sessionUser.role === 'COORDINATOR' || sessionUser.role === 'DISPATCHER' || sessionUser.role === 'ADMINISTRATOR';
   const isCoordinator = isLeader; // For backward compatibility
@@ -630,10 +637,10 @@ export default function DashboardClient() {
     })),
   ].sort((a, b) => a.sortKey - b.sortKey);
 
-  // Check which openings tabs have data
+  // Check which openings tabs have data (dispatcher/coordinator only in FULL mode)
   const hasShiftOpenings = qualifiedOpenings && (qualifiedOpenings.userZones.length > 0 || qualifiedOpenings.otherZones.length > 0);
-  const hasDispatcherOpenings = dispatcherSlotOpenings && dispatcherSlotOpenings.length > 0;
-  const hasCoordinatorOpenings = regionalLeadOpenings && regionalLeadOpenings.length > 0;
+  const hasDispatcherOpenings = isFullSchedulingMode && dispatcherSlotOpenings && dispatcherSlotOpenings.length > 0;
+  const hasCoordinatorOpenings = isFullSchedulingMode && regionalLeadOpenings && regionalLeadOpenings.length > 0;
   const hasAnyOpenings = hasShiftOpenings || hasDispatcherOpenings || hasCoordinatorOpenings;
 
   // Counts for tab badges
@@ -1120,8 +1127,8 @@ export default function DashboardClient() {
             </div>
 
 
-            {/* Shift Coverage Summary for Coordinators/Dispatchers */}
-            {(isCoordinator || isDispatcher) && coordinatorStats?.weeklyCoverage && (
+            {/* Shift Coverage Summary for Coordinators/Dispatchers (FULL scheduling mode only) */}
+            {isFullSchedulingMode && (isCoordinator || isDispatcher) && coordinatorStats?.weeklyCoverage && (
               <div className="bg-white rounded-xl border border-gray-200" data-tour="coverage-summary">
                 <div className="p-4 border-b border-gray-200 flex justify-between items-center">
                   <h2 className="font-semibold text-gray-900">Shift Coverage Summary</h2>
