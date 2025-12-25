@@ -818,22 +818,29 @@ interface PasswordResetParams {
   to: string;
   userName: string;
   resetToken: string;
+  orgId?: string;  // Organization ID for branding
+  origin?: string; // Request origin for building reset URL (multi-tenant support)
 }
 
 /**
  * Send password reset email
  * Also used for initial password setup for new users
+ *
+ * @param params.orgId - Organization ID for branding (uses default if not provided)
+ * @param params.origin - Request origin URL for building reset link (uses APP_URL fallback)
  */
 export async function sendPasswordResetEmail(params: PasswordResetParams): Promise<boolean> {
-  const branding = await getBranding();
+  const branding = await getBranding(params.orgId);
 
   if (!isEmailConfigured(branding)) {
     console.log('[Email] SES not configured, skipping password reset email');
     return false;
   }
 
-  const { to, userName, resetToken } = params;
-  const resetUrl = `${APP_URL}/reset-password?token=${resetToken}`;
+  const { to, userName, resetToken, origin } = params;
+  // Use origin from request if provided (multi-tenant), otherwise fall back to APP_URL
+  const baseUrl = origin || APP_URL;
+  const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
 
   try {
     await sendEmail({
@@ -890,21 +897,28 @@ interface VerifyEmailParams {
   to: string;
   userName: string;
   verificationToken: string;
+  orgId?: string;  // Organization ID for branding
+  origin?: string; // Request origin for building verify URL (multi-tenant support)
 }
 
 /**
  * Send email verification and password setup email for new signups
+ *
+ * @param params.orgId - Organization ID for branding (uses default if not provided)
+ * @param params.origin - Request origin URL for building verify link (uses APP_URL fallback)
  */
 export async function sendVerifyEmailAndSetPasswordEmail(params: VerifyEmailParams): Promise<boolean> {
-  const branding = await getBranding();
+  const branding = await getBranding(params.orgId);
 
   if (!isEmailConfigured(branding)) {
     console.log('[Email] SES not configured, skipping verification email');
     return false;
   }
 
-  const { to, userName, verificationToken } = params;
-  const verifyUrl = `${APP_URL}/set-password?token=${verificationToken}`;
+  const { to, userName, verificationToken, origin } = params;
+  // Use origin from request if provided (multi-tenant), otherwise fall back to APP_URL
+  const baseUrl = origin || APP_URL;
+  const verifyUrl = `${baseUrl}/set-password?token=${verificationToken}`;
 
   try {
     await sendEmail({

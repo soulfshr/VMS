@@ -267,11 +267,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Send verification email with password setup link (only for new users)
+    // Get request origin for multi-tenant URL support
+    const origin = request.headers.get('origin') || request.headers.get('referer')?.replace(/\/[^/]*$/, '') || undefined;
+
     if (!isExistingUser) {
       const emailSent = await sendVerifyEmailAndSetPasswordEmail({
         to: normalizedEmail,
         userName: user.name,
         verificationToken,
+        orgId: orgId || undefined,
+        origin,
       });
 
       if (!emailSent) {

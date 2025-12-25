@@ -39,9 +39,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true });
     }
 
-    // Find user by email
+    // Find user by email (include organizationId for branding)
     const user = await prisma.user.findUnique({
       where: { email: normalizedEmail },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        isActive: true,
+        organizationId: true,
+      },
     });
 
     // Always return success to prevent email enumeration
@@ -49,6 +56,9 @@ export async function POST(request: NextRequest) {
       console.log(`[Auth] Password reset requested for unknown/inactive email: ${normalizedEmail}`);
       return NextResponse.json({ success: true });
     }
+
+    // Get request origin for multi-tenant URL support
+    const origin = request.headers.get('origin') || request.headers.get('referer')?.replace(/\/[^/]*$/, '') || undefined;
 
     // Generate cryptographically secure reset token
     const resetToken = crypto.randomBytes(32).toString('hex');
@@ -70,10 +80,13 @@ export async function POST(request: NextRequest) {
     });
 
     // Send UNHASHED password reset token to user via email
+    // Include orgId for branding and origin for multi-tenant URL
     const emailSent = await sendPasswordResetEmail({
       to: user.email,
       userName: user.name,
       resetToken, // Send the unhashed token
+      orgId: user.organizationId || undefined,
+      origin,
     });
 
     if (!emailSent) {
