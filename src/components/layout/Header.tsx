@@ -90,7 +90,10 @@ export default function Header() {
   const isLoading = status === 'loading' || !mounted;
 
   const handleLogout = async () => {
-    await signOut({ callbackUrl: '/' });
+    // Use redirect: false to handle manually, ensuring we stay on the current subdomain
+    // (avoids hardcoded NEXTAUTH_URL redirecting to wrong subdomain in multi-tenant setup)
+    await signOut({ redirect: false });
+    window.location.href = '/login';
   };
 
   const isActive = (path: string) => pathname === path;
