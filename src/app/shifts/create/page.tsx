@@ -82,13 +82,11 @@ export default function CreateShiftPage() {
             setFormData(prev => ({
               ...prev,
               type: firstType.slug,
-              zoneId: zonesData[0]?.id || '',
+              // Don't auto-select zone - leave it empty by default
               minVolunteers: firstType.defaultMinVolunteers,
               idealVolunteers: firstType.defaultIdealVolunteers,
               maxVolunteers: firstType.defaultMaxVolunteers,
             }));
-          } else if (zonesData[0]) {
-            setFormData(prev => ({ ...prev, zoneId: zonesData[0].id }));
           }
         }
         setIsLoading(false);
@@ -123,7 +121,7 @@ export default function CreateShiftPage() {
         type: formData.type,
         title: formData.title,
         description: formData.description,
-        zoneId: formData.zoneId,
+        zoneId: formData.zoneId || null, // Send null if no zone selected
         meetingLocation: formData.meetingLocation,
         minVolunteers: formData.minVolunteers,
         idealVolunteers: formData.idealVolunteers,
@@ -433,14 +431,14 @@ export default function CreateShiftPage() {
 
           {/* Zone */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Zone *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Zone</label>
             <select
               name="zoneId"
               value={formData.zoneId}
               onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
-              required
             >
+              <option value="">No zone</option>
               {zones.map((zone) => (
                 <option key={zone.id} value={zone.id}>
                   {zone.name} {zone.county && `(${zone.county})`}

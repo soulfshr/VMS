@@ -165,7 +165,7 @@ export async function POST(
           shiftDate: rsvp.shift.date,
           startTime: rsvp.shift.startTime,
           endTime: rsvp.shift.endTime,
-          zoneName: rsvp.shift.zone.name,
+          zoneName: rsvp.shift.zone?.name || '',
           description: rsvp.shift.description || undefined,
         });
       } else {
@@ -178,7 +178,7 @@ export async function POST(
           shiftDate: rsvp.shift.date,
           startTime: rsvp.shift.startTime,
           endTime: rsvp.shift.endTime,
-          zoneName: rsvp.shift.zone.name,
+          zoneName: rsvp.shift.zone?.name || '',
         });
       }
     } catch (emailErr) {
@@ -264,7 +264,7 @@ export async function DELETE(
         shiftDate: rsvp.shift.date,
         startTime: rsvp.shift.startTime,
         endTime: rsvp.shift.endTime,
-        zoneName: rsvp.shift.zone.name,
+        zoneName: rsvp.shift.zone?.name || '',
       });
     } catch (emailErr) {
       console.error('Email send error:', emailErr);
@@ -376,7 +376,7 @@ export async function PATCH(
           shiftDate: rsvp.shift.date,
           startTime: rsvp.shift.startTime,
           endTime: rsvp.shift.endTime,
-          zoneName: rsvp.shift.zone.name,
+          zoneName: rsvp.shift.zone?.name || '',
           description: rsvp.shift.description || undefined,
         });
       } catch (emailErr) {

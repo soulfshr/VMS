@@ -771,9 +771,9 @@ model Shift {
   startTime       DateTime
   endTime         DateTime
 
-  // Location
-  zoneId          String
-  zone            Zone        @relation(fields: [zoneId], references: [id])
+  // Location (optional - some orgs may not use zones)
+  zoneId          String?
+  zone            Zone?       @relation(fields: [zoneId], references: [id])
   meetingLocation String?
 
   // Capacity

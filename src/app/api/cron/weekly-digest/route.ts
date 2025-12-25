@@ -232,8 +232,8 @@ export async function GET(request: NextRequest) {
 
       // Build zone leads list - for each zone, find who's leading that day
       const dayZoneLeads = zones.map(zone => {
-        // Find shifts for this zone on this day
-        const zoneShifts = dayShifts.filter(s => s.zone.id === zone.id);
+        // Find shifts for this zone on this day (filter out shifts with no zone)
+        const zoneShifts = dayShifts.filter(s => s.zone?.id === zone.id);
         // Get the zone lead from any shift in this zone (take the first one found)
         const zoneLead = zoneShifts
           .flatMap(s => s.volunteers)

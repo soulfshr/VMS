@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
             shiftDate: shift.date,
             startTime: shift.startTime,
             endTime: shift.endTime,
-            zoneName: shift.zone.name,
+            zoneName: shift.zone?.name || '',
             reason,
           })
         );

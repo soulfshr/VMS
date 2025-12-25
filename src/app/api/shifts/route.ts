@@ -285,8 +285,8 @@ export async function POST(request: NextRequest) {
       repeat,
     } = body;
 
-    // Validate required fields
-    if (!type || !title || !date || !startTime || !endTime || !zoneId) {
+    // Validate required fields (zoneId is optional)
+    if (!type || !title || !date || !startTime || !endTime) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -400,7 +400,7 @@ export async function POST(request: NextRequest) {
       toAuditUser(user),
       'Shift',
       shift.id,
-      { title: shift.title, type: shift.type, zoneName: shift.zone.name, date: shift.date }
+      { title: shift.title, type: shift.type, zoneName: shift.zone?.name || null, date: shift.date }
     );
 
     return NextResponse.json(shift, { status: 201 });

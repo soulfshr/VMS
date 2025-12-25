@@ -251,9 +251,9 @@ export async function GET() {
       return false;
     });
 
-    // Group openings by user's zones vs other zones
-    const userZoneOpenings = qualifiedOpeningsFiltered.filter(s => userZoneIds.includes(s.zoneId));
-    const otherZoneOpenings = qualifiedOpeningsFiltered.filter(s => !userZoneIds.includes(s.zoneId));
+    // Group openings by user's zones vs other zones (shifts without zones go to "other")
+    const userZoneOpenings = qualifiedOpeningsFiltered.filter(s => s.zoneId && userZoneIds.includes(s.zoneId));
+    const otherZoneOpenings = qualifiedOpeningsFiltered.filter(s => !s.zoneId || !userZoneIds.includes(s.zoneId));
 
     // Get user's qualified role names for display
     const userQualificationNames = user.userQualifications?.map(uq => uq.qualifiedRole.name) || [];

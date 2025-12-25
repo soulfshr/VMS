@@ -703,7 +703,7 @@ export interface ShiftForListing {
   confirmedCount: number;
   zone: {
     name: string;
-  };
+  } | null;
 }
 
 /**
@@ -745,7 +745,7 @@ export function generateShiftListHtml(shifts: ShiftForListing[], showAllZones = 
     const spotsLeft = shift.maxVolunteers - shift.confirmedCount;
     const spotsBg = spotsLeft <= 2 ? '#fef3c7' : '#cffafe';
 
-    return `<tr><td style="padding: 6px 10px; border-bottom: 1px solid #e5e7eb; font-size: 13px;">${escapeHtml(dateStr)}</td><td style="padding: 6px 10px; border-bottom: 1px solid #e5e7eb; font-size: 13px;">${escapeHtml(startStr)} - ${escapeHtml(endStr)}</td><td style="padding: 6px 10px; border-bottom: 1px solid #e5e7eb; font-size: 13px;">${escapeHtml(shift.zone.name)}</td><td style="padding: 6px 10px; border-bottom: 1px solid #e5e7eb; font-size: 13px;">${escapeHtml(shift.title)}</td><td style="padding: 6px 10px; border-bottom: 1px solid #e5e7eb; text-align: center;"><span style="background: ${spotsBg}; padding: 2px 6px; border-radius: 10px; font-weight: 600; font-size: 12px;">${spotsLeft}</span></td></tr>`;
+    return `<tr><td style="padding: 6px 10px; border-bottom: 1px solid #e5e7eb; font-size: 13px;">${escapeHtml(dateStr)}</td><td style="padding: 6px 10px; border-bottom: 1px solid #e5e7eb; font-size: 13px;">${escapeHtml(startStr)} - ${escapeHtml(endStr)}</td><td style="padding: 6px 10px; border-bottom: 1px solid #e5e7eb; font-size: 13px;">${escapeHtml(shift.zone?.name || '')}</td><td style="padding: 6px 10px; border-bottom: 1px solid #e5e7eb; font-size: 13px;">${escapeHtml(shift.title)}</td><td style="padding: 6px 10px; border-bottom: 1px solid #e5e7eb; text-align: center;"><span style="background: ${spotsBg}; padding: 2px 6px; border-radius: 10px; font-weight: 600; font-size: 12px;">${spotsLeft}</span></td></tr>`;
   }).join('');
 
   return `<div style="margin: 16px 0 8px 0;"><h3 style="color: #0891b2; margin: 0 0 8px 0; font-size: 16px;">${headerText}</h3><table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);"><thead><tr style="background: #f3f4f6;"><th style="padding: 8px 10px; text-align: left; font-weight: 600; color: #374151; border-bottom: 2px solid #e5e7eb; font-size: 13px;">Date</th><th style="padding: 8px 10px; text-align: left; font-weight: 600; color: #374151; border-bottom: 2px solid #e5e7eb; font-size: 13px;">Time</th><th style="padding: 8px 10px; text-align: left; font-weight: 600; color: #374151; border-bottom: 2px solid #e5e7eb; font-size: 13px;">Zone</th><th style="padding: 8px 10px; text-align: left; font-weight: 600; color: #374151; border-bottom: 2px solid #e5e7eb; font-size: 13px;">Shift</th><th style="padding: 8px 10px; text-align: center; font-weight: 600; color: #374151; border-bottom: 2px solid #e5e7eb; font-size: 13px;">Spots</th></tr></thead><tbody>${rows}</tbody></table></div>`;

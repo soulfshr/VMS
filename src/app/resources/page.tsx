@@ -3,6 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
+interface UserWithOrg {
+  role: string;
+  organizationSlug?: string;
+}
+
 interface DispatchStep {
   step: string;
   action: string;
@@ -134,19 +139,26 @@ const dispatchProcess: DispatchStep[] = [
   },
 ];
 
+// Siembra NC uses these specific dispatch process resources
+const SIEMBRA_ORG_SLUGS = ['siembra-nc', 'siembra'];
+
 export default function ResourcesPage() {
   const router = useRouter();
-  const [user, setUser] = useState<{ role: string } | null>(null);
+  const [user, setUser] = useState<UserWithOrg | null>(null);
   const [loading, setLoading] = useState(true);
+  const [orgSlug, setOrgSlug] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('/api/auth/session')
-      .then(res => res.json())
-      .then(data => {
-        if (!data.user) {
+    Promise.all([
+      fetch('/api/auth/session').then(res => res.json()),
+      fetch('/api/org/current').then(res => res.json()).catch(() => ({ slug: null })),
+    ])
+      .then(([sessionData, orgData]) => {
+        if (!sessionData.user) {
           router.push('/login');
         } else {
-          setUser(data.user);
+          setUser(sessionData.user);
+          setOrgSlug(orgData.slug || null);
         }
         setLoading(false);
       })
@@ -154,6 +166,9 @@ export default function ResourcesPage() {
         router.push('/login');
       });
   }, [router]);
+
+  // Check if this is a Siembra org (the only org with configured resources currently)
+  const isSiembraOrg = orgSlug && SIEMBRA_ORG_SLUGS.includes(orgSlug);
 
   if (loading || !user) {
     return (
@@ -177,6 +192,35 @@ export default function ResourcesPage() {
         return 'bg-gray-100 text-gray-800';
     }
   };
+
+  // Show placeholder for non-Siembra orgs
+  if (!isSiembraOrg) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="container mx-auto px-4 py-6">
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-gray-900">Resources</h1>
+            <p className="text-gray-600 mt-1">
+              Reference materials and process documentation for volunteers
+            </p>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+            <div className="text-gray-400 mb-4">
+              <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No resources configured</h3>
+            <p className="text-gray-600 max-w-md mx-auto">
+              Your organization does not have any resources configured yet.
+              Contact your administrator to set up resources for your team.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">

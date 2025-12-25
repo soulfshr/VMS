@@ -23,6 +23,7 @@ export default function Header() {
   const [isResourcesOpen, setIsResourcesOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [orgName, setOrgName] = useState<string | null>(null);
 
   // Refs for click-outside detection
   const resourcesRef = useRef<HTMLDivElement>(null);
@@ -32,9 +33,10 @@ export default function Header() {
   const [envMismatch, setEnvMismatch] = useState<'dev-serving-prod' | 'prod-serving-dev' | null>(null);
   const [primarySchedulingModel, setPrimarySchedulingModel] = useState<'COVERAGE_GRID' | 'SHIFTS'>('COVERAGE_GRID');
 
-  // Fetch public settings to determine scheduling model
+  // Fetch public settings to determine scheduling model and org info
   useEffect(() => {
     if (status === 'authenticated') {
+      // Fetch scheduling model
       fetch('/api/settings/public')
         .then(res => res.json())
         .then(data => {
@@ -43,6 +45,16 @@ export default function Header() {
           }
         })
         .catch(err => console.error('Failed to fetch public settings:', err));
+
+      // Fetch current org info for branding
+      fetch('/api/org/current')
+        .then(res => res.json())
+        .then(data => {
+          if (data.name) {
+            setOrgName(data.name);
+          }
+        })
+        .catch(err => console.error('Failed to fetch org info:', err));
     }
   }, [status]);
 
@@ -120,17 +132,27 @@ export default function Header() {
       <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center h-24">
-          {/* Logo - links to dashboard when logged in, home when not */}
-          <Link href={user ? "/dashboard" : "/"} className="hover:opacity-90 transition-opacity">
-            <Image
-              src="/ripple-logo.png"
-              alt="RippleVMS"
-              width={200}
-              height={166}
-              style={{ width: '90px', height: '75px' }}
-              priority
-            />
-          </Link>
+          {/* Logo and Org Name */}
+          <div className="flex items-center gap-3">
+            <Link href={user ? "/dashboard" : "/"} className="hover:opacity-90 transition-opacity">
+              <Image
+                src="/ripple-logo.png"
+                alt="RippleVMS"
+                width={200}
+                height={166}
+                style={{ width: '90px', height: '75px' }}
+                priority
+              />
+            </Link>
+            {orgName && user && (
+              <>
+                <div className="h-10 w-px bg-gray-300 hidden sm:block" />
+                <span className="text-gray-700 font-medium text-sm hidden sm:block max-w-[150px] truncate" title={orgName}>
+                  {orgName}
+                </span>
+              </>
+            )}
+          </div>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-6">
@@ -355,6 +377,9 @@ export default function Header() {
                         {user.zone && (
                           <p className="text-xs text-gray-500">{user.zone}</p>
                         )}
+                        {orgName && (
+                          <p className="text-xs text-cyan-600 font-medium mt-1">{orgName}</p>
+                        )}
                       </div>
                       <button
                         onClick={handleLogout}
@@ -413,6 +438,9 @@ export default function Header() {
                 <div className="px-2 py-2 bg-gray-100 rounded-lg mb-4">
                   <p className="text-sm font-medium text-gray-900">{user.name}</p>
                   <p className="text-xs text-gray-500">{user.role} {user.zone && `- ${user.zone}`}</p>
+                  {orgName && (
+                    <p className="text-xs text-cyan-600 font-medium mt-1">{orgName}</p>
+                  )}
                 </div>
                 {/* 1. My Dashboard */}
                 <Link

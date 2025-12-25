@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
           shiftDate: rsvp.shift.date,
           startTime: rsvp.shift.startTime,
           endTime: rsvp.shift.endTime,
-          zoneName: rsvp.shift.zone.name,
+          zoneName: rsvp.shift.zone?.name || '',
           description: rsvp.shift.description || undefined,
         })
       );

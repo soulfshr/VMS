@@ -583,7 +583,7 @@ export async function GET(
         title: sv.shift.title,
         date: sv.shift.date,
         type: sv.shift.type,
-        zone: sv.shift.zone.name,
+        zone: sv.shift.zone?.name || null,
         status: sv.status,
         isZoneLead: sv.isZoneLead,
       })),

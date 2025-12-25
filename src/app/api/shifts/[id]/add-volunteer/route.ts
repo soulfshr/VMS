@@ -129,7 +129,7 @@ export async function POST(
       shiftDate: shift.date,
       startTime: shift.startTime,
       endTime: shift.endTime,
-      zoneName: shift.zone.name,
+      zoneName: shift.zone?.name || '',
       description: shift.description || undefined,
       coordinatorName: user.name,
     }).catch(err => console.error('Email send error:', err));
