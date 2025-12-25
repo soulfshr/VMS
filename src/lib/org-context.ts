@@ -183,22 +183,28 @@ export async function getCurrentOrgId(): Promise<string | undefined> {
     const cookieStore = await cookies();
     const devOverride = cookieStore.get('dev-org-override')?.value;
 
+    console.log('[org-context] dev-org-override cookie:', devOverride || '(not set)');
+
     if (devOverride) {
       // Special value for "no org" (viewing orphaned records)
       // Return the special value so orgScope() can handle it
       if (devOverride === ORPHANED_RECORDS) {
+        console.log('[org-context] Using orphaned records mode');
         return ORPHANED_RECORDS;
       }
       // Return the override org ID directly
+      console.log('[org-context] Using dev override org:', devOverride);
       return devOverride;
     }
-  } catch {
+  } catch (err) {
     // cookies() may throw in some contexts (like during build)
+    console.log('[org-context] Cookie read error:', err);
     // Fall through to normal org detection
   }
 
   // Fall back to subdomain-based detection
   const org = await getCurrentOrganization();
+  console.log('[org-context] Falling back to subdomain org:', org?.slug || '(none)');
   return org?.id;
 }
 
