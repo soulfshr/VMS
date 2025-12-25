@@ -39,13 +39,18 @@ yarn-error.log*
 # Keep .env.example for documentation
 !.env.example
 
-# images and design files
+# images and design files (except public folder assets)
 *.jpg
 *.jpeg
 *.png
 *.gif
 *.afphoto
 *.psd
+# Allow images in public folder for app assets
+!public/*.png
+!public/*.jpg
+!public/*.jpeg
+!public/*.gif
 
 # vercel
 .vercel
