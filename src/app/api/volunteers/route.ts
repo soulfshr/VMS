@@ -397,10 +397,13 @@ export async function POST(request: NextRequest) {
         };
 
         if (existingUser) {
-          // Update existing user
+          // Update existing user - include organizationId to ensure they appear in org's volunteer list
           await prisma.user.update({
             where: { id: existingUser.id },
-            data: userData,
+            data: {
+              ...userData,
+              organizationId: orgId, // Sync legacy field with current org context
+            },
           });
 
           // Multi-org: Also sync OrganizationMember record if exists
