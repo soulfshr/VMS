@@ -303,6 +303,7 @@ export async function POST(request: NextRequest) {
     }
 
     const orgId = await getOrgIdForCreate();
+    console.log('[volunteers POST] Creating volunteer(s) for orgId:', orgId);
 
     const results = {
       created: 0,
@@ -316,6 +317,7 @@ export async function POST(request: NextRequest) {
       select: { id: true, name: true },
     });
     const zoneMap = new Map(zones.map(z => [z.name.toLowerCase(), z.id]));
+    console.log('[volunteers POST] Available zones:', zones.length);
 
     // Get all qualified roles for mapping (scoped to current org)
     const qualifiedRoles = await prisma.qualifiedRole.findMany({
@@ -326,6 +328,7 @@ export async function POST(request: NextRequest) {
       select: { id: true, slug: true, isDefaultForNewUsers: true },
     });
     const qualifiedRoleMap = new Map(qualifiedRoles.map(qr => [qr.slug.toUpperCase(), qr.id]));
+    console.log('[volunteers POST] Available qualified roles:', qualifiedRoles.length);
 
     // Get default qualified roles for new users
     const defaultQualifiedRoleIds = qualifiedRoles
@@ -469,6 +472,7 @@ export async function POST(request: NextRequest) {
             }
           }
 
+          console.log('[volunteers POST] Updated existing user:', existingUser.email, 'id:', existingUser.id);
           results.updated++;
         } else {
           // Create new user with organization
@@ -521,9 +525,11 @@ export async function POST(request: NextRequest) {
             });
           }
 
+          console.log('[volunteers POST] Created new user:', newUser.email, 'id:', newUser.id);
           results.created++;
         }
       } catch (err) {
+        console.error('[volunteers POST] Error creating user:', err);
         results.errors.push({
           row: rowNum,
           email: vol.email,
@@ -532,6 +538,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    console.log('[volunteers POST] Final results:', results);
     return NextResponse.json({
       success: true,
       ...results,
