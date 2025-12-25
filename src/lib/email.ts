@@ -842,13 +842,17 @@ export async function sendPasswordResetEmail(params: PasswordResetParams): Promi
   const baseUrl = origin || APP_URL;
   const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
 
+  // Use platform email for password resets (always verified in SES)
+  // Org branding still used for content, but FROM must be verified
+  const platformFromAddress = 'noreply@ripple-vms.com';
+
   try {
     await sendEmail({
       to,
       subject: `Reset Your Password - ${branding.orgName}`,
-      fromName: branding.emailFromName,
-      fromAddress: branding.emailFromAddress,
-      replyTo: branding.emailReplyTo,
+      fromName: 'RippleVMS',
+      fromAddress: platformFromAddress,
+      replyTo: branding.emailReplyTo || platformFromAddress,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: #0891b2; color: white; padding: 16px 24px; border-radius: 8px 8px 0 0;">
@@ -920,13 +924,17 @@ export async function sendVerifyEmailAndSetPasswordEmail(params: VerifyEmailPara
   const baseUrl = origin || APP_URL;
   const verifyUrl = `${baseUrl}/set-password?token=${verificationToken}`;
 
+  // Use platform email for verification (always verified in SES)
+  // Org branding still used for content, but FROM must be verified
+  const platformFromAddress = 'noreply@ripple-vms.com';
+
   try {
     await sendEmail({
       to,
       subject: `Verify Your Email - ${branding.orgName}`,
-      fromName: branding.emailFromName,
-      fromAddress: branding.emailFromAddress,
-      replyTo: branding.emailReplyTo,
+      fromName: 'RippleVMS',
+      fromAddress: platformFromAddress,
+      replyTo: branding.emailReplyTo || platformFromAddress,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: #0891b2; color: white; padding: 16px 24px; border-radius: 8px 8px 0 0;">
