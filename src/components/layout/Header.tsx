@@ -24,6 +24,7 @@ export default function Header() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [orgName, setOrgName] = useState<string | null>(null);
+  const [orgSlug, setOrgSlug] = useState<string | null>(null);
 
   // Refs for click-outside detection
   const resourcesRef = useRef<HTMLDivElement>(null);
@@ -52,6 +53,9 @@ export default function Header() {
         .then(data => {
           if (data.name) {
             setOrgName(data.name);
+          }
+          if (data.slug) {
+            setOrgSlug(data.slug);
           }
         })
         .catch(err => console.error('Failed to fetch org info:', err));
@@ -100,6 +104,10 @@ export default function Header() {
 
   const user = session?.user;
   const isLoading = status === 'loading' || !mounted;
+
+  // Siembra-specific resources (Dispatch Process, User Guide, Dispatch Training)
+  const SIEMBRA_ORG_SLUGS = ['siembra-nc', 'siembra'];
+  const isSiembraOrg = orgSlug && SIEMBRA_ORG_SLUGS.includes(orgSlug);
 
   const handleLogout = async () => {
     // Use redirect: false to handle manually, ensuring we stay on the current subdomain
@@ -282,32 +290,41 @@ export default function Header() {
                           Training
                         </Link>
                       )}
-                      <div className="border-t border-gray-100 my-1" />
-                      <Link
-                        href="/resources"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setIsResourcesOpen(false)}
-                      >
-                        Dispatch Process
-                      </Link>
-                      <a
-                        href="/guide.html"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setIsResourcesOpen(false)}
-                      >
-                        User Guide
-                      </a>
-                      <a
-                        href="https://docs.google.com/presentation/d/1laZwZv-C_Vwuru4kbJzzQcH8HKy4HHYTdQ5r9FNIf_Y/edit?slide=id.p"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setIsResourcesOpen(false)}
-                      >
-                        Dispatch Training
-                      </a>
+                      {/* Siembra-specific resources */}
+                      {isSiembraOrg && (
+                        <>
+                          {features.trainings && <div className="border-t border-gray-100 my-1" />}
+                          <Link
+                            href="/resources"
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setIsResourcesOpen(false)}
+                          >
+                            Dispatch Process
+                          </Link>
+                          <a
+                            href="/guide.html"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setIsResourcesOpen(false)}
+                          >
+                            User Guide
+                          </a>
+                          <a
+                            href="https://docs.google.com/presentation/d/1laZwZv-C_Vwuru4kbJzzQcH8HKy4HHYTdQ5r9FNIf_Y/edit?slide=id.p"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setIsResourcesOpen(false)}
+                          >
+                            Dispatch Training
+                          </a>
+                        </>
+                      )}
+                      {/* Show empty state for non-Siembra orgs without training */}
+                      {!isSiembraOrg && !features.trainings && (
+                        <p className="px-4 py-2 text-sm text-gray-500 italic">No resources available</p>
+                      )}
                     </div>
                   )}
                 </div>
@@ -509,44 +526,51 @@ export default function Header() {
                     Admin
                   </Link>
                 )}
-                {/* 8. Resources Group */}
-                <div className="space-y-1">
-                  <p className="px-2 py-1 text-xs font-medium text-gray-500 uppercase tracking-wider">Resources</p>
-                  {features.trainings && (
-                    <Link
-                      href="/training"
-                      className="block px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      Training
-                    </Link>
-                  )}
-                  <Link
-                    href="/resources"
-                    className="block px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Dispatch Process
-                  </Link>
-                  <a
-                    href="/guide.html"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg text-sm"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    User Guide
-                  </a>
-                  <a
-                    href="https://docs.google.com/presentation/d/1laZwZv-C_Vwuru4kbJzzQcH8HKy4HHYTdQ5r9FNIf_Y/edit?slide=id.p"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg text-sm"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Dispatch Training
-                  </a>
-                </div>
+                {/* 8. Resources Group - only show if there are resources to display */}
+                {(features.trainings || isSiembraOrg) && (
+                  <div className="space-y-1">
+                    <p className="px-2 py-1 text-xs font-medium text-gray-500 uppercase tracking-wider">Resources</p>
+                    {features.trainings && (
+                      <Link
+                        href="/training"
+                        className="block px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        Training
+                      </Link>
+                    )}
+                    {/* Siembra-specific resources */}
+                    {isSiembraOrg && (
+                      <>
+                        <Link
+                          href="/resources"
+                          className="block px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          Dispatch Process
+                        </Link>
+                        <a
+                          href="/guide.html"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg text-sm"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          User Guide
+                        </a>
+                        <a
+                          href="https://docs.google.com/presentation/d/1laZwZv-C_Vwuru4kbJzzQcH8HKy4HHYTdQ5r9FNIf_Y/edit?slide=id.p"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg text-sm"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          Dispatch Training
+                        </a>
+                      </>
+                    )}
+                  </div>
+                )}
                 {/* 9. Settings */}
                 <Link
                   href="/settings"
