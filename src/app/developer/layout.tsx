@@ -125,6 +125,7 @@ export default function DeveloperLayout({
 
       if (res.ok) {
         const data = await res.json();
+        console.log('Org switch response:', data);
         setCurrentOrgId(data.orgId);
         setCurrentOrgName(data.orgName);
 
@@ -154,6 +155,7 @@ export default function DeveloperLayout({
 
           // Redirect to new subdomain
           const newUrl = `${currentProtocol}//${data.orgSlug}.${baseDomain}${pathname}`;
+          console.log('Redirecting to:', newUrl);
           window.location.href = newUrl;
         } else {
           // For __none__ or missing slug, just reload with cookie
