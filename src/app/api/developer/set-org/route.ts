@@ -58,13 +58,18 @@ export async function POST(request: Request) {
       orgSlug,  // For subdomain redirect
     });
 
-    // Security: Improved cookie settings
+    // Cookie settings - conditional for dev vs production
+    // secure: true causes cookie to be silently dropped on non-HTTPS (localhost)
+    // sameSite: 'strict' can be too restrictive for some dev workflows
+    const isProduction = process.env.NODE_ENV === 'production';
     response.cookies.set('dev-org-override', orgId, {
       httpOnly: true,
-      secure: true, // Always use secure, even in development
-      sameSite: 'strict', // Strict to prevent CSRF
+      secure: isProduction,
+      sameSite: isProduction ? 'strict' : 'lax',
       maxAge: 60 * 60 * 8, // 8 hours (developer session only)
       path: '/',
+      // Optional: set domain for cross-subdomain switching
+      // domain: process.env.NEXT_PUBLIC_COOKIE_DOMAIN // e.g. '.dev.ripple-vms.com'
     });
 
     // Log the org override for security audit
