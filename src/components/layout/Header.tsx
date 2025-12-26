@@ -111,10 +111,9 @@ export default function Header() {
   const isSiembraOrg = orgSlug && SIEMBRA_ORG_SLUGS.includes(orgSlug);
 
   const handleLogout = async () => {
-    // Use redirect: false to handle manually, ensuring we stay on the current subdomain
-    // (avoids hardcoded NEXTAUTH_URL redirecting to wrong subdomain in multi-tenant setup)
-    await signOut({ redirect: false });
-    window.location.href = '/login';
+    // Let NextAuth handle the full signout + redirect flow
+    // This ensures the session is fully cleared before the redirect happens
+    await signOut({ callbackUrl: '/login' });
   };
 
   const isActive = (path: string) => pathname === path;
