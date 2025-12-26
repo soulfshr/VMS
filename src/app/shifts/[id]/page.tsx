@@ -247,7 +247,7 @@ export default function ShiftDetailPage() {
           <div>
             <p className="text-gray-600"><strong>Date:</strong> {formatDate(shift.date)}</p>
             <p className="text-gray-600"><strong>Time:</strong> {formatTime(shift.startTime)} - {formatTime(shift.endTime)}</p>
-            <p className="text-gray-600"><strong>Zone:</strong> {shift.zone.name}</p>
+            <p className="text-gray-600"><strong>Zone:</strong> {shift.zone?.name || 'No zone assigned'}</p>
             {shift.meetingLocation && (
               <p className="text-gray-600"><strong>Meeting Location:</strong> {shift.meetingLocation}</p>
             )}

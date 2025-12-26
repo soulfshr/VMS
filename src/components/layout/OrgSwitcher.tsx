@@ -25,10 +25,22 @@ export default function OrgSwitcher({ currentOrgName, onOrgSwitch }: OrgSwitcher
   const memberships = (session?.user?.memberships || []) as OrgMembership[];
   const approvedMemberships = memberships.filter(m => m.accountStatus === 'APPROVED');
   const currentOrgId = session?.user?.currentOrgId;
+  const currentOrg = approvedMemberships.find(m => m.organizationId === currentOrgId);
+  const displayName = currentOrgName || currentOrg?.organizationName;
 
-  // If user has only 1 org or no memberships, don't show the switcher
+  // If user has only 1 org, show org name without dropdown
   if (approvedMemberships.length <= 1) {
-    return null;
+    if (!displayName) {
+      return null;
+    }
+    return (
+      <div className="flex items-center gap-2 px-3 py-1.5 text-sm bg-cyan-50 rounded-lg border border-cyan-200">
+        <svg className="w-4 h-4 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+        </svg>
+        <span className="font-medium text-cyan-700 max-w-[150px] truncate">{displayName}</span>
+      </div>
+    );
   }
 
   const handleSwitch = async (orgId: string) => {
@@ -67,9 +79,6 @@ export default function OrgSwitcher({ currentOrgName, onOrgSwitch }: OrgSwitcher
     }
   };
 
-  const currentOrg = approvedMemberships.find(m => m.organizationId === currentOrgId);
-  const displayName = currentOrgName || currentOrg?.organizationName || 'Select Organization';
-
   return (
     <div className="relative">
       <button
@@ -79,7 +88,7 @@ export default function OrgSwitcher({ currentOrgName, onOrgSwitch }: OrgSwitcher
         <svg className="w-4 h-4 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
         </svg>
-        <span className="font-medium text-cyan-700 max-w-[120px] truncate">{displayName}</span>
+        <span className="font-medium text-cyan-700 max-w-[120px] truncate">{displayName || 'Select Organization'}</span>
         <svg
           className={`w-4 h-4 text-cyan-600 transition-transform ${isOpen ? 'rotate-180' : ''}`}
           fill="none"

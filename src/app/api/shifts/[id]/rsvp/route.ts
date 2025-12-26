@@ -126,6 +126,7 @@ export async function POST(
         shift: {
           include: {
             zone: true,
+            typeConfig: { select: { name: true } },
           },
         },
         user: {
@@ -155,13 +156,16 @@ export async function POST(
     // Send appropriate email based on auto-confirm setting
     // Use try/catch with await to ensure email completes before serverless function terminates
     try {
+      // Get shift type display name (prefer typeConfig, fallback to legacy type)
+      const shiftType = rsvp.shift.typeConfig?.name || rsvp.shift.type?.replace(/_/g, ' ') || 'Shift';
+
       if (autoConfirm) {
         // Send confirmation email with calendar invite
         await sendShiftConfirmationEmail({
           to: rsvp.user.email,
           volunteerName: rsvp.user.name,
           shiftTitle: rsvp.shift.title,
-          shiftType: rsvp.shift.type,
+          shiftType,
           shiftDate: rsvp.shift.date,
           startTime: rsvp.shift.startTime,
           endTime: rsvp.shift.endTime,
@@ -174,7 +178,7 @@ export async function POST(
           to: rsvp.user.email,
           volunteerName: rsvp.user.name,
           shiftTitle: rsvp.shift.title,
-          shiftType: rsvp.shift.type,
+          shiftType,
           shiftDate: rsvp.shift.date,
           startTime: rsvp.shift.startTime,
           endTime: rsvp.shift.endTime,
@@ -218,6 +222,7 @@ export async function DELETE(
         shift: {
           include: {
             zone: true,
+            typeConfig: { select: { name: true } },
           },
         },
         user: {
@@ -256,11 +261,12 @@ export async function DELETE(
 
     // Send cancellation email - await to ensure it completes before function terminates
     try {
+      const shiftType = rsvp.shift.typeConfig?.name || rsvp.shift.type?.replace(/_/g, ' ') || 'Shift';
       await sendShiftCancellationEmail({
         to: rsvp.user.email,
         volunteerName: rsvp.user.name,
         shiftTitle: rsvp.shift.title,
-        shiftType: rsvp.shift.type,
+        shiftType,
         shiftDate: rsvp.shift.date,
         startTime: rsvp.shift.startTime,
         endTime: rsvp.shift.endTime,
@@ -343,6 +349,7 @@ export async function PATCH(
         shift: {
           include: {
             zone: true,
+            typeConfig: { select: { name: true } },
           },
         },
         user: {
@@ -368,11 +375,12 @@ export async function PATCH(
     // Send confirmation email with calendar invite when status is changed to CONFIRMED
     if (statusUpdated === 'CONFIRMED') {
       try {
+        const shiftType = rsvp.shift.typeConfig?.name || rsvp.shift.type?.replace(/_/g, ' ') || 'Shift';
         await sendShiftConfirmationEmail({
           to: rsvp.user.email,
           volunteerName: rsvp.user.name,
           shiftTitle: rsvp.shift.title,
-          shiftType: rsvp.shift.type,
+          shiftType,
           shiftDate: rsvp.shift.date,
           startTime: rsvp.shift.startTime,
           endTime: rsvp.shift.endTime,

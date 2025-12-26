@@ -285,7 +285,7 @@ export default function RosterPage() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Roster Management</h1>
             <p className="text-gray-600">
-              {shift.title} • {shift.zone.name} • {formatDate(shift.date)} {formatTime(shift.startTime)}
+              {shift.title} • {shift.zone?.name || 'No zone'} • {formatDate(shift.date)} {formatTime(shift.startTime)}
             </p>
           </div>
           <div className="flex items-center gap-4">

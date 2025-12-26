@@ -29,7 +29,7 @@ interface ZoneData {
   shifts: Array<{
     id: string;
     title: string;
-    type: string;
+    type: string | null;
     typeConfigName: string | null;
   }>;
 }

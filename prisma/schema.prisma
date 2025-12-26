@@ -758,7 +758,7 @@ model Availability {
 
 model Shift {
   id              String      @id @default(cuid())
-  type            ShiftType   // Keep for backward compatibility
+  type            ShiftType?  // Legacy field, now optional - use typeConfigId instead
   title           String
   description     String?
 

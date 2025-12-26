@@ -35,6 +35,7 @@ export async function POST(
       where: { id: shiftId },
       include: {
         zone: true,
+        typeConfig: { select: { name: true } },
         volunteers: true,
       },
     });
@@ -121,11 +122,12 @@ export async function POST(
     });
 
     // Send invite email with calendar invite
+    const shiftType = shift.typeConfig?.name || shift.type?.replace(/_/g, ' ') || 'Shift';
     sendShiftInviteEmail({
       to: volunteer.email,
       volunteerName: volunteer.name,
       shiftTitle: shift.title,
-      shiftType: shift.type,
+      shiftType,
       shiftDate: shift.date,
       startTime: shift.startTime,
       endTime: shift.endTime,

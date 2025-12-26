@@ -43,6 +43,7 @@ export async function POST(request: NextRequest) {
         shift: {
           include: {
             zone: true,
+            typeConfig: { select: { name: true } },
           },
         },
       },
@@ -69,12 +70,13 @@ export async function POST(request: NextRequest) {
     const emailPromises: Promise<void>[] = [];
 
     for (const rsvp of pendingRsvps) {
+      const shiftType = rsvp.shift.typeConfig?.name || rsvp.shift.type?.replace(/_/g, ' ') || 'Shift';
       emailPromises.push(
         sendShiftConfirmationEmail({
           to: rsvp.user.email,
           volunteerName: rsvp.user.name,
           shiftTitle: rsvp.shift.title,
-          shiftType: rsvp.shift.type.replace(/_/g, ' '),
+          shiftType,
           shiftDate: rsvp.shift.date,
           startTime: rsvp.shift.startTime,
           endTime: rsvp.shift.endTime,

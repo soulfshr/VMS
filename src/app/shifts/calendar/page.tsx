@@ -114,13 +114,13 @@ export default function ShiftCalendarPage() {
       .filter(shift => filterStatus === 'all' || shift.status === filterStatus)
       .map(shift => ({
         id: shift.id,
-        title: `${shift.title} (${shift.zone.name})`,
+        title: `${shift.title}${shift.zone?.name ? ` (${shift.zone.name})` : ''}`,
         start: new Date(shift.startTime),
         end: new Date(shift.endTime),
         resource: {
           type: shift.type,
           status: shift.status,
-          zone: shift.zone.name,
+          zone: shift.zone?.name || 'No zone',
           spotsLeft: shift.spotsLeft,
           confirmedCount: shift.confirmedCount,
           maxVolunteers: shift.maxVolunteers,

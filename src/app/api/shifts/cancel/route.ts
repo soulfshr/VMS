@@ -34,6 +34,7 @@ export async function POST(request: NextRequest) {
       },
       include: {
         zone: true,
+        typeConfig: { select: { name: true } },
         volunteers: {
           where: {
             status: { in: ['PENDING', 'CONFIRMED'] },
@@ -71,13 +72,14 @@ export async function POST(request: NextRequest) {
     const emailPromises: Promise<void>[] = [];
 
     for (const shift of shifts) {
+      const shiftType = shift.typeConfig?.name || shift.type?.replace(/_/g, ' ') || 'Shift';
       for (const volunteer of shift.volunteers) {
         emailPromises.push(
           sendShiftCancelledByCoordinatorEmail({
             to: volunteer.user.email,
             volunteerName: volunteer.user.name,
             shiftTitle: shift.title,
-            shiftType: shift.type.replace(/_/g, ' '),
+            shiftType,
             shiftDate: shift.date,
             startTime: shift.startTime,
             endTime: shift.endTime,

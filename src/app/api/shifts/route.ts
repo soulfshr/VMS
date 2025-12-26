@@ -329,7 +329,7 @@ export async function POST(request: NextRequest) {
 
         return {
           organizationId: orgId,
-          type,
+          // type field is now optional - we use typeConfigId for dynamic types
           typeConfigId,
           title,
           description,
@@ -369,7 +369,7 @@ export async function POST(request: NextRequest) {
     const shift = await prisma.shift.create({
       data: {
         organizationId: orgId,
-        type,
+        // type field is now optional - we use typeConfigId for dynamic types
         typeConfigId,
         title,
         description,
