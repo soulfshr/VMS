@@ -35,9 +35,22 @@ export default auth(async function middleware(request: NextRequest) {
   const user = session?.user as SessionUser | undefined;
 
   // Public routes that don't need auth or org check
-  const publicRoutes = ['/', '/login', '/signup', '/about', '/privacy', '/terms', '/forgot-password', '/reset-password', '/set-password', '/pending', '/select-org', '/join'];
+  const publicRoutes = ['/', '/login', '/signup', '/about', '/privacy', '/terms', '/forgot-password', '/reset-password', '/set-password', '/pending', '/select-org', '/join', '/request-access'];
   const isPublicRoute = publicRoutes.some(route => pathname === route || pathname.startsWith(`${route}/`));
   const isPublicApi = pathname.startsWith('/api/public/') || pathname.startsWith('/api/auth/');
+
+  // Redirect authenticated users away from login/signup pages
+  if (isLoggedIn && user && (pathname === '/login' || pathname === '/signup')) {
+    const url = request.nextUrl.clone();
+    if (user.currentOrgId) {
+      url.pathname = '/dashboard';
+    } else if ((user.memberships || []).length > 0) {
+      url.pathname = '/select-org';
+    } else {
+      url.pathname = '/request-access';
+    }
+    return NextResponse.redirect(url);
+  }
 
   if (isPublicRoute || isPublicApi) {
     return NextResponse.next();
