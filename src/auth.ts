@@ -4,10 +4,8 @@ import bcrypt from 'bcryptjs';
 import { authConfig } from './auth.config';
 import { prisma } from '@/lib/db';
 import { auditAuth } from '@/lib/audit';
-import { headers } from 'next/headers';
-import { getOrgSlugFromHost } from '@/lib/org-context';
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
   ...authConfig,
   session: {
     strategy: 'jwt',
@@ -47,7 +45,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               },
             },
             // Include all APPROVED organization memberships for the user
-            // Multi-org: Only approved memberships should allow access
             memberships: {
               where: {
                 isActive: true,
@@ -98,7 +95,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           'LOGIN'
         );
 
-        // Get primary zone name (legacy, will be per-org in future)
+        // Get primary zone name
         const primaryZone = user.zones[0]?.zone?.name;
 
         // Build memberships array for the token
@@ -110,62 +107,26 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           accountStatus: m.accountStatus,
         }));
 
-        // Try to determine current org from request headers
-        let currentMembership = memberships[0]; // Default to first membership
-        try {
-          const headersList = await headers();
-          const host = headersList.get('host') || '';
-          const orgSlug = getOrgSlugFromHost(host);
-
-          if (orgSlug) {
-            const matchingMembership = memberships.find(
-              m => m.organizationSlug === orgSlug
-            );
-            if (matchingMembership) {
-              currentMembership = matchingMembership;
-            }
-          }
-        } catch {
-          // Headers may not be available in all contexts
-        }
-
-        // FALLBACK: If no memberships exist yet, use legacy User fields
-        // This supports the transition period before backfill
-        if (memberships.length === 0) {
-          // Map qualified roles from the new system (slugs like 'VERIFIER', 'ZONE_LEAD', 'DISPATCHER')
-          const qualifications = user.userQualifications.map(
-            uq => uq.qualifiedRole.slug as 'VERIFIER' | 'ZONE_LEAD' | 'DISPATCHER'
-          );
-
-          return {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            role: user.role, // Legacy User.role
-            zone: primaryZone,
-            qualifications,
-            accountStatus: user.accountStatus, // Legacy User.accountStatus
-            // No currentOrganizationId or memberships
-          };
-        }
-
-        // Map qualified roles from the new system
+        // Map qualified roles
         const qualifications = user.userQualifications.map(
           uq => uq.qualifiedRole.slug as 'VERIFIER' | 'ZONE_LEAD' | 'DISPATCHER'
         );
+
+        // Auto-select org if user has exactly 1 membership
+        // Otherwise, leave null - user will be redirected to /select-org
+        const autoSelectedOrg = memberships.length === 1 ? memberships[0] : null;
 
         return {
           id: user.id,
           email: user.email,
           name: user.name,
-          // Current org context
-          currentOrganizationId: currentMembership?.organizationId,
-          currentOrganizationSlug: currentMembership?.organizationSlug,
-          // Per-org data from current membership
-          role: currentMembership?.role || user.role,
+          // Auto-select org if single membership, otherwise null (user picks)
+          currentOrgId: autoSelectedOrg?.organizationId ?? null,
+          // Per-org data from auto-selected or first membership (for initial role)
+          role: autoSelectedOrg?.role ?? memberships[0]?.role ?? user.role,
           zone: primaryZone,
-          qualifications, // TODO: Make per-org
-          accountStatus: currentMembership?.accountStatus || user.accountStatus,
+          qualifications,
+          accountStatus: autoSelectedOrg?.accountStatus ?? memberships[0]?.accountStatus ?? user.accountStatus,
           // All memberships for org switcher
           memberships,
         };
@@ -173,14 +134,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       // On initial sign in, add user data to token
       if (user) {
         token.id = user.id;
         token.email = user.email!;
         token.name = user.name!;
-        token.currentOrganizationId = user.currentOrganizationId;
-        token.currentOrganizationSlug = user.currentOrganizationSlug;
+        token.currentOrgId = user.currentOrgId;
         token.role = user.role;
         token.zone = user.zone;
         token.qualifications = user.qualifications;
@@ -188,96 +148,28 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.memberships = user.memberships;
       }
 
-      // Refresh membership data periodically (not on every request)
-      // This avoids database queries on every page load
-      const REFRESH_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
-      const lastRefresh = token.membershipRefreshedAt as number | undefined;
-      const now = Date.now();
-      const shouldRefresh = !lastRefresh || (now - lastRefresh) > REFRESH_INTERVAL_MS;
+      // Handle explicit org selection via update() from /api/auth/set-org
+      if (trigger === 'update' && session?.currentOrgId !== undefined) {
+        const memberships = token.memberships as Array<{
+          organizationId: string;
+          organizationSlug: string;
+          organizationName: string;
+          role: string;
+          accountStatus: string;
+        }>;
 
-      const memberships = token.memberships as Array<{
-        organizationId: string;
-        organizationSlug: string;
-        organizationName: string;
-        role: string;
-        accountStatus: string;
-      }> | undefined;
+        // Find the membership for the selected org
+        const selectedMembership = memberships?.find(
+          m => m.organizationId === session.currentOrgId
+        );
 
-      // Always update current org context from headers (fast, no DB)
-      if (token.id && memberships && memberships.length > 0) {
-        try {
-          // Determine current org from request headers
-          const headersList = await headers();
-          const host = headersList.get('host') || '';
-          const orgSlug = getOrgSlugFromHost(host);
-
-          if (orgSlug) {
-            // Find membership matching current subdomain
-            const currentMembership = memberships.find(
-              m => m.organizationSlug === orgSlug
-            );
-
-            if (currentMembership) {
-              // Update org context (no DB query needed)
-              token.currentOrganizationId = currentMembership.organizationId;
-              token.currentOrganizationSlug = currentMembership.organizationSlug;
-
-              // Only refresh from database periodically
-              if (shouldRefresh) {
-                const freshMembership = await prisma.organizationMember.findUnique({
-                  where: {
-                    userId_organizationId: {
-                      userId: token.id as string,
-                      organizationId: currentMembership.organizationId,
-                    },
-                  },
-                  select: {
-                    role: true,
-                    accountStatus: true,
-                    isActive: true,
-                  },
-                });
-
-                if (freshMembership && freshMembership.isActive) {
-                  token.role = freshMembership.role;
-                  token.accountStatus = freshMembership.accountStatus;
-                  token.membershipRefreshedAt = now;
-                } else if (freshMembership && !freshMembership.isActive) {
-                  // Membership has been deactivated - clear org context
-                  token.currentOrganizationId = undefined;
-                  token.currentOrganizationSlug = undefined;
-                  token.membershipRefreshedAt = now;
-                }
-              }
-            } else {
-              // User is not a member of this org - clear org context
-              // The middleware will handle redirecting to request-access page
-              token.currentOrganizationId = undefined;
-              token.currentOrganizationSlug = undefined;
-            }
-          }
-        } catch (error) {
-          console.error('Error refreshing membership data:', error);
-        }
-      } else if (token.id && shouldRefresh) {
-        // FALLBACK: No memberships, use legacy User fields (only refresh periodically)
-        try {
-          const dbUser = await prisma.user.findUnique({
-            where: { id: token.id as string },
-            select: { accountStatus: true, isActive: true, role: true },
-          });
-          if (dbUser) {
-            token.accountStatus = dbUser.accountStatus;
-            token.role = dbUser.role;
-            token.membershipRefreshedAt = now;
-            // Also check if user has been deactivated
-            if (!dbUser.isActive) {
-              // Return empty token to force re-authentication
-              return {};
-            }
-          }
-        } catch (error) {
-          console.error('Error refreshing accountStatus:', error);
+        if (selectedMembership) {
+          token.currentOrgId = session.currentOrgId;
+          token.role = selectedMembership.role;
+          token.accountStatus = selectedMembership.accountStatus;
+        } else if (session.currentOrgId === null) {
+          // Explicitly clearing org (e.g., for org picker)
+          token.currentOrgId = null;
         }
       }
 
@@ -289,19 +181,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.id = token.id as string;
         session.user.email = token.email as string;
         session.user.name = token.name as string;
-        session.user.currentOrganizationId = token.currentOrganizationId as string | undefined;
-        session.user.currentOrganizationSlug = token.currentOrganizationSlug as string | undefined;
+        session.user.currentOrgId = (token.currentOrgId as string | null) ?? null;
         session.user.role = token.role as 'VOLUNTEER' | 'COORDINATOR' | 'DISPATCHER' | 'ADMINISTRATOR' | 'DEVELOPER';
         session.user.zone = token.zone as string | undefined;
         session.user.qualifications = (token.qualifications || []) as ('VERIFIER' | 'ZONE_LEAD' | 'DISPATCHER')[];
         session.user.accountStatus = token.accountStatus as 'PENDING' | 'APPROVED' | 'REJECTED' | undefined;
-        session.user.memberships = token.memberships as Array<{
+        session.user.memberships = (token.memberships || []) as Array<{
           organizationId: string;
           organizationSlug: string;
           organizationName: string;
           role: 'VOLUNTEER' | 'COORDINATOR' | 'DISPATCHER' | 'ADMINISTRATOR' | 'DEVELOPER';
           accountStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
-        }> | undefined;
+        }>;
       }
       return session;
     },

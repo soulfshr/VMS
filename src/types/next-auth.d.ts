@@ -17,18 +17,17 @@ declare module 'next-auth' {
       email: string;
       name: string;
 
-      // Current organization context (from subdomain at login)
-      currentOrganizationId?: string;
-      currentOrganizationSlug?: string;
+      // Currently selected organization (stored in session, not from subdomain)
+      currentOrgId: string | null;
 
-      // Per-org data (from OrganizationMember for current org)
+      // Per-org data (derived from currentOrgId + memberships)
       role: Role;
       zone?: string;
       qualifications: Qualification[];
       accountStatus?: AccountStatus;
 
-      // All memberships (for org switcher UI)
-      memberships?: OrgMembership[];
+      // All memberships (for org switcher and role lookup)
+      memberships: OrgMembership[];
     };
   }
 
@@ -37,9 +36,8 @@ declare module 'next-auth' {
     email: string;
     name: string;
 
-    // Current organization context
-    currentOrganizationId?: string;
-    currentOrganizationSlug?: string;
+    // Currently selected organization
+    currentOrgId: string | null;
 
     // Per-org data
     role: Role;
@@ -48,7 +46,7 @@ declare module 'next-auth' {
     accountStatus?: AccountStatus;
 
     // All memberships
-    memberships?: OrgMembership[];
+    memberships: OrgMembership[];
   }
 }
 
@@ -58,9 +56,8 @@ declare module 'next-auth/jwt' {
     email: string;
     name: string;
 
-    // Current organization context
-    currentOrganizationId?: string;
-    currentOrganizationSlug?: string;
+    // Currently selected organization
+    currentOrgId: string | null;
 
     // Per-org data
     role: Role;
@@ -69,6 +66,6 @@ declare module 'next-auth/jwt' {
     accountStatus?: AccountStatus;
 
     // All memberships
-    memberships?: OrgMembership[];
+    memberships: OrgMembership[];
   }
 }

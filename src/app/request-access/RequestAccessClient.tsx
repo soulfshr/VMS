@@ -28,7 +28,7 @@ export default function RequestAccessClient() {
     }
 
     // If user has current org context, they shouldn't be here
-    if (session?.user?.currentOrganizationId) {
+    if (session?.user?.currentOrgId) {
       router.push('/dashboard');
       return;
     }
@@ -40,26 +40,21 @@ export default function RequestAccessClient() {
     await signOut({ callbackUrl: '/login' });
   };
 
-  const handleGoToOrg = (slug: string) => {
-    // Redirect to the user's org subdomain
-    const currentHost = window.location.host;
-    const protocol = window.location.protocol;
+  const handleGoToOrg = async (orgId: string) => {
+    // Switch to the selected org via API
+    try {
+      const response = await fetch('/api/auth/set-org', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orgId }),
+      });
 
-    // Determine the base domain
-    let baseDomain: string;
-    if (currentHost.includes('localhost')) {
-      // Local dev - can't actually switch subdomains, just show message
-      alert(`In production, you would be redirected to ${slug}.ripple-vms.com`);
-      return;
-    } else if (currentHost.includes('.dev.')) {
-      // Dev environment: *.dev.ripple-vms.com
-      baseDomain = 'dev.ripple-vms.com';
-    } else {
-      // Production: *.ripple-vms.com
-      baseDomain = 'ripple-vms.com';
+      if (response.ok) {
+        window.location.href = '/dashboard';
+      }
+    } catch (error) {
+      console.error('Failed to switch org:', error);
     }
-
-    window.location.href = `${protocol}//${slug}.${baseDomain}/dashboard`;
   };
 
   if (loading || status === 'loading') {

@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import HelpButton from '@/components/onboarding/HelpButton';
+import OrgSwitcher from '@/components/layout/OrgSwitcher';
 import { useFeatures } from '@/hooks/useFeatures';
 
 // Environment detection
@@ -140,7 +141,7 @@ export default function Header() {
       <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center h-24">
-          {/* Logo and Org Name */}
+          {/* Logo and Org Switcher */}
           <div className="flex items-center gap-3">
             <Link href={user ? "/dashboard" : "/"} className="hover:opacity-90 transition-opacity">
               <Image
@@ -152,12 +153,12 @@ export default function Header() {
                 priority
               />
             </Link>
-            {orgName && user && (
+            {user && (
               <>
                 <div className="h-10 w-px bg-gray-300 hidden sm:block" />
-                <span className="text-gray-700 font-medium text-sm hidden sm:block max-w-[150px] truncate" title={orgName}>
-                  {orgName}
-                </span>
+                <div className="hidden sm:block">
+                  <OrgSwitcher currentOrgName={orgName} />
+                </div>
               </>
             )}
           </div>

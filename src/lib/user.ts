@@ -7,60 +7,28 @@ import type { User, OrganizationMember, UserQualification, QualifiedRole, Organi
  * Get the database user for the current session.
  * User must exist in database (no auto-creation with NextAuth).
  *
- * MULTI-ORG AWARE: When org context is available, this function overlays
- * the membership role/accountStatus onto the returned user object. This
- * allows existing role checks (user.role) to work correctly with multi-org.
- *
- * OPTIMIZATION: If session already has org-specific role (from JWT callback),
- * we use that instead of querying the membership table again.
+ * MULTI-ORG AWARE: Overlays the session's role/accountStatus onto the
+ * returned user object. The session already contains org-specific role
+ * from the selected organization's membership.
  */
 export async function getDbUser(): Promise<User | null> {
   const sessionUser = await getCurrentUser();
   if (!sessionUser) return null;
 
-  // First, get the base user from the database (required for all user data)
+  // Get the base user from the database
   const dbUser = await prisma.user.findUnique({
     where: { id: sessionUser.id },
   });
 
   if (!dbUser) return null;
 
-  // OPTIMIZATION: If session already has org-specific role from JWT,
-  // use that instead of querying membership table again
-  // The JWT callback already refreshes this data periodically
-  if (sessionUser.currentOrganizationId && sessionUser.role) {
+  // Overlay session's org-specific role (already set by auth from selected org's membership)
+  if (sessionUser.currentOrgId && sessionUser.role) {
     return {
       ...dbUser,
       role: sessionUser.role,
       accountStatus: sessionUser.accountStatus || dbUser.accountStatus,
     };
-  }
-
-  // Legacy path: Get org context and overlay membership data
-  const orgId = await getCurrentOrgId();
-
-  // If we have org context but not from session, get membership to overlay org-specific data
-  if (orgId && orgId !== '__none__') {
-    const membership = await prisma.organizationMember.findUnique({
-      where: {
-        userId_organizationId: {
-          userId: sessionUser.id,
-          organizationId: orgId,
-        },
-      },
-    });
-
-    if (membership && membership.isActive) {
-      // Return user with membership role/status overlaid
-      return {
-        ...dbUser,
-        role: membership.role,
-        accountStatus: membership.accountStatus,
-        // These are per-org in membership but we keep them on user for compatibility
-        notes: membership.notes ?? dbUser.notes,
-        intakeResponses: membership.intakeResponses ?? dbUser.intakeResponses,
-      };
-    }
   }
 
   return dbUser;
@@ -69,8 +37,7 @@ export async function getDbUser(): Promise<User | null> {
 /**
  * Get the database user with their zones
  *
- * MULTI-ORG AWARE: When org context is available, overlays membership role.
- * OPTIMIZATION: Uses session role if available to avoid extra DB query.
+ * MULTI-ORG AWARE: Overlays session's org-specific role.
  */
 export async function getDbUserWithZones() {
   const sessionUser = await getCurrentUser();
@@ -94,37 +61,13 @@ export async function getDbUserWithZones() {
 
   if (!dbUser) return null;
 
-  // OPTIMIZATION: If session already has org-specific role from JWT, use that
-  if (sessionUser.currentOrganizationId && sessionUser.role) {
+  // Overlay session's org-specific role
+  if (sessionUser.currentOrgId && sessionUser.role) {
     return {
       ...dbUser,
       role: sessionUser.role,
       accountStatus: sessionUser.accountStatus || dbUser.accountStatus,
     };
-  }
-
-  // Legacy path: Get org context and overlay membership data
-  const orgId = await getCurrentOrgId();
-
-  if (orgId && orgId !== '__none__') {
-    const membership = await prisma.organizationMember.findUnique({
-      where: {
-        userId_organizationId: {
-          userId: sessionUser.id,
-          organizationId: orgId,
-        },
-      },
-    });
-
-    if (membership && membership.isActive) {
-      return {
-        ...dbUser,
-        role: membership.role,
-        accountStatus: membership.accountStatus,
-        notes: membership.notes ?? dbUser.notes,
-        intakeResponses: membership.intakeResponses ?? dbUser.intakeResponses,
-      };
-    }
   }
 
   return dbUser;
@@ -148,65 +91,14 @@ export type MembershipContext = {
  * Returns null if:
  * - User is not logged in
  * - User doesn't have a membership in the current org
- * - No org context available
- *
- * For legacy support during migration, falls back to getDbUser() if needed.
+ * - No org context available (user hasn't selected an org)
  */
 export async function getDbUserMembership(): Promise<MembershipContext | null> {
   const sessionUser = await getCurrentUser();
   if (!sessionUser) return null;
 
   const orgId = await getCurrentOrgId();
-
-  // If no org context, fall back to legacy behavior
-  if (!orgId) {
-    const user = await getDbUser();
-    if (!user) return null;
-
-    // Check if user has any memberships - if so, they need org context
-    const hasMemberships = await prisma.organizationMember.count({
-      where: { userId: user.id, isActive: true },
-    });
-
-    if (hasMemberships > 0) {
-      // User has memberships but no org context - this shouldn't happen normally
-      // The middleware should have redirected them
-      return null;
-    }
-
-    // Legacy user without memberships - create a synthetic membership context
-    // This allows the migration to proceed gradually
-    if (user.organizationId) {
-      const org = await prisma.organization.findUnique({
-        where: { id: user.organizationId },
-      });
-
-      if (org) {
-        return {
-          user,
-          membership: {
-            id: 'legacy',
-            userId: user.id,
-            organizationId: user.organizationId,
-            organization: org,
-            role: user.role,
-            accountStatus: user.accountStatus,
-            applicationDate: user.applicationDate,
-            approvedById: user.approvedById,
-            approvedAt: user.approvedAt,
-            rejectionReason: user.rejectionReason,
-            intakeResponses: user.intakeResponses,
-            notes: user.notes,
-            isActive: true,
-            createdAt: user.createdAt,
-            updatedAt: user.updatedAt,
-          } as MembershipContext['membership'],
-        };
-      }
-    }
-
-    return null;
-  }
+  if (!orgId) return null;
 
   // Look up membership for current org
   const membership = await prisma.organizationMember.findUnique({
