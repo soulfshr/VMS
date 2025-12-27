@@ -7,7 +7,6 @@ interface Settings {
   id: string;
   dispatcherSchedulingMode: 'REGIONAL' | 'COUNTY' | 'ZONE';
   schedulingMode: 'SIMPLE' | 'FULL';
-  autoConfirmRsvp: boolean;
 }
 
 export default function SettingsSchedulingPage() {
@@ -99,30 +98,6 @@ export default function SettingsSchedulingPage() {
     }
   };
 
-  const handleToggleAutoConfirm = async () => {
-    if (!settings) return;
-
-    setIsSaving(true);
-    setMessage(null);
-
-    try {
-      const res = await fetch('/api/admin/settings', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ autoConfirmRsvp: !settings.autoConfirmRsvp }),
-      });
-
-      if (!res.ok) throw new Error('Failed to update settings');
-
-      const updated = await res.json();
-      setSettings(prev => prev ? { ...prev, autoConfirmRsvp: updated.autoConfirmRsvp } : null);
-      setMessage({ type: 'success', text: 'Auto-confirm setting updated' });
-    } catch (err) {
-      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to update settings' });
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   if (isLoading) {
     return (
@@ -131,8 +106,6 @@ export default function SettingsSchedulingPage() {
       </div>
     );
   }
-
-  const isAdmin = ['ADMINISTRATOR', 'DEVELOPER'].includes(userRole);
 
   return (
     <div className="divide-y divide-gray-200">
@@ -265,42 +238,6 @@ export default function SettingsSchedulingPage() {
           </label>
         </div>
       </div>
-
-      {/* Auto-Confirm RSVPs - Only for Admins */}
-      {isAdmin && (
-        <div className="p-6">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <h3 className="font-semibold text-gray-900">Auto-Confirm RSVPs</h3>
-              <p className="text-sm text-gray-600 mt-1 max-w-lg">
-                When enabled, volunteer signups are automatically confirmed without coordinator approval.
-              </p>
-            </div>
-            <button
-              onClick={handleToggleAutoConfirm}
-              disabled={isSaving}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                settings?.autoConfirmRsvp ? 'bg-cyan-600' : 'bg-gray-200'
-              } ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  settings?.autoConfirmRsvp ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
-          </div>
-          <div className="mt-2">
-            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-              settings?.autoConfirmRsvp
-                ? 'bg-green-100 text-green-800'
-                : 'bg-yellow-100 text-yellow-800'
-            }`}>
-              {settings?.autoConfirmRsvp ? 'Auto-Confirm Enabled' : 'Manual Approval Required'}
-            </span>
-          </div>
-        </div>
-      )}
 
       {/* Info Box */}
       <div className="p-6 bg-blue-50">

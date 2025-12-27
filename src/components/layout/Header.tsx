@@ -118,6 +118,24 @@ export default function Header() {
 
   const isActive = (path: string) => pathname === path;
 
+  // Role-based settings routing
+  const getSettingsUrl = () => {
+    if (!user) return '/settings';
+
+    switch (user.role) {
+      case 'DEVELOPER':
+        return '/settings/system';
+      case 'ADMINISTRATOR':
+        return '/admin/settings';
+      case 'COORDINATOR':
+      case 'DISPATCHER':
+        return '/settings/scheduling';
+      case 'VOLUNTEER':
+      default:
+        return '/settings/profile';
+    }
+  };
+
   return (
     <>
       {/* CRITICAL: Environment mismatch warning */}
@@ -330,9 +348,9 @@ export default function Header() {
                 </div>
                 {/* 9. Settings (icon) */}
                 <Link
-                  href="/settings"
+                  href={getSettingsUrl()}
                   className={`transition-colors ${
-                    pathname.startsWith('/settings')
+                    pathname.startsWith('/settings') || pathname.startsWith('/admin/settings')
                       ? 'text-cyan-700'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
@@ -573,7 +591,7 @@ export default function Header() {
                 )}
                 {/* 9. Settings */}
                 <Link
-                  href="/settings"
+                  href={getSettingsUrl()}
                   className="flex items-center gap-2 px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
                   onClick={() => setIsMenuOpen(false)}
                 >
