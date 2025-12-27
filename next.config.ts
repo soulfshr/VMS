@@ -26,11 +26,6 @@ const nextConfig: NextConfig = {
         permanent: true,
       },
       {
-        source: '/admin/settings',
-        destination: '/settings/organization',
-        permanent: true,
-      },
-      {
         source: '/developer/feature-flags',
         destination: '/settings/features',
         permanent: true,
