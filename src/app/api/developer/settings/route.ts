@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
+import { getCurrentOrgId, getOrgIdForCreate } from '@/lib/org-context';
 
 /**
  * GET /api/developer/settings - Get developer-only settings
@@ -12,7 +13,10 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const orgId = await getCurrentOrgId();
+
   const settings = await prisma.organizationSettings.findFirst({
+    where: orgId ? { organizationId: orgId } : {},
     select: {
       feedbackEmail: true,
     }
@@ -45,8 +49,12 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
-    // Get or create the settings record
-    const existingSettings = await prisma.organizationSettings.findFirst();
+    const orgId = await getCurrentOrgId();
+
+    // Get or create the settings record (scoped to org)
+    const existingSettings = await prisma.organizationSettings.findFirst({
+      where: orgId ? { organizationId: orgId } : {},
+    });
 
     if (existingSettings) {
       await prisma.organizationSettings.update({
@@ -56,8 +64,10 @@ export async function PATCH(request: NextRequest) {
         }
       });
     } else {
+      const createOrgId = await getOrgIdForCreate();
       await prisma.organizationSettings.create({
         data: {
+          organizationId: createOrgId,
           feedbackEmail: feedbackEmail?.trim() || null,
         }
       });
