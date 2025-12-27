@@ -16,13 +16,13 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const includeInactive = searchParams.get('includeInactive') === 'true';
 
+    // Strict org scoping - only show zones for the current org
+    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
+
     const zones = await prisma.zone.findMany({
       where: {
         ...(includeInactive ? {} : { isActive: true }),
-        // Multi-tenant: scope to current org (or null for legacy data)
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
+        ...orgFilter,
       },
       orderBy: [
         { county: 'asc' },

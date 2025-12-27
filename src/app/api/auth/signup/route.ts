@@ -86,14 +86,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify zones exist and belong to the current organization
+    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
     const zones = await prisma.zone.findMany({
       where: {
         id: { in: zoneIds },
         isActive: true,
-        // Multi-tenant: scope to current org (or null for legacy data)
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
+        // Multi-tenant: strict org scoping
+        ...orgFilter,
       },
     });
 

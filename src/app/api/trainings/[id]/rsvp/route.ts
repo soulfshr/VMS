@@ -17,15 +17,13 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     const { id: sessionId } = await params;
     const orgId = await getCurrentOrgId();
+    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
 
     // Check if session exists, is published, and belongs to current org
     const session = await prisma.trainingSession.findFirst({
       where: {
         id: sessionId,
-        // Multi-org: Verify session belongs to current org (or is legacy with no org)
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
+        ...orgFilter,
       },
       include: {
         attendees: true,

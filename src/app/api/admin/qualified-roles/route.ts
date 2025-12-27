@@ -12,13 +12,12 @@ export async function GET() {
     }
 
     const orgId = await getCurrentOrgId();
+    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
 
     const qualifiedRoles = await prisma.qualifiedRole.findMany({
       where: {
-        // Multi-tenant: scope to current org (or null for legacy data)
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
+        // Multi-tenant: scope to current org
+        ...orgFilter,
       },
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       include: {
@@ -61,14 +60,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Check for duplicate name or slug within the organization
+    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
     const existing = await prisma.qualifiedRole.findFirst({
       where: {
         OR: [{ name }, { slug: slug.toUpperCase() }],
-        AND: {
-          OR: orgId
-            ? [{ organizationId: orgId }, { organizationId: null }]
-            : [{ organizationId: null }],
-        },
+        ...orgFilter,
       },
     });
 
@@ -82,9 +78,7 @@ export async function POST(request: NextRequest) {
     // Get max sort order within the organization
     const maxSort = await prisma.qualifiedRole.aggregate({
       where: {
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
+        ...orgFilter,
       },
       _max: { sortOrder: true },
     });

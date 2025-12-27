@@ -130,14 +130,14 @@ export async function GET(request: NextRequest) {
 
     const orgId = await getCurrentOrgId();
 
-    // Build query filters with org scoping
+    // Build query filters with strict org scoping
+    // Only return data for the current organization - no legacy fallback to prevent cross-org data leaks
+    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
+
     const shiftsWhere: Record<string, unknown> = {
       date: { gte: start, lte: end },
       status: 'PUBLISHED',
-      // Multi-tenant: scope to current org (or null for legacy data)
-      OR: orgId
-        ? [{ organizationId: orgId }, { organizationId: null }]
-        : [{ organizationId: null }],
+      ...orgFilter,
     };
     if (county && county !== 'all') {
       shiftsWhere.zone = { county };
@@ -145,9 +145,7 @@ export async function GET(request: NextRequest) {
 
     const dispatcherWhere: Record<string, unknown> = {
       date: { gte: start, lte: end },
-      OR: orgId
-        ? [{ organizationId: orgId }, { organizationId: null }]
-        : [{ organizationId: null }],
+      ...orgFilter,
     };
     if (county && county !== 'all') {
       dispatcherWhere.county = county;
@@ -156,18 +154,14 @@ export async function GET(request: NextRequest) {
     // Regional lead assignments (day-level, no county filter)
     const regionalLeadWhere: Record<string, unknown> = {
       date: { gte: start, lte: end },
-      OR: orgId
-        ? [{ organizationId: orgId }, { organizationId: null }]
-        : [{ organizationId: null }],
+      ...orgFilter,
     };
 
     // Regional backup dispatchers (county = 'REGIONAL', available region-wide)
     const regionalBackupWhere: Record<string, unknown> = {
       date: { gte: start, lte: end },
       county: 'REGIONAL',
-      OR: orgId
-        ? [{ organizationId: orgId }, { organizationId: null }]
-        : [{ organizationId: null }],
+      ...orgFilter,
     };
 
     // Run all queries in PARALLEL for better performance
@@ -175,9 +169,7 @@ export async function GET(request: NextRequest) {
       prisma.zone.findMany({
         where: {
           isActive: true,
-          OR: orgId
-            ? [{ organizationId: orgId }, { organizationId: null }]
-            : [{ organizationId: null }],
+          ...orgFilter,
         },
         orderBy: { name: 'asc' },
       }),
@@ -261,9 +253,7 @@ export async function GET(request: NextRequest) {
         where: {
           date: { gte: start, lte: end },
           county: 'ALL',
-          OR: orgId
-            ? [{ organizationId: orgId }, { organizationId: null }]
-            : [{ organizationId: null }],
+          ...orgFilter,
         },
         include: {
           user: {

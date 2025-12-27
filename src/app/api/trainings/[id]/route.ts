@@ -17,13 +17,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const { id } = await params;
     const orgId = await getCurrentOrgId();
+    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
 
     const session = await prisma.trainingSession.findFirst({
       where: {
         id,
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
+        ...orgFilter,
       },
       include: {
         trainingType: {
@@ -86,15 +85,14 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     const { id } = await params;
     const orgId = await getCurrentOrgId();
+    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
     const body = await request.json();
 
     // Check if session exists and belongs to current org
     const existing = await prisma.trainingSession.findFirst({
       where: {
         id,
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
+        ...orgFilter,
       },
     });
     if (!existing) {
@@ -160,14 +158,13 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     const { id } = await params;
     const orgId = await getCurrentOrgId();
+    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
 
     // Check if session exists and belongs to current org
     const existing = await prisma.trainingSession.findFirst({
       where: {
         id,
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
+        ...orgFilter,
       },
       include: {
         attendees: true,

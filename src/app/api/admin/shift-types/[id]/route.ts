@@ -20,14 +20,13 @@ export async function GET(request: Request, { params }: RouteParams) {
 
     const { id } = await params;
     const orgId = await getCurrentOrgId();
+    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
 
     const shiftType = await prisma.shiftTypeConfig.findFirst({
       where: {
         id,
         // Multi-tenant: verify shift type belongs to current org
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
+        ...orgFilter,
       },
       include: {
         qualificationRequirements: true,  // Keep for backwards compatibility
@@ -73,6 +72,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
 
     const { id } = await params;
     const orgId = await getCurrentOrgId();
+    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
     const body = await request.json();
     const {
       name,
@@ -90,9 +90,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
     const existing = await prisma.shiftTypeConfig.findFirst({
       where: {
         id,
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
+        ...orgFilter,
       },
     });
     if (!existing) {
@@ -105,9 +103,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
         where: {
           name,
           NOT: { id },
-          OR: orgId
-            ? [{ organizationId: orgId }, { organizationId: null }]
-            : [{ organizationId: null }],
+          ...orgFilter,
         },
       });
       if (duplicate) {
@@ -208,14 +204,13 @@ export async function DELETE(request: Request, { params }: RouteParams) {
 
     const { id } = await params;
     const orgId = await getCurrentOrgId();
+    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
 
     // Check if shift type exists and belongs to current org
     const existing = await prisma.shiftTypeConfig.findFirst({
       where: {
         id,
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
+        ...orgFilter,
       },
       include: {
         _count: {

@@ -217,6 +217,7 @@ export async function POST(request: NextRequest) {
     // Create email blast record
     const blast = await prisma.emailBlast.create({
       data: {
+        organizationId: orgId,
         subject,
         body: finalBody,
         template,
@@ -453,8 +454,13 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20');
     const offset = parseInt(searchParams.get('offset') || '0');
 
+    // Strict org scoping - only show email blasts for the current org
+    const orgId = await getCurrentOrgId();
+    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
+
     const [blasts, total] = await Promise.all([
       prisma.emailBlast.findMany({
+        where: orgFilter,
         select: {
           id: true,
           subject: true,
@@ -475,7 +481,7 @@ export async function GET(request: NextRequest) {
         take: limit,
         skip: offset,
       }),
-      prisma.emailBlast.count(),
+      prisma.emailBlast.count({ where: orgFilter }),
     ]);
 
     return NextResponse.json({

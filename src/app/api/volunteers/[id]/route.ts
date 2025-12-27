@@ -31,6 +31,7 @@ export async function PATCH(
 
     const { id } = await params;
     const orgId = await getCurrentOrgId();
+    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
     const body = await request.json();
 
     // Non-admins have limited fields they can update
@@ -54,9 +55,7 @@ export async function PATCH(
     const volunteer = await prisma.user.findFirst({
       where: {
         id,
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
+        ...orgFilter,
       },
     });
 
@@ -473,14 +472,13 @@ export async function GET(
 
     const { id } = await params;
     const orgId = await getCurrentOrgId();
+    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
 
     const volunteer = await prisma.user.findFirst({
       where: {
         id,
         // Multi-tenant: verify volunteer belongs to current org
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
+        ...orgFilter,
       },
       include: {
         zones: {
@@ -612,6 +610,7 @@ export async function DELETE(
 
     const { id } = await params;
     const orgId = await getCurrentOrgId();
+    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
 
     // Prevent admin from deleting themselves
     if (id === user.id) {
@@ -625,9 +624,7 @@ export async function DELETE(
     const volunteer = await prisma.user.findFirst({
       where: {
         id,
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
+        ...orgFilter,
       },
     });
 

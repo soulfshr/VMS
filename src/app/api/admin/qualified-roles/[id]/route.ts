@@ -17,14 +17,13 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const { id } = await params;
     const orgId = await getCurrentOrgId();
+    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
 
     const qualifiedRole = await prisma.qualifiedRole.findFirst({
       where: {
         id,
         // Multi-tenant: verify role belongs to current org
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
+        ...orgFilter,
       },
       include: {
         _count: {
@@ -65,15 +64,14 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     const { id } = await params;
     const orgId = await getCurrentOrgId();
+    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
     const body = await request.json();
 
     // Check if qualified role exists and belongs to current org
     const existing = await prisma.qualifiedRole.findFirst({
       where: {
         id,
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
+        ...orgFilter,
       },
     });
 
@@ -98,9 +96,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         where: {
           name: body.name,
           id: { not: id },
-          OR: orgId
-            ? [{ organizationId: orgId }, { organizationId: null }]
-            : [{ organizationId: null }],
+          ...orgFilter,
         },
       });
       if (duplicate) {
@@ -168,14 +164,13 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     const { id } = await params;
     const orgId = await getCurrentOrgId();
+    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
 
     // Check usage and verify role belongs to current org
     const qualifiedRole = await prisma.qualifiedRole.findFirst({
       where: {
         id,
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
+        ...orgFilter,
       },
       include: {
         _count: {

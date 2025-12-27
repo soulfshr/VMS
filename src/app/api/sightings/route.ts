@@ -210,13 +210,12 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get('limit');
 
     const orgId = await getCurrentOrgId();
+    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
 
     // Build filter conditions with org scoping
     const where: Record<string, unknown> = {
-      // Multi-tenant: scope to current org (or null for legacy data)
-      OR: orgId
-        ? [{ organizationId: orgId }, { organizationId: null }]
-        : [{ organizationId: null }],
+      // Multi-tenant: strict scope to current org
+      ...orgFilter,
     };
 
     if (status && status !== 'all') {
@@ -238,9 +237,7 @@ export async function GET(request: NextRequest) {
     const counts = await prisma.iceSighting.groupBy({
       by: ['status'],
       where: {
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
+        ...orgFilter,
       },
       _count: true,
     });

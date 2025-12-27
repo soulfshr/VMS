@@ -62,15 +62,14 @@ export async function POST(
     }
 
     const orgId = await getCurrentOrgId();
+    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
 
     // Check if shift exists, is published, and belongs to current org
     const shift = await prisma.shift.findFirst({
       where: {
         id: shiftId,
-        // Multi-org: Verify shift belongs to current org (or is legacy with no org)
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
+        // Multi-org: Verify shift belongs to current org
+        ...orgFilter,
       },
       include: {
         volunteers: true,

@@ -12,13 +12,12 @@ export async function GET() {
     }
 
     const orgId = await getCurrentOrgId();
+    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
 
     const trainingTypes = await prisma.trainingType.findMany({
       where: {
         isActive: true,
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
+        ...orgFilter,
       },
       select: {
         id: true,

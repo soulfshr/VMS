@@ -7,14 +7,13 @@ import { getCurrentOrgId } from '@/lib/org-context';
 export async function GET() {
   try {
     const orgId = await getCurrentOrgId();
+    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
 
     const questions = await prisma.intakeQuestion.findMany({
       where: {
         isActive: true,
-        // Multi-tenant: scope to current org (or null for legacy data)
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
+        // Multi-tenant: scope to current org
+        ...orgFilter,
       },
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
       select: {

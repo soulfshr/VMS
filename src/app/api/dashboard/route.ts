@@ -172,11 +172,12 @@ export async function GET() {
     // Get org context for org-scoped queries
     const orgId = await getCurrentOrgId();
 
-    // Check scheduling mode - in SIMPLE mode, only show available shifts to leads
+    // Check scheduling mode - in SIMPLE mode, show all available shifts
     const settings = await prisma.organizationSettings.findFirst({
       where: orgId ? { organizationId: orgId } : {},
     });
     const schedulingMode = settings?.schedulingMode || 'SIMPLE';
+    const primarySchedulingModel = settings?.primarySchedulingModel || 'COVERAGE_GRID';
     const isAdmin = ['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role);
 
     // Check if user has lead qualifications from their qualified roles
@@ -184,21 +185,27 @@ export async function GET() {
     const hasLeadQualification = user.userQualifications?.some(uq =>
       uq.qualifiedRole.slug === 'DISPATCHER' || uq.qualifiedRole.slug === 'ZONE_LEAD'
     );
-    const canBrowseShifts = schedulingMode === 'FULL' || isAdmin || hasLeadQualification;
+
+    // In SHIFTS model (simple scheduling), anyone can browse shifts
+    // In COVERAGE_GRID model (full scheduling), only leads/admins can browse
+    const canBrowseShifts = primarySchedulingModel === 'SHIFTS' || schedulingMode === 'FULL' || isAdmin || hasLeadQualification;
 
     // Get user's specific qualifications for filtering openings
     const userHasZoneLeadQual = user.userQualifications?.some(uq => uq.qualifiedRole.slug === 'ZONE_LEAD');
     const userHasVerifierQual = user.userQualifications?.some(uq => uq.qualifiedRole.slug === 'VERIFIER');
+    const userHasAnyQualification = user.userQualifications && user.userQualifications.length > 0;
 
     // Determine relevant qualifications based on scheduling mode
-    // SIMPLE mode: Only Zone Lead openings
-    // FULL mode: All qualified role openings (Zone Lead + Verifier spots)
+    // SHIFTS model: Show all shifts with open spots to qualified users
+    // COVERAGE_GRID model: Only Zone Lead openings (SIMPLE) or all qualified role openings (FULL)
     const showZoneLeadOpenings = userHasZoneLeadQual;
     const showVerifierOpenings = schedulingMode === 'FULL' && userHasVerifierQual;
+    // For SHIFTS model, show all shifts with open spots
+    const showAllAvailableShifts = primarySchedulingModel === 'SHIFTS' && userHasAnyQualification;
 
     // Get qualified openings - shifts matching user's qualifications
     // Only fetch if user can browse shifts AND has relevant qualifications
-    const canSeeOpenings = canBrowseShifts && (showZoneLeadOpenings || showVerifierOpenings);
+    const canSeeOpenings = canBrowseShifts && (showZoneLeadOpenings || showVerifierOpenings || showAllAvailableShifts);
 
     const allQualifiedOpenings = canSeeOpenings ? await prisma.shift.findMany({
       where: {
@@ -237,6 +244,11 @@ export async function GET() {
     const qualifiedOpeningsFiltered = allQualifiedOpenings.filter((shift: ShiftWithVolunteers) => {
       const needsZoneLead = !shift.volunteers.some(v => v.isZoneLead);
       const hasOpenSpots = shift.volunteers.length < shift.maxVolunteers;
+
+      // For SHIFTS model, show all shifts with open spots
+      if (showAllAvailableShifts && hasOpenSpots) {
+        return true;
+      }
 
       // If user has zone lead qualification and shift needs zone lead
       if (showZoneLeadOpenings && needsZoneLead) {

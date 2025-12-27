@@ -18,6 +18,7 @@ export async function GET(
 
     const { id } = await params;
     const orgId = await getCurrentOrgId();
+    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
 
     // Check scheduling mode - in SIMPLE mode, restrict access for non-qualified users
     const settings = await prisma.organizationSettings.findFirst({
@@ -44,9 +45,7 @@ export async function GET(
       where: {
         id,
         // Multi-tenant: verify shift belongs to current org
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
+        ...orgFilter,
       },
       include: {
         zone: true,
@@ -153,15 +152,14 @@ export async function PUT(
 
     const { id } = await params;
     const orgId = await getCurrentOrgId();
+    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
     const body = await request.json();
 
     // Check if shift exists and belongs to current org
     const existing = await prisma.shift.findFirst({
       where: {
         id,
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
+        ...orgFilter,
       },
     });
 

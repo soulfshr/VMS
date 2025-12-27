@@ -49,12 +49,12 @@ export async function GET(request: NextRequest) {
     // only show shifts they're already signed up for
     const simpleRestricted = schedulingMode === 'SIMPLE' && !isAdmin && !hasLeadQualification;
 
+    // Strict org scoping - only show shifts for the current org
+    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
+
     // Build filter conditions with org scoping
     const where: Record<string, unknown> = {
-      // Multi-tenant: scope to current org (or null for legacy data)
-      OR: orgId
-        ? [{ organizationId: orgId }, { organizationId: null }]
-        : [{ organizationId: null }],
+      ...orgFilter,
     };
 
     // Support both old enum filter and new typeConfigId filter
@@ -296,12 +296,11 @@ export async function POST(request: NextRequest) {
     const orgId = await getOrgIdForCreate();
 
     // Look up the ShiftTypeConfig by slug to get its ID (scoped to current org)
+    const typeOrgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
     const typeConfig = await prisma.shiftTypeConfig.findFirst({
       where: {
         slug: type,
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
+        ...typeOrgFilter,
       },
     });
     const typeConfigId = typeConfig?.id || null;

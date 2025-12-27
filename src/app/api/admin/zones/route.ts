@@ -18,13 +18,11 @@ export async function GET() {
 
     const orgId = await getCurrentOrgId();
 
+    // Strict org scoping - only show zones for the current org
+    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
+
     const zones = await prisma.zone.findMany({
-      where: {
-        // Multi-tenant: scope to current org (or null for legacy data)
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
-      },
+      where: orgFilter,
       include: {
         _count: {
           select: {
@@ -65,12 +63,11 @@ export async function POST(request: Request) {
     }
 
     // Check for duplicate name within the organization
+    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
     const existing = await prisma.zone.findFirst({
       where: {
         name,
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
+        ...orgFilter,
       },
     });
     if (existing) {

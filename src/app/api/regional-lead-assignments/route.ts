@@ -16,12 +16,11 @@ export async function GET(request: NextRequest) {
     const endDate = searchParams.get('endDate');
 
     const orgId = await getCurrentOrgId();
+    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
 
     // Build filter conditions with org scoping
     const where: Record<string, unknown> = {
-      OR: orgId
-        ? [{ organizationId: orgId }, { organizationId: null }]
-        : [{ organizationId: null }],
+      ...orgFilter,
     };
 
     // Parse dates for DATE-only column filtering

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
+import { getCurrentOrgId } from '@/lib/org-context';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -20,8 +21,12 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
     const { id } = await context.params;
 
-    const blast = await prisma.emailBlast.findUnique({
-      where: { id },
+    // Strict org scoping - only fetch blast if it belongs to current org
+    const orgId = await getCurrentOrgId();
+    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
+
+    const blast = await prisma.emailBlast.findFirst({
+      where: { id, ...orgFilter },
       include: {
         sentBy: {
           select: {

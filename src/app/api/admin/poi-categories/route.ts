@@ -12,12 +12,11 @@ export async function GET() {
     }
 
     const orgId = await getCurrentOrgId();
+    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
 
     const categories = await prisma.pOICategory.findMany({
       where: {
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
+        ...orgFilter,
       },
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       include: {

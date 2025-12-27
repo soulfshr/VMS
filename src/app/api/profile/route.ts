@@ -30,14 +30,13 @@ export async function GET() {
     });
 
     const orgId = await getCurrentOrgId();
+    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
 
     // Get all available zones for preferences (scoped to org)
     const allZones = await prisma.zone.findMany({
       where: {
         isActive: true,
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
+        ...orgFilter,
       },
       orderBy: [{ county: 'asc' }, { name: 'asc' }],
     });

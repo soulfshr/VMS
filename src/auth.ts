@@ -99,13 +99,32 @@ export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
         const primaryZone = user.zones[0]?.zone?.name;
 
         // Build memberships array for the token
-        const memberships = user.memberships.map(m => ({
+        let memberships = user.memberships.map(m => ({
           organizationId: m.organizationId,
           organizationSlug: m.organization.slug,
           organizationName: m.organization.name,
           role: m.role,
           accountStatus: m.accountStatus,
         }));
+
+        // DEVELOPER role: Grant access to ALL organizations
+        // This allows developers to switch between any org for setup/debugging
+        if (user.role === 'DEVELOPER') {
+          const allOrgs = await prisma.organization.findMany({
+            where: { isActive: true },
+            select: { id: true, slug: true, name: true },
+            orderBy: { name: 'asc' },
+          });
+
+          // Create virtual memberships for all orgs (DEVELOPER role, APPROVED status)
+          memberships = allOrgs.map(org => ({
+            organizationId: org.id,
+            organizationSlug: org.slug,
+            organizationName: org.name,
+            role: 'DEVELOPER' as const,
+            accountStatus: 'APPROVED' as const,
+          }));
+        }
 
         // Map qualified roles
         const qualifications = user.userQualifications.map(

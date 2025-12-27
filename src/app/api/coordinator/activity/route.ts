@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
+import { getCurrentOrgId } from '@/lib/org-context';
 
 /**
  * GET /api/coordinator/activity
@@ -32,8 +33,32 @@ export async function GET(request: NextRequest) {
     const entityType = searchParams.get('entityType');
     const action = searchParams.get('action');
 
+    // Multi-tenant: Get users who belong to the current organization
+    const orgId = await getCurrentOrgId();
+    let orgUserIds: string[] = [];
+
+    if (orgId) {
+      // Get all user IDs who are members of this org
+      const orgMembers = await prisma.organizationMember.findMany({
+        where: { organizationId: orgId },
+        select: { userId: true },
+      });
+      orgUserIds = orgMembers.map(m => m.userId);
+    }
+
     // Build where clause - exclude sensitive entity types for non-developers
     const where: Record<string, unknown> = {};
+
+    // Multi-tenant: Only show activity from users in the current org
+    if (orgId && orgUserIds.length > 0) {
+      where.userId = { in: orgUserIds };
+    } else if (orgId && orgUserIds.length === 0) {
+      // Org exists but has no members - return empty
+      return NextResponse.json({
+        activities: [],
+        pagination: { page, limit, total: 0, totalPages: 0 },
+      });
+    }
 
     // Coordinator-relevant entity types (exclude Auth logs for privacy)
     const allowedEntityTypes = [

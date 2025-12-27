@@ -48,6 +48,7 @@ export async function GET(request: NextRequest) {
     end.setUTCHours(23, 59, 59, 999); // End of day for inclusive range
 
     const orgId = await getCurrentOrgId();
+    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
 
     // Build where clause with org scoping
     const where: Record<string, unknown> = {
@@ -55,9 +56,7 @@ export async function GET(request: NextRequest) {
         gte: start,
         lte: end,
       },
-      OR: orgId
-        ? [{ organizationId: orgId }, { organizationId: null }]
-        : [{ organizationId: null }],
+      ...orgFilter,
     };
 
     if (zoneId) {

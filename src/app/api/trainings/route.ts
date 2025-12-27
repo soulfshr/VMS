@@ -12,6 +12,7 @@ export async function GET(request: NextRequest) {
     }
 
     const orgId = await getCurrentOrgId();
+    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
 
     const searchParams = request.nextUrl.searchParams;
     const typeId = searchParams.get('typeId');
@@ -22,10 +23,7 @@ export async function GET(request: NextRequest) {
 
     // Build where clause with org scoping
     const where: Record<string, unknown> = {
-      // Multi-tenant: scope to current org (or null for legacy data)
-      OR: orgId
-        ? [{ organizationId: orgId }, { organizationId: null }]
-        : [{ organizationId: null }],
+      ...orgFilter,
     };
 
     if (typeId && typeId !== 'all') {
@@ -128,14 +126,13 @@ export async function POST(request: NextRequest) {
     }
 
     const orgId = await getOrgIdForCreate();
+    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
 
     // Verify training type exists and belongs to current org
     const trainingType = await prisma.trainingType.findFirst({
       where: {
         id: trainingTypeId,
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
+        ...orgFilter,
       },
     });
     if (!trainingType) {

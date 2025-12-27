@@ -7,13 +7,13 @@ export async function GET() {
   try {
     const orgId = await getCurrentOrgId();
 
+    // Strict org scoping
+    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
+
     const zones = await prisma.zone.findMany({
       where: {
         isActive: true,
-        // Multi-tenant: scope to current org (or null for legacy data)
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
+        ...orgFilter,
       },
       select: {
         id: true,

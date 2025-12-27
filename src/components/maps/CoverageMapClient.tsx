@@ -57,7 +57,7 @@ export default function CoverageMapClient({ height = '480px', isAuthenticated = 
 
   useEffect(() => {
     fetchZones();
-  }, []);
+  }, [isAuthenticated]);
 
   // Fetch POIs when authenticated
   useEffect(() => {
@@ -68,7 +68,10 @@ export default function CoverageMapClient({ height = '480px', isAuthenticated = 
 
   const fetchZones = async () => {
     try {
-      const response = await fetch('/api/zones/public');
+      // Use authenticated endpoint for logged-in users (proper org scoping)
+      // Use public endpoint for landing page (shows all zones)
+      const endpoint = isAuthenticated ? '/api/zones' : '/api/zones/public';
+      const response = await fetch(endpoint);
       if (response.ok) {
         const data = await response.json();
         setZones(data);

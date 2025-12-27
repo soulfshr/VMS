@@ -15,13 +15,12 @@ export async function GET() {
     }
 
     const orgId = await getCurrentOrgId();
+    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
 
     const trainingTypes = await prisma.trainingType.findMany({
       where: {
-        // Multi-tenant: scope to current org (or null for legacy data)
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
+        // Multi-tenant: scope to current org
+        ...orgFilter,
       },
       include: {
         grantsQualifiedRole: {
@@ -78,14 +77,11 @@ export async function POST(request: Request) {
     }
 
     // Check for duplicate name or slug within the organization
+    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
     const existing = await prisma.trainingType.findFirst({
       where: {
         OR: [{ name }, { slug }],
-        AND: {
-          OR: orgId
-            ? [{ organizationId: orgId }, { organizationId: null }]
-            : [{ organizationId: null }],
-        },
+        ...orgFilter,
       },
     });
     if (existing) {

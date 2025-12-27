@@ -17,15 +17,16 @@ export async function GET(request: NextRequest) {
 
     const orgId = await getCurrentOrgId();
 
+    // Strict org scoping - only show POIs for the current org
+    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
+
     // Build where clause - only active POIs with active categories (scoped to org)
     const where: Record<string, unknown> = {
       isActive: true,
       category: {
         isActive: true,
       },
-      OR: orgId
-        ? [{ organizationId: orgId }, { organizationId: null }]
-        : [{ organizationId: null }],
+      ...orgFilter,
     };
 
     if (categoryId && categoryId !== 'all') {
@@ -69,9 +70,7 @@ export async function GET(request: NextRequest) {
     const categories = await prisma.pOICategory.findMany({
       where: {
         isActive: true,
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
+        ...orgFilter,
       },
       orderBy: { sortOrder: 'asc' },
       select: {

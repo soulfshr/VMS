@@ -21,14 +21,13 @@ export async function GET(request: Request, { params }: RouteParams) {
 
     const { id } = await params;
     const orgId = await getCurrentOrgId();
+    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
 
     const zone = await prisma.zone.findFirst({
       where: {
         id,
         // Multi-tenant: verify zone belongs to current org
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
+        ...orgFilter,
       },
       include: {
         _count: {
@@ -64,6 +63,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
 
     const { id } = await params;
     const orgId = await getCurrentOrgId();
+    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
     const body = await request.json();
     const { name, county, description, signalGroup, isActive, color, fillOpacity, strokeWeight, boundaries } = body;
 
@@ -71,9 +71,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
     const existing = await prisma.zone.findFirst({
       where: {
         id,
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
+        ...orgFilter,
       },
     });
     if (!existing) {
@@ -86,9 +84,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
         where: {
           name,
           NOT: { id },
-          OR: orgId
-            ? [{ organizationId: orgId }, { organizationId: null }]
-            : [{ organizationId: null }],
+          ...orgFilter,
         },
       });
       if (duplicate) {
@@ -140,14 +136,13 @@ export async function DELETE(request: Request, { params }: RouteParams) {
 
     const { id } = await params;
     const orgId = await getCurrentOrgId();
+    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
 
     // Check if zone exists and belongs to current org
     const existing = await prisma.zone.findFirst({
       where: {
         id,
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
+        ...orgFilter,
       },
       include: {
         _count: {

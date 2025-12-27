@@ -18,13 +18,12 @@ export async function GET() {
     }
 
     const orgId = await getCurrentOrgId();
+    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
 
     const qualifiedRoles = await prisma.qualifiedRole.findMany({
       where: {
         isActive: true,
-        OR: orgId
-          ? [{ organizationId: orgId }, { organizationId: null }]
-          : [{ organizationId: null }],
+        ...orgFilter,
       },
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       select: {

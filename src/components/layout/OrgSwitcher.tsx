@@ -28,17 +28,19 @@ export default function OrgSwitcher({ currentOrgName, onOrgSwitch }: OrgSwitcher
   const currentOrg = approvedMemberships.find(m => m.organizationId === currentOrgId);
   const displayName = currentOrgName || currentOrg?.organizationName;
 
-  // If user has only 1 org, show org name without dropdown
+  // If user has only 1 org (or no org), show org name without dropdown
   if (approvedMemberships.length <= 1) {
-    if (!displayName) {
-      return null;
-    }
+    // Always show the badge - even if no org is selected
+    const badgeName = displayName || 'No Organization';
+    const hasOrg = !!displayName;
     return (
-      <div className="flex items-center gap-2 px-3 py-1.5 text-sm bg-cyan-50 rounded-lg border border-cyan-200">
-        <svg className="w-4 h-4 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className={`flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg border ${
+        hasOrg ? 'bg-cyan-50 border-cyan-200' : 'bg-gray-50 border-gray-200'
+      }`}>
+        <svg className={`w-4 h-4 ${hasOrg ? 'text-cyan-600' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
         </svg>
-        <span className="font-medium text-cyan-700 max-w-[150px] truncate">{displayName}</span>
+        <span className={`font-medium max-w-[150px] truncate ${hasOrg ? 'text-cyan-700' : 'text-gray-500 italic'}`}>{badgeName}</span>
       </div>
     );
   }
