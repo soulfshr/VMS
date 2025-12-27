@@ -540,6 +540,31 @@ export default function AdminSettingsPage() {
               </div>
             </div>
           </div>
+
+          {/* Intake Questions Link */}
+          <div className="p-6 bg-gray-50">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Intake Questions
+                </h3>
+                <p className="text-sm text-gray-500 mt-1 max-w-xl">
+                  Configure custom questions to ask volunteers during the signup process.
+                </p>
+              </div>
+              <div className="ml-6">
+                <a
+                  href="/admin/intake-questions"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-600 text-white text-sm font-medium rounded-lg hover:bg-cyan-700 transition-colors"
+                >
+                  Manage Questions
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </a>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
