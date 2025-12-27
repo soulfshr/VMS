@@ -7,6 +7,7 @@ import type { DevUser } from '@/types/auth';
 
 const adminNavItems = [
   { href: '/admin', label: 'Dashboard', icon: '📊', adminOnly: true },
+  { href: '/admin/settings', label: 'General Settings', icon: '⚙️', adminOnly: true },
   { href: '/admin/email-blast', label: 'Email Blast', icon: '📧', adminOnly: false },
   { href: '/admin/qualified-roles', label: 'Qualified Roles', icon: '🏅', adminOnly: true },
   { href: '/admin/shift-types', label: 'Shift Types', icon: '📋', adminOnly: true },

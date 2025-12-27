@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 
 interface Zone {
   id: string;
@@ -29,12 +30,17 @@ const TIME_SLOTS = [
 type AvailabilityGrid = { [key: string]: boolean };
 
 export default function SignupClient() {
+  const searchParams = useSearchParams();
+  const inviteCode = searchParams.get('code');
+
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [isValidatingCode, setIsValidatingCode] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [zones, setZones] = useState<Zone[]>([]);
   const [intakeQuestions, setIntakeQuestions] = useState<IntakeQuestion[]>([]);
+  const [organization, setOrganization] = useState<{ id: string; name: string; slug: string } | null>(null);
 
   // Step 1: Basic Info
   const [name, setName] = useState('');
@@ -51,8 +57,43 @@ export default function SignupClient() {
   // Step 3: Background Questions
   const [backgroundResponses, setBackgroundResponses] = useState<{ [key: string]: string }>({});
 
-  // Fetch zones and intake questions on mount
+  // Validate invite code on mount
   useEffect(() => {
+    const validateCode = async () => {
+      if (!inviteCode) {
+        setError('No invite code provided. Please enter an invite code on the login page.');
+        setIsValidatingCode(false);
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/auth/validate-invite-code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: inviteCode }),
+        });
+
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || 'Invalid invite code');
+        }
+
+        const data = await res.json();
+        setOrganization(data.organization);
+        setIsValidatingCode(false);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Invalid invite code');
+        setIsValidatingCode(false);
+      }
+    };
+
+    validateCode();
+  }, [inviteCode]);
+
+  // Fetch zones and intake questions after code validation
+  useEffect(() => {
+    if (!organization) return;
+
     fetch('/api/public/zones')
       .then(res => res.json())
       .then(data => {
@@ -70,7 +111,7 @@ export default function SignupClient() {
         }
       })
       .catch(err => console.error('Error fetching intake questions:', err));
-  }, []);
+  }, [organization]);
 
   const toggleZone = (zoneId: string) => {
     if (selectedZoneIds.includes(zoneId)) {
@@ -172,6 +213,8 @@ export default function SignupClient() {
           primaryZoneId,
           availability,
           intakeResponses: backgroundResponses,
+          organizationId: organization?.id,
+          inviteCode: inviteCode,
         }),
       });
 
@@ -188,6 +231,63 @@ export default function SignupClient() {
       setIsLoading(false);
     }
   };
+
+  // Validating code state
+  if (isValidatingCode) {
+    return (
+      <div className="min-h-[calc(100vh-200px)] bg-gray-50 py-12">
+        <div className="container mx-auto px-4 max-w-lg">
+          <div className="text-center mb-8">
+            <Image
+              src="/ripple-logo.png"
+              alt="RippleVMS"
+              width={150}
+              height={124}
+              className="mx-auto mb-4"
+            />
+          </div>
+          <div className="bg-white rounded-xl border border-gray-200 p-8 shadow-sm text-center">
+            <div className="animate-spin w-8 h-8 border-4 border-cyan-600 border-t-transparent rounded-full mx-auto mb-4" />
+            <p className="text-gray-600">Validating invite code...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Invalid code or missing code state
+  if (error && !organization) {
+    return (
+      <div className="min-h-[calc(100vh-200px)] bg-gray-50 py-12">
+        <div className="container mx-auto px-4 max-w-lg">
+          <div className="text-center mb-8">
+            <Image
+              src="/ripple-logo.png"
+              alt="RippleVMS"
+              width={150}
+              height={124}
+              className="mx-auto mb-4"
+            />
+          </div>
+          <div className="bg-white rounded-xl border border-gray-200 p-8 shadow-sm text-center">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Invalid Invite Code</h2>
+            <p className="text-gray-600 mb-6">{error}</p>
+            <Link
+              href="/login"
+              className="inline-block px-6 py-2.5 bg-cyan-600 text-white font-semibold rounded-lg hover:bg-cyan-700 transition-colors"
+            >
+              Return to Login
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Success state
   if (success) {
@@ -243,7 +343,7 @@ export default function SignupClient() {
             Volunteer Application
           </h1>
           <p className="text-gray-600">
-            Join our community of volunteers making a difference
+            {organization ? `Join ${organization.name}` : 'Join our community of volunteers making a difference'}
           </p>
         </div>
 

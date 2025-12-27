@@ -109,6 +109,8 @@ export async function PUT(request: Request) {
       // Email digest settings
       weeklyDigestEnabled,
       weeklyDigestSendHour,
+      // Signup settings
+      inviteCode,
     } = body;
 
     // DEVELOPER role can only modify feature flags
@@ -182,6 +184,37 @@ export async function PUT(request: Request) {
       }
     }
 
+    // Validate invite code
+    if (inviteCode !== undefined) {
+      // Allow null or empty string to clear the code
+      if (inviteCode !== null && inviteCode !== '') {
+        if (typeof inviteCode !== 'string') {
+          return NextResponse.json({ error: 'Invite code must be a string' }, { status: 400 });
+        }
+        const trimmed = inviteCode.trim();
+        if (trimmed.length < 3 || trimmed.length > 20) {
+          return NextResponse.json({ error: 'Invite code must be between 3 and 20 characters' }, { status: 400 });
+        }
+        // Check uniqueness (case-insensitive) - exclude current settings record
+        const existingSettings = await prisma.organizationSettings.findFirst({
+          where: orgId ? { organizationId: orgId } : {},
+        });
+        const existingCode = await prisma.organizationSettings.findFirst({
+          where: {
+            inviteCode: {
+              equals: trimmed,
+              mode: 'insensitive',
+            },
+            // Exclude current org's settings if they exist
+            ...(existingSettings && { id: { not: existingSettings.id } }),
+          },
+        });
+        if (existingCode) {
+          return NextResponse.json({ error: 'This invite code is already in use by another organization' }, { status: 400 });
+        }
+      }
+    }
+
     // Get or create settings singleton (scoped to org)
     let settings = await prisma.organizationSettings.findFirst({
       where: orgId ? { organizationId: orgId } : {},
@@ -226,6 +259,8 @@ export async function PUT(request: Request) {
           // Email digest settings
           ...(weeklyDigestEnabled !== undefined && { weeklyDigestEnabled }),
           ...(weeklyDigestSendHour !== undefined && { weeklyDigestSendHour: parseInt(weeklyDigestSendHour) }),
+          // Signup settings - allow null to clear the code
+          ...(inviteCode !== undefined && { inviteCode: inviteCode?.trim() || null }),
         },
       });
     }

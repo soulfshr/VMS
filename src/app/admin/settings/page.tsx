@@ -15,6 +15,8 @@ interface Settings {
   // Email digest settings
   weeklyDigestEnabled: boolean;
   weeklyDigestSendHour: number;
+  // Signup settings
+  inviteCode: string | null;
 }
 
 // Helper to format hour as readable time
@@ -36,6 +38,7 @@ export default function AdminSettingsPage() {
   const [localEmailFromAddress, setLocalEmailFromAddress] = useState('');
   const [localEmailReplyTo, setLocalEmailReplyTo] = useState('');
   const [localEmailFooter, setLocalEmailFooter] = useState('');
+  const [localInviteCode, setLocalInviteCode] = useState('');
 
   useEffect(() => {
     fetch('/api/admin/settings')
@@ -49,6 +52,7 @@ export default function AdminSettingsPage() {
         setLocalEmailFromAddress(localPart);
         setLocalEmailReplyTo(data.emailReplyTo || '');
         setLocalEmailFooter(data.emailFooter || '');
+        setLocalInviteCode(data.inviteCode || '');
         setIsLoading(false);
       })
       .catch(err => {
@@ -167,6 +171,45 @@ export default function AdminSettingsPage() {
     } catch (err) {
       console.error('Error updating settings:', err);
       setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to update settings' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleUpdateInviteCode = async (value: string) => {
+    if (!settings) return;
+
+    // Validate length (3-20 characters)
+    const trimmed = value.trim();
+    if (trimmed && (trimmed.length < 3 || trimmed.length > 20)) {
+      setMessage({ type: 'error', text: 'Invite code must be between 3 and 20 characters' });
+      return;
+    }
+
+    setIsSaving(true);
+    setMessage(null);
+
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          inviteCode: trimmed || null,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to update invite code');
+      }
+
+      const updated = await res.json();
+      setSettings(updated);
+      setLocalInviteCode(updated.inviteCode || '');
+      setMessage({ type: 'success', text: 'Invite code updated successfully' });
+    } catch (err) {
+      console.error('Error updating invite code:', err);
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to update invite code' });
     } finally {
       setIsSaving(false);
     }
@@ -443,6 +486,56 @@ export default function AdminSettingsPage() {
                     isSaving ? 'bg-gray-50 text-gray-500 cursor-not-allowed' : 'bg-white'
                   }`}
                   placeholder="RippleVMS Team"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Signup Settings */}
+      <div className="mt-8">
+        <h2 className="text-xl font-bold text-gray-900 mb-4">Volunteer Signup</h2>
+        <p className="text-gray-600 mb-4">
+          Configure how new volunteers can sign up for your organization.
+        </p>
+        <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-200">
+          {/* Invite Code */}
+          <div className="p-6">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Invite Code
+                </h3>
+                <p className="text-sm text-gray-500 mt-1 max-w-xl">
+                  New volunteers must enter this code to sign up. Share this code with people you want to recruit.
+                  The code is case-insensitive and must be 3-20 characters long.
+                </p>
+                {localInviteCode && (
+                  <div className="mt-3 inline-flex items-center gap-2 px-3 py-2 bg-cyan-50 border border-cyan-200 rounded-lg">
+                    <span className="text-sm font-medium text-cyan-900">Current code:</span>
+                    <code className="text-sm font-mono font-semibold text-cyan-700 bg-white px-2 py-1 rounded border border-cyan-300">
+                      {localInviteCode}
+                    </code>
+                  </div>
+                )}
+              </div>
+              <div className="ml-6 flex items-center gap-2">
+                <input
+                  type="text"
+                  value={localInviteCode}
+                  onChange={(e) => setLocalInviteCode(e.target.value)}
+                  onBlur={() => {
+                    if (localInviteCode !== (settings?.inviteCode || '')) {
+                      handleUpdateInviteCode(localInviteCode);
+                    }
+                  }}
+                  disabled={isSaving}
+                  className={`px-3 py-2 border border-gray-300 rounded-lg text-sm w-48 font-mono ${
+                    isSaving ? 'bg-gray-50 text-gray-500 cursor-not-allowed' : 'bg-white'
+                  }`}
+                  placeholder="e.g., WELCOME2025"
+                  maxLength={20}
                 />
               </div>
             </div>

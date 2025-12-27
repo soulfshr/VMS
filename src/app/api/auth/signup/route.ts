@@ -25,9 +25,6 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // Get organization context for multi-tenant support
-    const orgId = await getOrgIdForCreate();
-
     const body = await request.json();
     const {
       name,
@@ -39,7 +36,45 @@ export async function POST(request: NextRequest) {
       primaryZoneId,
       availability,
       intakeResponses,
+      organizationId,
+      inviteCode,
     } = body;
+
+    // Validate invite code and organization ID
+    if (!inviteCode || typeof inviteCode !== 'string') {
+      return NextResponse.json(
+        { error: 'Invite code is required' },
+        { status: 400 }
+      );
+    }
+
+    if (!organizationId || typeof organizationId !== 'string') {
+      return NextResponse.json(
+        { error: 'Organization ID is required' },
+        { status: 400 }
+      );
+    }
+
+    // Verify the invite code matches the organization
+    const settings = await prisma.organizationSettings.findFirst({
+      where: {
+        organizationId: organizationId,
+        inviteCode: {
+          equals: inviteCode.trim(),
+          mode: 'insensitive',
+        },
+      },
+    });
+
+    if (!settings) {
+      return NextResponse.json(
+        { error: 'Invalid invite code for this organization' },
+        { status: 403 }
+      );
+    }
+
+    // Use the provided organization ID
+    const orgId = organizationId;
 
     // Validate required fields
     if (!name || typeof name !== 'string' || !name.trim()) {

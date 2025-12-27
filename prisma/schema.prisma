@@ -284,6 +284,9 @@ model OrganizationSettings {
   hotlineNumber    String?                             // Public hotline number
   supportEmail     String?                             // Support email address
 
+  // Signup settings
+  inviteCode       String?  @unique                    // Required code for new volunteer signups (3-20 chars, case-insensitive)
+
   // NEW: Maps integration
   mapEmbedUrl      String?                             // Google My Maps embed URL
 
