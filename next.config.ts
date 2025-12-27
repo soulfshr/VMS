@@ -30,6 +30,22 @@ const nextConfig: NextConfig = {
         destination: '/settings/features',
         permanent: true,
       },
+      // Deprecated settings pages - consolidated to /admin/settings
+      {
+        source: '/settings/organization',
+        destination: '/admin/settings',
+        permanent: false,
+      },
+      {
+        source: '/settings/scheduling',
+        destination: '/admin/settings',
+        permanent: false,
+      },
+      {
+        source: '/settings/features',
+        destination: '/admin/settings',
+        permanent: false,
+      },
       // Mapping pages consolidated to /map
       {
         source: '/coordinator/mapping',

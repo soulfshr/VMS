@@ -25,24 +25,27 @@ const settingsNavItems: NavItem[] = [
     icon: '👤',
     roles: [], // All users
   },
-  {
-    href: '/settings/scheduling',
-    label: 'Scheduling',
-    icon: '📅',
-    roles: ['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR', 'DEVELOPER'],
-  },
-  {
-    href: '/settings/organization',
-    label: 'Organization',
-    icon: '🏢',
-    roles: ['ADMINISTRATOR', 'DEVELOPER'],
-  },
-  {
-    href: '/settings/features',
-    label: 'Features',
-    icon: '🚀',
-    roles: ['ADMINISTRATOR', 'DEVELOPER'],
-  },
+  // DEPRECATED: Scheduling, Organization, and Features settings have been consolidated to /admin/settings
+  // These pages still exist for backward compatibility but are hidden from navigation
+  // Uncomment to restore to navigation:
+  // {
+  //   href: '/settings/scheduling',
+  //   label: 'Scheduling',
+  //   icon: '📅',
+  //   roles: ['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR', 'DEVELOPER'],
+  // },
+  // {
+  //   href: '/settings/organization',
+  //   label: 'Organization',
+  //   icon: '🏢',
+  //   roles: ['ADMINISTRATOR', 'DEVELOPER'],
+  // },
+  // {
+  //   href: '/settings/features',
+  //   label: 'Features',
+  //   icon: '🚀',
+  //   roles: ['ADMINISTRATOR', 'DEVELOPER'],
+  // },
   {
     href: '/settings/system',
     label: 'System',
