@@ -23,8 +23,10 @@ interface GlobalSettings {
 }
 
 // Cache for global settings (singleton - rarely changes)
+// Note: In serverless environments, each function instance has its own cache.
+// Keep TTL short to ensure changes propagate quickly across instances.
 let cachedSettings: { settings: GlobalSettings | null; expires: number } | null = null;
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL = 30 * 1000; // 30 seconds (short for serverless consistency)
 
 // The singleton ID used for GlobalSettings
 const GLOBAL_SETTINGS_ID = 'global';
