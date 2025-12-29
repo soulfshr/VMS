@@ -24,7 +24,8 @@ const developerNavItems = [
   { href: '/developer/audit', label: 'Audit Trail', icon: '📋' },
   { href: '/developer/logs', label: 'System Logs', icon: '📜' },
   { href: '/developer/health', label: 'Health Status', icon: '💚' },
-  { href: '/developer/feature-flags', label: 'Feature Flags', icon: '🚩' },
+  { href: '/developer/global-feature-flags', label: 'Global Flags', icon: '🌐' },
+  { href: '/developer/feature-flags', label: 'Org Flags', icon: '🚩' },
   { href: '/developer/knowledge-graph', label: 'Knowledge Graph', icon: '🧠' },
 ];
 

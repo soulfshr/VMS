@@ -2,33 +2,35 @@
 
 import { useEffect, useState } from 'react';
 
-interface Settings {
-  id: string;
+interface GlobalSettings {
   featureTrainings: boolean | null;
   featureSightings: boolean | null;
+  envDefaults: {
+    trainings: boolean;
+    sightings: boolean;
+  };
+  updatedAt: string;
 }
 
-// Environment variable defaults for feature flags
-const ENV_FEATURE_DEFAULTS = {
-  trainings: process.env.NEXT_PUBLIC_FEATURE_TRAININGS === 'true',
-  sightings: process.env.NEXT_PUBLIC_FEATURE_SIGHTINGS === 'true',
-};
-
-export default function DeveloperPage() {
-  const [settings, setSettings] = useState<Settings | null>(null);
+export default function GlobalFeatureFlagsPage() {
+  const [settings, setSettings] = useState<GlobalSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
-    fetch('/api/admin/settings')
-      .then(res => res.json())
+    fetch('/api/developer/global-settings')
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch global settings');
+        return res.json();
+      })
       .then(data => {
         setSettings(data);
         setIsLoading(false);
       })
       .catch(err => {
-        console.error('Error loading settings:', err);
+        console.error('Error loading global settings:', err);
+        setMessage({ type: 'error', text: 'Failed to load global settings. Make sure you have developer access.' });
         setIsLoading(false);
       });
   }, []);
@@ -43,8 +45,8 @@ export default function DeveloperPage() {
     setMessage(null);
 
     try {
-      const res = await fetch('/api/admin/settings', {
-        method: 'PUT',
+      const res = await fetch('/api/developer/global-settings', {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           [flag]: value,
@@ -53,25 +55,25 @@ export default function DeveloperPage() {
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || 'Failed to update settings');
+        throw new Error(data.error || 'Failed to update global settings');
       }
 
       const updated = await res.json();
       setSettings(updated);
-      setMessage({ type: 'success', text: 'Feature flag updated successfully' });
+      setMessage({ type: 'success', text: 'Global feature flag updated successfully' });
     } catch (err) {
-      console.error('Error updating feature flag:', err);
-      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to update feature flag' });
+      console.error('Error updating global feature flag:', err);
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to update global feature flag' });
     } finally {
       setIsSaving(false);
     }
   };
 
-  const getFeatureFlagValue = (dbValue: boolean | null, envDefault: boolean): boolean => {
+  const getResolvedValue = (dbValue: boolean | null, envDefault: boolean): boolean => {
     return dbValue !== null ? dbValue : envDefault;
   };
 
-  const isFeatureFlagOverridden = (dbValue: boolean | null): boolean => {
+  const isOverridden = (dbValue: boolean | null): boolean => {
     return dbValue !== null;
   };
 
@@ -86,11 +88,30 @@ export default function DeveloperPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Per-Organization Feature Flags</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Global Feature Flags</h1>
         <p className="text-gray-600 mt-1">
-          Override feature flags for the currently selected organization.
-          Use this for beta testing or enabling paid features for specific orgs.
+          Control feature availability across all organizations
         </p>
+      </div>
+
+      {/* Warning banner */}
+      <div className="mb-6 bg-amber-50 border border-amber-200 rounded-lg p-4">
+        <div className="flex">
+          <div className="flex-shrink-0">
+            <span className="text-amber-400">!</span>
+          </div>
+          <div className="ml-3">
+            <h3 className="text-sm font-medium text-amber-800">
+              These settings affect ALL organizations
+            </h3>
+            <div className="mt-1 text-sm text-amber-700">
+              <p>
+                When a feature is <strong>OFF globally</strong>, org admins cannot enable it.
+                Only developers can enable features per-org using the per-org feature flags page.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {message && (
@@ -114,15 +135,15 @@ export default function DeveloperPage() {
                 Trainings Feature
               </h3>
               <p className="text-sm text-gray-500 mt-1 max-w-xl">
-                Shows/hides the Trainings section in the navigation and all training-related pages.
+                When ON, org admins can disable for their org. When OFF, feature is unavailable unless you enable per-org.
               </p>
               <div className="mt-2 flex items-center gap-2">
                 <span className="text-xs text-gray-400">
-                  Environment default: {ENV_FEATURE_DEFAULTS.trainings ? 'ON' : 'OFF'}
+                  Environment default: {settings?.envDefaults.trainings ? 'ON' : 'OFF'}
                 </span>
-                {isFeatureFlagOverridden(settings?.featureTrainings ?? null) && (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
-                    Overridden
+                {isOverridden(settings?.featureTrainings ?? null) && (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                    Global Override Active
                   </span>
                 )}
               </div>
@@ -130,30 +151,30 @@ export default function DeveloperPage() {
             <div className="ml-6 flex items-center gap-3">
               <button
                 onClick={() => handleUpdateFeatureFlag('featureTrainings', null)}
-                disabled={isSaving || !isFeatureFlagOverridden(settings?.featureTrainings ?? null)}
+                disabled={isSaving || !isOverridden(settings?.featureTrainings ?? null)}
                 className={`px-3 py-1.5 text-sm rounded-lg border ${
-                  !isFeatureFlagOverridden(settings?.featureTrainings ?? null)
-                    ? 'bg-gray-100 text-gray-700 border-gray-300 cursor-default'
+                  !isOverridden(settings?.featureTrainings ?? null)
+                    ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-default'
                     : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
                 } ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
-                Use Default
+                Use Env Default
               </button>
               <button
                 onClick={() => {
-                  const currentValue = getFeatureFlagValue(settings?.featureTrainings ?? null, ENV_FEATURE_DEFAULTS.trainings);
+                  const currentValue = getResolvedValue(settings?.featureTrainings ?? null, settings?.envDefaults.trainings ?? false);
                   handleUpdateFeatureFlag('featureTrainings', !currentValue);
                 }}
                 disabled={isSaving}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  getFeatureFlagValue(settings?.featureTrainings ?? null, ENV_FEATURE_DEFAULTS.trainings)
+                  getResolvedValue(settings?.featureTrainings ?? null, settings?.envDefaults.trainings ?? false)
                     ? 'bg-purple-600'
                     : 'bg-gray-200'
                 } ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <span
                   className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    getFeatureFlagValue(settings?.featureTrainings ?? null, ENV_FEATURE_DEFAULTS.trainings)
+                    getResolvedValue(settings?.featureTrainings ?? null, settings?.envDefaults.trainings ?? false)
                       ? 'translate-x-6'
                       : 'translate-x-1'
                   }`}
@@ -171,15 +192,15 @@ export default function DeveloperPage() {
                 ICE Sightings Feature
               </h3>
               <p className="text-sm text-gray-500 mt-1 max-w-xl">
-                Shows/hides the ICE Sightings report feature, including the public report form and sightings management.
+                When ON, org admins can disable for their org. When OFF, feature is unavailable unless you enable per-org.
               </p>
               <div className="mt-2 flex items-center gap-2">
                 <span className="text-xs text-gray-400">
-                  Environment default: {ENV_FEATURE_DEFAULTS.sightings ? 'ON' : 'OFF'}
+                  Environment default: {settings?.envDefaults.sightings ? 'ON' : 'OFF'}
                 </span>
-                {isFeatureFlagOverridden(settings?.featureSightings ?? null) && (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
-                    Overridden
+                {isOverridden(settings?.featureSightings ?? null) && (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                    Global Override Active
                   </span>
                 )}
               </div>
@@ -187,30 +208,30 @@ export default function DeveloperPage() {
             <div className="ml-6 flex items-center gap-3">
               <button
                 onClick={() => handleUpdateFeatureFlag('featureSightings', null)}
-                disabled={isSaving || !isFeatureFlagOverridden(settings?.featureSightings ?? null)}
+                disabled={isSaving || !isOverridden(settings?.featureSightings ?? null)}
                 className={`px-3 py-1.5 text-sm rounded-lg border ${
-                  !isFeatureFlagOverridden(settings?.featureSightings ?? null)
-                    ? 'bg-gray-100 text-gray-700 border-gray-300 cursor-default'
+                  !isOverridden(settings?.featureSightings ?? null)
+                    ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-default'
                     : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
                 } ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
-                Use Default
+                Use Env Default
               </button>
               <button
                 onClick={() => {
-                  const currentValue = getFeatureFlagValue(settings?.featureSightings ?? null, ENV_FEATURE_DEFAULTS.sightings);
+                  const currentValue = getResolvedValue(settings?.featureSightings ?? null, settings?.envDefaults.sightings ?? false);
                   handleUpdateFeatureFlag('featureSightings', !currentValue);
                 }}
                 disabled={isSaving}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  getFeatureFlagValue(settings?.featureSightings ?? null, ENV_FEATURE_DEFAULTS.sightings)
+                  getResolvedValue(settings?.featureSightings ?? null, settings?.envDefaults.sightings ?? false)
                     ? 'bg-purple-600'
                     : 'bg-gray-200'
                 } ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <span
                   className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    getFeatureFlagValue(settings?.featureSightings ?? null, ENV_FEATURE_DEFAULTS.sightings)
+                    getResolvedValue(settings?.featureSightings ?? null, settings?.envDefaults.sightings ?? false)
                       ? 'translate-x-6'
                       : 'translate-x-1'
                   }`}
@@ -222,31 +243,48 @@ export default function DeveloperPage() {
       </div>
 
       <p className="mt-3 text-xs text-gray-500">
-        Note: Feature flag changes take effect immediately for all users. A page refresh may be needed to see changes.
+        Changes take effect immediately. Users may need to refresh their page to see changes.
       </p>
 
       {/* Info box */}
       <div className="mt-6 bg-purple-50 border border-purple-200 rounded-lg p-4">
         <div className="flex">
           <div className="flex-shrink-0">
-            <span className="text-purple-400">🔧</span>
+            <span className="text-purple-400">i</span>
           </div>
           <div className="ml-3">
             <h3 className="text-sm font-medium text-purple-800">
-              About Feature Flags
+              Resolution Order
             </h3>
-            <div className="mt-2 text-sm text-purple-700">
+            <div className="mt-2 text-sm text-purple-700 space-y-2">
               <p>
-                <strong>Environment Default:</strong> The default value set via environment variables (NEXT_PUBLIC_FEATURE_*).
-                This is what the feature will use if no override is set.
+                <strong>1. Per-Org Override</strong> (Developer &gt; Feature Flags) - Highest priority
               </p>
-              <p className="mt-2">
-                <strong>Override:</strong> When you toggle a feature here, it overrides the environment default for all users.
-                Click &quot;Use Default&quot; to remove the override and revert to the environment setting.
+              <p>
+                <strong>2. Global Default</strong> (This page) - Applies to all orgs without override
+              </p>
+              <p>
+                <strong>3. Environment Variable</strong> - Fallback when no database values set
               </p>
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Use cases */}
+      <div className="mt-4 bg-gray-50 border border-gray-200 rounded-lg p-4">
+        <h3 className="text-sm font-medium text-gray-800 mb-2">Common Use Cases</h3>
+        <ul className="text-sm text-gray-600 space-y-1">
+          <li>
+            <strong>Beta rollout:</strong> Keep global OFF, enable per-org for beta testers
+          </li>
+          <li>
+            <strong>Paid feature:</strong> Keep global OFF, enable only for paying organizations
+          </li>
+          <li>
+            <strong>General availability:</strong> Set global ON, orgs can opt-out if needed
+          </li>
+        </ul>
       </div>
     </div>
   );

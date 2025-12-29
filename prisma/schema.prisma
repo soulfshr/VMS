@@ -332,6 +332,27 @@ model OrganizationSettings {
 }
 
 // ============================================
+// GLOBAL SETTINGS (App-wide defaults)
+// ============================================
+
+// Singleton table for app-wide settings that apply to all organizations.
+// Developers can set global defaults here; orgs can override some settings.
+// Resolution order: orgOverride ?? globalDefault ?? envDefault
+model GlobalSettings {
+  id        String   @id @default("global")  // Singleton - always use "global" as ID
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Feature Flags (null = use env default)
+  // When global is OFF: only developers can enable per-org
+  // When global is ON: org admins can disable for their org
+  featureTrainings Boolean?  // Override for NEXT_PUBLIC_FEATURE_TRAININGS
+  featureSightings Boolean?  // Override for NEXT_PUBLIC_FEATURE_SIGHTINGS
+
+  @@map("global_settings")
+}
+
+// ============================================
 // INTAKE QUESTIONS (Signup Form)
 // ============================================
 

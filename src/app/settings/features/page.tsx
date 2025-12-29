@@ -3,30 +3,45 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-interface Settings {
-  id: string;
-  featureTrainings: boolean | null;
-  featureSightings: boolean | null;
+interface FeatureFlag {
+  value: boolean;
+  source: 'org' | 'global' | 'env';
+  adminConfigurable: boolean;
+  globalValue: boolean | null;
+  orgValue: boolean | null;
 }
 
-const ENV_FEATURE_DEFAULTS = {
-  trainings: process.env.NEXT_PUBLIC_FEATURE_TRAININGS === 'true',
-  sightings: process.env.NEXT_PUBLIC_FEATURE_SIGHTINGS === 'true',
-};
+interface FeaturesData {
+  trainings: FeatureFlag;
+  sightings: FeatureFlag;
+  resolved: {
+    trainings: boolean;
+    sightings: boolean;
+  };
+}
+
+interface Session {
+  user?: {
+    role: string;
+  };
+}
 
 export default function SettingsFeaturesPage() {
   const router = useRouter();
-  const [settings, setSettings] = useState<Settings | null>(null);
+  const [featuresData, setFeaturesData] = useState<FeaturesData | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  const isDeveloper = userRole === 'DEVELOPER';
+
   useEffect(() => {
     Promise.all([
-      fetch('/api/auth/session').then(res => res.json()),
-      fetch('/api/admin/settings').then(res => res.json()),
+      fetch('/api/auth/session').then(res => res.json()) as Promise<Session>,
+      fetch('/api/features').then(res => res.json()) as Promise<FeaturesData>,
     ])
-      .then(([sessionData, settingsData]) => {
+      .then(([sessionData, features]) => {
         if (!sessionData.user) {
           router.push('/login');
           return;
@@ -35,11 +50,12 @@ export default function SettingsFeaturesPage() {
           router.push('/settings/profile');
           return;
         }
-        setSettings(settingsData);
+        setUserRole(sessionData.user.role);
+        setFeaturesData(features);
         setIsLoading(false);
       })
       .catch(err => {
-        console.error('Error loading settings:', err);
+        console.error('Error loading features:', err);
         setIsLoading(false);
       });
   }, [router]);
@@ -48,7 +64,7 @@ export default function SettingsFeaturesPage() {
     flag: 'featureTrainings' | 'featureSightings',
     value: boolean | null
   ) => {
-    if (!settings) return;
+    if (!featuresData) return;
 
     setIsSaving(true);
     setMessage(null);
@@ -65,8 +81,12 @@ export default function SettingsFeaturesPage() {
         throw new Error(data.error || 'Failed to update settings');
       }
 
-      const updated = await res.json();
-      setSettings(updated);
+      // Refetch features to get updated metadata
+      const featuresRes = await fetch('/api/features');
+      if (featuresRes.ok) {
+        const updated = await featuresRes.json();
+        setFeaturesData(updated);
+      }
       setMessage({ type: 'success', text: 'Feature flag updated' });
     } catch (err) {
       setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to update' });
@@ -75,12 +95,94 @@ export default function SettingsFeaturesPage() {
     }
   };
 
-  const getFeatureFlagValue = (dbValue: boolean | null, envDefault: boolean): boolean => {
-    return dbValue !== null ? dbValue : envDefault;
-  };
+  const renderFeatureRow = (
+    key: 'trainings' | 'sightings',
+    dbKey: 'featureTrainings' | 'featureSightings',
+    title: string,
+    description: string
+  ) => {
+    if (!featuresData) return null;
 
-  const isFeatureFlagOverridden = (dbValue: boolean | null): boolean => {
-    return dbValue !== null;
+    const feature = featuresData[key];
+    const isConfigurable = feature.adminConfigurable || isDeveloper;
+
+    // If not configurable and user is not a developer, don't show this feature
+    if (!isConfigurable) {
+      return null;
+    }
+
+    const hasOrgOverride = feature.orgValue !== null;
+    const resolvedGlobal = feature.globalValue ?? false;
+
+    // Determine badge text and color
+    let badgeText = '';
+    let badgeClass = '';
+
+    if (feature.source === 'org') {
+      badgeText = feature.value ? 'Enabled for this org' : 'Disabled for this org';
+      badgeClass = feature.value ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800';
+    } else if (feature.source === 'global') {
+      badgeText = 'Using global default';
+      badgeClass = 'bg-blue-100 text-blue-800';
+    } else {
+      badgeText = 'Using environment default';
+      badgeClass = 'bg-gray-100 text-gray-600';
+    }
+
+    // For developers viewing a globally-off feature that's enabled per-org
+    const isDevOverride = isDeveloper && !resolvedGlobal && feature.orgValue === true;
+
+    return (
+      <div className="p-6" key={key}>
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <h3 className="font-semibold text-gray-900">{title}</h3>
+            <p className="text-sm text-gray-600 mt-1">{description}</p>
+            <div className="mt-2 flex items-center gap-2 flex-wrap">
+              <span className={`px-2 py-0.5 rounded text-xs font-medium ${badgeClass}`}>
+                {badgeText}
+              </span>
+              {isDevOverride && (
+                <span className="px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                  Developer override
+                </span>
+              )}
+              {!resolvedGlobal && !isDeveloper && (
+                <span className="text-xs text-gray-400">
+                  Global: OFF
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="ml-4 flex items-center gap-3">
+            {hasOrgOverride && (
+              <button
+                onClick={() => handleUpdateFeatureFlag(dbKey, null)}
+                disabled={isSaving}
+                className={`px-3 py-1.5 text-sm rounded-lg border bg-white text-gray-600 border-gray-300 hover:bg-gray-50 ${
+                  isSaving ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+              >
+                Reset to Default
+              </button>
+            )}
+            <button
+              onClick={() => handleUpdateFeatureFlag(dbKey, !feature.value)}
+              disabled={isSaving}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                feature.value ? 'bg-cyan-600' : 'bg-gray-200'
+              } ${isSaving ? 'opacity-50' : ''}`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  feature.value ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   if (isLoading) {
@@ -91,143 +193,70 @@ export default function SettingsFeaturesPage() {
     );
   }
 
+  // Check if any features are configurable
+  const hasConfigurableFeatures =
+    featuresData &&
+    (featuresData.trainings.adminConfigurable ||
+      featuresData.sightings.adminConfigurable ||
+      isDeveloper);
+
   return (
     <div className="divide-y divide-gray-200">
       {/* Header */}
       <div className="p-6">
         <h2 className="text-xl font-semibold text-gray-900">Feature Flags</h2>
-        <p className="text-gray-600 mt-1">Control feature visibility across the application</p>
+        <p className="text-gray-600 mt-1">
+          Control feature visibility for your organization
+        </p>
       </div>
 
       {message && (
-        <div className={`mx-6 my-4 p-4 rounded-lg ${
-          message.type === 'success'
-            ? 'bg-green-50 text-green-700 border border-green-200'
-            : 'bg-red-50 text-red-700 border border-red-200'
-        }`}>
+        <div
+          className={`mx-6 my-4 p-4 rounded-lg ${
+            message.type === 'success'
+              ? 'bg-green-50 text-green-700 border border-green-200'
+              : 'bg-red-50 text-red-700 border border-red-200'
+          }`}
+        >
           {message.text}
         </div>
       )}
 
-      {/* Trainings Feature */}
-      <div className="p-6">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <h3 className="font-semibold text-gray-900">Training Feature</h3>
-            <p className="text-sm text-gray-600 mt-1">
-              Shows/hides the Training section in navigation and all training-related pages.
-            </p>
-            <div className="mt-2 flex items-center gap-2">
-              <span className="text-xs text-gray-400">
-                Environment default: {ENV_FEATURE_DEFAULTS.trainings ? 'ON' : 'OFF'}
-              </span>
-              {isFeatureFlagOverridden(settings?.featureTrainings ?? null) && (
-                <span className="px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
-                  Overridden
-                </span>
-              )}
-            </div>
-          </div>
-          <div className="ml-4 flex items-center gap-3">
-            <button
-              onClick={() => handleUpdateFeatureFlag('featureTrainings', null)}
-              disabled={isSaving || !isFeatureFlagOverridden(settings?.featureTrainings ?? null)}
-              className={`px-3 py-1.5 text-sm rounded-lg border ${
-                !isFeatureFlagOverridden(settings?.featureTrainings ?? null)
-                  ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-default'
-                  : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
-              }`}
-            >
-              Use Default
-            </button>
-            <button
-              onClick={() => {
-                const currentValue = getFeatureFlagValue(settings?.featureTrainings ?? null, ENV_FEATURE_DEFAULTS.trainings);
-                handleUpdateFeatureFlag('featureTrainings', !currentValue);
-              }}
-              disabled={isSaving}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                getFeatureFlagValue(settings?.featureTrainings ?? null, ENV_FEATURE_DEFAULTS.trainings)
-                  ? 'bg-cyan-600'
-                  : 'bg-gray-200'
-              } ${isSaving ? 'opacity-50' : ''}`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  getFeatureFlagValue(settings?.featureTrainings ?? null, ENV_FEATURE_DEFAULTS.trainings)
-                    ? 'translate-x-6'
-                    : 'translate-x-1'
-                }`}
-              />
-            </button>
-          </div>
+      {!hasConfigurableFeatures ? (
+        <div className="p-6 text-center text-gray-500">
+          <p>No features are currently available for configuration.</p>
+          <p className="text-sm mt-1">
+            Contact support if you&apos;d like to enable additional features for your organization.
+          </p>
         </div>
-      </div>
-
-      {/* Sightings Feature */}
-      <div className="p-6">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <h3 className="font-semibold text-gray-900">ICE Sightings Feature</h3>
-            <p className="text-sm text-gray-600 mt-1">
-              Shows/hides the ICE Sightings report feature, including the public report form.
-            </p>
-            <div className="mt-2 flex items-center gap-2">
-              <span className="text-xs text-gray-400">
-                Environment default: {ENV_FEATURE_DEFAULTS.sightings ? 'ON' : 'OFF'}
-              </span>
-              {isFeatureFlagOverridden(settings?.featureSightings ?? null) && (
-                <span className="px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
-                  Overridden
-                </span>
-              )}
-            </div>
-          </div>
-          <div className="ml-4 flex items-center gap-3">
-            <button
-              onClick={() => handleUpdateFeatureFlag('featureSightings', null)}
-              disabled={isSaving || !isFeatureFlagOverridden(settings?.featureSightings ?? null)}
-              className={`px-3 py-1.5 text-sm rounded-lg border ${
-                !isFeatureFlagOverridden(settings?.featureSightings ?? null)
-                  ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-default'
-                  : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
-              }`}
-            >
-              Use Default
-            </button>
-            <button
-              onClick={() => {
-                const currentValue = getFeatureFlagValue(settings?.featureSightings ?? null, ENV_FEATURE_DEFAULTS.sightings);
-                handleUpdateFeatureFlag('featureSightings', !currentValue);
-              }}
-              disabled={isSaving}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                getFeatureFlagValue(settings?.featureSightings ?? null, ENV_FEATURE_DEFAULTS.sightings)
-                  ? 'bg-cyan-600'
-                  : 'bg-gray-200'
-              } ${isSaving ? 'opacity-50' : ''}`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  getFeatureFlagValue(settings?.featureSightings ?? null, ENV_FEATURE_DEFAULTS.sightings)
-                    ? 'translate-x-6'
-                    : 'translate-x-1'
-                }`}
-              />
-            </button>
-          </div>
-        </div>
-      </div>
+      ) : (
+        <>
+          {renderFeatureRow(
+            'trainings',
+            'featureTrainings',
+            'Training Feature',
+            'Shows/hides the Training section in navigation and all training-related pages.'
+          )}
+          {renderFeatureRow(
+            'sightings',
+            'featureSightings',
+            'ICE Sightings Feature',
+            'Shows/hides the ICE Sightings report feature, including the public report form.'
+          )}
+        </>
+      )}
 
       {/* Info Box */}
       <div className="p-6 bg-blue-50">
         <div className="flex gap-3">
-          <span className="text-blue-500 text-lg">ℹ️</span>
+          <span className="text-blue-500 text-lg">i</span>
           <div className="text-sm text-blue-800">
             <p className="font-medium mb-1">About Feature Flags</p>
             <p>
-              Feature flags control visibility of major features. When you toggle a feature, it overrides the
-              environment default for all users. Click &quot;Use Default&quot; to revert to the environment setting.
+              Feature flags control visibility of major features.
+              {isDeveloper
+                ? ' As a developer, you can enable any feature for this organization.'
+                : ' You can disable features that are globally enabled. Features that are not available globally cannot be enabled here.'}
             </p>
             <p className="mt-2 text-xs">
               Changes take effect immediately. Users may need to refresh to see changes.

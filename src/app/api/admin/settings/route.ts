@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { auditUpdate, toAuditUser } from '@/lib/audit';
 import { getCurrentOrgId, getOrgIdForCreate } from '@/lib/org-context';
+import { getGlobalSettings, ENV_FEATURE_DEFAULTS } from '@/lib/global-settings';
 
 // GET /api/admin/settings - Get organization settings
 export async function GET() {
@@ -122,6 +123,35 @@ export async function PUT(request: Request) {
       ].filter(f => f !== undefined);
       if (nonFeatureFlagFields.length > 0) {
         return NextResponse.json({ error: 'Developers can only modify feature flags' }, { status: 403 });
+      }
+    }
+
+    // One-way override constraint for feature flags (non-developers only)
+    // Admins can only DISABLE features when global is ON
+    // Admins CANNOT enable features when global is OFF
+    if (user.role !== 'DEVELOPER') {
+      const globalSettings = await getGlobalSettings();
+
+      // Check trainings feature flag
+      if (featureTrainings === true) {
+        const globalTrainings = globalSettings.featureTrainings ?? ENV_FEATURE_DEFAULTS.trainings;
+        if (!globalTrainings) {
+          return NextResponse.json(
+            { error: 'Cannot enable Trainings feature - it is not available globally. Contact support to enable.' },
+            { status: 403 }
+          );
+        }
+      }
+
+      // Check sightings feature flag
+      if (featureSightings === true) {
+        const globalSightings = globalSettings.featureSightings ?? ENV_FEATURE_DEFAULTS.sightings;
+        if (!globalSightings) {
+          return NextResponse.json(
+            { error: 'Cannot enable Sightings feature - it is not available globally. Contact support to enable.' },
+            { status: 403 }
+          );
+        }
       }
     }
 
