@@ -25,11 +25,6 @@ const nextConfig: NextConfig = {
         destination: '/settings/scheduling',
         permanent: true,
       },
-      {
-        source: '/developer/feature-flags',
-        destination: '/settings/features',
-        permanent: true,
-      },
       // Deprecated settings pages - consolidated to /admin/settings
       {
         source: '/settings/organization',
@@ -41,11 +36,8 @@ const nextConfig: NextConfig = {
         destination: '/admin/settings',
         permanent: false,
       },
-      {
-        source: '/settings/features',
-        destination: '/admin/settings',
-        permanent: false,
-      },
+      // Note: /settings/features is now a proper page, not redirected
+      // Note: /developer/feature-flags is now a proper page, not redirected
       // Mapping pages consolidated to /map
       {
         source: '/coordinator/mapping',
