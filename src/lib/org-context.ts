@@ -94,9 +94,29 @@ export async function getCurrentOrganization() {
 /**
  * Get the current organization ID from session
  * This is the primary way to get org context in the new architecture
+ *
+ * Priority:
+ * 1. Developer override cookie (dev-org-override) - for DEVELOPER role only
+ * 2. Session currentOrgId
  */
 export async function getCurrentOrgId(): Promise<string | null> {
   const session = await auth();
+
+  // Check for developer org override cookie (DEVELOPER role only)
+  if (session?.user?.role === 'DEVELOPER') {
+    const { cookies } = await import('next/headers');
+    const cookieStore = await cookies();
+    const devOverride = cookieStore.get('dev-org-override')?.value;
+
+    if (devOverride) {
+      // __none__ means no org (for viewing orphaned records)
+      if (devOverride === '__none__') {
+        return null;
+      }
+      return devOverride;
+    }
+  }
+
   return session?.user?.currentOrgId ?? null;
 }
 
