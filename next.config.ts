@@ -36,7 +36,12 @@ const nextConfig: NextConfig = {
         destination: '/admin/settings',
         permanent: false,
       },
-      // Note: /settings/features is now a proper page, not redirected
+      // Settings features moved to admin
+      {
+        source: '/settings/features',
+        destination: '/admin/features',
+        permanent: false,
+      },
       // Note: /developer/feature-flags is now a proper page, not redirected
       // Mapping pages consolidated to /map
       {
