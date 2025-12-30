@@ -82,6 +82,112 @@ export default function HomeClient() {
         </div>
       </section>
 
+      {/* Built for Your Organization - Two Column Value Prop */}
+      <section className="py-16 bg-white">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
+            Built for Your Organization
+          </h2>
+          <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+            {/* Coordinators Column */}
+            <div className="bg-gradient-to-br from-cyan-50 to-white rounded-xl p-8 border border-cyan-100">
+              <h3 className="text-xl font-semibold text-cyan-700 mb-6 flex items-center gap-2">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+                For Coordinators
+              </h3>
+              <ul className="space-y-3">
+                <li className="flex items-start gap-3">
+                  <svg className="w-5 h-5 text-cyan-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-gray-700">Create and manage shift schedules</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <svg className="w-5 h-5 text-cyan-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-gray-700">Build interactive training modules</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <svg className="w-5 h-5 text-cyan-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-gray-700">Configure auto-qualification rules</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <svg className="w-5 h-5 text-cyan-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-gray-700">Track volunteer qualifications</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <svg className="w-5 h-5 text-cyan-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-gray-700">Define coverage requirements by zone</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <svg className="w-5 h-5 text-cyan-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-gray-700">Send bulk communications</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Volunteers Column */}
+            <div className="bg-gradient-to-br from-purple-50 to-white rounded-xl p-8 border border-purple-100">
+              <h3 className="text-xl font-semibold text-purple-700 mb-6 flex items-center gap-2">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                For Volunteers
+              </h3>
+              <ul className="space-y-3">
+                <li className="flex items-start gap-3">
+                  <svg className="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-gray-700">Complete training at your own pace</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <svg className="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-gray-700">Automatically earn shift qualifications</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <svg className="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-gray-700">Sign up for shifts matching your skills</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <svg className="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-gray-700">Track your progress and certifications</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <svg className="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-gray-700">Access resources and training materials</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <svg className="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-gray-700">Stay connected with your team</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* How to Get Involved Section */}
       <section className="py-16 bg-gray-50">
         <div className="container mx-auto px-4">
@@ -111,7 +217,7 @@ export default function HomeClient() {
                 Complete Training
               </h3>
               <p className="text-gray-600">
-                Finish required training modules to learn protocols, safety guidelines, and reporting procedures.
+                Complete interactive training modules to earn qualifications for shift positions.
               </p>
             </div>
 
@@ -131,14 +237,14 @@ export default function HomeClient() {
         </div>
       </section>
 
-      {/* What We Do Section */}
+      {/* Platform Features Section */}
       <section className="py-16">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
-            What We Do
+            Platform Features
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-            {/* Patrol */}
+            {/* Field Monitoring */}
             <div className="flex items-start gap-4 p-6 bg-white rounded-lg border border-gray-200">
               <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -147,29 +253,14 @@ export default function HomeClient() {
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900 mb-1">Zone Patrol</h3>
+                <h3 className="font-semibold text-gray-900 mb-1">Field Monitoring</h3>
                 <p className="text-sm text-gray-600">
-                  Active monitoring of assigned zones to observe and document activity in your community.
+                  Active monitoring of assigned areas to observe and document activity in your community.
                 </p>
               </div>
             </div>
 
-            {/* Intel Collection - Future Feature */}
-            <div className="flex items-start gap-4 p-6 bg-gray-50 rounded-lg border border-gray-200 opacity-60">
-              <div className="w-10 h-10 bg-gray-200 text-gray-400 rounded-lg flex items-center justify-center flex-shrink-0">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-500 mb-1">Intel Collection <span className="text-xs font-normal text-gray-400">(Coming Soon)</span></h3>
-                <p className="text-sm text-gray-400">
-                  Monitor social media channels and community networks to identify and verify reports.
-                </p>
-              </div>
-            </div>
-
-            {/* Field Response */}
+            {/* Rapid Response */}
             <div className="flex items-start gap-4 p-6 bg-white rounded-lg border border-gray-200">
               <div className="w-10 h-10 bg-orange-100 text-orange-600 rounded-lg flex items-center justify-center flex-shrink-0">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -177,54 +268,69 @@ export default function HomeClient() {
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900 mb-1">On-Call Response</h3>
+                <h3 className="font-semibold text-gray-900 mb-1">Rapid Response</h3>
                 <p className="text-sm text-gray-600">
-                  Available for rapid dispatch to verify sightings and provide on-the-ground support.
+                  Available for quick dispatch to verify reports and provide on-the-ground support.
                 </p>
               </div>
             </div>
 
-            {/* Community Alerts - Future Feature */}
-            <div className="flex items-start gap-4 p-6 bg-gray-50 rounded-lg border border-gray-200 opacity-60">
-              <div className="w-10 h-10 bg-gray-200 text-gray-400 rounded-lg flex items-center justify-center flex-shrink-0">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-500 mb-1">Community Alerts <span className="text-xs font-normal text-gray-400">(Coming Soon)</span></h3>
-                <p className="text-sm text-gray-400">
-                  Timely alerts to keep the community informed about relevant activity.
-                </p>
-              </div>
-            </div>
-
-            {/* Coordination */}
+            {/* Training Center */}
             <div className="flex items-start gap-4 p-6 bg-white rounded-lg border border-gray-200">
-              <div className="w-10 h-10 bg-cyan-100 text-cyan-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-1">Team Coordination</h3>
-                <p className="text-sm text-gray-600">
-                  Zone-based teams coordinate via Signal for real-time, encrypted communication.
-                </p>
-              </div>
-            </div>
-
-            {/* Training - Future Feature */}
-            <div className="flex items-start gap-4 p-6 bg-gray-50 rounded-lg border border-gray-200 opacity-60">
-              <div className="w-10 h-10 bg-gray-200 text-gray-400 rounded-lg flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold text-gray-500 mb-1">Training & Support <span className="text-xs font-normal text-gray-400">(Coming Soon)</span></h3>
-                <p className="text-sm text-gray-400">
-                  Comprehensive training program ensures all volunteers are prepared and supported.
+                <h3 className="font-semibold text-gray-900 mb-1">Training Center</h3>
+                <p className="text-sm text-gray-600">
+                  Interactive training modules with video, quizzes, and attestations. Earn qualifications automatically.
+                </p>
+              </div>
+            </div>
+
+            {/* Incident Reports */}
+            <div className="flex items-start gap-4 p-6 bg-white rounded-lg border border-gray-200">
+              <div className="w-10 h-10 bg-red-100 text-red-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-1">Incident Reports</h3>
+                <p className="text-sm text-gray-600">
+                  Receive, track, and coordinate response to field incident reports in real-time.
+                </p>
+              </div>
+            </div>
+
+            {/* Shift Scheduling */}
+            <div className="flex items-start gap-4 p-6 bg-white rounded-lg border border-gray-200">
+              <div className="w-10 h-10 bg-cyan-100 text-cyan-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-1">Shift Scheduling</h3>
+                <p className="text-sm text-gray-600">
+                  Create and fill volunteer shifts with role requirements and coverage tracking.
+                </p>
+              </div>
+            </div>
+
+            {/* Message Templates */}
+            <div className="flex items-start gap-4 p-6 bg-white rounded-lg border border-gray-200">
+              <div className="w-10 h-10 bg-green-100 text-green-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-1">Message Templates</h3>
+                <p className="text-sm text-gray-600">
+                  Pre-built templates for quick copy-paste to Signal groups for team coordination.
                 </p>
               </div>
             </div>
