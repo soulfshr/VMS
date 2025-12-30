@@ -51,6 +51,17 @@ export async function GET(request: NextRequest) {
             name: true,
           },
         },
+        grantsQualifiedRoles: {
+          include: {
+            qualifiedRole: {
+              select: {
+                id: true,
+                name: true,
+                color: true,
+              },
+            },
+          },
+        },
       },
       orderBy: [
         { sortOrder: 'asc' },
@@ -69,6 +80,8 @@ export async function GET(request: NextRequest) {
       isPublished: module.isPublished,
       sortOrder: module.sortOrder,
       grantsQualifiedRole: module.grantsQualifiedRole,
+      // Transform junction table to flat array of qualified roles
+      grantsQualifiedRoles: module.grantsQualifiedRoles.map(g => g.qualifiedRole),
       createdAt: module.createdAt,
       updatedAt: module.updatedAt,
       stats: {
@@ -111,6 +124,7 @@ export async function POST(request: NextRequest) {
       estimatedMinutes,
       isRequired,
       grantsQualifiedRoleId,
+      grantsQualifiedRoleIds, // NEW: Array of role IDs
     } = body;
 
     if (!title || typeof title !== 'string' || title.trim().length === 0) {
@@ -127,36 +141,72 @@ export async function POST(request: NextRequest) {
     });
     const nextSortOrder = (lastModule?.sortOrder ?? -1) + 1;
 
-    const trainingModule = await prisma.trainingModule.create({
-      data: {
-        title: title.trim(),
-        description: description?.trim() || null,
-        thumbnailUrl: thumbnailUrl || null,
-        estimatedMinutes: estimatedMinutes || 30,
-        isRequired: isRequired || false,
-        isPublished: false, // Always start as draft
-        sortOrder: nextSortOrder,
-        grantsQualifiedRoleId: grantsQualifiedRoleId || null,
-      },
-      include: {
-        grantsQualifiedRole: {
-          select: {
-            id: true,
-            name: true,
+    // Use transaction to create module and role grants atomically
+    const trainingModule = await prisma.$transaction(async (tx) => {
+      // Create the module
+      const createdModule = await tx.trainingModule.create({
+        data: {
+          title: title.trim(),
+          description: description?.trim() || null,
+          thumbnailUrl: thumbnailUrl || null,
+          estimatedMinutes: estimatedMinutes || 30,
+          isRequired: isRequired || false,
+          isPublished: false, // Always start as draft
+          sortOrder: nextSortOrder,
+          grantsQualifiedRoleId: grantsQualifiedRoleId || null, // DEPRECATED but keep for compatibility
+        },
+      });
+
+      // Create role grants if provided (new many-to-many)
+      if (grantsQualifiedRoleIds && Array.isArray(grantsQualifiedRoleIds) && grantsQualifiedRoleIds.length > 0) {
+        await tx.moduleQualifiedRoleGrant.createMany({
+          data: grantsQualifiedRoleIds.map((roleId: string) => ({
+            moduleId: createdModule.id,
+            qualifiedRoleId: roleId,
+          })),
+        });
+      }
+
+      // Fetch the complete module with relations
+      return tx.trainingModule.findUnique({
+        where: { id: createdModule.id },
+        include: {
+          grantsQualifiedRole: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          grantsQualifiedRoles: {
+            include: {
+              qualifiedRole: {
+                select: {
+                  id: true,
+                  name: true,
+                  color: true,
+                },
+              },
+            },
           },
         },
-      },
+      });
     });
+
+    // Transform response
+    const responseModule = {
+      ...trainingModule,
+      grantsQualifiedRoles: trainingModule?.grantsQualifiedRoles.map(g => g.qualifiedRole) || [],
+    };
 
     // Audit log the module creation
     await auditCreate(
       toAuditUser(user),
       'TrainingModule',
-      trainingModule.id,
-      { title: trainingModule.title, isRequired: trainingModule.isRequired }
+      trainingModule!.id,
+      { title: trainingModule!.title, isRequired: trainingModule!.isRequired }
     );
 
-    return NextResponse.json({ module: trainingModule }, { status: 201 });
+    return NextResponse.json({ module: responseModule }, { status: 201 });
   } catch (error) {
     console.error('Error creating module:', error);
     return NextResponse.json(

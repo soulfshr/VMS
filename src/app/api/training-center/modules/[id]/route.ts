@@ -44,6 +44,17 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             name: true,
           },
         },
+        grantsQualifiedRoles: {
+          include: {
+            qualifiedRole: {
+              select: {
+                id: true,
+                name: true,
+                color: true,
+              },
+            },
+          },
+        },
         enrollments: isDeveloper ? {
           select: {
             id: true,
@@ -73,10 +84,16 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Module not found' }, { status: 404 });
     }
 
+    // Transform grantsQualifiedRoles to flat array
+    const transformedModule = {
+      ...trainingModule,
+      grantsQualifiedRoles: trainingModule.grantsQualifiedRoles.map(g => g.qualifiedRole),
+    };
+
     // For non-developers, hide quiz correct answers
     if (!isDeveloper) {
       const sanitizedModule = {
-        ...trainingModule,
+        ...transformedModule,
         sections: trainingModule.sections.map(section => ({
           ...section,
           quiz: section.quiz ? {
@@ -99,7 +116,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ module: sanitizedModule });
     }
 
-    return NextResponse.json({ module: trainingModule });
+    return NextResponse.json({ module: transformedModule });
   } catch (error) {
     console.error('Error fetching module:', error);
     return NextResponse.json(
@@ -134,6 +151,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       isPublished,
       sortOrder,
       grantsQualifiedRoleId,
+      grantsQualifiedRoleIds, // NEW: Array of role IDs
     } = body;
 
     // Check module exists
@@ -156,35 +174,79 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     if (sortOrder !== undefined) updateData.sortOrder = sortOrder;
     if (grantsQualifiedRoleId !== undefined) updateData.grantsQualifiedRoleId = grantsQualifiedRoleId || null;
 
-    const trainingModule = await prisma.trainingModule.update({
-      where: { id },
-      data: updateData,
-      include: {
-        sections: {
-          select: {
-            id: true,
-            type: true,
+    // Use transaction to update module and role grants atomically
+    const trainingModule = await prisma.$transaction(async (tx) => {
+      // Update the module
+      await tx.trainingModule.update({
+        where: { id },
+        data: updateData,
+      });
+
+      // Update role grants if provided (new many-to-many)
+      if (grantsQualifiedRoleIds !== undefined) {
+        // Delete existing grants
+        await tx.moduleQualifiedRoleGrant.deleteMany({
+          where: { moduleId: id },
+        });
+
+        // Create new grants
+        if (Array.isArray(grantsQualifiedRoleIds) && grantsQualifiedRoleIds.length > 0) {
+          await tx.moduleQualifiedRoleGrant.createMany({
+            data: grantsQualifiedRoleIds.map((roleId: string) => ({
+              moduleId: id,
+              qualifiedRoleId: roleId,
+            })),
+          });
+        }
+      }
+
+      // Fetch the complete module with relations
+      return tx.trainingModule.findUnique({
+        where: { id },
+        include: {
+          sections: {
+            select: {
+              id: true,
+              type: true,
+            },
+          },
+          grantsQualifiedRole: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          grantsQualifiedRoles: {
+            include: {
+              qualifiedRole: {
+                select: {
+                  id: true,
+                  name: true,
+                  color: true,
+                },
+              },
+            },
           },
         },
-        grantsQualifiedRole: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
+      });
     });
+
+    // Transform response
+    const responseModule = {
+      ...trainingModule,
+      grantsQualifiedRoles: trainingModule?.grantsQualifiedRoles.map(g => g.qualifiedRole) || [],
+    };
 
     // Audit log the module update
     await auditUpdate(
       toAuditUser(user),
       'TrainingModule',
-      trainingModule.id,
+      trainingModule!.id,
       existing as unknown as Record<string, unknown>,
       trainingModule as unknown as Record<string, unknown>
     );
 
-    return NextResponse.json({ module: trainingModule });
+    return NextResponse.json({ module: responseModule });
   } catch (error) {
     console.error('Error updating module:', error);
     return NextResponse.json(

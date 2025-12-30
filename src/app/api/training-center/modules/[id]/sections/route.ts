@@ -64,13 +64,13 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     const { id: moduleId } = await params;
     const body = await request.json();
-    const { title, type } = body;
+    const { title, type, attestationText } = body;
 
     if (!title || typeof title !== 'string' || title.trim().length === 0) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 });
     }
 
-    if (!type || !['VIDEO', 'TEXT', 'QUIZ', 'RESOURCE'].includes(type)) {
+    if (!type || !['VIDEO', 'TEXT', 'QUIZ', 'RESOURCE', 'ATTESTATION'].includes(type)) {
       return NextResponse.json({ error: 'Invalid section type' }, { status: 400 });
     }
 
@@ -98,6 +98,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         title: title.trim(),
         type: type as SectionType,
         sortOrder: nextSortOrder,
+        // For ATTESTATION sections, set default text if not provided
+        attestationText: type === 'ATTESTATION'
+          ? (attestationText?.trim() || 'I have read and understood the material presented in this section.')
+          : null,
       },
     });
 

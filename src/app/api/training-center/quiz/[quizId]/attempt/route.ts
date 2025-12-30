@@ -214,6 +214,42 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
             completedAt: new Date(),
           },
         });
+
+        // Grant qualified roles upon module completion
+        const moduleWithGrants = await prisma.trainingModule.findUnique({
+          where: { id: quiz.section.moduleId },
+          include: {
+            grantsQualifiedRoles: {
+              select: {
+                qualifiedRoleId: true,
+              },
+            },
+          },
+        });
+
+        if (moduleWithGrants?.grantsQualifiedRoles?.length) {
+          for (const grant of moduleWithGrants.grantsQualifiedRoles) {
+            // Check if user already has this qualification
+            const existing = await prisma.userQualification.findUnique({
+              where: {
+                userId_qualifiedRoleId: {
+                  userId: user.id,
+                  qualifiedRoleId: grant.qualifiedRoleId,
+                },
+              },
+            });
+
+            if (!existing) {
+              await prisma.userQualification.create({
+                data: {
+                  userId: user.id,
+                  qualifiedRoleId: grant.qualifiedRoleId,
+                  trainingModuleId: quiz.section.moduleId,
+                },
+              });
+            }
+          }
+        }
       }
     }
 

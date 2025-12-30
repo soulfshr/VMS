@@ -31,6 +31,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         module: {
           include: {
             grantsQualifiedRole: true,
+            grantsQualifiedRoles: {
+              select: { qualifiedRoleId: true },
+            },
             sections: {
               where: { type: 'QUIZ' },
               include: {
@@ -94,20 +97,40 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       }
     );
 
-    // Optionally revoke qualified role
-    if (revokeQualification && enrollment.module.grantsQualifiedRole) {
-      await prisma.userQualification.deleteMany({
-        where: {
-          userId: enrollment.userId,
-          qualifiedRoleId: enrollment.module.grantsQualifiedRole.id,
-        },
-      });
+    // Optionally revoke qualified roles
+    let revokedCount = 0;
+    if (revokeQualification) {
+      // Collect all role IDs to revoke (from both old single role and new many-to-many)
+      const roleIdsToRevoke: string[] = [];
+
+      // Legacy single role
+      if (enrollment.module.grantsQualifiedRole) {
+        roleIdsToRevoke.push(enrollment.module.grantsQualifiedRole.id);
+      }
+
+      // New many-to-many roles
+      if (enrollment.module.grantsQualifiedRoles?.length) {
+        roleIdsToRevoke.push(...enrollment.module.grantsQualifiedRoles.map(g => g.qualifiedRoleId));
+      }
+
+      // Remove duplicates and revoke
+      const uniqueRoleIds = [...new Set(roleIdsToRevoke)];
+      if (uniqueRoleIds.length > 0) {
+        const result = await prisma.userQualification.deleteMany({
+          where: {
+            userId: enrollment.userId,
+            qualifiedRoleId: { in: uniqueRoleIds },
+          },
+        });
+        revokedCount = result.count;
+      }
     }
 
     return NextResponse.json({
       success: true,
       message: `Reset progress for ${enrollment.user.name}`,
-      revokedQualification: revokeQualification && !!enrollment.module.grantsQualifiedRole,
+      revokedQualification: revokeQualification && revokedCount > 0,
+      revokedCount,
     });
   } catch (error) {
     console.error('Error resetting enrollment:', error);

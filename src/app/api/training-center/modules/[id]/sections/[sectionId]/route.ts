@@ -75,6 +75,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       textContent,
       resourceUrl,
       resourceName,
+      attestationText,
     } = body;
 
     // Verify section exists
@@ -95,6 +96,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     if (textContent !== undefined) updateData.textContent = textContent || null;
     if (resourceUrl !== undefined) updateData.resourceUrl = resourceUrl || null;
     if (resourceName !== undefined) updateData.resourceName = resourceName || null;
+    if (attestationText !== undefined) updateData.attestationText = attestationText?.trim() || null;
 
     const section = await prisma.moduleSection.update({
       where: { id: sectionId },

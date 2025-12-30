@@ -16,7 +16,7 @@ function escapeHtml(str: string): string {
   return str.replace(/[&<>"']/g, (char) => escapeMap[char] || char);
 }
 
-type SectionType = 'VIDEO' | 'TEXT' | 'QUIZ' | 'RESOURCE';
+type SectionType = 'VIDEO' | 'TEXT' | 'QUIZ' | 'RESOURCE' | 'ATTESTATION';
 
 interface QuizOption {
   id: string;
@@ -51,6 +51,7 @@ interface Section {
   textContent: string | null;
   resourceUrl: string | null;
   resourceName: string | null;
+  attestationText: string | null;
   quiz: Quiz | null;
 }
 
@@ -60,7 +61,8 @@ interface TrainingModule {
   description: string | null;
   estimatedMinutes: number;
   isRequired: boolean;
-  grantsQualifiedRole: { name: string } | null;
+  grantsQualifiedRole: { name: string } | null; // DEPRECATED
+  grantsQualifiedRoles: { id: string; name: string }[]; // NEW
   sections: Section[];
 }
 
@@ -187,10 +189,15 @@ export default function LearnerModulePage() {
               <h1 className="text-lg font-semibold text-gray-900">{trainingModule.title}</h1>
               <div className="flex items-center gap-2 text-sm text-gray-500">
                 <span>{overallProgress}% complete</span>
-                {trainingModule.grantsQualifiedRole && (
+                {(trainingModule.grantsQualifiedRoles?.length > 0 || trainingModule.grantsQualifiedRole) && (
                   <>
                     <span>•</span>
-                    <span className="text-purple-600">Grants: {trainingModule.grantsQualifiedRole.name}</span>
+                    <span className="text-purple-600">
+                      Grants: {trainingModule.grantsQualifiedRoles?.length > 0
+                        ? trainingModule.grantsQualifiedRoles.map(r => r.name).join(', ')
+                        : trainingModule.grantsQualifiedRole?.name
+                      }
+                    </span>
                   </>
                 )}
               </div>
@@ -352,6 +359,14 @@ function SectionViewer({
             onComplete={onComplete}
           />
         )}
+
+        {section.type === 'ATTESTATION' && (
+          <AttestationSection
+            section={section}
+            isComplete={isComplete}
+            onComplete={onComplete}
+          />
+        )}
       </div>
 
       {/* Navigation Footer */}
@@ -508,6 +523,58 @@ function ResourceSection({
         Download Resource
         <span>↗</span>
       </a>
+    </div>
+  );
+}
+
+// Attestation Section
+function AttestationSection({
+  section,
+  isComplete,
+  onComplete,
+}: {
+  section: Section;
+  isComplete?: boolean;
+  onComplete: () => void;
+}) {
+  const [isChecked, setIsChecked] = useState(false);
+
+  const handleCheck = (checked: boolean) => {
+    setIsChecked(checked);
+    if (checked && !isComplete) {
+      onComplete();
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+        <p className="text-gray-800 whitespace-pre-wrap">
+          {section.attestationText || 'I have read and understood the material presented in this section.'}
+        </p>
+      </div>
+
+      <label className={`flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer transition-colors ${
+        isComplete || isChecked
+          ? 'border-green-300 bg-green-50'
+          : 'border-gray-200 hover:border-purple-300'
+      }`}>
+        <input
+          type="checkbox"
+          checked={isComplete || isChecked}
+          disabled={isComplete}
+          onChange={(e) => handleCheck(e.target.checked)}
+          className="mt-0.5 w-5 h-5 text-green-600 rounded"
+        />
+        <div>
+          <span className={`font-medium ${isComplete || isChecked ? 'text-green-700' : 'text-gray-900'}`}>
+            I acknowledge and confirm the above statement
+          </span>
+          <p className="text-sm text-gray-500 mt-1">
+            This acknowledgment is required to complete this section
+          </p>
+        </div>
+      </label>
     </div>
   );
 }

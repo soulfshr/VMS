@@ -226,7 +226,8 @@ model QualifiedRole {
   shiftTypeRequirements ShiftTypeQualifiedRoleRequirement[]
   trainingTypeGrants    TrainingType[] @relation("TrainingGrantsQualifiedRole")
   shiftVolunteers       ShiftVolunteer[]
-  trainingModuleGrants  TrainingModule[] @relation("ModuleGrantsQualifiedRole")
+  trainingModuleGrants  TrainingModule[] @relation("ModuleGrantsQualifiedRole")  // DEPRECATED
+  moduleRoleGrants      ModuleQualifiedRoleGrant[] @relation("QualifiedRoleGrantedByModules")  // NEW
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -248,9 +249,11 @@ model UserQualification {
   expiresAt         DateTime?
   grantedById       String?       // Admin who granted it manually
   trainingSessionId String?       // Training session that granted it
+  trainingModuleId  String?       // Training module that granted it
 
   user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   qualifiedRole     QualifiedRole @relation(fields: [qualifiedRoleId], references: [id], onDelete: Cascade)
+  trainingModule    TrainingModule? @relation("ModuleGrantedQualifications", fields: [trainingModuleId], references: [id])
 
   @@unique([userId, qualifiedRoleId])
   @@index([userId])
@@ -303,6 +306,7 @@ model OrganizationSettings {
   // Feature flag overrides (null = use env var default)
   featureTrainings  Boolean?  // Override for NEXT_PUBLIC_FEATURE_TRAININGS
   featureSightings  Boolean?  // Override for NEXT_PUBLIC_FEATURE_SIGHTINGS
+  featureMaps       Boolean?  // Override for NEXT_PUBLIC_FEATURE_MAPS
 
   // Dispatcher scheduling mode
   // REGIONAL = one dispatcher covers all counties per time block (low activity)
@@ -348,6 +352,7 @@ model GlobalSettings {
   // When global is ON: org admins can disable for their org
   featureTrainings Boolean?  // Override for NEXT_PUBLIC_FEATURE_TRAININGS
   featureSightings Boolean?  // Override for NEXT_PUBLIC_FEATURE_SIGHTINGS
+  featureMaps      Boolean?  // Override for NEXT_PUBLIC_FEATURE_MAPS
 
   @@map("global_settings")
 }
@@ -1209,6 +1214,7 @@ enum SectionType {
   TEXT
   QUIZ
   RESOURCE
+  ATTESTATION
 }
 
 enum QuestionType {
@@ -1234,9 +1240,12 @@ model TrainingModule {
   isPublished     Boolean   @default(false)
   sortOrder       Int       @default(0)
 
-  // Optional: Grant qualification upon completion
+  // DEPRECATED: Single qualification grant - use grantsQualifiedRoles instead
   grantsQualifiedRoleId String?
   grantsQualifiedRole   QualifiedRole? @relation("ModuleGrantsQualifiedRole", fields: [grantsQualifiedRoleId], references: [id])
+
+  // NEW: Multiple qualified roles granted upon completion
+  grantsQualifiedRoles  ModuleQualifiedRoleGrant[] @relation("ModuleGrantsQualifiedRoles")
 
   // Multi-tenant: Organization scope
   organizationId  String?
@@ -1245,11 +1254,28 @@ model TrainingModule {
   // Relations
   sections        ModuleSection[]
   enrollments     ModuleEnrollment[]
+  grantedQualifications UserQualification[] @relation("ModuleGrantedQualifications")
 
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
   @@index([organizationId])
+}
+
+// Junction table for multiple qualified roles granted by a training module
+model ModuleQualifiedRoleGrant {
+  id                String         @id @default(cuid())
+  moduleId          String
+  qualifiedRoleId   String
+
+  module            TrainingModule @relation("ModuleGrantsQualifiedRoles", fields: [moduleId], references: [id], onDelete: Cascade)
+  qualifiedRole     QualifiedRole  @relation("QualifiedRoleGrantedByModules", fields: [qualifiedRoleId], references: [id], onDelete: Cascade)
+
+  createdAt         DateTime       @default(now())
+
+  @@unique([moduleId, qualifiedRoleId])
+  @@index([moduleId])
+  @@index([qualifiedRoleId])
 }
 
 // Module Section - a segment within a module (video, text, or quiz)
@@ -1272,6 +1298,9 @@ model ModuleSection {
   // For RESOURCE sections (downloadable files)
   resourceUrl     String?     // S3 key for the file
   resourceName    String?     // Display name for download
+
+  // For ATTESTATION sections
+  attestationText String?     @db.Text  // The statement to acknowledge
 
   // For QUIZ sections
   quiz            ModuleQuiz?

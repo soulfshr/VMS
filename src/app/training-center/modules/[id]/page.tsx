@@ -16,7 +16,7 @@ function escapeHtml(str: string): string {
   return str.replace(/[&<>"']/g, (char) => escapeMap[char] || char);
 }
 
-type SectionType = 'VIDEO' | 'TEXT' | 'QUIZ' | 'RESOURCE';
+type SectionType = 'VIDEO' | 'TEXT' | 'QUIZ' | 'RESOURCE' | 'ATTESTATION';
 
 interface QuizOption {
   id: string;
@@ -53,12 +53,14 @@ interface Section {
   textContent: string | null;
   resourceUrl: string | null;
   resourceName: string | null;
+  attestationText: string | null;
   quiz: Quiz | null;
 }
 
 interface QualifiedRole {
   id: string;
   name: string;
+  color?: string;
 }
 
 interface Enrollment {
@@ -83,7 +85,8 @@ interface TrainingModule {
   isRequired: boolean;
   isPublished: boolean;
   sortOrder: number;
-  grantsQualifiedRole: QualifiedRole | null;
+  grantsQualifiedRole: QualifiedRole | null; // DEPRECATED
+  grantsQualifiedRoles: QualifiedRole[]; // NEW: Multiple roles
   sections: Section[];
   enrollments?: Enrollment[];
 }
@@ -112,6 +115,10 @@ export default function ModuleEditorPage() {
   const [estimatedMinutes, setEstimatedMinutes] = useState(30);
   const [isRequired, setIsRequired] = useState(false);
 
+  // Qualified roles state
+  const [availableRoles, setAvailableRoles] = useState<QualifiedRole[]>([]);
+  const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([]);
+
   // Section creation state
   const [isAddingSectionType, setIsAddingSectionType] = useState<SectionType | null>(null);
   const [newSectionTitle, setNewSectionTitle] = useState('');
@@ -132,6 +139,8 @@ export default function ModuleEditorPage() {
       setDescription(data.module.description || '');
       setEstimatedMinutes(data.module.estimatedMinutes);
       setIsRequired(data.module.isRequired);
+      // Set selected role IDs from module's granted roles
+      setSelectedRoleIds(data.module.grantsQualifiedRoles?.map((r: QualifiedRole) => r.id) || []);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load module');
@@ -144,6 +153,22 @@ export default function ModuleEditorPage() {
     fetchModule();
   }, [fetchModule]);
 
+  // Fetch available qualified roles
+  useEffect(() => {
+    const fetchRoles = async () => {
+      try {
+        const res = await fetch('/api/admin/qualified-roles');
+        if (res.ok) {
+          const data = await res.json();
+          setAvailableRoles(data.filter((r: QualifiedRole & { isActive?: boolean }) => r.isActive !== false));
+        }
+      } catch (err) {
+        console.error('Failed to fetch qualified roles:', err);
+      }
+    };
+    fetchRoles();
+  }, []);
+
   const handleSaveDetails = async () => {
     setIsSaving(true);
     try {
@@ -155,6 +180,7 @@ export default function ModuleEditorPage() {
           description,
           estimatedMinutes,
           isRequired,
+          grantsQualifiedRoleIds: selectedRoleIds,
         }),
       });
       if (!res.ok) throw new Error('Failed to save');
@@ -447,6 +473,13 @@ export default function ModuleEditorPage() {
                   <span>📁</span>
                   <span className="text-sm font-medium">Resource</span>
                 </button>
+                <button
+                  onClick={() => setIsAddingSectionType('ATTESTATION')}
+                  className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:border-purple-300 hover:bg-purple-50 transition-colors"
+                >
+                  <span>✅</span>
+                  <span className="text-sm font-medium">Attestation</span>
+                </button>
               </div>
             )}
           </div>
@@ -522,6 +555,44 @@ export default function ModuleEditorPage() {
                 Required module (must complete before signing up for shifts)
               </label>
             </div>
+
+            {/* Grants Qualified Roles Multi-Select */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Grants Qualified Roles
+              </label>
+              <p className="text-xs text-gray-500 mb-2">
+                Select which roles volunteers earn upon completing this module
+              </p>
+              {availableRoles.length === 0 ? (
+                <p className="text-sm text-gray-500 italic">No qualified roles available</p>
+              ) : (
+                <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-2">
+                  {availableRoles.map(role => (
+                    <label key={role.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedRoleIds.includes(role.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedRoleIds([...selectedRoleIds, role.id]);
+                          } else {
+                            setSelectedRoleIds(selectedRoleIds.filter(id => id !== role.id));
+                          }
+                        }}
+                        className="w-4 h-4 text-purple-600 rounded"
+                      />
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: role.color || '#6366f1' }}
+                      />
+                      <span className="text-sm">{role.name}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="pt-4">
               <button
                 onClick={handleSaveDetails}
@@ -630,7 +701,7 @@ export default function ModuleEditorPage() {
               This will delete all their section progress and quiz attempts for this module.
             </p>
 
-            {trainingModule.grantsQualifiedRole && (
+            {(trainingModule.grantsQualifiedRoles?.length > 0 || trainingModule.grantsQualifiedRole) && (
               <label className="flex items-start gap-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg mb-4 cursor-pointer">
                 <input
                   type="checkbox"
@@ -643,10 +714,13 @@ export default function ModuleEditorPage() {
                 />
                 <div>
                   <p className="text-sm font-medium text-yellow-800">
-                    Also revoke &ldquo;{trainingModule.grantsQualifiedRole.name}&rdquo; qualification
+                    Also revoke {trainingModule.grantsQualifiedRoles?.length > 0
+                      ? `qualifications: ${trainingModule.grantsQualifiedRoles.map(r => r.name).join(', ')}`
+                      : `"${trainingModule.grantsQualifiedRole?.name}" qualification`
+                    }
                   </p>
                   <p className="text-xs text-yellow-700 mt-1">
-                    This will remove the role granted by completing this module
+                    This will remove the role{trainingModule.grantsQualifiedRoles?.length > 1 ? 's' : ''} granted by completing this module
                   </p>
                 </div>
               </label>
@@ -705,9 +779,10 @@ function SectionCard({
   const [editTextContent, setEditTextContent] = useState(section.textContent || '');
   const [editResourceUrl, setEditResourceUrl] = useState(section.resourceUrl || '');
   const [editResourceName, setEditResourceName] = useState(section.resourceName || '');
+  const [editAttestationText, setEditAttestationText] = useState(section.attestationText || '');
   const [isUploading, setIsUploading] = useState(false);
 
-  const sectionIcon = section.type === 'VIDEO' ? '📹' : section.type === 'TEXT' ? '📝' : section.type === 'RESOURCE' ? '📁' : '❓';
+  const sectionIcon = section.type === 'VIDEO' ? '📹' : section.type === 'TEXT' ? '📝' : section.type === 'RESOURCE' ? '📁' : section.type === 'ATTESTATION' ? '✅' : '❓';
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -720,6 +795,8 @@ function SectionCard({
       } else if (section.type === 'RESOURCE') {
         body.resourceUrl = editResourceUrl || null;
         body.resourceName = editResourceName || null;
+      } else if (section.type === 'ATTESTATION') {
+        body.attestationText = editAttestationText || null;
       }
 
       const res = await fetch(`/api/training-center/modules/${moduleId}/sections/${section.id}`, {
@@ -946,6 +1023,24 @@ function SectionCard({
                 </div>
               )}
 
+              {section.type === 'ATTESTATION' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Attestation Statement
+                  </label>
+                  <p className="text-xs text-gray-500 mb-2">
+                    The text users must acknowledge to complete this section
+                  </p>
+                  <textarea
+                    value={editAttestationText}
+                    onChange={(e) => setEditAttestationText(e.target.value)}
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="I have read and understood the material presented in this training module..."
+                  />
+                </div>
+              )}
+
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleSave}
@@ -962,6 +1057,7 @@ function SectionCard({
                     setEditTextContent(section.textContent || '');
                     setEditResourceUrl(section.resourceUrl || '');
                     setEditResourceName(section.resourceName || '');
+                    setEditAttestationText(section.attestationText || '');
                   }}
                   className="px-4 py-2 text-gray-600 hover:text-gray-800 text-sm"
                 >
@@ -1028,6 +1124,18 @@ function SectionCard({
                     </a>
                   ) : (
                     <p className="text-sm text-gray-500">No resource configured</p>
+                  )}
+                </div>
+              )}
+
+              {section.type === 'ATTESTATION' && (
+                <div>
+                  {section.attestationText ? (
+                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                      <p className="text-sm text-gray-800 whitespace-pre-wrap">{section.attestationText}</p>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500">No attestation text configured</p>
                   )}
                 </div>
               )}
