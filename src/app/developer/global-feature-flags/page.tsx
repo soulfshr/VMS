@@ -5,9 +5,11 @@ import { useEffect, useState } from 'react';
 interface GlobalSettings {
   featureTrainings: boolean | null;
   featureSightings: boolean | null;
+  featureMaps: boolean | null;
   envDefaults: {
     trainings: boolean;
     sightings: boolean;
+    maps: boolean;
   };
   updatedAt: string;
 }
@@ -36,7 +38,7 @@ export default function GlobalFeatureFlagsPage() {
   }, []);
 
   const handleUpdateFeatureFlag = async (
-    flag: 'featureTrainings' | 'featureSightings',
+    flag: 'featureTrainings' | 'featureSightings' | 'featureMaps',
     value: boolean | null
   ) => {
     if (!settings) return;
@@ -232,6 +234,63 @@ export default function GlobalFeatureFlagsPage() {
                 <span
                   className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
                     getResolvedValue(settings?.featureSightings ?? null, settings?.envDefaults.sightings ?? false)
+                      ? 'translate-x-6'
+                      : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Maps Feature */}
+        <div className="p-6">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <h3 className="text-lg font-medium text-gray-900">
+                Maps Feature
+              </h3>
+              <p className="text-sm text-gray-500 mt-1 max-w-xl">
+                When ON, org admins can disable for their org. When OFF, feature is unavailable unless you enable per-org.
+              </p>
+              <div className="mt-2 flex items-center gap-2">
+                <span className="text-xs text-gray-400">
+                  Environment default: {settings?.envDefaults.maps ? 'ON' : 'OFF'}
+                </span>
+                {isOverridden(settings?.featureMaps ?? null) && (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                    Global Override Active
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="ml-6 flex items-center gap-3">
+              <button
+                onClick={() => handleUpdateFeatureFlag('featureMaps', null)}
+                disabled={isSaving || !isOverridden(settings?.featureMaps ?? null)}
+                className={`px-3 py-1.5 text-sm rounded-lg border ${
+                  !isOverridden(settings?.featureMaps ?? null)
+                    ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-default'
+                    : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                } ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                Use Env Default
+              </button>
+              <button
+                onClick={() => {
+                  const currentValue = getResolvedValue(settings?.featureMaps ?? null, settings?.envDefaults.maps ?? false);
+                  handleUpdateFeatureFlag('featureMaps', !currentValue);
+                }}
+                disabled={isSaving}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  getResolvedValue(settings?.featureMaps ?? null, settings?.envDefaults.maps ?? false)
+                    ? 'bg-purple-600'
+                    : 'bg-gray-200'
+                } ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    getResolvedValue(settings?.featureMaps ?? null, settings?.envDefaults.maps ?? false)
                       ? 'translate-x-6'
                       : 'translate-x-1'
                   }`}

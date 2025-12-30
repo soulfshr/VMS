@@ -20,6 +20,7 @@ export async function GET() {
     return NextResponse.json({
       featureTrainings: settings.featureTrainings,
       featureSightings: settings.featureSightings,
+      featureMaps: settings.featureMaps,
       // Include env defaults so UI can show what null resolves to
       envDefaults: ENV_FEATURE_DEFAULTS,
       updatedAt: settings.updatedAt,
@@ -48,12 +49,13 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { featureTrainings, featureSightings } = body;
+    const { featureTrainings, featureSightings, featureMaps } = body;
 
     // Build updates object (only include explicitly set values)
     const updates: {
       featureTrainings?: boolean | null;
       featureSightings?: boolean | null;
+      featureMaps?: boolean | null;
     } = {};
 
     if ('featureTrainings' in body) {
@@ -77,6 +79,16 @@ export async function PATCH(request: NextRequest) {
       updates.featureSightings = featureSightings;
     }
 
+    if ('featureMaps' in body) {
+      if (featureMaps !== null && typeof featureMaps !== 'boolean') {
+        return NextResponse.json(
+          { error: 'featureMaps must be a boolean or null' },
+          { status: 400 }
+        );
+      }
+      updates.featureMaps = featureMaps;
+    }
+
     if (Object.keys(updates).length === 0) {
       return NextResponse.json(
         { error: 'No valid fields to update' },
@@ -91,6 +103,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({
       featureTrainings: settings.featureTrainings,
       featureSightings: settings.featureSightings,
+      featureMaps: settings.featureMaps,
       envDefaults: ENV_FEATURE_DEFAULTS,
       updatedAt: settings.updatedAt,
     });

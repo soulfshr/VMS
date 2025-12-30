@@ -19,10 +19,12 @@ interface FeatureFlag {
 interface FeaturesResponse {
   trainings: FeatureFlag;
   sightings: FeatureFlag;
+  maps: FeatureFlag;
   // Simple resolved values for backward compatibility
   resolved: {
     trainings: boolean;
     sightings: boolean;
+    maps: boolean;
   };
 }
 
@@ -102,13 +104,21 @@ export async function GET() {
       globalSettings.featureSightings
     );
 
+    const maps = resolveFeature(
+      'maps',
+      orgSettings?.featureMaps,
+      globalSettings.featureMaps
+    );
+
     const response: FeaturesResponse = {
       trainings,
       sightings,
+      maps,
       // Simple resolved values for backward compatibility
       resolved: {
         trainings: trainings.value,
         sightings: sightings.value,
+        maps: maps.value,
       },
     };
 
@@ -128,6 +138,13 @@ export async function GET() {
         value: ENV_FEATURE_DEFAULTS.sightings,
         source: 'env' as const,
         adminConfigurable: ENV_FEATURE_DEFAULTS.sightings,
+        globalValue: null,
+        orgValue: null,
+      },
+      maps: {
+        value: ENV_FEATURE_DEFAULTS.maps,
+        source: 'env' as const,
+        adminConfigurable: ENV_FEATURE_DEFAULTS.maps,
         globalValue: null,
         orgValue: null,
       },

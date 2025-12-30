@@ -16,6 +16,7 @@ export interface FeatureFlag {
 export interface FeaturesWithMetadata {
   trainings: FeatureFlag;
   sightings: FeatureFlag;
+  maps: FeatureFlag;
   resolved: Features;
 }
 
@@ -72,6 +73,7 @@ export function useFeaturesWithMetadata(): FeaturesWithMetadata & { isLoading: b
   const [features, setFeatures] = useState<FeaturesWithMetadata>({
     trainings: { ...DEFAULT_FEATURE_FLAG, value: FEATURES.trainings },
     sightings: { ...DEFAULT_FEATURE_FLAG, value: FEATURES.sightings },
+    maps: { ...DEFAULT_FEATURE_FLAG, value: FEATURES.maps },
     resolved: FEATURES,
   });
   const [isLoading, setIsLoading] = useState(true);
@@ -82,7 +84,7 @@ export function useFeaturesWithMetadata(): FeaturesWithMetadata & { isLoading: b
         const response = await fetch('/api/features');
         if (response.ok) {
           const data = await response.json();
-          if (data.trainings && data.sightings) {
+          if (data.trainings && data.sightings && data.maps) {
             setFeatures(data);
           }
         }

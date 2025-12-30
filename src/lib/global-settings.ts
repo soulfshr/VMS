@@ -20,6 +20,7 @@ interface GlobalSettings {
   updatedAt: Date;
   featureTrainings: boolean | null;
   featureSightings: boolean | null;
+  featureMaps: boolean | null;
 }
 
 // Cache for global settings (singleton - rarely changes)
@@ -53,6 +54,7 @@ export async function getGlobalSettings(): Promise<GlobalSettings> {
         id: GLOBAL_SETTINGS_ID,
         featureTrainings: null,
         featureSightings: null,
+        featureMaps: null,
       },
     });
   }
@@ -70,6 +72,7 @@ export async function getGlobalSettings(): Promise<GlobalSettings> {
 export async function updateGlobalSettings(updates: {
   featureTrainings?: boolean | null;
   featureSightings?: boolean | null;
+  featureMaps?: boolean | null;
 }): Promise<GlobalSettings> {
   const settings = await prisma.globalSettings.upsert({
     where: { id: GLOBAL_SETTINGS_ID },
@@ -101,4 +104,5 @@ export function clearGlobalSettingsCache(): void {
 export const ENV_FEATURE_DEFAULTS = {
   trainings: process.env.NEXT_PUBLIC_FEATURE_TRAININGS === 'true',
   sightings: process.env.NEXT_PUBLIC_FEATURE_SIGHTINGS === 'true',
+  maps: process.env.NEXT_PUBLIC_FEATURE_MAPS === 'true',
 };

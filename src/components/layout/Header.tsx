@@ -211,17 +211,19 @@ export default function Header() {
                 >
                   {primarySchedulingModel === 'SHIFTS' ? 'Schedule' : 'Coverage Schedule'}
                 </Link>
-                {/* 3. Map (all users) */}
-                <Link
-                  href="/map"
-                  className={`text-sm font-medium transition-colors ${
-                    pathname.startsWith('/map')
-                      ? 'text-cyan-700'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  Map
-                </Link>
+                {/* 3. Map (all users, feature flag) */}
+                {features.maps && (
+                  <Link
+                    href="/map"
+                    className={`text-sm font-medium transition-colors ${
+                      pathname.startsWith('/map')
+                        ? 'text-cyan-700'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Map
+                  </Link>
+                )}
                 {/* 4. Dispatch (role or qualification restricted) */}
                 {features.sightings && (
                   ['DISPATCHER', 'COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role) ||
@@ -493,14 +495,16 @@ export default function Header() {
                 >
                   {primarySchedulingModel === 'SHIFTS' ? 'Schedule' : 'Coverage Schedule'}
                 </Link>
-                {/* 3. Map (all users) */}
-                <Link
-                  href="/map"
-                  className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Map
-                </Link>
+                {/* 3. Map (all users, feature flag) */}
+                {features.maps && (
+                  <Link
+                    href="/map"
+                    className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Map
+                  </Link>
+                )}
                 {/* 4. Dispatch (role or qualification restricted) */}
                 {features.sightings && (
                   ['DISPATCHER', 'COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role) ||

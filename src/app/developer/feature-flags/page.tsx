@@ -6,12 +6,14 @@ interface Settings {
   id: string;
   featureTrainings: boolean | null;
   featureSightings: boolean | null;
+  featureMaps: boolean | null;
 }
 
 // Environment variable defaults for feature flags
 const ENV_FEATURE_DEFAULTS = {
   trainings: process.env.NEXT_PUBLIC_FEATURE_TRAININGS === 'true',
   sightings: process.env.NEXT_PUBLIC_FEATURE_SIGHTINGS === 'true',
+  maps: process.env.NEXT_PUBLIC_FEATURE_MAPS === 'true',
 };
 
 export default function DeveloperPage() {
@@ -34,7 +36,7 @@ export default function DeveloperPage() {
   }, []);
 
   const handleUpdateFeatureFlag = async (
-    flag: 'featureTrainings' | 'featureSightings',
+    flag: 'featureTrainings' | 'featureSightings' | 'featureMaps',
     value: boolean | null
   ) => {
     if (!settings) return;
@@ -211,6 +213,63 @@ export default function DeveloperPage() {
                 <span
                   className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
                     getFeatureFlagValue(settings?.featureSightings ?? null, ENV_FEATURE_DEFAULTS.sightings)
+                      ? 'translate-x-6'
+                      : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Maps Feature */}
+        <div className="p-6">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <h3 className="text-lg font-medium text-gray-900">
+                Maps Feature
+              </h3>
+              <p className="text-sm text-gray-500 mt-1 max-w-xl">
+                Shows/hides the Map page with zones and points of interest. Disable for orgs that don&apos;t need geographic visualization.
+              </p>
+              <div className="mt-2 flex items-center gap-2">
+                <span className="text-xs text-gray-400">
+                  Environment default: {ENV_FEATURE_DEFAULTS.maps ? 'ON' : 'OFF'}
+                </span>
+                {isFeatureFlagOverridden(settings?.featureMaps ?? null) && (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+                    Overridden
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="ml-6 flex items-center gap-3">
+              <button
+                onClick={() => handleUpdateFeatureFlag('featureMaps', null)}
+                disabled={isSaving || !isFeatureFlagOverridden(settings?.featureMaps ?? null)}
+                className={`px-3 py-1.5 text-sm rounded-lg border ${
+                  !isFeatureFlagOverridden(settings?.featureMaps ?? null)
+                    ? 'bg-gray-100 text-gray-700 border-gray-300 cursor-default'
+                    : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                } ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                Use Default
+              </button>
+              <button
+                onClick={() => {
+                  const currentValue = getFeatureFlagValue(settings?.featureMaps ?? null, ENV_FEATURE_DEFAULTS.maps);
+                  handleUpdateFeatureFlag('featureMaps', !currentValue);
+                }}
+                disabled={isSaving}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  getFeatureFlagValue(settings?.featureMaps ?? null, ENV_FEATURE_DEFAULTS.maps)
+                    ? 'bg-purple-600'
+                    : 'bg-gray-200'
+                } ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    getFeatureFlagValue(settings?.featureMaps ?? null, ENV_FEATURE_DEFAULTS.maps)
                       ? 'translate-x-6'
                       : 'translate-x-1'
                   }`}

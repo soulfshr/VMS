@@ -33,23 +33,25 @@ export default function CoordinatorPage() {
           </div>
         </Link>
 
-        {/* Mapping Card */}
-        <Link
-          href="/coordinator/mapping"
-          className="bg-white rounded-xl border border-gray-200 p-6 hover:border-cyan-300 hover:shadow-md transition-all group"
-        >
-          <div className="flex items-start gap-4">
-            <div className="text-3xl">🗺️</div>
-            <div>
-              <h3 className="font-semibold text-gray-900 group-hover:text-cyan-700">
-                Mapping
-              </h3>
-              <p className="text-sm text-gray-600 mt-1">
-                Manage zones, points of interest, and map locations
-              </p>
+        {/* Mapping Card (feature flag) */}
+        {features.maps && (
+          <Link
+            href="/coordinator/mapping"
+            className="bg-white rounded-xl border border-gray-200 p-6 hover:border-cyan-300 hover:shadow-md transition-all group"
+          >
+            <div className="flex items-start gap-4">
+              <div className="text-3xl">🗺️</div>
+              <div>
+                <h3 className="font-semibold text-gray-900 group-hover:text-cyan-700">
+                  Mapping
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Manage zones, points of interest, and map locations
+                </p>
+              </div>
             </div>
-          </div>
-        </Link>
+          </Link>
+        )}
 
         {/* Schedule Settings Card */}
         <Link

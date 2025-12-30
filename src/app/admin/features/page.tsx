@@ -13,9 +13,11 @@ interface FeatureFlag {
 interface FeaturesData {
   trainings: FeatureFlag;
   sightings: FeatureFlag;
+  maps: FeatureFlag;
   resolved: {
     trainings: boolean;
     sightings: boolean;
+    maps: boolean;
   };
 }
 
@@ -51,7 +53,7 @@ export default function AdminFeaturesPage() {
   }, []);
 
   const handleUpdateFeatureFlag = async (
-    flag: 'featureTrainings' | 'featureSightings',
+    flag: 'featureTrainings' | 'featureSightings' | 'featureMaps',
     value: boolean | null
   ) => {
     if (!featuresData) return;
@@ -86,8 +88,8 @@ export default function AdminFeaturesPage() {
   };
 
   const renderFeatureRow = (
-    key: 'trainings' | 'sightings',
-    dbKey: 'featureTrainings' | 'featureSightings',
+    key: 'trainings' | 'sightings' | 'maps',
+    dbKey: 'featureTrainings' | 'featureSightings' | 'featureMaps',
     title: string,
     description: string
   ) => {
@@ -188,6 +190,7 @@ export default function AdminFeaturesPage() {
     featuresData &&
     (featuresData.trainings.adminConfigurable ||
       featuresData.sightings.adminConfigurable ||
+      featuresData.maps.adminConfigurable ||
       isDeveloper);
 
   return (
@@ -232,6 +235,12 @@ export default function AdminFeaturesPage() {
               'featureSightings',
               'ICE Sightings Feature',
               'Shows/hides the ICE Sightings report feature, including the public report form.'
+            )}
+            {renderFeatureRow(
+              'maps',
+              'featureMaps',
+              'Maps Feature',
+              'Shows/hides the Map page with zones and points of interest. Useful for organizations that don\'t need geographic visualization.'
             )}
           </>
         )}

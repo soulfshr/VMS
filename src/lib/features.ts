@@ -4,6 +4,7 @@
  * Environment variable defaults (set in Vercel):
  * - NEXT_PUBLIC_FEATURE_TRAININGS=true/false
  * - NEXT_PUBLIC_FEATURE_SIGHTINGS=true/false
+ * - NEXT_PUBLIC_FEATURE_MAPS=true/false
  *
  * These can be overridden at runtime via Admin > Settings > Feature Flags
  */
@@ -12,6 +13,7 @@
 export const FEATURES = {
   trainings: process.env.NEXT_PUBLIC_FEATURE_TRAININGS === 'true',
   sightings: process.env.NEXT_PUBLIC_FEATURE_SIGHTINGS === 'true',
+  maps: process.env.NEXT_PUBLIC_FEATURE_MAPS === 'true',
 };
 
 export type Features = typeof FEATURES;
