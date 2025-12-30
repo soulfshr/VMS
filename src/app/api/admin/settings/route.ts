@@ -107,6 +107,7 @@ export async function PUT(request: Request) {
       // Feature flag overrides
       featureTrainings,
       featureSightings,
+      featureMaps,
       // Email digest settings
       weeklyDigestEnabled,
       weeklyDigestSendHour,
@@ -149,6 +150,17 @@ export async function PUT(request: Request) {
         if (!globalSightings) {
           return NextResponse.json(
             { error: 'Cannot enable Sightings feature - it is not available globally. Contact support to enable.' },
+            { status: 403 }
+          );
+        }
+      }
+
+      // Check maps feature flag
+      if (featureMaps === true) {
+        const globalMaps = globalSettings.featureMaps ?? ENV_FEATURE_DEFAULTS.maps;
+        if (!globalMaps) {
+          return NextResponse.json(
+            { error: 'Cannot enable Maps feature - it is not available globally. Contact support to enable.' },
             { status: 403 }
           );
         }
@@ -286,6 +298,7 @@ export async function PUT(request: Request) {
           // Feature flags can be null (reset to default), true, or false
           ...(featureTrainings !== undefined && { featureTrainings }),
           ...(featureSightings !== undefined && { featureSightings }),
+          ...(featureMaps !== undefined && { featureMaps }),
           // Email digest settings
           ...(weeklyDigestEnabled !== undefined && { weeklyDigestEnabled }),
           ...(weeklyDigestSendHour !== undefined && { weeklyDigestSendHour: parseInt(weeklyDigestSendHour) }),
