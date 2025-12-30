@@ -3,28 +3,9 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
 
 export default function HomeClient() {
   const { data: session, status } = useSession();
-  const router = useRouter();
-
-  // Redirect unauthenticated users to login page
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/login');
-    }
-  }, [status, router]);
-
-  // Show loading state while checking auth
-  if (status === 'loading' || status === 'unauthenticated') {
-    return (
-      <div className="min-h-[calc(100vh-200px)] flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-cyan-600 border-t-transparent rounded-full" />
-      </div>
-    );
-  }
 
   // Show different CTA for authenticated users
   const isAuthenticated = status === 'authenticated' && session?.user;
