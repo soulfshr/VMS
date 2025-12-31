@@ -412,6 +412,217 @@ function BulkEditModal({
   );
 }
 
+// Import Schedule Modal Component
+function ImportScheduleModal({
+  isOpen,
+  onClose,
+  onSuccess,
+  zones,
+  shiftTypes,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+  zones: Zone[];
+  shiftTypes: ShiftTypeConfig[];
+}) {
+  const [file, setFile] = useState<File | null>(null);
+  const [zoneId, setZoneId] = useState('');
+  const [shiftTypeId, setShiftTypeId] = useState('');
+  const [status, setStatus] = useState<'DRAFT' | 'PUBLISHED'>('DRAFT');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<{
+    success: number;
+    failed: number;
+    parsed?: { month: number; year: number; locationCode: string };
+  } | null>(null);
+
+  const handleSubmit = async () => {
+    if (!file || !zoneId || !shiftTypeId) return;
+
+    setIsSubmitting(true);
+    setError(null);
+    setResult(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('options', JSON.stringify({
+        zoneId,
+        shiftTypeId,
+        status,
+        shiftDurationMinutes: 120,
+        offsetBeforeMinutes: 30,
+      }));
+
+      const res = await fetch('/api/shifts/import-schedule', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to import schedule');
+      }
+
+      setResult({
+        success: data.results?.success || 0,
+        failed: data.results?.failed || 0,
+        parsed: data.parsed,
+      });
+
+      if (data.results?.success > 0) {
+        onSuccess();
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to import schedule');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleClose = () => {
+    setFile(null);
+    setZoneId('');
+    setShiftTypeId('');
+    setStatus('DRAFT');
+    setError(null);
+    setResult(null);
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl shadow-xl max-w-lg w-full mx-4 p-6 max-h-[90vh] overflow-y-auto">
+        <h2 className="text-xl font-bold text-gray-900 mb-2">Import Clinic Schedule</h2>
+        <p className="text-gray-600 mb-4">
+          Upload a .docx clinic schedule file to automatically create 2-hour shifts.
+        </p>
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 text-red-700 text-sm">
+            {error}
+          </div>
+        )}
+
+        {result && (
+          <div className={`rounded-lg p-3 mb-4 text-sm ${
+            result.success > 0 ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-yellow-50 border border-yellow-200 text-yellow-700'
+          }`}>
+            {result.parsed && (
+              <p className="font-medium mb-1">
+                Parsed: {new Date(result.parsed.year, result.parsed.month - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })} - {result.parsed.locationCode}
+              </p>
+            )}
+            <p>Created {result.success} shifts{result.failed > 0 ? `, ${result.failed} failed` : ''}</p>
+          </div>
+        )}
+
+        <div className="space-y-4">
+          {/* File Upload */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Schedule File (.docx)
+            </label>
+            <input
+              type="file"
+              accept=".docx"
+              onChange={(e) => setFile(e.target.files?.[0] || null)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm"
+            />
+            {file && (
+              <p className="text-xs text-gray-500 mt-1">{file.name}</p>
+            )}
+          </div>
+
+          {/* Zone Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Zone
+            </label>
+            <select
+              value={zoneId}
+              onChange={(e) => setZoneId(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+            >
+              <option value="">Select zone...</option>
+              {zones.map((zone) => (
+                <option key={zone.id} value={zone.id}>{zone.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Shift Type Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Shift Type
+            </label>
+            <select
+              value={shiftTypeId}
+              onChange={(e) => setShiftTypeId(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+            >
+              <option value="">Select type...</option>
+              {shiftTypes.map((type) => (
+                <option key={type.id} value={type.id}>{type.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Status Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Initial Status
+            </label>
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value as 'DRAFT' | 'PUBLISHED')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+            >
+              <option value="DRAFT">Draft (review before publishing)</option>
+              <option value="PUBLISHED">Published (visible to volunteers)</option>
+            </select>
+          </div>
+
+          {/* Info */}
+          <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-600">
+            <p className="font-medium mb-1">How it works:</p>
+            <ul className="list-disc list-inside space-y-1 text-xs">
+              <li>Parses calendar format with appointment codes (DE, MM, CONSULTS)</li>
+              <li>Creates 2-hour shifts starting 30 min before each appointment</li>
+              <li>Skips CLOSED and ADMIN days</li>
+              <li>Uses earliest appointment time if multiple on same day</li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="flex gap-3 mt-6">
+          <button
+            onClick={handleClose}
+            disabled={isSubmitting}
+            className="flex-1 py-2 px-4 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium disabled:opacity-50"
+          >
+            {result?.success ? 'Done' : 'Cancel'}
+          </button>
+          {!result?.success && (
+            <button
+              onClick={handleSubmit}
+              disabled={isSubmitting || !file || !zoneId || !shiftTypeId}
+              className="flex-1 py-2 px-4 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium disabled:opacity-50"
+            >
+              {isSubmitting ? 'Importing...' : 'Import Schedule'}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Helper to convert hex color to Tailwind-like classes
 function getTypeColorClasses(hexColor: string | null | undefined): { bg: string; text: string } {
   if (!hexColor) return { bg: 'bg-gray-100', text: 'text-gray-700' };
@@ -471,6 +682,9 @@ function ShiftsPageContent() {
   // Bulk edit state
   const [showBulkEditModal, setShowBulkEditModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+
+  // Import schedule state
+  const [showImportModal, setShowImportModal] = useState(false);
 
   // Qualification picker state
   const [showQualificationPicker, setShowQualificationPicker] = useState(false);
@@ -777,12 +991,21 @@ function ShiftsPageContent() {
               Calendar View
             </Link>
             {canCreateShift && (
+              <>
+                <button
+                  onClick={() => setShowImportModal(true)}
+                  className="px-4 py-3 sm:py-2 border border-cyan-600 text-cyan-600 rounded-lg hover:bg-cyan-50 transition-colors font-medium text-center"
+                  title="Import clinic schedule from .docx file"
+                >
+                  Import Schedule
+                </button>
                 <Link
                   href="/shifts/create"
                   className="px-4 py-3 sm:py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium text-center"
                 >
                   + Create Shift
                 </Link>
+              </>
             )}
           </div>
         </div>
@@ -1280,6 +1503,15 @@ function ShiftsPageContent() {
         onConfirm={handleBulkEdit}
         selectedCount={selectedCount}
         isSubmitting={isEditing}
+        shiftTypes={shiftTypes}
+      />
+
+      {/* Import Schedule Modal */}
+      <ImportScheduleModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onSuccess={() => fetchShifts()}
+        zones={zones}
         shiftTypes={shiftTypes}
       />
     </div>
