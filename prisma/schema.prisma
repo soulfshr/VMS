@@ -545,6 +545,9 @@ model User {
   memberships              OrganizationMember[]
   approvedMembers          OrganizationMember[] @relation("MemberApprovedBy")
 
+  // Invite request reviews
+  reviewedInviteRequests   InviteRequest[] @relation("InviteRequestReviewedBy")
+
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
@@ -1546,4 +1549,47 @@ model CoverageOverride {
 
   @@unique([date, zoneId])  // Only one override per date per zone (null zoneId = global)
   @@index([organizationId, date])
+}
+
+// ============================================
+// INVITE REQUESTS (Lead Capture)
+// ============================================
+
+// Stores requests from potential customers interested in using the platform
+model InviteRequest {
+  id              String   @id @default(cuid())
+
+  // Contact info
+  name            String
+  email           String
+
+  // Organization info
+  organizationName String
+  organizationType String   // rapid-response, legal-aid, mutual-aid, community-org, other
+  volunteerCount   String   // 1-10, 11-50, 51-200, 200+
+
+  // Features of interest (stored as JSON array of feature slugs)
+  featuresOfInterest Json   // ["shifts", "coverage", "sightings", "training", "multi-location", "mobile"]
+
+  // Optional additional notes
+  notes           String?
+
+  // Request status
+  status          InviteRequestStatus @default(PENDING)
+
+  // Tracking
+  createdAt       DateTime @default(now())
+  reviewedAt      DateTime?
+  reviewedById    String?
+  reviewedBy      User?    @relation("InviteRequestReviewedBy", fields: [reviewedById], references: [id])
+
+  @@index([status, createdAt])
+  @@index([email])
+}
+
+enum InviteRequestStatus {
+  PENDING
+  CONTACTED
+  APPROVED
+  DECLINED
 }

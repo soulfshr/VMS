@@ -196,7 +196,7 @@ function getEmailFooter(unsubscribeToken?: string, branding?: BrandingSettings):
 /**
  * Send a simple email via AWS SES (no attachments)
  */
-async function sendEmail(params: {
+export async function sendEmail(params: {
   to: string;
   subject: string;
   html: string;

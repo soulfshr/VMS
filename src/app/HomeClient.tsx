@@ -49,7 +49,7 @@ export default function HomeClient() {
             ) : (
               <>
                 <Link
-                  href="/request-access"
+                  href="/request-invite"
                   className="px-8 py-4 bg-white text-cyan-700 font-semibold rounded-lg hover:bg-cyan-50 transition-colors shadow-lg"
                 >
                   Request an Invite
@@ -340,7 +340,7 @@ export default function HomeClient() {
             </Link>
           ) : (
             <Link
-              href="/request-access"
+              href="/request-invite"
               className="inline-block px-8 py-4 bg-white text-cyan-700 font-semibold rounded-lg hover:bg-cyan-50 transition-colors shadow-lg"
             >
               Request an Invite
