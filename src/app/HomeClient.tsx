@@ -55,7 +55,7 @@ export default function HomeClient() {
                   Request an Invite
                 </Link>
                 <Link
-                  href="/about"
+                  href="/how-it-works"
                   className="px-8 py-4 bg-cyan-700 text-white font-semibold rounded-lg hover:bg-cyan-900 transition-colors border border-cyan-500"
                 >
                   See How It Works

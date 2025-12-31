@@ -116,7 +116,16 @@ export async function POST(request: NextRequest) {
         createdRoles.push({ id: createdRole.id, slug: createdRole.slug });
       }
 
-      // 4. Create shift types with role requirements (for SHIFTS model)
+      // 4. Add the creating user as an ADMINISTRATOR member
+      await tx.organizationMember.create({
+        data: {
+          userId: user.id,
+          organizationId: organization.id,
+          role: 'ADMINISTRATOR',
+        },
+      });
+
+      // 5. Create shift types with role requirements (for SHIFTS model)
       const createdShiftTypes: { id: string; name: string }[] = [];
       if (schedulingModel === 'SHIFTS') {
         for (const shiftType of shiftTypes || []) {
