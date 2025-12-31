@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { getOrgIdForCreate } from '@/lib/org-context';
 import { parseScheduleDocx, scheduleToShifts } from '@/lib/schedule-parser';
+import { getOrgTimezone, parseDisplayDate, parseDisplayDateTime } from '@/lib/timezone';
 
 interface ImportOptions {
   zoneId: string;
@@ -124,6 +125,9 @@ export async function POST(request: NextRequest) {
     };
     const legacyType = SHIFT_TYPE_MAP[shiftType.slug.toLowerCase()] || 'PATROL';
 
+    // Get org timezone for proper time conversion
+    const timezone = await getOrgTimezone();
+
     // Create shifts in database
     const results = {
       success: 0,
@@ -134,34 +138,27 @@ export async function POST(request: NextRequest) {
 
     for (const shiftData of shiftsData) {
       try {
-        // Create date at midnight UTC for the date field
-        const dateOnly = new Date(Date.UTC(
-          shiftData.date.getFullYear(),
-          shiftData.date.getMonth(),
-          shiftData.date.getDate()
-        ));
+        // Format date string as YYYY-MM-DD
+        const year = shiftData.date.getFullYear();
+        const month = String(shiftData.date.getMonth() + 1).padStart(2, '0');
+        const day = String(shiftData.date.getDate()).padStart(2, '0');
+        const dateStr = `${year}-${month}-${day}`;
 
-        // Create start/end times in Eastern time zone
-        // We need to convert local times to UTC for storage
-        const startTime = new Date(Date.UTC(
-          shiftData.date.getFullYear(),
-          shiftData.date.getMonth(),
-          shiftData.date.getDate(),
-          shiftData.startTime.getHours(),
-          shiftData.startTime.getMinutes(),
-          0,
-          0
-        ));
+        // Create date at midnight in the org's timezone (converted to UTC for storage)
+        const dateOnly = parseDisplayDate(dateStr, timezone);
 
-        const endTime = new Date(Date.UTC(
-          shiftData.date.getFullYear(),
-          shiftData.date.getMonth(),
-          shiftData.date.getDate(),
-          shiftData.endTime.getHours(),
-          shiftData.endTime.getMinutes(),
-          0,
-          0
-        ));
+        // Format start/end times as HH:MM
+        const startHour = String(shiftData.startTime.getHours()).padStart(2, '0');
+        const startMin = String(shiftData.startTime.getMinutes()).padStart(2, '0');
+        const startTimeStr = `${startHour}:${startMin}`;
+
+        const endHour = String(shiftData.endTime.getHours()).padStart(2, '0');
+        const endMin = String(shiftData.endTime.getMinutes()).padStart(2, '0');
+        const endTimeStr = `${endHour}:${endMin}`;
+
+        // Convert local times to UTC using timezone-aware parsing
+        const startTime = parseDisplayDateTime(dateStr, startTimeStr, timezone);
+        const endTime = parseDisplayDateTime(dateStr, endTimeStr, timezone);
 
         const shift = await prisma.shift.create({
           data: {
