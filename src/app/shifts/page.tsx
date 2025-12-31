@@ -684,6 +684,9 @@ function ShiftsPageContent() {
   const [showBulkEditModal, setShowBulkEditModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
+  // Bulk publish state
+  const [isPublishing, setIsPublishing] = useState(false);
+
   // Import schedule state
   const [showImportModal, setShowImportModal] = useState(false);
 
@@ -942,6 +945,35 @@ function ShiftsPageContent() {
     }
   };
 
+  const handleBulkPublish = async () => {
+    setIsPublishing(true);
+    setError(null);
+
+    try {
+      const res = await fetch('/api/shifts/bulk-edit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          shiftIds: Array.from(selectedShifts),
+          status: 'PUBLISHED',
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to publish shifts');
+      }
+
+      // Refresh shifts and clear selection
+      await fetchShifts();
+      clearSelection();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to publish shifts');
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-[calc(100vh-200px)] flex items-center justify-center">
@@ -1039,6 +1071,21 @@ function ShiftsPageContent() {
                     className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium"
                   >
                     Confirm {pendingCount} Pending
+                  </button>
+                ) : null;
+              })()}
+              {/* Show publish button for draft shifts */}
+              {(() => {
+                const draftCount = shifts
+                  .filter(s => isShiftSelected(s.id) && s.status === 'DRAFT')
+                  .length;
+                return draftCount > 0 ? (
+                  <button
+                    onClick={handleBulkPublish}
+                    disabled={isPublishing}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50"
+                  >
+                    {isPublishing ? 'Publishing...' : `Publish ${draftCount} Draft${draftCount > 1 ? 's' : ''}`}
                   </button>
                 ) : null;
               })()}

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
+import { getOrgTimezone, formatDate, parseDisplayDateTime } from '@/lib/timezone';
 
 // POST /api/shifts/bulk-edit - Bulk edit multiple shifts (Coordinator/Admin only)
 export async function POST(request: NextRequest) {
@@ -16,7 +17,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { shiftIds, typeConfigId, minVolunteers, maxVolunteers, startHour, endHour } = body;
+    const { shiftIds, typeConfigId, minVolunteers, maxVolunteers, startHour, endHour, status } = body;
 
     if (!shiftIds || !Array.isArray(shiftIds) || shiftIds.length === 0) {
       return NextResponse.json(
@@ -27,6 +28,18 @@ export async function POST(request: NextRequest) {
 
     // Build update data object based on provided fields
     const updateData: Record<string, unknown> = {};
+
+    // Handle status update
+    if (status) {
+      const validStatuses = ['DRAFT', 'PUBLISHED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'];
+      if (!validStatuses.includes(status)) {
+        return NextResponse.json(
+          { error: 'Invalid status' },
+          { status: 400 }
+        );
+      }
+      updateData.status = status;
+    }
 
     // Handle shift type update
     if (typeConfigId) {
@@ -66,15 +79,20 @@ export async function POST(request: NextRequest) {
         },
       });
 
+      // Get org timezone for proper DST-aware conversion
+      const timezone = await getOrgTimezone();
+
       for (const shift of shifts) {
-        const shiftDate = new Date(shift.date);
+        // Get the date string in the org's timezone
+        const dateStr = formatDate(new Date(shift.date), timezone);
 
-        // Create start time (in Eastern Time - UTC-5)
-        const startTime = new Date(shiftDate);
-        startTime.setUTCHours(startHour + 5, 0, 0, 0); // Add 5 hours to convert ET to UTC
+        // Convert hour to time string (HH:00)
+        const startTimeStr = `${String(startHour).padStart(2, '0')}:00`;
+        const endTimeStr = `${String(endHour).padStart(2, '0')}:00`;
 
-        const endTime = new Date(shiftDate);
-        endTime.setUTCHours(endHour + 5, 0, 0, 0);
+        // Parse using timezone-aware utility (handles DST automatically)
+        const startTime = parseDisplayDateTime(dateStr, startTimeStr, timezone);
+        const endTime = parseDisplayDateTime(dateStr, endTimeStr, timezone);
 
         await prisma.shift.update({
           where: { id: shift.id },

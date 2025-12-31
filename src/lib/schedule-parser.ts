@@ -16,11 +16,27 @@ export interface ParsedSchedule {
   errors: string[];
 }
 
-// Activity codes that should NOT create shifts
+// Activity codes that should NOT create shifts (normalized to uppercase)
 const NO_SHIFT_ACTIVITIES = ['CLOSED', 'ADMIN'];
 
 // Activity codes that SHOULD create shifts (appointment types)
 const APPOINTMENT_ACTIVITIES = ['DE', 'MM', 'CONSULTS'];
+
+/**
+ * Normalize an activity code for comparison
+ * Handles variations like "Admin", "ADMIN", "admin", etc.
+ */
+function normalizeActivity(activity: string): string {
+  return activity.trim().toUpperCase();
+}
+
+/**
+ * Check if an activity should prevent shift creation
+ */
+function isNoShiftActivity(activity: string): boolean {
+  const normalized = normalizeActivity(activity);
+  return NO_SHIFT_ACTIVITIES.includes(normalized);
+}
 
 /**
  * Check if a token is an activity (with or without time)
@@ -243,11 +259,12 @@ export async function parseScheduleDocx(buffer: Buffer): Promise<ParsedSchedule>
       continue;
     }
 
-    const isClosed = data.activities.includes('CLOSED');
-    const isAdmin = data.activities.includes('ADMIN');
+    // Check if any activity in this day should prevent shift creation
+    // Using the normalized comparison for robustness
+    const hasNoShiftActivity = data.activities.some(act => isNoShiftActivity(act));
 
-    // Skip days that are closed or admin only
-    if (isClosed || isAdmin) {
+    // Skip days that are closed or admin
+    if (hasNoShiftActivity) {
       continue;
     }
 
