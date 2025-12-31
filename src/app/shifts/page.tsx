@@ -542,7 +542,7 @@ function ImportScheduleModal({
           {/* Zone Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Zone
+              Zone or Location
             </label>
             <select
               value={zoneId}
