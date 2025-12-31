@@ -653,6 +653,7 @@ function ShiftsPageContent() {
   const [error, setError] = useState<string | null>(null);
   const [filterType, setFilterType] = useState<string>('all');
   const [filterZone, setFilterZone] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('PUBLISHED');
   const [filterPendingOnly, setFilterPendingOnly] = useState<boolean>(false);
   const [filterExceptionsOnly, setFilterExceptionsOnly] = useState<boolean>(false);
   const [rsvpingShiftId, setRsvpingShiftId] = useState<string | null>(null);
@@ -708,6 +709,7 @@ function ShiftsPageContent() {
       const params = new URLSearchParams();
       if (filterType !== 'all') params.set('typeConfigId', filterType);
       if (filterZone !== 'all') params.set('zoneId', filterZone);
+      if (filterStatus !== 'all') params.set('status', filterStatus);
 
       const res = await fetch(`/api/shifts?${params}`);
       if (!res.ok) throw new Error('Failed to fetch shifts');
@@ -716,7 +718,7 @@ function ShiftsPageContent() {
     } catch {
       setError('Failed to load shifts');
     }
-  }, [filterType, filterZone]);
+  }, [filterType, filterZone, filterStatus]);
 
   useEffect(() => {
     Promise.all([
@@ -1096,6 +1098,22 @@ function ShiftsPageContent() {
                   ))}
                 </select>
               </div>
+              {canCreateShift && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <select
+                    value={filterStatus}
+                    onChange={(e) => setFilterStatus(e.target.value)}
+                    className={`px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 ${
+                      filterStatus === 'DRAFT' ? 'border-yellow-400 bg-yellow-50' : 'border-gray-300'
+                    }`}
+                  >
+                    <option value="PUBLISHED">Published</option>
+                    <option value="DRAFT">Drafts</option>
+                    <option value="all">All Statuses</option>
+                  </select>
+                </div>
+              )}
               {canCreateShift && !autoConfirmRsvp && (
                 <div className="flex items-center">
                   <label className="flex items-center gap-2 cursor-pointer">
@@ -1510,7 +1528,7 @@ function ShiftsPageContent() {
       <ImportScheduleModal
         isOpen={showImportModal}
         onClose={() => setShowImportModal(false)}
-        onSuccess={() => fetchShifts()}
+        onSuccess={() => setFilterStatus('DRAFT')} // Switch to drafts view to show imported shifts
         zones={zones}
         shiftTypes={shiftTypes}
       />
