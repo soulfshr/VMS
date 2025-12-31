@@ -26,9 +26,18 @@ interface Zone {
   name: string;
 }
 
+interface ShiftTypeConfig {
+  id: string;
+  name: string;
+  slug: string;
+  color: string;
+}
+
 interface Shift {
   id: string;
   type: 'PATROL' | 'COLLECTION' | 'ON_CALL_FIELD_SUPPORT';
+  typeConfigId: string | null;
+  typeConfig: ShiftTypeConfig | null;
   title: string;
   date: string;
   startTime: string;
@@ -40,12 +49,26 @@ interface Shift {
   spotsLeft: number;
 }
 
-// Event colors for legend
-const typeColors: Record<string, { bg: string; border: string }> = {
+// Default type colors (fallback if no custom color)
+const defaultTypeColors: Record<string, { bg: string; border: string }> = {
   PATROL: { bg: '#dbeafe', border: '#3b82f6' },
   COLLECTION: { bg: '#f3e8ff', border: '#a855f7' },
   ON_CALL_FIELD_SUPPORT: { bg: '#ffedd5', border: '#f97316' },
 };
+
+// Convert hex color to lighter background version
+function hexToLightBg(hex: string): string {
+  // Remove # if present
+  hex = hex.replace('#', '');
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+  // Lighten by mixing with white (90% white, 10% color)
+  const lightR = Math.round(r * 0.2 + 255 * 0.8);
+  const lightG = Math.round(g * 0.2 + 255 * 0.8);
+  const lightB = Math.round(b * 0.2 + 255 * 0.8);
+  return `rgb(${lightR}, ${lightG}, ${lightB})`;
+}
 
 const statusColors: Record<string, { bg: string; border: string }> = {
   CANCELLED: { bg: '#fee2e2', border: '#ef4444' },
@@ -57,6 +80,7 @@ export default function ShiftCalendarPage() {
   const [user, setUser] = useState<DevUser | null>(null);
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [zones, setZones] = useState<Zone[]>([]);
+  const [shiftTypes, setShiftTypes] = useState<ShiftTypeConfig[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [view, setView] = useState<(typeof Views)[keyof typeof Views]>(Views.MONTH);
   const [date, setDate] = useState(new Date());
@@ -69,7 +93,7 @@ export default function ShiftCalendarPage() {
       // Fetch all shifts including cancelled for the calendar
       const params = new URLSearchParams();
       params.set('status', 'all');
-      if (filterType !== 'all') params.set('type', filterType);
+      if (filterType !== 'all') params.set('typeConfigId', filterType);
       if (filterZone !== 'all') params.set('zoneId', filterZone);
 
       const res = await fetch(`/api/shifts?${params}`);
@@ -85,8 +109,9 @@ export default function ShiftCalendarPage() {
     Promise.all([
       fetch('/api/auth/session').then(res => res.json()),
       fetch('/api/zones').then(res => res.json()),
+      fetch('/api/shift-types').then(res => res.json()).catch(() => []),
     ])
-      .then(([sessionData, zonesData]) => {
+      .then(([sessionData, zonesData, shiftTypesData]) => {
         if (!sessionData.user) {
           router.push('/login');
           return;
@@ -94,6 +119,9 @@ export default function ShiftCalendarPage() {
         setUser(sessionData.user);
         if (Array.isArray(zonesData)) {
           setZones(zonesData);
+        }
+        if (Array.isArray(shiftTypesData)) {
+          setShiftTypes(shiftTypesData);
         }
         setIsLoading(false);
       })
@@ -190,9 +218,11 @@ export default function ShiftCalendarPage() {
                 className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
               >
                 <option value="all">All Types</option>
-                <option value="PATROL">Patrol</option>
-                <option value="COLLECTION">Collection</option>
-                <option value="ON_CALL_FIELD_SUPPORT">On-Call Support</option>
+                {shiftTypes.map((type) => (
+                  <option key={type.id} value={type.id}>
+                    {type.name}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
@@ -225,22 +255,31 @@ export default function ShiftCalendarPage() {
             </div>
 
             {/* Legend */}
-            <div className="flex-1 flex justify-end gap-4">
+            <div className="flex-1 flex justify-end gap-4 flex-wrap">
+              {shiftTypes.map((type) => {
+                const color = type.color || '#3b82f6';
+                return (
+                  <div key={type.id} className="flex items-center gap-2">
+                    <div
+                      className="w-4 h-4 rounded"
+                      style={{
+                        backgroundColor: hexToLightBg(color),
+                        border: `2px solid ${color}`,
+                      }}
+                    />
+                    <span className="text-sm text-gray-600">{type.name}</span>
+                  </div>
+                );
+              })}
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded" style={{ backgroundColor: typeColors.PATROL.bg, border: `2px solid ${typeColors.PATROL.border}` }} />
-                <span className="text-sm text-gray-600">Patrol</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded" style={{ backgroundColor: typeColors.COLLECTION.bg, border: `2px solid ${typeColors.COLLECTION.border}` }} />
-                <span className="text-sm text-gray-600">Collection</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded" style={{ backgroundColor: typeColors.ON_CALL_FIELD_SUPPORT.bg, border: `2px solid ${typeColors.ON_CALL_FIELD_SUPPORT.border}` }} />
-                <span className="text-sm text-gray-600">On-Call</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded" style={{ backgroundColor: statusColors.CANCELLED.bg, border: `2px solid ${statusColors.CANCELLED.border}` }} />
-                <span className="text-sm text-gray-600">Cancelled</span>
+                <div
+                  className="w-4 h-4 rounded"
+                  style={{
+                    backgroundColor: statusColors.CANCELLED.bg,
+                    border: `2px solid ${statusColors.CANCELLED.border}`,
+                  }}
+                />
+                <span className="text-sm text-gray-600 line-through">Cancelled</span>
               </div>
             </div>
           </div>

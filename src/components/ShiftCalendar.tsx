@@ -85,7 +85,8 @@ export default function ShiftCalendar({
         borderRadius: '4px',
         padding: '2px 6px',
         fontSize: '12px',
-        opacity: status === 'CANCELLED' ? 0.7 : 1,
+        opacity: status === 'CANCELLED' ? 0.6 : 1,
+        textDecoration: status === 'CANCELLED' ? 'line-through' : 'none',
       },
     };
   };
