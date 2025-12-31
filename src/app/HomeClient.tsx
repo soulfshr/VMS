@@ -32,9 +32,12 @@ export default function HomeClient() {
       {/* Tagline on blue gradient */}
       <section className="bg-gradient-to-br from-cyan-600 to-cyan-800 text-white py-12">
         <div className="container mx-auto px-4 text-center">
-          <h1 className="text-xl md:text-2xl font-medium text-cyan-100 mb-6 max-w-2xl mx-auto">
-            A volunteer management platform for community organizations coordinating rapid response, monitoring, and field operations.
+          <h1 className="text-xl md:text-2xl font-medium text-cyan-100 mb-3 max-w-3xl mx-auto">
+            Coordinate volunteers, dispatch, and training from one hub—built for rapid-response community orgs.
           </h1>
+          <p className="text-cyan-100/90 max-w-3xl mx-auto mb-6">
+            Replace spreadsheets and group chats with integrated scheduling, dispatch, training, and coverage tracking.
+          </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             {isAuthenticated ? (
               <Link
@@ -46,16 +49,16 @@ export default function HomeClient() {
             ) : (
               <>
                 <Link
-                  href="/login"
+                  href="/request-access"
                   className="px-8 py-4 bg-white text-cyan-700 font-semibold rounded-lg hover:bg-cyan-50 transition-colors shadow-lg"
                 >
-                  Login
+                  Request an Invite
                 </Link>
                 <Link
                   href="/about"
                   className="px-8 py-4 bg-cyan-700 text-white font-semibold rounded-lg hover:bg-cyan-900 transition-colors border border-cyan-500"
                 >
-                  Learn More
+                  See How It Works
                 </Link>
               </>
             )}
@@ -83,19 +86,19 @@ export default function HomeClient() {
                   <svg className="w-5 h-5 text-cyan-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span className="text-gray-700">Create and manage shift schedules</span>
+                  <span className="text-gray-700">Hit zone coverage targets and dispatch teams in minutes</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <svg className="w-5 h-5 text-cyan-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span className="text-gray-700">Build interactive training modules</span>
+                  <span className="text-gray-700">Auto-qualify volunteers as soon as they pass your trainings</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <svg className="w-5 h-5 text-cyan-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span className="text-gray-700">Configure auto-qualification rules</span>
+                  <span className="text-gray-700">Fill the right roles fast with skill and availability matching</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <svg className="w-5 h-5 text-cyan-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -107,13 +110,13 @@ export default function HomeClient() {
                   <svg className="w-5 h-5 text-cyan-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span className="text-gray-700">Define coverage requirements by zone</span>
+                  <span className="text-gray-700">Track coverage by zone and time without spreadsheets</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <svg className="w-5 h-5 text-cyan-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span className="text-gray-700">Send bulk communications</span>
+                  <span className="text-gray-700">Send consistent updates to Signal with prebuilt templates</span>
                 </li>
               </ul>
             </div>
@@ -236,7 +239,7 @@ export default function HomeClient() {
               <div>
                 <h3 className="font-semibold text-gray-900 mb-1">Field Monitoring</h3>
                 <p className="text-sm text-gray-600">
-                  Active monitoring of assigned areas to observe and document activity in your community.
+                  SALUTE-style intake plus live status so dispatch and field teams stay in sync.
                 </p>
               </div>
             </div>
@@ -251,7 +254,7 @@ export default function HomeClient() {
               <div>
                 <h3 className="font-semibold text-gray-900 mb-1">Rapid Response</h3>
                 <p className="text-sm text-gray-600">
-                  Available for quick dispatch to verify reports and provide on-the-ground support.
+                  Dispatch the right team fast with invite flows, requirements, and real-time updates.
                 </p>
               </div>
             </div>
@@ -266,7 +269,7 @@ export default function HomeClient() {
               <div>
                 <h3 className="font-semibold text-gray-900 mb-1">Training Center</h3>
                 <p className="text-sm text-gray-600">
-                  Interactive training modules with video, quizzes, and attestations. Earn qualifications automatically.
+                  Interactive trainings with quizzes and attestations that auto-award qualifications.
                 </p>
               </div>
             </div>
@@ -281,7 +284,7 @@ export default function HomeClient() {
               <div>
                 <h3 className="font-semibold text-gray-900 mb-1">Incident Reports</h3>
                 <p className="text-sm text-gray-600">
-                  Receive, track, and coordinate response to field incident reports in real-time.
+                  Intake, assign, and close incidents with a transparent audit trail.
                 </p>
               </div>
             </div>
@@ -296,7 +299,7 @@ export default function HomeClient() {
               <div>
                 <h3 className="font-semibold text-gray-900 mb-1">Shift Scheduling</h3>
                 <p className="text-sm text-gray-600">
-                  Create and fill volunteer shifts with role requirements and coverage tracking.
+                  Create and fill shifts with role requirements, RSVPs, and coverage tracking.
                 </p>
               </div>
             </div>
@@ -311,7 +314,7 @@ export default function HomeClient() {
               <div>
                 <h3 className="font-semibold text-gray-900 mb-1">Message Templates</h3>
                 <p className="text-sm text-gray-600">
-                  Pre-built templates for quick copy-paste to Signal groups for team coordination.
+                  Prebuilt Signal templates for consistent updates to leads and field teams.
                 </p>
               </div>
             </div>
@@ -323,10 +326,10 @@ export default function HomeClient() {
       <section className="py-16 bg-cyan-700 text-white">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold mb-4">
-            Ready to Make a Difference?
+            Ready to coordinate faster?
           </h2>
           <p className="text-cyan-100 mb-8 max-w-2xl mx-auto">
-            Join our network of dedicated volunteers making an impact in communities across the country.
+            We’re onboarding a limited cohort of community organizations—tell us about your team and coverage needs.
           </p>
           {isAuthenticated ? (
             <Link
@@ -337,10 +340,10 @@ export default function HomeClient() {
             </Link>
           ) : (
             <Link
-              href="/login"
+              href="/request-access"
               className="inline-block px-8 py-4 bg-white text-cyan-700 font-semibold rounded-lg hover:bg-cyan-50 transition-colors shadow-lg"
             >
-              Get Started Today
+              Request an Invite
             </Link>
           )}
         </div>

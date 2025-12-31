@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { sendCoverageSignupConfirmationEmail } from '@/lib/email';
 import { getOrgIdForCreate } from '@/lib/org-context';
+import { getOrgTimezone, parseDisplayDate } from '@/lib/timezone';
 
 interface SlotInput {
   date: string;
@@ -131,10 +132,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate all slots
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Get org timezone for consistent date parsing
+    const timezone = await getOrgTimezone();
 
+    // Get today's date at midnight in org timezone for comparison
+    const todayStr = new Intl.DateTimeFormat('en-CA', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date());
+
+    // Validate all slots
     for (const slot of slots) {
       if (!slot.date || slot.startHour === undefined || slot.endHour === undefined) {
         return NextResponse.json(
@@ -143,9 +152,8 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const slotDate = new Date(slot.date);
-      slotDate.setHours(0, 0, 0, 0);
-      if (slotDate < today) {
+      // Compare date strings directly (YYYY-MM-DD format)
+      if (slot.date < todayStr) {
         return NextResponse.json(
           { error: 'Cannot sign up for past dates' },
           { status: 400 }
@@ -155,8 +163,8 @@ export async function POST(request: NextRequest) {
 
     // Check for conflicts with existing signups
     const signupPromises = slots.map(async (slot: SlotInput) => {
-      const signupDate = new Date(slot.date);
-      signupDate.setHours(0, 0, 0, 0);
+      // Use timezone-aware date parsing (consistent with single signup route)
+      const signupDate = parseDisplayDate(slot.date, timezone);
 
       // Check if slot is already filled (scoped to current org)
       const existingCoordinator = await prisma.coverageSignup.findFirst({
@@ -220,8 +228,8 @@ export async function POST(request: NextRequest) {
     // Send calendar invite emails for each contiguous block
     const emailPromises = contiguousBlocks.map(async (block) => {
       try {
-        const blockDate = new Date(block.date);
-        blockDate.setHours(0, 0, 0, 0);
+        // Use timezone-aware date parsing for consistent calendar invite times
+        const blockDate = parseDisplayDate(block.date, timezone);
 
         await sendCoverageSignupConfirmationEmail({
           to: user.email,
@@ -232,6 +240,7 @@ export async function POST(request: NextRequest) {
           startHour: block.startHour,
           endHour: block.endHour,
           roleType: 'DISPATCHER', // Use DISPATCHER template
+          orgId: orgId || undefined, // Multi-tenant: Use org-specific branding
         });
       } catch (emailErr) {
         console.error('Failed to send coverage confirmation email:', emailErr);

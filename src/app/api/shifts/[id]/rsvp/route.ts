@@ -40,8 +40,8 @@ export async function POST(
 
     const orgIdForQual = await getCurrentOrgId();
 
-    // If requesting zone lead assignment, verify user has the qualification in current org
-    // Slugs are stored as uppercase with underscores (e.g., ZONE_LEAD)
+    // If requesting lead assignment, verify user has a lead qualification in current org
+    // Different orgs may use different slugs for their lead role (ZONE_LEAD, SHIFT_LEAD, etc.)
     if (asZoneLead) {
       const userQualifications = await prisma.userQualification.findMany({
         where: {
@@ -51,11 +51,17 @@ export async function POST(
         },
         include: { qualifiedRole: { select: { slug: true } } },
       });
-      const hasZoneLeadQual = userQualifications.some(uq => uq.qualifiedRole.slug === 'ZONE_LEAD');
 
-      if (!hasZoneLeadQual) {
+      // Accept any lead-type qualification (different orgs use different names)
+      const leadSlugs = ['ZONE_LEAD', 'SHIFT_LEAD', 'TEAM_LEAD', 'LEAD'];
+      const hasLeadQual = userQualifications.some(uq =>
+        leadSlugs.includes(uq.qualifiedRole.slug) ||
+        uq.qualifiedRole.slug.includes('LEAD')
+      );
+
+      if (!hasLeadQual) {
         return NextResponse.json(
-          { error: 'You are not qualified as a zone lead' },
+          { error: 'You are not qualified as a shift lead' },
           { status: 403 }
         );
       }
@@ -96,47 +102,76 @@ export async function POST(
       );
     }
 
-    // Check if shift is full
-    const confirmedCount = shift.volunteers.filter(v => v.status === 'CONFIRMED').length;
-    if (confirmedCount >= shift.maxVolunteers) {
-      return NextResponse.json(
-        { error: 'This shift is full' },
-        { status: 400 }
-      );
-    }
-
     // Check organization settings for auto-confirm (scoped to org)
     const orgSettings = await prisma.organizationSettings.findFirst({
       where: orgId ? { organizationId: orgId } : {},
     });
-    const autoConfirm = orgSettings?.autoConfirmRsvp ?? false;
+    const autoConfirm = orgSettings?.autoConfirmRsvp ?? true; // Default to auto-confirm ON
 
-    // Create RSVP with status based on auto-confirm setting
-    const rsvp = await prisma.shiftVolunteer.create({
-      data: {
-        shiftId,
-        userId: user.id,
-        status: autoConfirm ? 'CONFIRMED' : 'PENDING',
-        confirmedAt: autoConfirm ? new Date() : null,
-        qualification,
-        isZoneLead: asZoneLead,
-      },
-      include: {
-        shift: {
-          include: {
-            zone: true,
-            typeConfig: { select: { name: true } },
+    // Use transaction to prevent race condition on capacity check
+    // This ensures atomic check-and-create to prevent overselling
+    const rsvp = await prisma.$transaction(async (tx) => {
+      // Re-fetch shift with lock to get accurate count
+      const currentShift = await tx.shift.findUnique({
+        where: { id: shiftId },
+        include: {
+          volunteers: {
+            where: { status: 'CONFIRMED' },
+            select: { id: true },
           },
         },
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
+      });
+
+      if (!currentShift) {
+        throw new Error('SHIFT_NOT_FOUND');
+      }
+
+      // Check if shift is full (inside transaction for accuracy)
+      const confirmedCount = currentShift.volunteers.length;
+      if (confirmedCount >= currentShift.maxVolunteers) {
+        throw new Error('SHIFT_FULL');
+      }
+
+      // Create RSVP with status based on auto-confirm setting
+      return tx.shiftVolunteer.create({
+        data: {
+          shiftId,
+          userId: user.id,
+          status: autoConfirm ? 'CONFIRMED' : 'PENDING',
+          confirmedAt: autoConfirm ? new Date() : null,
+          qualification,
+          isZoneLead: asZoneLead,
+        },
+        include: {
+          shift: {
+            include: {
+              zone: true,
+              typeConfig: { select: { name: true } },
+            },
+          },
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
           },
         },
-      },
+      });
+    }).catch((err) => {
+      if (err.message === 'SHIFT_NOT_FOUND') {
+        return { error: 'Shift not found', status: 404 };
+      }
+      if (err.message === 'SHIFT_FULL') {
+        return { error: 'This shift is full', status: 400 };
+      }
+      throw err;
     });
+
+    // Handle transaction errors
+    if ('error' in rsvp) {
+      return NextResponse.json({ error: rsvp.error }, { status: rsvp.status });
+    }
 
     // Audit log the RSVP creation
     await auditCreate(
@@ -170,6 +205,7 @@ export async function POST(
           endTime: rsvp.shift.endTime,
           zoneName: rsvp.shift.zone?.name || '',
           description: rsvp.shift.description || undefined,
+          orgId: orgId || undefined, // Multi-tenant: Use org-specific branding
         });
       } else {
         // Send signup confirmation email (pending status)
@@ -182,6 +218,7 @@ export async function POST(
           startTime: rsvp.shift.startTime,
           endTime: rsvp.shift.endTime,
           zoneName: rsvp.shift.zone?.name || '',
+          orgId: orgId || undefined, // Multi-tenant: Use org-specific branding
         });
       }
     } catch (emailErr) {
@@ -261,6 +298,7 @@ export async function DELETE(
     // Send cancellation email - await to ensure it completes before function terminates
     try {
       const shiftType = rsvp.shift.typeConfig?.name || rsvp.shift.type?.replace(/_/g, ' ') || 'Shift';
+      const orgId = await getCurrentOrgId();
       await sendShiftCancellationEmail({
         to: rsvp.user.email,
         volunteerName: rsvp.user.name,
@@ -270,6 +308,7 @@ export async function DELETE(
         startTime: rsvp.shift.startTime,
         endTime: rsvp.shift.endTime,
         zoneName: rsvp.shift.zone?.name || '',
+        orgId: orgId || undefined, // Multi-tenant: Use org-specific branding
       });
     } catch (emailErr) {
       console.error('Email send error:', emailErr);
@@ -375,6 +414,7 @@ export async function PATCH(
     if (statusUpdated === 'CONFIRMED') {
       try {
         const shiftType = rsvp.shift.typeConfig?.name || rsvp.shift.type?.replace(/_/g, ' ') || 'Shift';
+        const orgId = await getCurrentOrgId();
         await sendShiftConfirmationEmail({
           to: rsvp.user.email,
           volunteerName: rsvp.user.name,
@@ -385,6 +425,7 @@ export async function PATCH(
           endTime: rsvp.shift.endTime,
           zoneName: rsvp.shift.zone?.name || '',
           description: rsvp.shift.description || undefined,
+          orgId: orgId || undefined, // Multi-tenant: Use org-specific branding
         });
       } catch (emailErr) {
         console.error('Email send error:', emailErr);

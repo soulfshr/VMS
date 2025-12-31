@@ -31,7 +31,6 @@ export async function PATCH(
 
     const { id } = await params;
     const orgId = await getCurrentOrgId();
-    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
     const body = await request.json();
 
     // Non-admins have limited fields they can update
@@ -51,11 +50,16 @@ export async function PATCH(
       }
     }
 
-    // Find the volunteer (scoped to current org)
+    // Find the volunteer (scoped to current org via OrganizationMember)
     const volunteer = await prisma.user.findFirst({
       where: {
         id,
-        ...orgFilter,
+        // Multi-tenant: verify user is a member of current org
+        memberships: orgId ? {
+          some: {
+            organizationId: orgId,
+          },
+        } : { none: {} },
       },
     });
 
@@ -169,6 +173,7 @@ export async function PATCH(
             email: updated.email,
             name: updated.name,
             role: updated.role,
+            orgId: orgId || undefined, // Multi-tenant: Use org-specific branding
           });
         } catch (emailError) {
           console.error('Failed to send welcome email:', emailError);
@@ -227,6 +232,7 @@ export async function PATCH(
             email: updated.email,
             name: updated.name,
             rejectionReason,
+            orgId: orgId || undefined, // Multi-tenant: Use org-specific branding
           });
         } catch (emailError) {
           console.error('Failed to send rejection email:', emailError);
@@ -472,13 +478,16 @@ export async function GET(
 
     const { id } = await params;
     const orgId = await getCurrentOrgId();
-    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
 
     const volunteer = await prisma.user.findFirst({
       where: {
         id,
-        // Multi-tenant: verify volunteer belongs to current org
-        ...orgFilter,
+        // Multi-tenant: verify volunteer is a member of current org
+        memberships: orgId ? {
+          some: {
+            organizationId: orgId,
+          },
+        } : { none: {} },
       },
       include: {
         zones: {
@@ -493,6 +502,12 @@ export async function GET(
           },
         },
         userQualifications: {
+          // Only include qualifications for roles belonging to current org
+          where: orgId ? {
+            qualifiedRole: {
+              organizationId: orgId,
+            },
+          } : {},
           include: {
             qualifiedRole: {
               select: {
@@ -610,7 +625,6 @@ export async function DELETE(
 
     const { id } = await params;
     const orgId = await getCurrentOrgId();
-    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
 
     // Prevent admin from deleting themselves
     if (id === user.id) {
@@ -620,11 +634,16 @@ export async function DELETE(
       );
     }
 
-    // Check if volunteer exists and belongs to current org
+    // Check if volunteer exists and is a member of current org
     const volunteer = await prisma.user.findFirst({
       where: {
         id,
-        ...orgFilter,
+        // Multi-tenant: verify user is a member of current org
+        memberships: orgId ? {
+          some: {
+            organizationId: orgId,
+          },
+        } : { none: {} },
       },
     });
 

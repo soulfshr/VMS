@@ -44,9 +44,18 @@ export async function POST(
       return NextResponse.json({ error: 'Shift not found' }, { status: 404 });
     }
 
-    // Check if volunteer exists
-    const volunteer = await prisma.user.findUnique({
-      where: { id: volunteerId },
+    // Check if volunteer exists and is a member of the shift's organization
+    const volunteer = await prisma.user.findFirst({
+      where: {
+        id: volunteerId,
+        // Multi-tenant: volunteer must be a member of the shift's organization
+        memberships: shift.organizationId ? {
+          some: {
+            organizationId: shift.organizationId,
+            accountStatus: 'APPROVED',
+          },
+        } : {},
+      },
       select: {
         id: true,
         name: true,
@@ -134,6 +143,7 @@ export async function POST(
       zoneName: shift.zone?.name || '',
       description: shift.description || undefined,
       coordinatorName: user.name,
+      orgId: shift.organizationId || undefined, // Multi-tenant: Use org-specific branding
     }).catch(err => console.error('Email send error:', err));
 
     return NextResponse.json(rsvp, { status: 201 });

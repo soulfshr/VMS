@@ -82,6 +82,7 @@ export async function POST(request: NextRequest) {
           endTime: rsvp.shift.endTime,
           zoneName: rsvp.shift.zone?.name || '',
           description: rsvp.shift.description || undefined,
+          orgId: rsvp.shift.organizationId || undefined, // Multi-tenant: Use org-specific branding
         })
       );
     }

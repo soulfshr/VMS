@@ -40,9 +40,12 @@ export async function GET(request: NextRequest) {
       },
       include: { qualifiedRole: { select: { slug: true } } },
     });
-    // Slugs are stored as uppercase with underscores (e.g., ZONE_LEAD, DISPATCHER)
+    // Check for lead-type qualifications flexibly (different orgs use different names)
+    const leadSlugs = ['ZONE_LEAD', 'SHIFT_LEAD', 'TEAM_LEAD', 'LEAD', 'DISPATCHER'];
     const hasLeadQualification = userQualifications.some(uq =>
-      uq.qualifiedRole.slug === 'DISPATCHER' || uq.qualifiedRole.slug === 'ZONE_LEAD'
+      leadSlugs.includes(uq.qualifiedRole.slug) ||
+      uq.qualifiedRole.slug.includes('LEAD') ||
+      uq.qualifiedRole.slug.includes('DISPATCH')
     );
 
     // If SIMPLE mode and user is not admin and doesn't have lead qualifications,
@@ -76,14 +79,18 @@ export async function GET(request: NextRequest) {
         select: { slug: true },
       });
 
-      if (role?.slug === 'ZONE_LEAD') {
-        // Zone leads are marked with isZoneLead: true
+      // Check for lead-type roles (isZoneLead flag) - flexible slug matching
+      const isLeadRole = role?.slug.includes('LEAD') || role?.slug === 'ZONE_LEAD' || role?.slug === 'SHIFT_LEAD';
+      const isDispatcherRole = role?.slug.includes('DISPATCH') || role?.slug === 'DISPATCHER';
+
+      if (isLeadRole) {
+        // Lead roles are marked with isZoneLead: true
         where.volunteers = {
           some: {
             isZoneLead: true,
           },
         };
-      } else if (role?.slug === 'DISPATCHER') {
+      } else if (isDispatcherRole) {
         // Dispatchers are stored in DispatcherAssignment, not ShiftVolunteer
         // Skip this filter - we'd need a different query approach
         // For now, just skip filtering (leave where.volunteers unset)

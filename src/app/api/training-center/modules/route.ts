@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { auditCreate, toAuditUser } from '@/lib/audit';
+import { getCurrentOrgId } from '@/lib/org-context';
 
 // GET /api/training-center/modules - List all modules
 export async function GET(request: NextRequest) {
@@ -18,15 +19,22 @@ export async function GET(request: NextRequest) {
     // Non-developers can only see published modules
     const isDeveloper = user.role === 'DEVELOPER';
 
-    let where: { isPublished?: boolean } = {};
+    // Multi-tenant: Show modules that are either global (null) or belong to current org
+    const orgId = await getCurrentOrgId();
+    const orgFilter = orgId
+      ? { OR: [{ organizationId: orgId }, { organizationId: null }] }
+      : { organizationId: null };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const where: any = { ...orgFilter };
 
     if (published === 'true' || !isDeveloper) {
       // Learner view or non-developer: only published modules
-      where = { isPublished: true };
+      where.isPublished = true;
     } else if (status === 'published') {
-      where = { isPublished: true };
+      where.isPublished = true;
     } else if (status === 'draft') {
-      where = { isPublished: false };
+      where.isPublished = false;
     }
     // else: show all (developer only)
 
@@ -134,6 +142,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get current org for module scoping
+    const orgId = await getCurrentOrgId();
+
     // Get the next sort order
     const lastModule = await prisma.trainingModule.findFirst({
       orderBy: { sortOrder: 'desc' },
@@ -143,7 +154,7 @@ export async function POST(request: NextRequest) {
 
     // Use transaction to create module and role grants atomically
     const trainingModule = await prisma.$transaction(async (tx) => {
-      // Create the module
+      // Create the module (scoped to current org if set)
       const createdModule = await tx.trainingModule.create({
         data: {
           title: title.trim(),
@@ -154,6 +165,7 @@ export async function POST(request: NextRequest) {
           isPublished: false, // Always start as draft
           sortOrder: nextSortOrder,
           grantsQualifiedRoleId: grantsQualifiedRoleId || null, // DEPRECATED but keep for compatibility
+          organizationId: orgId || null, // Multi-tenant: Associate with current org
         },
       });
 

@@ -25,7 +25,11 @@ export async function POST(request: NextRequest) {
       },
       include: { qualifiedRole: { select: { slug: true } } },
     });
-    const hasDispatcherQual = userQualifications.some(uq => uq.qualifiedRole.slug === 'DISPATCHER');
+    // Check for dispatcher qualification flexibly (different orgs may use different names)
+    const hasDispatcherQual = userQualifications.some(uq =>
+      uq.qualifiedRole.slug === 'DISPATCHER' ||
+      uq.qualifiedRole.slug.includes('DISPATCH')
+    );
 
     if (!hasDispatcherQual) {
       return NextResponse.json(
@@ -51,9 +55,13 @@ export async function POST(request: NextRequest) {
     const parsedStartTime = new Date(startTime);
     const parsedEndTime = new Date(endTime);
 
-    // Check if slot is already taken (non-backup dispatcher)
+    // Build org filter for multi-tenant isolation
+    const orgFilter = orgId ? { organizationId: orgId } : {};
+
+    // Check if slot is already taken (non-backup dispatcher) within this org
     const existingAssignment = await prisma.dispatcherAssignment.findFirst({
       where: {
+        ...orgFilter,
         county,
         date: parsedDate,
         startTime: parsedStartTime,
@@ -68,9 +76,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user already has an assignment for this time (any county)
+    // Check if user already has an assignment for this time (any county) within this org
     const userExistingAssignment = await prisma.dispatcherAssignment.findFirst({
       where: {
+        ...orgFilter,
         userId: user.id,
         date: parsedDate,
         startTime: parsedStartTime,
@@ -84,7 +93,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create the dispatcher assignment
+    // Create the dispatcher assignment with org scoping
     const assignment = await prisma.dispatcherAssignment.create({
       data: {
         userId: user.id,
@@ -94,6 +103,7 @@ export async function POST(request: NextRequest) {
         endTime: parsedEndTime,
         isBackup: false,
         createdById: user.id,
+        organizationId: orgId || undefined,
       },
       include: {
         user: {
@@ -127,9 +137,11 @@ export async function POST(request: NextRequest) {
 
     // In REGIONAL mode, get all shifts for that time slot (not filtered by county)
     // In COUNTY mode, filter by the specific county
+    // Always scope to current organization for multi-tenant isolation
     const isRegionalMode = county === 'REGIONAL';
     const shiftsInSlot = await prisma.shift.findMany({
       where: {
+        ...orgFilter,
         status: 'PUBLISHED',
         date: parsedDate,
         ...(isRegionalMode ? {} : { zone: { county } }),

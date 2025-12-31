@@ -85,6 +85,7 @@ export async function POST(request: NextRequest) {
             endTime: shift.endTime,
             zoneName: shift.zone?.name || '',
             reason,
+            orgId: shift.organizationId || undefined, // Multi-tenant: Use org-specific branding
           })
         );
       }

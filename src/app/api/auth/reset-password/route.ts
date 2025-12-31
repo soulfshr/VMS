@@ -44,9 +44,17 @@ export async function POST(request: NextRequest) {
     // Hash the incoming token to match against stored hash
     const hashedToken = hashToken(token);
 
-    // Find user by hashed reset token
+    // Find user by hashed reset token (include memberships for multi-tenant)
     const user = await prisma.user.findUnique({
       where: { resetToken: hashedToken },
+      include: {
+        // Multi-tenant: Get org from memberships for notification
+        memberships: {
+          where: { accountStatus: { in: ['PENDING', 'APPROVED'] } },
+          select: { organizationId: true },
+          take: 1,
+        },
+      },
     });
 
     if (!user) {
@@ -88,11 +96,12 @@ export async function POST(request: NextRequest) {
       console.log(`[Auth] New signup verified: ${user.email}`);
 
       // Send notification to coordinators and admins (fire and forget)
-      // Multi-org: Scope to the user's organization
+      // Multi-org: Scope to the user's first membership org
+      const userOrgId = user.memberships[0]?.organizationId;
       sendNewApplicationNotification({
         applicantName: user.name,
         applicantEmail: user.email,
-        organizationId: user.organizationId || undefined,
+        organizationId: userOrgId || undefined,
       }).catch(err => {
         console.error('[Auth] Failed to send new application notification:', err);
       });

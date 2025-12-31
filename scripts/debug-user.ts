@@ -39,6 +39,57 @@ async function main() {
   });
   console.log('\n=== All Organizations ===');
   allOrgs.forEach(o => console.log(`  - ${o.slug}: ${o.name} (${o.id})`));
+
+  // Check Acme org data
+  const acmeOrg = await prisma.organization.findFirst({
+    where: { slug: 'acme' }
+  });
+
+  if (acmeOrg) {
+    console.log('\n=== Acme Org Data ===');
+
+    const qualifiedRoles = await prisma.qualifiedRole.findMany({
+      where: { organizationId: acmeOrg.id }
+    });
+    console.log('Qualified roles:', qualifiedRoles.map(r => r.name));
+
+    const shifts = await prisma.shift.findMany({
+      where: { organizationId: acmeOrg.id },
+      take: 5,
+      include: { zone: true }
+    });
+    console.log('Shifts count:', shifts.length);
+    shifts.forEach(s => {
+      console.log(`  - ${s.title}: date=${s.date.toISOString().split('T')[0]}, status=${s.status}, max=${s.maxVolunteers}, zone=${s.zone?.name || 'none'}`);
+    });
+
+    // Check user qualifications
+    if (user) {
+      const userQuals = await prisma.userQualification.findMany({
+        where: { userId: user.id },
+        include: { qualifiedRole: true }
+      });
+      console.log('User qualifications:', userQuals.map(q => q.qualifiedRole.name));
+    }
+
+    // Check org settings
+    const settings = await prisma.organizationSettings.findFirst({
+      where: { organizationId: acmeOrg.id }
+    });
+    console.log('Scheduling model:', settings?.primarySchedulingModel || 'not set');
+
+    // Check coverage slots
+    const coverageSlots = await prisma.coverageSignup.count({
+      where: { organizationId: acmeOrg.id }
+    });
+    console.log('Coverage signups:', coverageSlots);
+
+    // Check zones
+    const zones = await prisma.zone.findMany({
+      where: { organizationId: acmeOrg.id }
+    });
+    console.log('Zones:', zones.map(z => z.name));
+  }
 }
 
 main()

@@ -28,22 +28,37 @@ export async function GET(request: NextRequest) {
     const qualification = searchParams.get('qualification'); // Filter by slug e.g., REGIONAL_LEAD
     const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined;
 
-    // Build where clause with org scoping
+    // Get current org ID for multi-tenant filtering
+    const orgId = await getCurrentOrgId();
+
+    // Build membership filter based on status
+    // In multi-tenant, accountStatus is per-org on OrganizationMember
+    let membershipStatusFilter: Record<string, unknown> = {};
+    if (status === 'pending') {
+      membershipStatusFilter = { accountStatus: 'PENDING' };
+    } else if (status === 'rejected') {
+      membershipStatusFilter = { accountStatus: 'REJECTED' };
+    } else {
+      // Default: only show approved members
+      membershipStatusFilter = { accountStatus: 'APPROVED' };
+    }
+
+    // Build where clause with org scoping via OrganizationMember
     const where: Record<string, unknown> = {
-      ...await orgScope(),
+      // Multi-tenant: user must be a member of current org with matching status
+      memberships: orgId ? {
+        some: {
+          organizationId: orgId,
+          ...membershipStatusFilter,
+        },
+      } : { none: {} }, // No org = no results (shouldn't happen)
       // Always hide DEVELOPER accounts from volunteer lists
       role: { not: 'DEVELOPER' },
     };
 
-    // Filter by accountStatus - default to APPROVED unless filtering for pending/rejected
+    // For pending status, also require user to be verified (set password)
     if (status === 'pending') {
-      where.accountStatus = 'PENDING';
-      where.isVerified = true; // Only show verified pending users (who have set password)
-    } else if (status === 'rejected') {
-      where.accountStatus = 'REJECTED';
-    } else {
-      // Default: only show approved users
-      where.accountStatus = 'APPROVED';
+      where.isVerified = true;
     }
 
     if (zone && zone !== 'all') {
@@ -64,11 +79,24 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // isActive filter only applies to approved users
-    if (status === 'active') {
-      where.isActive = true;
-    } else if (status === 'inactive') {
-      where.isActive = false;
+    // isActive filter - update membership filter to include isActive condition
+    // Note: For multi-tenant, isActive is per-org on OrganizationMember
+    if (status === 'active' && orgId) {
+      where.memberships = {
+        some: {
+          organizationId: orgId,
+          ...membershipStatusFilter,
+          isActive: true,
+        },
+      };
+    } else if (status === 'inactive' && orgId) {
+      where.memberships = {
+        some: {
+          organizationId: orgId,
+          ...membershipStatusFilter,
+          isActive: false,
+        },
+      };
     }
     // pending and rejected statuses don't use isActive filter
 
@@ -101,6 +129,9 @@ export async function GET(request: NextRequest) {
       ];
     }
 
+    // Get current org ID for filtering qualifications
+    const currentOrgId = await getCurrentOrgId();
+
     const volunteers = await prisma.user.findMany({
       where,
       include: {
@@ -116,6 +147,12 @@ export async function GET(request: NextRequest) {
           },
         },
         userQualifications: {
+          // Only include qualifications for roles belonging to current org
+          where: currentOrgId ? {
+            qualifiedRole: {
+              organizationId: currentOrgId,
+            },
+          } : {},
           include: {
             qualifiedRole: {
               select: {
@@ -256,13 +293,18 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Get count of pending applications (verified users with PENDING status, scoped to org)
+    // Get count of pending applications (verified users with PENDING membership status, scoped to org)
     const pendingCount = await prisma.user.count({
       where: {
-        accountStatus: 'PENDING',
         isVerified: true,
         role: { not: 'DEVELOPER' },
-        ...await orgScope(),
+        // Multi-tenant: check pending status on OrganizationMember
+        memberships: currentOrgId ? {
+          some: {
+            organizationId: currentOrgId,
+            accountStatus: 'PENDING',
+          },
+        } : { none: {} },
       },
     });
 

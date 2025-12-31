@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
+import { getCurrentOrgId } from '@/lib/org-context';
 
 // GET /api/dispatcher-assignments/[id] - Get single assignment
 export async function GET(
@@ -14,9 +15,12 @@ export async function GET(
     }
 
     const { id } = await params;
+    const orgId = await getCurrentOrgId();
+    const orgFilter = orgId ? { organizationId: orgId } : {};
 
-    const assignment = await prisma.dispatcherAssignment.findUnique({
-      where: { id },
+    // Multi-tenant: Verify assignment belongs to current org
+    const assignment = await prisma.dispatcherAssignment.findFirst({
+      where: { id, ...orgFilter },
       include: {
         user: {
           select: {
@@ -57,6 +61,18 @@ export async function PUT(
     }
 
     const { id } = await params;
+    const orgId = await getCurrentOrgId();
+    const orgFilter = orgId ? { organizationId: orgId } : {};
+
+    // Multi-tenant: Verify assignment belongs to current org before updating
+    const existingAssignment = await prisma.dispatcherAssignment.findFirst({
+      where: { id, ...orgFilter },
+      select: { id: true },
+    });
+    if (!existingAssignment) {
+      return NextResponse.json({ error: 'Assignment not found' }, { status: 404 });
+    }
+
     const body = await request.json();
     const {
       userId,
@@ -125,10 +141,12 @@ export async function DELETE(
     }
 
     const { id } = await params;
+    const orgId = await getCurrentOrgId();
+    const orgFilter = orgId ? { organizationId: orgId } : {};
 
-    // Get the assignment to check ownership
-    const assignment = await prisma.dispatcherAssignment.findUnique({
-      where: { id },
+    // Get the assignment to check ownership (multi-tenant: must belong to current org)
+    const assignment = await prisma.dispatcherAssignment.findFirst({
+      where: { id, ...orgFilter },
       select: { userId: true },
     });
 

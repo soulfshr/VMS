@@ -36,9 +36,12 @@ export async function GET(
       },
       include: { qualifiedRole: { select: { slug: true } } },
     });
-    // Slugs are stored as uppercase with underscores (e.g., ZONE_LEAD, DISPATCHER)
+    // Check for lead-type qualifications flexibly (different orgs use different names)
+    const leadSlugs = ['ZONE_LEAD', 'SHIFT_LEAD', 'TEAM_LEAD', 'LEAD', 'DISPATCHER'];
     const hasLeadQualification = userQualifications.some(uq =>
-      uq.qualifiedRole.slug === 'DISPATCHER' || uq.qualifiedRole.slug === 'ZONE_LEAD'
+      leadSlugs.includes(uq.qualifiedRole.slug) ||
+      uq.qualifiedRole.slug.includes('LEAD') ||
+      uq.qualifiedRole.slug.includes('DISPATCH')
     );
 
     const shift = await prisma.shift.findFirst({

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { auditUpdate, auditDelete, toAuditUser } from '@/lib/audit';
+import { getCurrentOrgId } from '@/lib/org-context';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -18,8 +19,14 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const { id } = await params;
     const isDeveloper = user.role === 'DEVELOPER';
 
-    const trainingModule = await prisma.trainingModule.findUnique({
-      where: { id },
+    // Multi-tenant: Show modules that are either global (null) or belong to current org
+    const orgId = await getCurrentOrgId();
+    const orgFilter = orgId
+      ? { OR: [{ organizationId: orgId }, { organizationId: null }] }
+      : { organizationId: null };
+
+    const trainingModule = await prisma.trainingModule.findFirst({
+      where: { id, ...orgFilter },
       include: {
         sections: {
           include: {
@@ -154,9 +161,14 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       grantsQualifiedRoleIds, // NEW: Array of role IDs
     } = body;
 
-    // Check module exists
-    const existing = await prisma.trainingModule.findUnique({
-      where: { id },
+    // Multi-tenant: Verify module exists and belongs to current org or is global
+    const orgId = await getCurrentOrgId();
+    const orgFilter = orgId
+      ? { OR: [{ organizationId: orgId }, { organizationId: null }] }
+      : { organizationId: null };
+
+    const existing = await prisma.trainingModule.findFirst({
+      where: { id, ...orgFilter },
     });
 
     if (!existing) {
@@ -271,9 +283,14 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     const { id } = await params;
 
-    // Check module exists
-    const existing = await prisma.trainingModule.findUnique({
-      where: { id },
+    // Multi-tenant: Verify module exists and belongs to current org or is global
+    const orgId = await getCurrentOrgId();
+    const orgFilter = orgId
+      ? { OR: [{ organizationId: orgId }, { organizationId: null }] }
+      : { organizationId: null };
+
+    const existing = await prisma.trainingModule.findFirst({
+      where: { id, ...orgFilter },
       include: {
         enrollments: {
           select: { id: true },

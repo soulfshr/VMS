@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true });
     }
 
-    // Find user by email (include organizationId for branding)
+    // Find user by email (include memberships for branding)
     const user = await prisma.user.findUnique({
       where: { email: normalizedEmail },
       select: {
@@ -47,7 +47,12 @@ export async function POST(request: NextRequest) {
         email: true,
         name: true,
         isActive: true,
-        organizationId: true,
+        // Multi-tenant: Get org from memberships, not legacy organizationId
+        memberships: {
+          where: { accountStatus: 'APPROVED' },
+          select: { organizationId: true },
+          take: 1,
+        },
       },
     });
 
@@ -81,11 +86,13 @@ export async function POST(request: NextRequest) {
 
     // Send UNHASHED password reset token to user via email
     // Include orgId for branding and origin for multi-tenant URL
+    // Multi-tenant: Use first approved membership's org for branding
+    const userOrgId = user.memberships[0]?.organizationId;
     const emailSent = await sendPasswordResetEmail({
       to: user.email,
       userName: user.name,
       resetToken, // Send the unhashed token
-      orgId: user.organizationId || undefined,
+      orgId: userOrgId || undefined,
       origin,
     });
 

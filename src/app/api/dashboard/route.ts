@@ -181,9 +181,10 @@ export async function GET() {
     const isAdmin = ['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role);
 
     // Check if user has lead qualifications from their qualified roles
-    // Slugs are stored as uppercase with underscores (e.g., ZONE_LEAD, DISPATCHER)
+    // Use flexible matching for different org naming conventions
     const hasLeadQualification = user.userQualifications?.some(uq =>
-      uq.qualifiedRole.slug === 'DISPATCHER' || uq.qualifiedRole.slug === 'ZONE_LEAD'
+      uq.qualifiedRole.slug.includes('LEAD') ||
+      uq.qualifiedRole.slug.includes('DISPATCH')
     );
 
     // In SHIFTS model (simple scheduling), anyone can browse shifts
@@ -191,8 +192,13 @@ export async function GET() {
     const canBrowseShifts = primarySchedulingModel === 'SHIFTS' || schedulingMode === 'FULL' || isAdmin || hasLeadQualification;
 
     // Get user's specific qualifications for filtering openings
-    const userHasZoneLeadQual = user.userQualifications?.some(uq => uq.qualifiedRole.slug === 'ZONE_LEAD');
-    const userHasVerifierQual = user.userQualifications?.some(uq => uq.qualifiedRole.slug === 'VERIFIER');
+    // Use flexible matching for different org naming conventions
+    const userHasZoneLeadQual = user.userQualifications?.some(uq =>
+      uq.qualifiedRole.slug.includes('LEAD') && !uq.qualifiedRole.slug.includes('REGIONAL')
+    );
+    const userHasVerifierQual = user.userQualifications?.some(uq =>
+      uq.qualifiedRole.slug === 'VERIFIER' || uq.qualifiedRole.slug.includes('VERIFY')
+    );
     const userHasAnyQualification = user.userQualifications && user.userQualifications.length > 0;
 
     // Determine relevant qualifications based on scheduling mode
@@ -271,7 +277,10 @@ export async function GET() {
     const userQualificationNames = user.userQualifications?.map(uq => uq.qualifiedRole.name) || [];
 
     // Get dispatcher slot openings for users with DISPATCHER qualification
-    const userHasDispatcherQual = user.userQualifications?.some(uq => uq.qualifiedRole.slug === 'DISPATCHER');
+    // Use flexible matching for different org naming conventions
+    const userHasDispatcherQual = user.userQualifications?.some(uq =>
+      uq.qualifiedRole.slug === 'DISPATCHER' || uq.qualifiedRole.slug.includes('DISPATCH')
+    );
 
     // Get dispatcher scheduling mode - determines how slots are grouped
     const dispatcherSchedulingMode = settings?.dispatcherSchedulingMode || 'ZONE';
@@ -398,7 +407,12 @@ export async function GET() {
     }
 
     // Get Regional Lead (Dispatch Coordinator) openings for qualified users
-    const userHasRegionalLeadQual = user.userQualifications?.some(uq => uq.qualifiedRole.slug === 'REGIONAL_LEAD');
+    // Use flexible matching - REGIONAL_LEAD, DISPATCH_COORDINATOR, etc.
+    const userHasRegionalLeadQual = user.userQualifications?.some(uq =>
+      uq.qualifiedRole.slug === 'REGIONAL_LEAD' ||
+      uq.qualifiedRole.slug.includes('REGIONAL') ||
+      uq.qualifiedRole.slug.includes('COORDINATOR')
+    );
 
     interface RegionalLeadOpening {
       date: string;
@@ -822,12 +836,17 @@ export async function GET() {
         let userRoleColor: string | null = null;
         let userRoleName: string | null = null;
         if (userVolunteer?.isZoneLead) {
-          const zoneLeadRole = user.userQualifications?.find(uq => uq.qualifiedRole.slug === 'ZONE_LEAD');
-          userRoleColor = zoneLeadRole?.qualifiedRole.color || '#8b5cf6'; // purple fallback
-          userRoleName = 'Zone Lead';
+          // Find lead-type role (flexible matching for different org naming)
+          const leadRole = user.userQualifications?.find(uq =>
+            uq.qualifiedRole.slug.includes('LEAD') && !uq.qualifiedRole.slug.includes('REGIONAL')
+          );
+          userRoleColor = leadRole?.qualifiedRole.color || '#8b5cf6'; // purple fallback
+          userRoleName = leadRole?.qualifiedRole.name || 'Shift Lead';
         } else {
-          // Default to Verifier role or first qualification
-          const verifierRole = user.userQualifications?.find(uq => uq.qualifiedRole.slug === 'VERIFIER');
+          // Default to Verifier-type role or first qualification (flexible matching)
+          const verifierRole = user.userQualifications?.find(uq =>
+            uq.qualifiedRole.slug === 'VERIFIER' || uq.qualifiedRole.slug.includes('VERIFY')
+          );
           const defaultRole = verifierRole || user.userQualifications?.[0];
           userRoleColor = defaultRole?.qualifiedRole.color || '#14b8a6'; // cyan fallback
           userRoleName = defaultRole?.qualifiedRole.name || 'Volunteer';
@@ -864,7 +883,8 @@ export async function GET() {
             id: shift.zone.id,
             name: shift.zone.name,
           } : null,
-          needsZoneLead: !shift.volunteers.some(v => v.isZoneLead),
+          // Only show "needs zone lead" if user has the qualification to be a zone lead
+          needsZoneLead: userHasZoneLeadQual && !shift.volunteers.some(v => v.isZoneLead),
           spotsRemaining: shift.maxVolunteers - shift.volunteers.length,
         })),
         otherZones: otherZoneOpenings.slice(0, 10).map((shift: typeof allQualifiedOpenings[number]) => ({
@@ -881,7 +901,8 @@ export async function GET() {
             id: shift.zone.id,
             name: shift.zone.name,
           } : null,
-          needsZoneLead: !shift.volunteers.some(v => v.isZoneLead),
+          // Only show "needs zone lead" if user has the qualification to be a zone lead
+          needsZoneLead: userHasZoneLeadQual && !shift.volunteers.some(v => v.isZoneLead),
           spotsRemaining: shift.maxVolunteers - shift.volunteers.length,
         })),
         userQualifications: userQualificationNames,
@@ -941,12 +962,17 @@ export async function GET() {
         let userRoleColor: string | null = null;
         let userRoleName: string | null = null;
         if (userVolunteer?.isZoneLead) {
-          const zoneLeadRole = user.userQualifications?.find(uq => uq.qualifiedRole.slug === 'ZONE_LEAD');
-          userRoleColor = zoneLeadRole?.qualifiedRole.color || '#8b5cf6'; // purple fallback
-          userRoleName = 'Zone Lead';
+          // Find lead-type role (flexible matching for different org naming)
+          const leadRole = user.userQualifications?.find(uq =>
+            uq.qualifiedRole.slug.includes('LEAD') && !uq.qualifiedRole.slug.includes('REGIONAL')
+          );
+          userRoleColor = leadRole?.qualifiedRole.color || '#8b5cf6'; // purple fallback
+          userRoleName = leadRole?.qualifiedRole.name || 'Shift Lead';
         } else {
-          // Default to Verifier role or first qualification
-          const verifierRole = user.userQualifications?.find(uq => uq.qualifiedRole.slug === 'VERIFIER');
+          // Default to Verifier-type role or first qualification (flexible matching)
+          const verifierRole = user.userQualifications?.find(uq =>
+            uq.qualifiedRole.slug === 'VERIFIER' || uq.qualifiedRole.slug.includes('VERIFY')
+          );
           const defaultRole = verifierRole || user.userQualifications?.[0];
           userRoleColor = defaultRole?.qualifiedRole.color || '#14b8a6'; // cyan fallback
           userRoleName = defaultRole?.qualifiedRole.name || 'Volunteer';

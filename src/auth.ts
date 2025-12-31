@@ -131,9 +131,32 @@ export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
           uq => uq.qualifiedRole.slug as 'VERIFIER' | 'ZONE_LEAD' | 'DISPATCHER'
         );
 
-        // Auto-select org if user has exactly 1 membership
-        // Otherwise, leave null - user will be redirected to /select-org
-        const autoSelectedOrg = memberships.length === 1 ? memberships[0] : null;
+        // Auto-select org logic:
+        // 1. If user has exactly 1 membership, auto-select it
+        // 2. If user has multiple memberships, try to restore last selected org from cookie
+        // 3. Otherwise, leave null - user will need to select
+        let autoSelectedOrg = memberships.length === 1 ? memberships[0] : null;
+
+        // For users with multiple memberships, try to restore last selected org
+        if (!autoSelectedOrg && memberships.length > 1) {
+          try {
+            const { cookies } = await import('next/headers');
+            const cookieStore = await cookies();
+            const lastOrgId = cookieStore.get('last-org-id')?.value;
+
+            if (lastOrgId) {
+              // Find the membership for this org (must be APPROVED)
+              const lastOrg = memberships.find(
+                m => m.organizationId === lastOrgId && m.accountStatus === 'APPROVED'
+              );
+              if (lastOrg) {
+                autoSelectedOrg = lastOrg;
+              }
+            }
+          } catch {
+            // Cookie read may fail in some contexts, ignore
+          }
+        }
 
         return {
           id: user.id,

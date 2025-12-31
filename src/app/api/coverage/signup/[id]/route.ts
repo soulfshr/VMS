@@ -81,6 +81,7 @@ export async function DELETE(
         startHour: signup.startHour,
         endHour: signup.endHour,
         roleType: isCoordinator ? 'DISPATCHER' : (signup.roleType as 'DISPATCHER' | 'ZONE_LEAD' | 'VERIFIER'),
+        orgId: signup.organizationId || undefined, // Multi-tenant: Use org-specific branding
       });
     } catch (emailErr) {
       console.error('Failed to send coverage cancellation email:', emailErr);

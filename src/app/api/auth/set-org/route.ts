@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { auth, unstable_update } from '@/auth';
 
 /**
@@ -6,6 +7,7 @@ import { auth, unstable_update } from '@/auth';
  *
  * Changes the currently selected organization for the logged-in user.
  * Updates the session with the new currentOrgId.
+ * Also stores the org ID in a cookie for "remember last org" functionality.
  *
  * Request body: { orgId: string }
  *
@@ -52,6 +54,17 @@ export async function POST(request: Request) {
     await unstable_update({
       currentOrgId: orgId,
     } as Parameters<typeof unstable_update>[0]);
+
+    // Store the last selected org in a cookie for "remember last org" on next login
+    // Cookie is per-user via session, lasts 30 days
+    const cookieStore = await cookies();
+    cookieStore.set('last-org-id', orgId, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 30 * 24 * 60 * 60, // 30 days
+      path: '/',
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

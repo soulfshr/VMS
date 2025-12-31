@@ -353,8 +353,9 @@ async function getOpeningsForUser(
         const userAlreadySignedUp = slotSignups.some(s => s.userId === user.id);
         if (userAlreadySignedUp) continue;
 
-        // Check zone lead opening
-        if (qualSlugs.includes('ZONE_LEAD') && slot.needsLead) {
+        // Check zone lead opening - flexible matching for different org naming
+        const hasLeadQual = qualSlugs.some(s => s.includes('LEAD') && !s.includes('REGIONAL'));
+        if (hasLeadQual && slot.needsLead) {
           const hasZoneLead = slotSignups.some(s => s.roleType === 'ZONE_LEAD');
           if (!hasZoneLead) {
             const isUserZone = userZoneIds.includes(zone.id);
@@ -370,8 +371,9 @@ async function getOpeningsForUser(
           }
         }
 
-        // Check verifier opening
-        if (qualSlugs.includes('VERIFIER')) {
+        // Check verifier opening - flexible matching for different org naming
+        const hasVerifierQual = qualSlugs.some(s => s === 'VERIFIER' || s.includes('VERIFY'));
+        if (hasVerifierQual) {
           const verifierCount = slotSignups.filter(s => s.roleType === 'VERIFIER').length;
           const spotsRemaining = slot.minVols - verifierCount;
           if (spotsRemaining > 0) {
@@ -388,8 +390,9 @@ async function getOpeningsForUser(
           }
         }
 
-        // Check dispatcher opening
-        if (qualSlugs.includes('DISPATCHER') && slot.needsDispatcher) {
+        // Check dispatcher opening - flexible matching for different org naming
+        const hasDispatcherQual = qualSlugs.some(s => s === 'DISPATCHER' || s.includes('DISPATCH'));
+        if (hasDispatcherQual && slot.needsDispatcher) {
           const hasDispatcher = slotSignups.some(s => s.roleType === 'DISPATCHER');
           if (!hasDispatcher) {
             dispatcherSlots.push({
@@ -406,8 +409,12 @@ async function getOpeningsForUser(
       }
     }
 
-    // Check coordinator openings (regional, no zone)
-    if (qualSlugs.includes('REGIONAL_LEAD') || qualSlugs.includes('DISPATCH_COORDINATOR')) {
+    // Check coordinator openings (regional, no zone) - flexible matching
+    const hasCoordinatorQual = qualSlugs.some(s =>
+      s === 'REGIONAL_LEAD' || s === 'DISPATCH_COORDINATOR' ||
+      s.includes('REGIONAL') || s.includes('COORDINATOR')
+    );
+    if (hasCoordinatorQual) {
       // Get unique time slots for this day from all zones
       const timeSlots = new Set<number>();
       for (const zone of zones) {

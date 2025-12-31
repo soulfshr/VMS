@@ -5,8 +5,10 @@ import { getDbUser } from '@/lib/user';
 /**
  * POST /api/developer/migrate-org-ids
  * Backfill organizationId on all legacy records with null organizationId
- * Assigns them to the specified organization (defaults to Siembra NC)
+ * Assigns them to the specified organization
  * Requires DEVELOPER role
+ *
+ * Body: { targetSlug: string } - REQUIRED, no default to prevent accidental migrations
  */
 export async function POST(request: NextRequest) {
   try {
@@ -16,7 +18,15 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json().catch(() => ({}));
-    const targetSlug = body.targetSlug || 'nc'; // Default to Siembra NC
+    const targetSlug = body.targetSlug;
+
+    // Multi-tenant safety: Require explicit targetSlug to prevent accidental data misassignment
+    if (!targetSlug) {
+      return NextResponse.json(
+        { error: 'targetSlug is required. Specify which organization to migrate data to.' },
+        { status: 400 }
+      );
+    }
 
     // Find the target organization
     const targetOrg = await prisma.organization.findFirst({

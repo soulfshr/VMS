@@ -11,7 +11,7 @@ const DEFAULT_TIMEZONE = 'America/New_York';
 
 // Email configuration - AWS SES
 // Default fallback from env vars (can be overridden by admin settings)
-const DEFAULT_EMAIL_FROM = process.env.SES_FROM_EMAIL || process.env.EMAIL_FROM || '';
+const DEFAULT_EMAIL_FROM = process.env.SES_FROM_EMAIL || process.env.EMAIL_FROM || 'noreply@ripple-vms.com';
 const REPLY_TO_EMAIL = process.env.REPLY_TO_EMAIL || DEFAULT_EMAIL_FROM;
 
 // App URL for unsubscribe links
@@ -115,6 +115,60 @@ function isEmailConfigured(branding: BrandingSettings): boolean {
 // Generate unsubscribe token for a user
 export function generateUnsubscribeToken(): string {
   return crypto.randomBytes(32).toString('hex');
+}
+
+/**
+ * Generate a Google Calendar URL for adding an event
+ * @param title - Event title
+ * @param startTime - Start time (Date object)
+ * @param endTime - End time (Date object)
+ * @param description - Event description (optional)
+ * @param location - Event location (optional)
+ */
+function generateGoogleCalendarUrl(params: {
+  title: string;
+  startTime: Date;
+  endTime: Date;
+  description?: string;
+  location?: string;
+}): string {
+  const { title, startTime, endTime, description, location } = params;
+
+  // Format dates as YYYYMMDDTHHmmssZ (UTC)
+  const formatDate = (date: Date) => date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+
+  const baseUrl = 'https://calendar.google.com/calendar/render';
+  const queryParams = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: title,
+    dates: `${formatDate(startTime)}/${formatDate(endTime)}`,
+  });
+
+  if (description) {
+    queryParams.set('details', description);
+  }
+  if (location) {
+    queryParams.set('location', location);
+  }
+
+  return `${baseUrl}?${queryParams.toString()}`;
+}
+
+/**
+ * Generate calendar buttons HTML for emails
+ */
+function getCalendarButtons(googleCalUrl: string): string {
+  return `
+    <div style="margin: 20px 0; text-align: center;">
+      <p style="margin-bottom: 12px; color: #6b7280; font-size: 14px;">
+        <strong>A calendar invite is attached to this email.</strong> Or add directly:
+      </p>
+      <a href="${googleCalUrl}" target="_blank" rel="noopener noreferrer"
+         style="display: inline-block; background: #4285f4; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: 500; font-size: 14px;">
+        📅 Add to Google Calendar
+      </a>
+    </div>
+  `;
 }
 
 // Generate email footer with unsubscribe link (AWS SES compliance)
@@ -282,13 +336,14 @@ interface ShiftEmailParams {
   zoneName: string;
   description?: string;
   unsubscribeToken?: string;
+  orgId?: string; // Multi-tenant: Use org-specific branding
 }
 
 /**
  * Send email when volunteer signs up for a shift (PENDING status)
  */
 export async function sendShiftSignupEmail(params: ShiftEmailParams): Promise<void> {
-  const branding = await getBranding();
+  const branding = await getBranding(params.orgId);
 
   if (!isEmailConfigured(branding)) {
     console.log('[Email] SES not configured, skipping signup email');
@@ -345,7 +400,7 @@ export async function sendShiftSignupEmail(params: ShiftEmailParams): Promise<vo
  * Includes ICS calendar invite attachment
  */
 export async function sendShiftConfirmationEmail(params: ShiftEmailParams): Promise<void> {
-  const branding = await getBranding();
+  const branding = await getBranding(params.orgId);
 
   if (!isEmailConfigured(branding)) {
     console.log('[Email] SES not configured, skipping confirmation email');
@@ -359,14 +414,26 @@ export async function sendShiftConfirmationEmail(params: ShiftEmailParams): Prom
   const endStr = formatTimeInTimezone(endTime, branding.timezone);
 
   // Generate ICS calendar invite with explicit timezone
+  const eventSummary = `${shiftType}: ${shiftTitle}${zoneName ? ` - ${zoneName}` : ''}`;
+  const eventDescription = description || `${branding.orgName} volunteer shift\n\nType: ${shiftType}${zoneName ? `\nZone: ${zoneName}` : ''}`;
+
   const calendar = icalGenerator({ name: branding.orgName });
   calendar.createEvent({
     start: startTime,
     end: endTime,
     timezone: branding.timezone,
-    summary: `${shiftType}: ${shiftTitle} - ${zoneName}`,
-    description: description || `${branding.orgName} volunteer shift\n\nType: ${shiftType}\nZone: ${zoneName}`,
+    summary: eventSummary,
+    description: eventDescription,
     organizer: { name: branding.orgName, email: branding.emailFromAddress },
+  });
+
+  // Generate Google Calendar URL
+  const googleCalUrl = generateGoogleCalendarUrl({
+    title: eventSummary,
+    startTime,
+    endTime,
+    description: eventDescription,
+    location: zoneName || undefined,
   });
 
   try {
@@ -388,12 +455,12 @@ export async function sendShiftConfirmationEmail(params: ShiftEmailParams): Prom
             <h3 style="margin-top: 0; color: #065f46;">Confirmed Shift</h3>
             <p style="margin: 8px 0;"><strong>Shift:</strong> ${escapeHtml(shiftTitle)}</p>
             <p style="margin: 8px 0;"><strong>Type:</strong> ${escapeHtml(shiftType)}</p>
-            <p style="margin: 8px 0;"><strong>Zone:</strong> ${escapeHtml(zoneName)}</p>
+            ${zoneName ? `<p style="margin: 8px 0;"><strong>Zone:</strong> ${escapeHtml(zoneName)}</p>` : ''}
             <p style="margin: 8px 0;"><strong>Date:</strong> ${escapeHtml(dateStr)}</p>
             <p style="margin: 8px 0;"><strong>Time:</strong> ${escapeHtml(startStr)} - ${escapeHtml(endStr)}</p>
           </div>
 
-          <p><strong>A calendar invite is attached to this email.</strong> Add it to your calendar so you don't forget!</p>
+          ${getCalendarButtons(googleCalUrl)}
 
           <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
             Thank you for volunteering with ${escapeHtml(branding.orgName)}!<br>
@@ -414,7 +481,7 @@ export async function sendShiftConfirmationEmail(params: ShiftEmailParams): Prom
  * Send email when volunteer cancels their RSVP
  */
 export async function sendShiftCancellationEmail(params: Omit<ShiftEmailParams, 'description'>): Promise<void> {
-  const branding = await getBranding();
+  const branding = await getBranding(params.orgId);
 
   if (!isEmailConfigured(branding)) {
     console.log('[Email] SES not configured, skipping cancellation email');
@@ -477,13 +544,14 @@ interface ShiftCancelledParams {
   zoneName: string;
   reason?: string;
   unsubscribeToken?: string;
+  orgId?: string; // Multi-tenant: Use org-specific branding
 }
 
 /**
  * Send email when coordinator cancels a shift (affects all signed-up volunteers)
  */
 export async function sendShiftCancelledByCoordinatorEmail(params: ShiftCancelledParams): Promise<void> {
-  const branding = await getBranding();
+  const branding = await getBranding(params.orgId);
 
   if (!isEmailConfigured(branding)) {
     console.log('[Email] SES not configured, skipping shift cancelled email');
@@ -548,6 +616,7 @@ interface ShiftInviteParams {
   description?: string;
   coordinatorName: string;
   unsubscribeToken?: string;
+  orgId?: string; // Multi-tenant: Use org-specific branding
 }
 
 /**
@@ -555,7 +624,7 @@ interface ShiftInviteParams {
  * Includes ICS calendar invite attachment
  */
 export async function sendShiftInviteEmail(params: ShiftInviteParams): Promise<void> {
-  const branding = await getBranding();
+  const branding = await getBranding(params.orgId);
 
   if (!isEmailConfigured(branding)) {
     console.log('[Email] SES not configured, skipping invite email');
@@ -569,14 +638,26 @@ export async function sendShiftInviteEmail(params: ShiftInviteParams): Promise<v
   const endStr = formatTimeInTimezone(endTime, branding.timezone);
 
   // Generate ICS calendar invite with explicit timezone
+  const eventSummary = `${shiftType}: ${shiftTitle}${zoneName ? ` - ${zoneName}` : ''}`;
+  const eventDescription = description || `${branding.orgName} volunteer shift\n\nType: ${shiftType}${zoneName ? `\nZone: ${zoneName}` : ''}`;
+
   const calendar = icalGenerator({ name: branding.orgName });
   calendar.createEvent({
     start: startTime,
     end: endTime,
     timezone: branding.timezone,
-    summary: `${shiftType}: ${shiftTitle} - ${zoneName}`,
-    description: description || `${branding.orgName} volunteer shift\n\nType: ${shiftType}\nZone: ${zoneName}`,
+    summary: eventSummary,
+    description: eventDescription,
     organizer: { name: branding.orgName, email: branding.emailFromAddress },
+  });
+
+  // Generate Google Calendar URL
+  const googleCalUrl = generateGoogleCalendarUrl({
+    title: eventSummary,
+    startTime,
+    endTime,
+    description: eventDescription,
+    location: zoneName || undefined,
   });
 
   try {
@@ -598,12 +679,12 @@ export async function sendShiftInviteEmail(params: ShiftInviteParams): Promise<v
             <h3 style="margin-top: 0; color: #065f46;">Your Shift</h3>
             <p style="margin: 8px 0;"><strong>Shift:</strong> ${escapeHtml(shiftTitle)}</p>
             <p style="margin: 8px 0;"><strong>Type:</strong> ${escapeHtml(shiftType)}</p>
-            <p style="margin: 8px 0;"><strong>Zone:</strong> ${escapeHtml(zoneName)}</p>
+            ${zoneName ? `<p style="margin: 8px 0;"><strong>Zone:</strong> ${escapeHtml(zoneName)}</p>` : ''}
             <p style="margin: 8px 0;"><strong>Date:</strong> ${escapeHtml(dateStr)}</p>
             <p style="margin: 8px 0;"><strong>Time:</strong> ${escapeHtml(startStr)} - ${escapeHtml(endStr)}</p>
           </div>
 
-          <p><strong>A calendar invite is attached to this email.</strong> Add it to your calendar so you don't forget!</p>
+          ${getCalendarButtons(googleCalUrl)}
 
           <p>If you cannot attend this shift, please log into the VMS and cancel your signup, or contact your coordinator.</p>
 
@@ -631,6 +712,7 @@ interface BlastEmailParams {
   subject: string;
   body: string;
   unsubscribeToken?: string;
+  orgId?: string; // Multi-tenant: Use org-specific branding
 }
 
 /**
@@ -638,7 +720,7 @@ interface BlastEmailParams {
  * Body supports {{volunteerName}} and {{organizationName}} variables
  */
 export async function sendBlastEmail(params: BlastEmailParams): Promise<{ success: boolean; error?: string }> {
-  const branding = await getBranding();
+  const branding = await getBranding(params.orgId);
 
   if (!isEmailConfigured(branding)) {
     console.log('[Email] SES not configured, skipping blast email');
@@ -1109,6 +1191,7 @@ interface FeedbackEmailParams {
   userName?: string;
   url?: string;
   userAgent?: string;
+  orgId?: string; // Multi-tenant: Use org-specific branding
 }
 
 /**
@@ -1117,7 +1200,7 @@ interface FeedbackEmailParams {
  * Coordinator categories (suggestion, question, other) -> all active coordinators
  */
 export async function sendFeedbackEmail(params: FeedbackEmailParams): Promise<void> {
-  const branding = await getBranding();
+  const branding = await getBranding(params.orgId);
 
   if (!isEmailConfigured(branding)) {
     console.log('[Email] SES not configured, skipping feedback email');
@@ -1364,6 +1447,7 @@ interface WeeklyDigestEmailParams {
   weekEndDate: Date;
   scheduleData: WeeklyDigestData;
   unsubscribeToken?: string;
+  orgId?: string; // Multi-tenant: Use org-specific branding
 }
 
 /**
@@ -1371,7 +1455,7 @@ interface WeeklyDigestEmailParams {
  * Sent on Sundays showing the upcoming week's schedule
  */
 export async function sendWeeklyDigestEmail(params: WeeklyDigestEmailParams): Promise<void> {
-  const branding = await getBranding();
+  const branding = await getBranding(params.orgId);
 
   if (!isEmailConfigured(branding)) {
     console.log('[Email] SES not configured, skipping weekly digest email');
@@ -1512,6 +1596,7 @@ interface DispatcherSlotConfirmationParams {
   startTime: Date;
   endTime: Date;
   zones: string[];
+  orgId?: string; // Multi-tenant: Use org-specific branding
 }
 
 /**
@@ -1519,7 +1604,7 @@ interface DispatcherSlotConfirmationParams {
  * Includes ICS calendar invite attachment
  */
 export async function sendDispatcherSlotConfirmationEmail(params: DispatcherSlotConfirmationParams): Promise<void> {
-  const branding = await getBranding();
+  const branding = await getBranding(params.orgId);
 
   if (!isEmailConfigured(branding)) {
     console.log('[Email] SES not configured, skipping dispatcher slot confirmation email');
@@ -1540,14 +1625,25 @@ export async function sendDispatcherSlotConfirmationEmail(params: DispatcherSlot
   const scopeValue = isRegionalMode ? 'Regional (All Zones)' : county;
 
   // Generate ICS calendar invite with explicit timezone
+  const eventSummary = `Dispatcher: ${coverageLabel}`;
+  const eventDescription = `${branding.orgName} dispatcher coverage\n\n${scopeLabel}: ${scopeValue}\nZones: ${zones.join(', ')}`;
+
   const calendar = icalGenerator({ name: branding.orgName });
   calendar.createEvent({
     start: startTime,
     end: endTime,
     timezone: branding.timezone,
-    summary: `Dispatcher: ${coverageLabel}`,
-    description: `${branding.orgName} dispatcher coverage\n\n${scopeLabel}: ${scopeValue}\nZones: ${zones.join(', ')}`,
+    summary: eventSummary,
+    description: eventDescription,
     organizer: { name: branding.orgName, email: branding.emailFromAddress },
+  });
+
+  // Generate Google Calendar URL
+  const googleCalUrl = generateGoogleCalendarUrl({
+    title: eventSummary,
+    startTime,
+    endTime,
+    description: eventDescription,
   });
 
   try {
@@ -1572,7 +1668,7 @@ export async function sendDispatcherSlotConfirmationEmail(params: DispatcherSlot
             <p style="margin: 8px 0;"><strong>Zones Covered:</strong> ${escapeHtml(zonesStr)}</p>
           </div>
 
-          <p><strong>A calendar invite is attached to this email.</strong> Add it to your calendar so you don't forget!</p>
+          ${getCalendarButtons(googleCalUrl)}
 
           <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
             As dispatcher, you'll coordinate volunteers ${isRegionalMode ? 'across all zones' : `in ${escapeHtml(county)} County`} during this time slot.<br>
@@ -1597,13 +1693,14 @@ interface WelcomeEmailParams {
   email: string;
   name: string;
   role: string;
+  orgId?: string; // Multi-tenant: Use org-specific branding
 }
 
 /**
  * Send welcome email when volunteer application is approved
  */
 export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<boolean> {
-  const branding = await getBranding();
+  const branding = await getBranding(params.orgId);
 
   if (!isEmailConfigured(branding)) {
     console.log('[Email] SES not configured, skipping welcome email');
@@ -1682,13 +1779,14 @@ interface ApplicationRejectedEmailParams {
   email: string;
   name: string;
   rejectionReason?: string | null;
+  orgId?: string; // Multi-tenant: Use org-specific branding
 }
 
 /**
  * Send email when volunteer application is rejected
  */
 export async function sendApplicationRejectedEmail(params: ApplicationRejectedEmailParams): Promise<boolean> {
-  const branding = await getBranding();
+  const branding = await getBranding(params.orgId);
 
   if (!isEmailConfigured(branding)) {
     console.log('[Email] SES not configured, skipping rejection email');
@@ -1755,6 +1853,7 @@ interface CoverageSignupEmailParams {
   endHour: number;
   roleType: 'DISPATCHER' | 'ZONE_LEAD' | 'VERIFIER';
   unsubscribeToken?: string;
+  orgId?: string; // Multi-tenant: Use org-specific branding
 }
 
 // Format hour to time string (e.g., 6 -> "6:00 AM", 14 -> "2:00 PM")
@@ -1780,7 +1879,7 @@ function getRoleDisplayName(roleType: string): string {
  * Includes ICS calendar invite attachment
  */
 export async function sendCoverageSignupConfirmationEmail(params: CoverageSignupEmailParams): Promise<void> {
-  const branding = await getBranding();
+  const branding = await getBranding(params.orgId);
 
   if (!isEmailConfigured(branding)) {
     console.log('[Email] SES not configured, skipping coverage signup confirmation email');
@@ -1801,14 +1900,26 @@ export async function sendCoverageSignupConfirmationEmail(params: CoverageSignup
   endTime.setHours(endHour, 0, 0, 0);
 
   // Generate ICS calendar invite
+  const eventSummary = `Coverage: ${zoneName} (${roleDisplay})`;
+  const eventDescription = `${branding.orgName} coverage slot\n\nZone: ${zoneName}\nCounty: ${county}\nRole: ${roleDisplay}`;
+
   const calendar = icalGenerator({ name: branding.orgName });
   calendar.createEvent({
     start: startTime,
     end: endTime,
     timezone: branding.timezone,
-    summary: `Coverage: ${zoneName} (${roleDisplay})`,
-    description: `${branding.orgName} coverage slot\n\nZone: ${zoneName}\nCounty: ${county}\nRole: ${roleDisplay}`,
+    summary: eventSummary,
+    description: eventDescription,
     organizer: { name: branding.orgName, email: branding.emailFromAddress },
+  });
+
+  // Generate Google Calendar URL
+  const googleCalUrl = generateGoogleCalendarUrl({
+    title: eventSummary,
+    startTime,
+    endTime,
+    description: eventDescription,
+    location: zoneName,
   });
 
   try {
@@ -1835,7 +1946,7 @@ export async function sendCoverageSignupConfirmationEmail(params: CoverageSignup
             <p style="margin: 8px 0;"><strong>Role:</strong> ${escapeHtml(roleDisplay)}</p>
           </div>
 
-          <p><strong>A calendar invite is attached to this email.</strong> Add it to your calendar so you don't forget!</p>
+          ${getCalendarButtons(googleCalUrl)}
 
           <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
             Thank you for volunteering with ${escapeHtml(branding.orgName)}!<br>
@@ -1857,7 +1968,7 @@ export async function sendCoverageSignupConfirmationEmail(params: CoverageSignup
  * Includes ICS calendar cancellation attachment to remove the event from calendar
  */
 export async function sendCoverageCancellationEmail(params: CoverageSignupEmailParams): Promise<void> {
-  const branding = await getBranding();
+  const branding = await getBranding(params.orgId);
 
   if (!isEmailConfigured(branding)) {
     console.log('[Email] SES not configured, skipping coverage cancellation email');

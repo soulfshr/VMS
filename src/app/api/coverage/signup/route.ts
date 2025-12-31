@@ -169,6 +169,7 @@ export async function POST(request: NextRequest) {
           startHour: signup.startHour,
           endHour: signup.endHour,
           roleType: 'DISPATCHER', // Use DISPATCHER template for coordinator emails
+          orgId: orgId || undefined, // Multi-tenant: Use org-specific branding
         });
       } catch (emailErr) {
         console.error('Failed to send coverage confirmation email:', emailErr);
@@ -251,8 +252,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // For ZONE_LEAD and DISPATCHER, check if position is already filled
-    if (roleType === 'ZONE_LEAD' || roleType === 'DISPATCHER') {
+    // For lead/dispatcher roles (singleton positions), check if position is already filled
+    // Use flexible matching for different org naming conventions
+    const isLeadRole = roleType.includes('LEAD') || roleType === 'ZONE_LEAD' || roleType === 'SHIFT_LEAD';
+    const isDispatcherRole = roleType.includes('DISPATCH') || roleType === 'DISPATCHER';
+    if (isLeadRole || isDispatcherRole) {
       const existingLead = await prisma.coverageSignup.findFirst({
         where: {
           date: signupDate,
@@ -264,8 +268,9 @@ export async function POST(request: NextRequest) {
       });
 
       if (existingLead) {
+        const roleName = isLeadRole ? 'Lead' : 'Dispatcher';
         return NextResponse.json(
-          { error: `${roleType === 'ZONE_LEAD' ? 'Zone Lead' : 'Dispatcher'} position is already filled` },
+          { error: `${roleName} position is already filled` },
           { status: 400 }
         );
       }
@@ -305,6 +310,7 @@ export async function POST(request: NextRequest) {
         startHour: signup.startHour,
         endHour: signup.endHour,
         roleType: signup.roleType as 'DISPATCHER' | 'ZONE_LEAD' | 'VERIFIER',
+        orgId: orgId || undefined, // Multi-tenant: Use org-specific branding
       });
     } catch (emailErr) {
       console.error('Failed to send coverage confirmation email:', emailErr);
