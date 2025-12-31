@@ -39,29 +39,51 @@ function isNoShiftActivity(activity: string): boolean {
 }
 
 /**
- * Check if a token is an activity (with or without time)
+ * Parse cell content to extract activities and times
  */
-function isActivityToken(token: string): boolean {
-  const upper = token.toUpperCase();
-  // Check for activity with time like "DE-8:30"
-  if (/^[A-Z]+-\d{1,2}:\d{2}$/.test(token)) {
-    return true;
+function parseCellContent(content: string): { activities: string[]; times: string[] } {
+  const activities: string[] = [];
+  const times: string[] = [];
+
+  if (!content || content.trim() === '') {
+    return { activities, times };
   }
-  // Check for standalone activity
-  return NO_SHIFT_ACTIVITIES.includes(upper) || APPOINTMENT_ACTIVITIES.includes(upper);
+
+  // Split content by common separators (newlines, spaces between activities)
+  // Handle patterns like "DE-8:30MM-9:30" or "DE-8:30 MM-9:30"
+  const normalized = content.replace(/([A-Z]+)-(\d{1,2}:\d{2})/gi, ' $1-$2 ').trim();
+  const tokens = normalized.split(/\s+/).filter(t => t.trim());
+
+  for (const token of tokens) {
+    const upper = token.toUpperCase();
+
+    // Check for activity with time like "DE-8:30"
+    const activityTimeMatch = upper.match(/^([A-Z]+)-(\d{1,2}:\d{2})$/);
+    if (activityTimeMatch) {
+      activities.push(activityTimeMatch[1]);
+      times.push(activityTimeMatch[2]);
+    } else if (NO_SHIFT_ACTIVITIES.includes(upper) || APPOINTMENT_ACTIVITIES.includes(upper)) {
+      activities.push(upper);
+    }
+  }
+
+  return { activities, times };
 }
 
 /**
  * Parse a clinic schedule from a .docx file buffer
+ * Uses HTML table extraction to properly handle empty cells
  */
 export async function parseScheduleDocx(buffer: Buffer): Promise<ParsedSchedule> {
   const errors: string[] = [];
 
-  // Extract text from docx
-  const result = await mammoth.extractRawText({ buffer });
-  const text = result.value;
+  // Convert to HTML to preserve table structure
+  const result = await mammoth.convertToHtml({ buffer });
+  const html = result.value;
 
-  // Split into tokens (words/numbers)
+  // Also get raw text for header parsing
+  const textResult = await mammoth.extractRawText({ buffer });
+  const text = textResult.value;
   const tokens = text.split(/\s+/).filter(t => t.trim());
 
   if (tokens.length === 0) {
@@ -103,154 +125,67 @@ export async function parseScheduleDocx(buffer: Buffer): Promise<ParsedSchedule>
     return { month, year: 0, locationCode, days: [], errors };
   }
 
-  // Find the days of week header to know where calendar data starts
-  let calendarStartIndex = -1;
+  // Extract table from HTML
+  const tableMatch = html.match(/<table[^>]*>([\s\S]*?)<\/table>/);
+  if (!tableMatch) {
+    errors.push('Could not find table in document');
+    return { month, year, locationCode, days: [], errors };
+  }
 
-  for (let i = 0; i < tokens.length - 6; i++) {
-    if (tokens[i].toLowerCase() === 'sunday' &&
-        tokens[i + 1].toLowerCase() === 'monday') {
-      calendarStartIndex = i + 7; // Skip the day names
+  // Extract all rows
+  const rows = tableMatch[1].match(/<tr[^>]*>([\s\S]*?)<\/tr>/g) || [];
+
+  // Find the header row (contains Sunday, Monday, etc.)
+  let headerRowIndex = -1;
+  for (let i = 0; i < rows.length; i++) {
+    if (rows[i].toLowerCase().includes('sunday') && rows[i].toLowerCase().includes('monday')) {
+      headerRowIndex = i;
       break;
     }
   }
 
-  if (calendarStartIndex === -1) {
-    errors.push('Could not find calendar header');
+  if (headerRowIndex === -1) {
+    errors.push('Could not find calendar header row');
     return { month, year, locationCode, days: [], errors };
   }
 
-  // Get the number of days in this month
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-  // Find what day of week the 1st falls on (0 = Sunday)
-  const firstDayOfWeek = new Date(year, month, 1).getDay();
-
-  // Parse the calendar grid
-  // Structure: each week row has day numbers first, then activities for each day
-  // Activities are in column order (Sun, Mon, Tue, Wed, Thu, Fri, Sat)
-  const calendarTokens = tokens.slice(calendarStartIndex);
-
   // Map to track activities for each day
-  const dayActivities = new Map<number, { activities: string[], times: string[] }>();
+  const dayActivities = new Map<number, { activities: string[]; times: string[] }>();
 
-  let i = 0;
+  // Process rows after the header (alternating: day numbers row, activities row)
+  for (let rowIdx = headerRowIndex + 1; rowIdx < rows.length - 1; rowIdx += 2) {
+    const dayNumbersRow = rows[rowIdx];
+    const activitiesRow = rows[rowIdx + 1];
 
-  // Process week by week
-  while (i < calendarTokens.length) {
-    // Collect day numbers for this week row
-    const weekDays: number[] = [];
-    while (i < calendarTokens.length) {
-      const token = calendarTokens[i];
-      const dayNum = parseInt(token);
+    if (!dayNumbersRow || !activitiesRow) continue;
 
-      if (!isNaN(dayNum) && dayNum >= 1 && dayNum <= 31) {
-        weekDays.push(dayNum);
-        i++;
-      } else {
-        break; // Hit non-number, must be activities
+    // Extract cells from both rows
+    const dayCells = dayNumbersRow.match(/<td[^>]*>([\s\S]*?)<\/td>/g) || [];
+    const activityCells = activitiesRow.match(/<td[^>]*>([\s\S]*?)<\/td>/g) || [];
+
+    // Process each column (0-6 for Sun-Sat)
+    for (let col = 0; col < 7 && col < dayCells.length && col < activityCells.length; col++) {
+      // Extract day number from cell
+      const dayContent = dayCells[col].replace(/<[^>]+>/g, '').trim();
+      const dayNum = parseInt(dayContent);
+
+      if (isNaN(dayNum) || dayNum < 1 || dayNum > 31) {
+        continue; // Empty or invalid day cell
       }
-    }
 
-    if (weekDays.length === 0) {
-      i++;
-      continue;
-    }
+      // Extract activity from corresponding cell
+      const activityContent = activityCells[col].replace(/<[^>]+>/g, '').trim();
+      const { activities, times } = parseCellContent(activityContent);
 
-    // Now collect activities for this week
-    // We need to figure out which column each day is in
-    // For the first week, days start at column = firstDayOfWeek
-    // For subsequent weeks, days start at column 0 (Sunday)
-
-    const firstDayInWeek = weekDays[0];
-    let startColumn: number;
-
-    if (firstDayInWeek === 1) {
-      // First week - days start at the column for the 1st
-      startColumn = firstDayOfWeek;
-    } else {
-      // Subsequent weeks - first day is a Sunday (column 0)
-      startColumn = 0;
-    }
-
-    // Create a mapping from column index to day number
-    const columnToDay: (number | null)[] = [null, null, null, null, null, null, null];
-    for (let j = 0; j < weekDays.length; j++) {
-      const col = startColumn + j;
-      if (col < 7) {
-        columnToDay[col] = weekDays[j];
-      }
-    }
-
-    // Initialize day activities
-    for (const day of weekDays) {
-      if (!dayActivities.has(day)) {
-        dayActivities.set(day, { activities: [], times: [] });
-      }
-    }
-
-    // Collect all activities for this week row
-    const weekActivities: { activity: string; time: string | null }[] = [];
-
-    while (i < calendarTokens.length && isActivityToken(calendarTokens[i])) {
-      const token = calendarTokens[i];
-
-      // Check if token is an activity with time (e.g., "DE-8:30")
-      const activityTimeMatch = token.match(/^([A-Z]+)-(\d{1,2}:\d{2})$/);
-      if (activityTimeMatch) {
-        weekActivities.push({ activity: activityTimeMatch[1], time: activityTimeMatch[2] });
-      } else {
-        weekActivities.push({ activity: token.toUpperCase(), time: null });
-      }
-      i++;
-    }
-
-    // Assign activities to days
-    // The activities appear in column order for cells that have content
-    // Each cell can have multiple activities
-    let activityIndex = 0;
-    for (let col = 0; col < 7 && activityIndex < weekActivities.length; col++) {
-      const dayNum = columnToDay[col];
-      if (dayNum === null) continue;
-
-      const dayData = dayActivities.get(dayNum)!;
-
-      // A cell typically has either:
-      // - CLOSED or ADMIN (single activity)
-      // - Two activities like DE-8:30 + MM-9:30
-      // - CONSULTS (single activity)
-
-      // Peek at what's next to determine how many activities belong to this cell
-      const act = weekActivities[activityIndex];
-
-      if (act.activity === 'CLOSED' || act.activity === 'ADMIN') {
-        // Single activity cell
-        dayData.activities.push(act.activity);
-        activityIndex++;
-      } else if (act.time) {
-        // Activity with time - might have a pair
-        dayData.activities.push(act.activity);
-        dayData.times.push(act.time);
-        activityIndex++;
-
-        // Check if next activity also has a time (paired activities)
-        if (activityIndex < weekActivities.length) {
-          const next = weekActivities[activityIndex];
-          if (next.time) {
-            dayData.activities.push(next.activity);
-            dayData.times.push(next.time);
-            activityIndex++;
-          }
-        }
-      } else {
-        // Standalone activity like CONSULTS
-        dayData.activities.push(act.activity);
-        activityIndex++;
+      if (activities.length > 0) {
+        dayActivities.set(dayNum, { activities, times });
       }
     }
   }
 
   // Convert the map to ScheduleDay objects
   const days: ScheduleDay[] = [];
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
 
   for (let day = 1; day <= daysInMonth; day++) {
     const data = dayActivities.get(day);
@@ -260,7 +195,6 @@ export async function parseScheduleDocx(buffer: Buffer): Promise<ParsedSchedule>
     }
 
     // Check if any activity in this day should prevent shift creation
-    // Using the normalized comparison for robustness
     const hasNoShiftActivity = data.activities.some(act => isNoShiftActivity(act));
 
     // Skip days that are closed or admin
