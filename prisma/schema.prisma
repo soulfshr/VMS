@@ -1038,7 +1038,7 @@ model EmailBlastRecipient {
   blastId     String
   blast       EmailBlast @relation(fields: [blastId], references: [id], onDelete: Cascade)
   userId      String
-  user        User     @relation("EmailBlastRecipients", fields: [userId], references: [id])
+  user        User     @relation("EmailBlastRecipients", fields: [userId], references: [id], onDelete: Cascade)
   email       String
   status      EmailSendStatus @default(PENDING)
   sentAt      DateTime?

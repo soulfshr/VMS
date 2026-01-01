@@ -65,7 +65,9 @@ export default function SelectOrgClient() {
   };
 
   const handleSignOut = async () => {
-    await signOut({ callbackUrl: '/login' });
+    // Clear session first, then redirect to main domain
+    await signOut({ redirect: false });
+    window.location.href = 'https://ripple-vms.com/login';
   };
 
   if (loading || status === 'loading') {

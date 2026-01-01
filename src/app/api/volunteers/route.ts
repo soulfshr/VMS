@@ -355,6 +355,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Verify the organization still exists (could be deleted while session is stale)
+    const orgExists = await prisma.organization.findUnique({
+      where: { id: orgId },
+      select: { id: true },
+    });
+    if (!orgExists) {
+      return NextResponse.json(
+        { error: 'Organization not found. Please switch to a valid organization.' },
+        { status: 400 }
+      );
+    }
+
     const results = {
       created: 0,
       updated: 0,

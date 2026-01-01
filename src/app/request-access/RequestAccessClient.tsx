@@ -37,7 +37,8 @@ export default function RequestAccessClient() {
   }, [status, session, router]);
 
   const handleSignOut = async () => {
-    await signOut({ callbackUrl: '/login' });
+    await signOut({ redirect: false });
+    window.location.href = 'https://ripple-vms.com/login';
   };
 
   const handleGoToOrg = async (orgId: string) => {

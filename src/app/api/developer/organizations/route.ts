@@ -22,9 +22,15 @@ export async function GET() {
             logoUrl: true,
           },
         },
+        // Count members excluding developers (developers shouldn't block org deletion)
+        members: {
+          where: {
+            user: { role: { not: 'DEVELOPER' } },
+          },
+          select: { id: true },
+        },
         _count: {
           select: {
-            members: true,  // Use OrganizationMember count (new multi-org)
             users: true,    // Keep legacy count for reference
             zones: true,
             shifts: true,
@@ -47,7 +53,7 @@ export async function GET() {
         createdAt: org.createdAt,
         settings: org.settings,
         stats: {
-          members: org._count.members,  // Preferred: OrganizationMember count
+          members: org.members.length,  // Non-developer members only
           users: org._count.users,      // Legacy: User.organizationId count
           zones: org._count.zones,
           shifts: org._count.shifts,

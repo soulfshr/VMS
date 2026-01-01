@@ -91,10 +91,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Send all emails (don't await - fire and forget for performance)
-    Promise.all(emailPromises).catch(err => {
+    // Send all emails - must await to ensure completion before serverless function terminates
+    try {
+      await Promise.all(emailPromises);
+    } catch (err) {
       console.error('[Cancel Shifts] Error sending notification emails:', err);
-    });
+      // Log but don't fail the request - shifts were already cancelled
+    }
 
     const totalVolunteers = shifts.reduce((sum, s) => sum + s.volunteers.length, 0);
 

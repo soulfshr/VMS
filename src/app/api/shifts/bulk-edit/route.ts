@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
+import { getCurrentOrgId } from '@/lib/org-context';
 import { getOrgTimezone, formatDate, parseDisplayDateTime } from '@/lib/timezone';
 
 // POST /api/shifts/bulk-edit - Bulk edit multiple shifts (Coordinator/Admin only)
@@ -15,6 +16,12 @@ export async function POST(request: NextRequest) {
     if (!['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
+
+    // Get org context for multi-tenant scoping
+    const orgId = await getCurrentOrgId();
+    const orgFilter = orgId
+      ? { organizationId: orgId }
+      : { organizationId: '__NO_ORG_SELECTED__' };
 
     const body = await request.json();
     const { shiftIds, typeConfigId, minVolunteers, maxVolunteers, startHour, endHour, status, title } = body;
@@ -54,9 +61,9 @@ export async function POST(request: NextRequest) {
 
     // Handle shift type update
     if (typeConfigId) {
-      // Verify the type config exists and get its type enum value
-      const typeConfig = await prisma.shiftTypeConfig.findUnique({
-        where: { id: typeConfigId },
+      // Verify the type config exists in this org and get its type enum value
+      const typeConfig = await prisma.shiftTypeConfig.findFirst({
+        where: { id: typeConfigId, ...orgFilter },
       });
       if (!typeConfig) {
         return NextResponse.json(
@@ -83,6 +90,7 @@ export async function POST(request: NextRequest) {
         where: {
           id: { in: shiftIds },
           status: { not: 'CANCELLED' },
+          ...orgFilter,
         },
         select: {
           id: true,
@@ -133,6 +141,7 @@ export async function POST(request: NextRequest) {
       where: {
         id: { in: shiftIds },
         status: { not: 'CANCELLED' },
+        ...orgFilter,
       },
       data: updateData,
     });

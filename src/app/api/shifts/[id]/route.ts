@@ -198,8 +198,8 @@ export async function PUT(
 
     // Handle typeConfigId - look up the config and set both type enum and typeConfigId
     if (body.typeConfigId !== undefined) {
-      const typeConfig = await prisma.shiftTypeConfig.findUnique({
-        where: { id: body.typeConfigId },
+      const typeConfig = await prisma.shiftTypeConfig.findFirst({
+        where: { id: body.typeConfigId, ...orgFilter },
       });
       if (!typeConfig) {
         return NextResponse.json({ error: 'Invalid shift type' }, { status: 400 });
@@ -232,8 +232,10 @@ export async function PUT(
     }
 
     if (body.zoneId !== undefined) {
-      // Verify zone exists
-      const zone = await prisma.zone.findUnique({ where: { id: body.zoneId } });
+      // Verify zone exists in this org
+      const zone = await prisma.zone.findFirst({
+        where: { id: body.zoneId, ...orgFilter },
+      });
       if (!zone) {
         return NextResponse.json({ error: 'Zone not found' }, { status: 400 });
       }

@@ -95,14 +95,8 @@ export async function POST(
       );
     }
 
-    // Check if user already has an RSVP
-    const existingRsvp = shift.volunteers.find(v => v.userId === user.id);
-    if (existingRsvp) {
-      return NextResponse.json(
-        { error: 'You have already signed up for this shift', rsvp: existingRsvp },
-        { status: 400 }
-      );
-    }
+    // NOTE: Duplicate check moved inside transaction to prevent race condition
+    // The check below ensures atomicity with capacity check
 
     // Check organization settings for auto-confirm (scoped to org)
     const orgSettings = await prisma.organizationSettings.findFirst({
@@ -110,16 +104,15 @@ export async function POST(
     });
     const autoConfirm = orgSettings?.autoConfirmRsvp ?? true; // Default to auto-confirm ON
 
-    // Use transaction to prevent race condition on capacity check
-    // This ensures atomic check-and-create to prevent overselling
+    // Use transaction to prevent race condition on capacity AND duplicate check
+    // This ensures atomic check-and-create to prevent overselling and duplicate RSVPs
     const rsvp = await prisma.$transaction(async (tx) => {
-      // Re-fetch shift with lock to get accurate count
+      // Re-fetch shift with lock to get accurate count and check for existing RSVP
       const currentShift = await tx.shift.findUnique({
         where: { id: shiftId },
         include: {
           volunteers: {
-            where: { status: 'CONFIRMED' },
-            select: { id: true },
+            select: { id: true, userId: true, status: true },
           },
         },
       });
@@ -128,8 +121,14 @@ export async function POST(
         throw new Error('SHIFT_NOT_FOUND');
       }
 
+      // Check for existing RSVP (inside transaction to prevent race condition)
+      const existingRsvp = currentShift.volunteers.find(v => v.userId === user.id);
+      if (existingRsvp) {
+        throw new Error('ALREADY_RSVPED');
+      }
+
       // Check if shift is full (inside transaction for accuracy)
-      const confirmedCount = currentShift.volunteers.length;
+      const confirmedCount = currentShift.volunteers.filter(v => v.status === 'CONFIRMED').length;
       if (confirmedCount >= currentShift.maxVolunteers) {
         throw new Error('SHIFT_FULL');
       }
@@ -163,6 +162,9 @@ export async function POST(
     }).catch((err) => {
       if (err.message === 'SHIFT_NOT_FOUND') {
         return { error: 'Shift not found', status: 404 };
+      }
+      if (err.message === 'ALREADY_RSVPED') {
+        return { error: 'You have already signed up for this shift', status: 400 };
       }
       if (err.message === 'SHIFT_FULL') {
         return { error: 'This shift is full', status: 400 };

@@ -87,10 +87,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Send all emails (don't await - fire and forget for performance)
-    Promise.all(emailPromises).catch(err => {
+    // Send all emails - must await to ensure completion before serverless function terminates
+    try {
+      await Promise.all(emailPromises);
+    } catch (err) {
       console.error('[Confirm RSVPs] Error sending confirmation emails:', err);
-    });
+      // Log but don't fail the request - RSVPs were already confirmed
+    }
 
     // Count unique shifts affected
     const uniqueShifts = new Set(pendingRsvps.map(r => r.shiftId));

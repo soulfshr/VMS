@@ -245,6 +245,21 @@ export async function POST(request: NextRequest) {
       ? new Date(dateRange.endDate)
       : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
 
+    // Pre-fetch all user zones to avoid N+1 queries in the email loop
+    const userZonesMap = new Map<string, string[]>();
+    if (template === 'SCHEDULE_ANNOUNCEMENT') {
+      const allUserZones = await prisma.userZone.findMany({
+        where: { userId: { in: recipients.map(r => r.id) } },
+        select: { userId: true, zoneId: true },
+      });
+      for (const uz of allUserZones) {
+        if (!userZonesMap.has(uz.userId)) {
+          userZonesMap.set(uz.userId, []);
+        }
+        userZonesMap.get(uz.userId)!.push(uz.zoneId);
+      }
+    }
+
     // Send emails (fire and forget pattern)
     const sendEmails = async () => {
       let sentCount = 0;
@@ -264,15 +279,8 @@ export async function POST(request: NextRequest) {
         // For SCHEDULE_ANNOUNCEMENT, generate zone-specific shift listings
         let personalizedBody = finalBody;
         if (template === 'SCHEDULE_ANNOUNCEMENT') {
-          // Fetch recipient's zones
-          const recipientWithZones = await prisma.user.findUnique({
-            where: { id: recipient.id },
-            include: {
-              zones: { select: { zoneId: true } },
-            },
-          });
-
-          const zoneIds = recipientWithZones?.zones.map(z => z.zoneId) || [];
+          // Use pre-fetched zones map instead of querying per-recipient (avoids N+1)
+          const zoneIds = userZonesMap.get(recipient.id) || [];
 
           // Build shift query - if user has zones, filter by them; otherwise show all
           // Multi-org: Scope to current org

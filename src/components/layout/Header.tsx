@@ -111,9 +111,12 @@ export default function Header() {
   const isSiembraOrg = orgSlug && SIEMBRA_ORG_SLUGS.includes(orgSlug);
 
   const handleLogout = async () => {
-    // Let NextAuth handle the full signout + redirect flow
-    // This ensures the session is fully cleared before the redirect happens
-    await signOut({ callbackUrl: '/login' });
+    // Clear session first, then do explicit redirect to main domain
+    // Using redirect: false prevents NextAuth's callbackUrl cookie from interfering
+    // (that cookie is shared across subdomains and can hold stale values)
+    await signOut({ redirect: false });
+    // Hard redirect to main domain login - bypasses any shared cookie issues
+    window.location.href = 'https://ripple-vms.com/login';
   };
 
   const isActive = (path: string) => pathname === path;

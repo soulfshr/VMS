@@ -138,9 +138,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
 
     if (body.categoryId !== undefined) {
-      // Verify category exists
-      const category = await prisma.pOICategory.findUnique({
-        where: { id: body.categoryId },
+      // Verify category exists in this org
+      const category = await prisma.pOICategory.findFirst({
+        where: { id: body.categoryId, ...orgFilter },
       });
 
       if (!category) {
@@ -154,9 +154,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     if (body.zoneId !== undefined) {
       if (body.zoneId) {
-        // Verify zone exists
-        const zone = await prisma.zone.findUnique({
-          where: { id: body.zoneId },
+        // Verify zone exists in this org
+        const zone = await prisma.zone.findFirst({
+          where: { id: body.zoneId, ...orgFilter },
         });
 
         if (!zone) {

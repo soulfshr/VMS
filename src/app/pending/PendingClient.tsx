@@ -48,7 +48,8 @@ export default function PendingClient() {
   }, [router]);
 
   const handleSignOut = async () => {
-    await signOut({ callbackUrl: '/login' });
+    await signOut({ redirect: false });
+    window.location.href = 'https://ripple-vms.com/login';
   };
 
   if (loading) {
