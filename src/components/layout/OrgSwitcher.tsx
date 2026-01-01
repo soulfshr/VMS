@@ -73,8 +73,31 @@ export default function OrgSwitcher({ currentOrgName, onOrgSwitch }: OrgSwitcher
       setIsOpen(false);
       onOrgSwitch?.();
 
-      // Reload the page to get fresh org-specific data
-      window.location.reload();
+      // Get the selected org's slug
+      const selectedOrg = approvedMemberships.find(m => m.organizationId === orgId);
+      if (!selectedOrg) {
+        // Fallback to reload if we can't find the org
+        window.location.reload();
+        return;
+      }
+
+      // Build the redirect URL based on environment
+      const hostname = window.location.hostname;
+      const currentPath = window.location.pathname + window.location.search;
+
+      if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        // On localhost, just reload since subdomains don't work locally
+        window.location.reload();
+      } else {
+        // Determine if we're in dev or production environment
+        const isDevEnvironment = hostname.includes('.dev.');
+        const baseDomain = isDevEnvironment ? 'dev.ripple-vms.com' : 'ripple-vms.com';
+        const protocol = window.location.protocol;
+
+        // Redirect to the new org's subdomain
+        const newUrl = `${protocol}//${selectedOrg.organizationSlug}.${baseDomain}${currentPath}`;
+        window.location.href = newUrl;
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
       setSwitching(null);

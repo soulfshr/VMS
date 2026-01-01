@@ -7,7 +7,9 @@ import { getCurrentOrgId } from '@/lib/org-context';
 export async function GET() {
   try {
     const orgId = await getCurrentOrgId();
-    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
+    const orgFilter = orgId
+      ? { organizationId: orgId }
+      : { organizationId: '__NO_ORG_SELECTED__' };
 
     const questions = await prisma.intakeQuestion.findMany({
       where: {

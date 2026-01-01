@@ -347,6 +347,14 @@ export async function POST(request: NextRequest) {
     const orgId = await getOrgIdForCreate();
     console.log('[volunteers POST] Creating volunteer(s) for orgId:', orgId);
 
+    // Require org context for volunteer creation
+    if (!orgId) {
+      return NextResponse.json(
+        { error: 'No organization selected. Please select an organization first.' },
+        { status: 400 }
+      );
+    }
+
     const results = {
       created: 0,
       updated: 0,

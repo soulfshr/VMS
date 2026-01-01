@@ -11,15 +11,18 @@ export async function GET() {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    // Allow coordinators and dispatchers to read zones (for email blast filtering)
-    if (!['ADMINISTRATOR', 'COORDINATOR', 'DISPATCHER'].includes(user.role)) {
+    // Allow coordinators, dispatchers, and developers to read zones
+    if (!['ADMINISTRATOR', 'COORDINATOR', 'DISPATCHER', 'DEVELOPER'].includes(user.role)) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
     const orgId = await getCurrentOrgId();
 
     // Strict org scoping - only show zones for the current org
-    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
+    // If no org selected, use impossible filter to prevent data leakage
+    const orgFilter = orgId
+      ? { organizationId: orgId }
+      : { organizationId: '__NO_ORG_SELECTED__' };
 
     const zones = await prisma.zone.findMany({
       where: orgFilter,
@@ -63,7 +66,10 @@ export async function POST(request: Request) {
     }
 
     // Check for duplicate name within the organization
-    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
+    // If no org, use impossible filter (shouldn't create records without org context)
+    const orgFilter = orgId
+      ? { organizationId: orgId }
+      : { organizationId: '__NO_ORG_SELECTED__' };
     const existing = await prisma.zone.findFirst({
       where: {
         name,

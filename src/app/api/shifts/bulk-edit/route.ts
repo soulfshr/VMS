@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { shiftIds, typeConfigId, minVolunteers, maxVolunteers, startHour, endHour, status } = body;
+    const { shiftIds, typeConfigId, minVolunteers, maxVolunteers, startHour, endHour, status, title } = body;
 
     if (!shiftIds || !Array.isArray(shiftIds) || shiftIds.length === 0) {
       return NextResponse.json(
@@ -39,6 +39,17 @@ export async function POST(request: NextRequest) {
         );
       }
       updateData.status = status;
+    }
+
+    // Handle title update
+    if (title !== undefined && title !== null) {
+      if (typeof title !== 'string' || title.trim().length === 0) {
+        return NextResponse.json(
+          { error: 'Title must be a non-empty string' },
+          { status: 400 }
+        );
+      }
+      updateData.title = title.trim();
     }
 
     // Handle shift type update

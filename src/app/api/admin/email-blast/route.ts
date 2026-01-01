@@ -456,7 +456,9 @@ export async function GET(request: NextRequest) {
 
     // Strict org scoping - only show email blasts for the current org
     const orgId = await getCurrentOrgId();
-    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
+    const orgFilter = orgId
+      ? { organizationId: orgId }
+      : { organizationId: '__NO_ORG_SELECTED__' };
 
     const [blasts, total] = await Promise.all([
       prisma.emailBlast.findMany({

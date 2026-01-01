@@ -672,6 +672,125 @@ export async function DELETE(
       where: { userId: id },
     });
 
+    // Delete email blast recipients (no cascade on this relation)
+    await prisma.emailBlastRecipient.deleteMany({
+      where: { userId: id },
+    });
+
+    // Delete organization memberships
+    await prisma.organizationMember.deleteMany({
+      where: { userId: id },
+    });
+
+    // Delete coverage signups
+    await prisma.coverageSignup.deleteMany({
+      where: { userId: id },
+    });
+
+    // Delete dispatcher assignments
+    await prisma.dispatcherAssignment.deleteMany({
+      where: { userId: id },
+    });
+
+    // Delete regional lead assignments
+    await prisma.regionalLeadAssignment.deleteMany({
+      where: { userId: id },
+    });
+
+    // Delete module enrollments (and cascades to section progress)
+    await prisma.moduleEnrollment.deleteMany({
+      where: { userId: id },
+    });
+
+    // Delete user trainings
+    await prisma.userTraining.deleteMany({
+      where: { userId: id },
+    });
+
+    // Delete availability records
+    await prisma.availability.deleteMany({
+      where: { userId: id },
+    });
+
+    // Clear references where this user approved other users
+    await prisma.user.updateMany({
+      where: { approvedById: id },
+      data: { approvedById: null },
+    });
+
+    // Clear references where this user approved org memberships
+    await prisma.organizationMember.updateMany({
+      where: { approvedById: id },
+      data: { approvedById: null },
+    });
+
+    // Clear references where this user created regional lead assignments
+    await prisma.regionalLeadAssignment.updateMany({
+      where: { createdById: id },
+      data: { createdById: null },
+    });
+
+    // Delete coverage overrides created by this user (createdById is required)
+    await prisma.coverageOverride.deleteMany({
+      where: { createdById: id },
+    });
+
+    // Delete POIs created by this user (createdById is required)
+    await prisma.pointOfInterest.deleteMany({
+      where: { createdById: id },
+    });
+
+    // Delete email blasts sent by this user (sentById is required)
+    // First delete the recipients, then the blast
+    const blasts = await prisma.emailBlast.findMany({
+      where: { sentById: id },
+      select: { id: true },
+    });
+    if (blasts.length > 0) {
+      await prisma.emailBlastRecipient.deleteMany({
+        where: { blastId: { in: blasts.map(b => b.id) } },
+      });
+      await prisma.emailBlast.deleteMany({
+        where: { sentById: id },
+      });
+    }
+
+    // Delete training sessions created by this user (createdById is required)
+    // First delete attendees, then the sessions
+    const sessions = await prisma.trainingSession.findMany({
+      where: { createdById: id },
+      select: { id: true },
+    });
+    if (sessions.length > 0) {
+      await prisma.trainingSessionAttendee.deleteMany({
+        where: { sessionId: { in: sessions.map(s => s.id) } },
+      });
+      await prisma.trainingSession.deleteMany({
+        where: { createdById: id },
+      });
+    }
+
+    // Delete shifts created by this user (createdById is required)
+    // First delete volunteers, then the shifts
+    const shifts = await prisma.shift.findMany({
+      where: { createdById: id },
+      select: { id: true },
+    });
+    if (shifts.length > 0) {
+      await prisma.shiftVolunteer.deleteMany({
+        where: { shiftId: { in: shifts.map(s => s.id) } },
+      });
+      await prisma.shift.deleteMany({
+        where: { createdById: id },
+      });
+    }
+
+    // Clear invite request reviews
+    await prisma.inviteRequest.updateMany({
+      where: { reviewedById: id },
+      data: { reviewedById: null },
+    });
+
     // Finally delete the user
     await prisma.user.delete({
       where: { id },

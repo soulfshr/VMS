@@ -6,8 +6,8 @@ import type {
   QualifiedOpeningsData,
   DispatcherSlotOpening,
   RegionalLeadOpening,
-  OpeningsTab,
   UserZone,
+  RoleOpenings,
 } from '@/types/dashboard';
 
 interface OpeningsWidgetProps {
@@ -41,32 +41,47 @@ export function OpeningsWidget({
   footerLink,
   footerText,
 }: OpeningsWidgetProps) {
-  const [openingsTab, setOpeningsTab] = useState<OpeningsTab>('shifts');
-  const [showOtherZones, setShowOtherZones] = useState(false);
-  const [showAllZoneLeadOpenings, setShowAllZoneLeadOpenings] = useState(false);
+  // Use role-based tabs if available, otherwise fall back to legacy shift tab
+  const roleOpenings = qualifiedOpenings?.byRole || [];
+  const hasRoleOpenings = roleOpenings.length > 0;
+
+  // Build list of all available tabs (roles + dispatch + coordinator)
+  const [activeTabId, setActiveTabId] = useState<string>('');
+  const [expandedRoles, setExpandedRoles] = useState<Set<string>>(new Set());
   const [showAllDispatcherSlots, setShowAllDispatcherSlots] = useState(false);
   const [showAllRegionalLeadOpenings, setShowAllRegionalLeadOpenings] = useState(false);
 
-  // Check which tabs have data
-  const hasShiftOpenings = qualifiedOpenings && (qualifiedOpenings.userZones.length > 0 || qualifiedOpenings.otherZones.length > 0);
+  // Check which special tabs have data
   const hasDispatcherOpenings = isFullSchedulingMode && dispatcherSlotOpenings && dispatcherSlotOpenings.length > 0;
   const hasCoordinatorOpenings = isFullSchedulingMode && regionalLeadOpenings && regionalLeadOpenings.length > 0;
 
   // Counts for tab badges
-  const shiftOpeningsCount = (qualifiedOpenings?.userZones.length || 0) + (qualifiedOpenings?.otherZones.length || 0);
   const dispatcherOpeningsCount = dispatcherSlotOpenings?.length || 0;
   const coordinatorOpeningsCount = regionalLeadOpenings?.length || 0;
 
   // Auto-select first available tab when data loads
   useEffect(() => {
-    if (hasDispatcherOpenings) {
-      setOpeningsTab('dispatch');
-    } else if (hasShiftOpenings) {
-      setOpeningsTab('shifts');
+    if (hasRoleOpenings && roleOpenings.length > 0) {
+      setActiveTabId(`role-${roleOpenings[0].roleId}`);
+    } else if (hasDispatcherOpenings) {
+      setActiveTabId('dispatch');
     } else if (hasCoordinatorOpenings) {
-      setOpeningsTab('coordinator');
+      setActiveTabId('coordinator');
     }
-  }, [hasShiftOpenings, hasDispatcherOpenings, hasCoordinatorOpenings]);
+  }, [hasRoleOpenings, roleOpenings, hasDispatcherOpenings, hasCoordinatorOpenings]);
+
+  // Helper to toggle "show more" for a specific role
+  const toggleRoleExpanded = (roleId: string) => {
+    setExpandedRoles(prev => {
+      const next = new Set(prev);
+      if (next.has(roleId)) {
+        next.delete(roleId);
+      } else {
+        next.add(roleId);
+      }
+      return next;
+    });
+  };
 
   return (
     <div className="bg-white rounded-xl border border-gray-200">
@@ -81,54 +96,56 @@ export function OpeningsWidget({
 
       {/* Tab Bar */}
       <div className="flex border-b border-gray-200 overflow-x-auto">
-        {hasShiftOpenings && (
+        {/* Role-based tabs */}
+        {roleOpenings.map((role) => (
           <TabButton
-            active={openingsTab === 'shifts'}
-            onClick={() => setOpeningsTab('shifts')}
-            label={isFullSchedulingMode ? 'Zone Lead' : 'Shift Lead'}
-            count={shiftOpeningsCount}
-            activeColor="cyan"
+            key={role.roleId}
+            active={activeTabId === `role-${role.roleId}`}
+            onClick={() => setActiveTabId(`role-${role.roleId}`)}
+            label={role.roleName}
+            count={role.count}
+            customColor={role.roleColor}
           />
-        )}
+        ))}
         {hasDispatcherOpenings && (
           <TabButton
-            active={openingsTab === 'dispatch'}
-            onClick={() => setOpeningsTab('dispatch')}
+            active={activeTabId === 'dispatch'}
+            onClick={() => setActiveTabId('dispatch')}
             label="Dispatch"
             count={dispatcherOpeningsCount}
-            activeColor="blue"
+            customColor="#3b82f6"
           />
         )}
         {hasCoordinatorOpenings && (
           <TabButton
-            active={openingsTab === 'coordinator'}
-            onClick={() => setOpeningsTab('coordinator')}
+            active={activeTabId === 'coordinator'}
+            onClick={() => setActiveTabId('coordinator')}
             label="Coordinator"
             count={coordinatorOpeningsCount}
-            activeColor="amber"
+            customColor="#f59e0b"
           />
         )}
       </div>
 
       {/* Tab Content */}
       <div className="divide-y divide-gray-100">
-        {/* Shifts Tab */}
-        {openingsTab === 'shifts' && hasShiftOpenings && (
-          <ShiftsTabContent
-            qualifiedOpenings={qualifiedOpenings}
-            userZones={userZones}
-            isFullSchedulingMode={isFullSchedulingMode}
-            showOtherZones={showOtherZones}
-            setShowOtherZones={setShowOtherZones}
-            showAllZoneLeadOpenings={showAllZoneLeadOpenings}
-            setShowAllZoneLeadOpenings={setShowAllZoneLeadOpenings}
-            onQuickRsvp={onQuickRsvp}
-            rsvpingOpeningId={rsvpingOpeningId}
-          />
-        )}
+        {/* Role-based Tabs */}
+        {roleOpenings.map((role) => (
+          activeTabId === `role-${role.roleId}` && (
+            <RoleTabContent
+              key={role.roleId}
+              role={role}
+              userZones={userZones}
+              showAll={expandedRoles.has(role.roleId)}
+              toggleShowAll={() => toggleRoleExpanded(role.roleId)}
+              onQuickRsvp={onQuickRsvp}
+              rsvpingOpeningId={rsvpingOpeningId}
+            />
+          )
+        ))}
 
         {/* Dispatch Tab */}
-        {openingsTab === 'dispatch' && hasDispatcherOpenings && dispatcherSlotOpenings && (
+        {activeTabId === 'dispatch' && hasDispatcherOpenings && dispatcherSlotOpenings && (
           <DispatchTabContent
             slots={dispatcherSlotOpenings}
             showAll={showAllDispatcherSlots}
@@ -139,7 +156,7 @@ export function OpeningsWidget({
         )}
 
         {/* Coordinator Tab */}
-        {openingsTab === 'coordinator' && hasCoordinatorOpenings && regionalLeadOpenings && (
+        {activeTabId === 'coordinator' && hasCoordinatorOpenings && regionalLeadOpenings && (
           <CoordinatorTabContent
             openings={regionalLeadOpenings}
             showAll={showAllRegionalLeadOpenings}
@@ -163,55 +180,180 @@ export function OpeningsWidget({
   );
 }
 
-// Tab button component
+// Tab button component - supports custom hex colors
 function TabButton({
   active,
   onClick,
   label,
   count,
-  activeColor,
+  customColor,
 }: {
   active: boolean;
   onClick: () => void;
   label: string;
   count: number;
-  activeColor: 'cyan' | 'blue' | 'amber';
+  customColor: string;
 }) {
-  const colorClasses = {
-    cyan: {
-      border: 'border-cyan-500 text-cyan-600',
-      badge: 'bg-cyan-100 text-cyan-700',
-    },
-    blue: {
-      border: 'border-blue-500 text-blue-600',
-      badge: 'bg-blue-100 text-blue-700',
-    },
-    amber: {
-      border: 'border-amber-500 text-amber-600',
-      badge: 'bg-amber-100 text-amber-700',
-    },
+  // Generate lighter shade for badge background
+  const hexToRgb = (hex: string) => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+      r: parseInt(result[1], 16),
+      g: parseInt(result[2], 16),
+      b: parseInt(result[3], 16),
+    } : { r: 0, g: 0, b: 0 };
   };
+
+  const rgb = hexToRgb(customColor);
+  const lightBg = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.15)`;
 
   return (
     <button
       onClick={onClick}
       className={`flex-1 min-w-0 px-3 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
         active
-          ? colorClasses[activeColor].border
+          ? ''
           : 'border-transparent text-gray-500 hover:text-gray-700'
       }`}
+      style={active ? { borderColor: customColor, color: customColor } : {}}
     >
       {label}
-      <span className={`ml-1.5 px-1.5 py-0.5 text-xs rounded-full ${
-        active ? colorClasses[activeColor].badge : 'bg-gray-100 text-gray-600'
-      }`}>
+      <span
+        className={`ml-1.5 px-1.5 py-0.5 text-xs rounded-full ${
+          active ? '' : 'bg-gray-100 text-gray-600'
+        }`}
+        style={active ? { backgroundColor: lightBg, color: customColor } : {}}
+      >
         {count}
       </span>
     </button>
   );
 }
 
-// Shifts tab content
+// Role-based tab content - new component for role-grouped openings
+function RoleTabContent({
+  role,
+  userZones,
+  showAll,
+  toggleShowAll,
+  onQuickRsvp,
+  rsvpingOpeningId,
+}: {
+  role: RoleOpenings;
+  userZones: UserZone[];
+  showAll: boolean;
+  toggleShowAll: () => void;
+  onQuickRsvp: (shiftId: string, asZoneLead: boolean) => Promise<void>;
+  rsvpingOpeningId: string | null;
+}) {
+  const userZoneIds = new Set(userZones.map(uz => uz.zone.id));
+
+  // Sort: user's zones first, then others
+  const sortedOpenings = [...role.openings].sort((a, b) => {
+    const aInUserZone = a.zone && userZoneIds.has(a.zone.id);
+    const bInUserZone = b.zone && userZoneIds.has(b.zone.id);
+    if (aInUserZone && !bInUserZone) return -1;
+    if (!aInUserZone && bInUserZone) return 1;
+    return 0;
+  });
+
+  const openingsToShow = showAll ? sortedOpenings : sortedOpenings.slice(0, 3);
+
+  // Determine if this role is a "lead" type role
+  const isLeadRole = role.roleSlug.includes('LEAD');
+
+  return (
+    <>
+      {openingsToShow.map((opening) => (
+        <div key={opening.id} className="p-4 hover:bg-gray-50 transition-colors">
+          <div className="flex items-start gap-3">
+            <div
+              className="w-3 h-3 rounded-full mt-1.5 flex-shrink-0"
+              style={{ backgroundColor: opening.shiftType?.color || role.roleColor }}
+            />
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-gray-900 truncate">
+                {opening.shiftType?.name || opening.title}
+              </p>
+              <p className="text-sm text-gray-500">
+                {new Date(opening.date).toLocaleDateString('en-US', {
+                  weekday: 'short',
+                  month: 'short',
+                  day: 'numeric',
+                  timeZone: 'America/New_York'
+                })} • {new Date(opening.startTime).toLocaleTimeString('en-US', {
+                  hour: 'numeric',
+                  minute: '2-digit',
+                  timeZone: 'America/New_York'
+                })}
+              </p>
+              <div className="flex items-center justify-between mt-1">
+                {opening.zone && (
+                  <span className="text-xs text-gray-400">
+                    {opening.zone.name}
+                  </span>
+                )}
+                <span
+                  className="px-2 py-0.5 text-xs rounded font-medium"
+                  style={{
+                    backgroundColor: `${role.roleColor}20`,
+                    color: role.roleColor,
+                  }}
+                >
+                  {opening.spotsRemaining} spot{opening.spotsRemaining !== 1 ? 's' : ''}
+                </span>
+              </div>
+              <button
+                onClick={() => onQuickRsvp(opening.id, isLeadRole)}
+                disabled={rsvpingOpeningId === opening.id}
+                className="mt-2 w-full py-1.5 px-3 text-white text-sm rounded transition-colors disabled:opacity-50"
+                style={{ backgroundColor: role.roleColor }}
+              >
+                {rsvpingOpeningId === opening.id
+                  ? 'Signing up...'
+                  : `Sign Up as ${role.roleName}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      ))}
+      {sortedOpenings.length > 3 && (
+        <ShowMoreButtonCustom
+          expanded={showAll}
+          onClick={toggleShowAll}
+          remainingCount={sortedOpenings.length - 3}
+          color={role.roleColor}
+        />
+      )}
+    </>
+  );
+}
+
+// Show more button with custom color
+function ShowMoreButtonCustom({
+  expanded,
+  onClick,
+  remainingCount,
+  color,
+}: {
+  expanded: boolean;
+  onClick: () => void;
+  remainingCount: number;
+  color: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full p-3 flex items-center justify-center gap-2 text-sm font-medium hover:bg-gray-50 transition-colors"
+      style={{ color }}
+    >
+      {expanded ? 'Show less' : `Show ${remainingCount} more`}
+      <ChevronIcon expanded={expanded} />
+    </button>
+  );
+}
+
+// Shifts tab content (legacy - kept for backwards compatibility)
 function ShiftsTabContent({
   qualifiedOpenings,
   userZones,

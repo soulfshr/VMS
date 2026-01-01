@@ -132,7 +132,9 @@ export async function GET(request: NextRequest) {
 
     // Build query filters with strict org scoping
     // Only return data for the current organization - no legacy fallback to prevent cross-org data leaks
-    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
+    const orgFilter = orgId
+      ? { organizationId: orgId }
+      : { organizationId: '__NO_ORG_SELECTED__' };
 
     const shiftsWhere: Record<string, unknown> = {
       date: { gte: start, lte: end },

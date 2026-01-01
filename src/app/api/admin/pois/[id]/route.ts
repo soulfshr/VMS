@@ -17,7 +17,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const { id } = await params;
     const orgId = await getCurrentOrgId();
-    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
+    const orgFilter = orgId
+      ? { organizationId: orgId }
+      : { organizationId: '__NO_ORG_SELECTED__' };
 
     const poi = await prisma.pointOfInterest.findFirst({
       where: {
@@ -72,7 +74,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const { id } = await params;
     const body = await request.json();
     const orgId = await getCurrentOrgId();
-    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
+    const orgFilter = orgId
+      ? { organizationId: orgId }
+      : { organizationId: '__NO_ORG_SELECTED__' };
 
     // Check if POI exists (scoped to org)
     const existing = await prisma.pointOfInterest.findFirst({
@@ -217,7 +221,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     const { id } = await params;
     const orgId = await getCurrentOrgId();
-    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
+    const orgFilter = orgId
+      ? { organizationId: orgId }
+      : { organizationId: '__NO_ORG_SELECTED__' };
 
     const poi = await prisma.pointOfInterest.findFirst({
       where: {

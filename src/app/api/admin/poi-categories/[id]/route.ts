@@ -17,7 +17,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const { id } = await params;
     const orgId = await getCurrentOrgId();
-    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
+    const orgFilter = orgId
+      ? { organizationId: orgId }
+      : { organizationId: '__NO_ORG_SELECTED__' };
 
     const category = await prisma.pOICategory.findFirst({
       where: {
@@ -65,7 +67,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const { id } = await params;
     const body = await request.json();
     const orgId = await getCurrentOrgId();
-    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
+    const orgFilter = orgId
+      ? { organizationId: orgId }
+      : { organizationId: '__NO_ORG_SELECTED__' };
 
     // Check if category exists (scoped to org)
     const existing = await prisma.pOICategory.findFirst({
@@ -155,7 +159,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     const { id } = await params;
     const orgId = await getCurrentOrgId();
-    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
+    const orgFilter = orgId
+      ? { organizationId: orgId }
+      : { organizationId: '__NO_ORG_SELECTED__' };
 
     // Check usage (scoped to org)
     const category = await prisma.pOICategory.findFirst({

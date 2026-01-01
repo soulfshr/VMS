@@ -121,7 +121,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify zones exist and belong to the current organization
-    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
+    const orgFilter = orgId
+      ? { organizationId: orgId }
+      : { organizationId: '__NO_ORG_SELECTED__' };
     const zones = await prisma.zone.findMany({
       where: {
         id: { in: zoneIds },

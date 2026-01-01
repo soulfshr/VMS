@@ -30,7 +30,9 @@ export async function GET(request: NextRequest) {
     const zoneId = searchParams.get('zoneId');
 
     const orgId = await getCurrentOrgId();
-    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
+    const orgFilter = orgId
+      ? { organizationId: orgId }
+      : { organizationId: '__NO_ORG_SELECTED__' };
 
     // Build where clause with org scoping via zone relation
     const where: Record<string, unknown> = {

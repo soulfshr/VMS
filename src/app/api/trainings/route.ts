@@ -12,7 +12,9 @@ export async function GET(request: NextRequest) {
     }
 
     const orgId = await getCurrentOrgId();
-    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
+    const orgFilter = orgId
+      ? { organizationId: orgId }
+      : { organizationId: '__NO_ORG_SELECTED__' };
 
     const searchParams = request.nextUrl.searchParams;
     const typeId = searchParams.get('typeId');
@@ -126,7 +128,9 @@ export async function POST(request: NextRequest) {
     }
 
     const orgId = await getOrgIdForCreate();
-    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
+    const orgFilter = orgId
+      ? { organizationId: orgId }
+      : { organizationId: '__NO_ORG_SELECTED__' };
 
     // Verify training type exists and belongs to current org
     const trainingType = await prisma.trainingType.findFirst({

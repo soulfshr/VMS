@@ -1,7 +1,8 @@
 import type { NextAuthConfig } from 'next-auth';
 
 // Base auth config without database imports (for Edge runtime/middleware)
-// Single domain architecture: app.ripple-vms.com - no cross-subdomain cookies needed
+// Multi-tenant subdomain architecture: {org-slug}.ripple-vms.com
+// Cookie domain is set in auth.ts to enable cross-subdomain session sharing
 export const authConfig: NextAuthConfig = {
   pages: {
     signIn: '/login',

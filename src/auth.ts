@@ -5,11 +5,50 @@ import { authConfig } from './auth.config';
 import { prisma } from '@/lib/db';
 import { auditAuth } from '@/lib/audit';
 
+// Determine cookie domain for cross-subdomain session sharing
+// In production: .ripple-vms.com (shared across all org subdomains)
+// In development: undefined (uses default, works for localhost)
+const isProduction = process.env.NODE_ENV === 'production';
+const cookieDomain = isProduction ? '.ripple-vms.com' : undefined;
+
 export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
   ...authConfig,
   session: {
     strategy: 'jwt',
     maxAge: 24 * 60 * 60, // 24 hours
+  },
+  cookies: {
+    sessionToken: {
+      name: isProduction ? '__Secure-authjs.session-token' : 'authjs.session-token',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: isProduction,
+        domain: cookieDomain,
+      },
+    },
+    callbackUrl: {
+      name: isProduction ? '__Secure-authjs.callback-url' : 'authjs.callback-url',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: isProduction,
+        domain: cookieDomain,
+      },
+    },
+    csrfToken: {
+      name: isProduction ? '__Host-authjs.csrf-token' : 'authjs.csrf-token',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: isProduction,
+        // Note: __Host- prefix requires no domain (current host only)
+        // This is intentional for CSRF protection
+      },
+    },
   },
   providers: [
     Credentials({

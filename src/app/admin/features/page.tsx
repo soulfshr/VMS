@@ -6,6 +6,7 @@ interface FeatureFlag {
   value: boolean;
   source: 'org' | 'global' | 'env';
   adminConfigurable: boolean;
+  devEnabled: boolean;
   globalValue: boolean | null;
   orgValue: boolean | null;
 }
@@ -96,21 +97,28 @@ export default function AdminFeaturesPage() {
     if (!featuresData) return null;
 
     const feature = featuresData[key];
-    const isConfigurable = feature.adminConfigurable || isDeveloper;
 
-    // If not configurable and user is not a developer, don't show this feature
-    if (!isConfigurable) {
+    // Show feature if: admin can configure (global ON) OR dev enabled for this org OR user is developer
+    const isVisible = feature.adminConfigurable || feature.devEnabled || isDeveloper;
+
+    if (!isVisible) {
       return null;
     }
 
+    // Can toggle if: admin can configure (global ON) OR user is developer
+    const canToggle = feature.adminConfigurable || isDeveloper;
+
     const hasOrgOverride = feature.orgValue !== null;
-    const resolvedGlobal = feature.globalValue ?? false;
 
     // Determine badge text and color
     let badgeText = '';
     let badgeClass = '';
 
-    if (feature.source === 'org') {
+    if (feature.devEnabled && !isDeveloper) {
+      // Admin viewing a dev-enabled feature (global is OFF)
+      badgeText = 'Enabled by developer';
+      badgeClass = 'bg-purple-100 text-purple-800';
+    } else if (feature.source === 'org') {
       badgeText = feature.value ? 'Enabled for this org' : 'Disabled for this org';
       badgeClass = feature.value ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800';
     } else if (feature.source === 'global') {
@@ -122,7 +130,7 @@ export default function AdminFeaturesPage() {
     }
 
     // For developers viewing a globally-off feature that's enabled per-org
-    const isDevOverride = isDeveloper && !resolvedGlobal && feature.orgValue === true;
+    const isDevOverride = isDeveloper && feature.devEnabled;
 
     return (
       <div className="p-4 border-b border-gray-100 last:border-b-0" key={key}>
@@ -139,15 +147,10 @@ export default function AdminFeaturesPage() {
                   Developer override
                 </span>
               )}
-              {!resolvedGlobal && !isDeveloper && (
-                <span className="text-xs text-gray-400">
-                  Global: OFF
-                </span>
-              )}
             </div>
           </div>
           <div className="ml-4 flex items-center gap-3">
-            {hasOrgOverride && (
+            {hasOrgOverride && canToggle && (
               <button
                 onClick={() => handleUpdateFeatureFlag(dbKey, null)}
                 disabled={isSaving}
@@ -158,19 +161,28 @@ export default function AdminFeaturesPage() {
                 Reset to Default
               </button>
             )}
-            <button
-              onClick={() => handleUpdateFeatureFlag(dbKey, !feature.value)}
-              disabled={isSaving}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                feature.value ? 'bg-cyan-600' : 'bg-gray-200'
-              } ${isSaving ? 'opacity-50' : ''}`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  feature.value ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
+            {canToggle ? (
+              <button
+                onClick={() => handleUpdateFeatureFlag(dbKey, !feature.value)}
+                disabled={isSaving}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  feature.value ? 'bg-cyan-600' : 'bg-gray-200'
+                } ${isSaving ? 'opacity-50' : ''}`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    feature.value ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            ) : (
+              <div
+                className="relative inline-flex h-6 w-11 items-center rounded-full bg-purple-400 opacity-60 cursor-not-allowed"
+                title="This feature was enabled by a developer and cannot be disabled"
+              >
+                <span className="inline-block h-4 w-4 transform rounded-full bg-white translate-x-6" />
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -185,12 +197,15 @@ export default function AdminFeaturesPage() {
     );
   }
 
-  // Check if any features are configurable
-  const hasConfigurableFeatures =
+  // Check if any features are visible (configurable or dev-enabled)
+  const hasVisibleFeatures =
     featuresData &&
     (featuresData.trainings.adminConfigurable ||
+      featuresData.trainings.devEnabled ||
       featuresData.sightings.adminConfigurable ||
+      featuresData.sightings.devEnabled ||
       featuresData.maps.adminConfigurable ||
+      featuresData.maps.devEnabled ||
       isDeveloper);
 
   return (
@@ -215,7 +230,7 @@ export default function AdminFeaturesPage() {
       )}
 
       <div className="bg-white rounded-xl border border-gray-200">
-        {!hasConfigurableFeatures ? (
+        {!hasVisibleFeatures ? (
           <div className="p-6 text-center text-gray-500">
             <p>No features are currently available for configuration.</p>
             <p className="text-sm mt-1">

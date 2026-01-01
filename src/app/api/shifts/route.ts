@@ -53,7 +53,9 @@ export async function GET(request: NextRequest) {
     const simpleRestricted = schedulingMode === 'SIMPLE' && !isAdmin && !hasLeadQualification;
 
     // Strict org scoping - only show shifts for the current org
-    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
+    const orgFilter = orgId
+      ? { organizationId: orgId }
+      : { organizationId: '__NO_ORG_SELECTED__' };
 
     // Build filter conditions with org scoping
     const where: Record<string, unknown> = {
@@ -303,7 +305,9 @@ export async function POST(request: NextRequest) {
     const orgId = await getOrgIdForCreate();
 
     // Look up the ShiftTypeConfig by slug to get its ID (scoped to current org)
-    const typeOrgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
+    const typeOrgFilter = orgId
+      ? { organizationId: orgId }
+      : { organizationId: '__NO_ORG_SELECTED__' };
     const typeConfig = await prisma.shiftTypeConfig.findFirst({
       where: {
         slug: type,

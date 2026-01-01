@@ -18,7 +18,9 @@ export async function GET(
 
     const { id } = await params;
     const orgId = await getCurrentOrgId();
-    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
+    const orgFilter = orgId
+      ? { organizationId: orgId }
+      : { organizationId: '__NO_ORG_SELECTED__' };
 
     // Check scheduling mode - in SIMPLE mode, restrict access for non-qualified users
     const settings = await prisma.organizationSettings.findFirst({
@@ -155,7 +157,9 @@ export async function PUT(
 
     const { id } = await params;
     const orgId = await getCurrentOrgId();
-    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
+    const orgFilter = orgId
+      ? { organizationId: orgId }
+      : { organizationId: '__NO_ORG_SELECTED__' };
     const body = await request.json();
 
     // Check if shift exists and belongs to current org

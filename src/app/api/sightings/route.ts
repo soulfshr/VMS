@@ -210,7 +210,9 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get('limit');
 
     const orgId = await getCurrentOrgId();
-    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
+    const orgFilter = orgId
+      ? { organizationId: orgId }
+      : { organizationId: '__NO_ORG_SELECTED__' };
 
     // Build filter conditions with org scoping
     const where: Record<string, unknown> = {

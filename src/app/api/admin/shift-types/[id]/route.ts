@@ -20,7 +20,9 @@ export async function GET(request: Request, { params }: RouteParams) {
 
     const { id } = await params;
     const orgId = await getCurrentOrgId();
-    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
+    const orgFilter = orgId
+      ? { organizationId: orgId }
+      : { organizationId: '__NO_ORG_SELECTED__' };
 
     const shiftType = await prisma.shiftTypeConfig.findFirst({
       where: {
@@ -71,9 +73,11 @@ export async function PUT(request: Request, { params }: RouteParams) {
     }
 
     const { id } = await params;
-    const orgId = await getCurrentOrgId();
-    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
     const body = await request.json();
+    const orgId = await getCurrentOrgId();
+    const orgFilter = orgId
+      ? { organizationId: orgId }
+      : { organizationId: '__NO_ORG_SELECTED__' };
     const {
       name,
       description,
@@ -204,7 +208,9 @@ export async function DELETE(request: Request, { params }: RouteParams) {
 
     const { id } = await params;
     const orgId = await getCurrentOrgId();
-    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
+    const orgFilter = orgId
+      ? { organizationId: orgId }
+      : { organizationId: '__NO_ORG_SELECTED__' };
 
     // Check if shift type exists and belongs to current org
     const existing = await prisma.shiftTypeConfig.findFirst({

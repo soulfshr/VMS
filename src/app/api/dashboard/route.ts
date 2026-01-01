@@ -230,11 +230,26 @@ export async function GET() {
       },
       include: {
         zone: true,
-        typeConfig: true,
+        typeConfig: {
+          include: {
+            qualifiedRoleRequirements: {
+              include: {
+                qualifiedRole: {
+                  select: {
+                    id: true,
+                    name: true,
+                    slug: true,
+                    color: true,
+                  },
+                },
+              },
+            },
+          },
+        },
         volunteers: {
           where: { status: { in: ['PENDING', 'CONFIRMED'] } },
           include: {
-            qualifiedRole: { select: { slug: true } },
+            qualifiedRole: { select: { id: true, slug: true } },
           },
         },
       },
@@ -247,6 +262,135 @@ export async function GET() {
 
     // Filter shifts based on user's qualifications and what's needed
     type ShiftWithVolunteers = typeof allQualifiedOpenings[number];
+
+    // Get user's qualified role IDs for filtering
+    const userQualifiedRoleIds = new Set(user.userQualifications?.map(uq => uq.qualifiedRole.id) || []);
+
+    // Group openings by qualified role
+    // For each shift, determine which roles still have open spots
+    interface RoleOpening {
+      roleId: string;
+      roleName: string;
+      roleSlug: string;
+      roleColor: string;
+      openings: Array<{
+        shift: ShiftWithVolunteers;
+        spotsRemaining: number;
+        isUserZone: boolean;
+      }>;
+    }
+
+    const openingsByRole = new Map<string, RoleOpening>();
+
+    // First pass: find all shifts the user can sign up for and group by role
+    allQualifiedOpenings.forEach((shift: ShiftWithVolunteers) => {
+      const hasOpenSpots = shift.volunteers.length < shift.maxVolunteers;
+      const needsZoneLead = !shift.volunteers.some(v => v.isZoneLead);
+      const isUserZone = shift.zoneId ? userZoneIds.includes(shift.zoneId) : false;
+
+      // Get role requirements for this shift type
+      const roleRequirements = shift.typeConfig?.qualifiedRoleRequirements || [];
+
+      // Check each role requirement to see if user qualifies and spots are available
+      for (const req of roleRequirements) {
+        const role = req.qualifiedRole;
+
+        // Skip if user doesn't have this qualification
+        if (!userQualifiedRoleIds.has(role.id)) continue;
+
+        // Count how many of this role are already signed up
+        const roleVolunteerCount = shift.volunteers.filter(v => v.qualifiedRoleId === role.id).length;
+
+        // Check if there's room for more of this role
+        const maxForRole = req.maxAllowed ?? shift.maxVolunteers;
+        const spotsForRole = maxForRole - roleVolunteerCount;
+
+        if (spotsForRole > 0) {
+          if (!openingsByRole.has(role.id)) {
+            openingsByRole.set(role.id, {
+              roleId: role.id,
+              roleName: role.name,
+              roleSlug: role.slug,
+              roleColor: role.color,
+              openings: [],
+            });
+          }
+          openingsByRole.get(role.id)!.openings.push({
+            shift,
+            spotsRemaining: spotsForRole,
+            isUserZone,
+          });
+        }
+      }
+
+      // Fallback: If no role requirements but shift has open spots, use general spot logic
+      if (roleRequirements.length === 0 && hasOpenSpots) {
+        // For zone lead qualified users, show shifts needing a lead
+        if (userHasZoneLeadQual && needsZoneLead) {
+          const leadRole = user.userQualifications?.find(uq =>
+            uq.qualifiedRole.slug.includes('LEAD') && !uq.qualifiedRole.slug.includes('REGIONAL')
+          );
+          if (leadRole) {
+            if (!openingsByRole.has(leadRole.qualifiedRole.id)) {
+              openingsByRole.set(leadRole.qualifiedRole.id, {
+                roleId: leadRole.qualifiedRole.id,
+                roleName: leadRole.qualifiedRole.name,
+                roleSlug: leadRole.qualifiedRole.slug,
+                roleColor: leadRole.qualifiedRole.color,
+                openings: [],
+              });
+            }
+            openingsByRole.get(leadRole.qualifiedRole.id)!.openings.push({
+              shift,
+              spotsRemaining: 1, // Zone lead is a single spot
+              isUserZone,
+            });
+          }
+        }
+
+        // For users with any qualification, show open spots
+        if (showAllAvailableShifts) {
+          // Use the first non-lead qualification for general volunteer spots
+          const generalRole = user.userQualifications?.find(uq =>
+            !uq.qualifiedRole.slug.includes('LEAD') &&
+            !uq.qualifiedRole.slug.includes('DISPATCH') &&
+            !uq.qualifiedRole.slug.includes('REGIONAL') &&
+            !uq.qualifiedRole.slug.includes('COORDINATOR')
+          );
+          if (generalRole) {
+            if (!openingsByRole.has(generalRole.qualifiedRole.id)) {
+              openingsByRole.set(generalRole.qualifiedRole.id, {
+                roleId: generalRole.qualifiedRole.id,
+                roleName: generalRole.qualifiedRole.name,
+                roleSlug: generalRole.qualifiedRole.slug,
+                roleColor: generalRole.qualifiedRole.color,
+                openings: [],
+              });
+            }
+            // Check if shift already added for this role
+            const existing = openingsByRole.get(generalRole.qualifiedRole.id)!;
+            if (!existing.openings.some(o => o.shift.id === shift.id)) {
+              existing.openings.push({
+                shift,
+                spotsRemaining: shift.maxVolunteers - shift.volunteers.length,
+                isUserZone,
+              });
+            }
+          }
+        }
+      }
+    });
+
+    // Convert to array and sort by role name, limit openings per role
+    const openingsByRoleArray = Array.from(openingsByRole.values())
+      .map(role => ({
+        ...role,
+        openings: role.openings.slice(0, 20), // Limit to 20 per role
+      }))
+      .filter(role => role.openings.length > 0)
+      .sort((a, b) => a.roleName.localeCompare(b.roleName));
+
+    // Legacy: Keep userZones/otherZones for backwards compatibility
     const qualifiedOpeningsFiltered = allQualifiedOpenings.filter((shift: ShiftWithVolunteers) => {
       const needsZoneLead = !shift.volunteers.some(v => v.isZoneLead);
       const hasOpenSpots = shift.volunteers.length < shift.maxVolunteers;
@@ -906,6 +1050,31 @@ export async function GET() {
           spotsRemaining: shift.maxVolunteers - shift.volunteers.length,
         })),
         userQualifications: userQualificationNames,
+        // New: openings grouped by qualified role for role-based tabs
+        byRole: openingsByRoleArray.map(role => ({
+          roleId: role.roleId,
+          roleName: role.roleName,
+          roleSlug: role.roleSlug,
+          roleColor: role.roleColor,
+          count: role.openings.length,
+          openings: role.openings.map(o => ({
+            id: o.shift.id,
+            title: o.shift.title,
+            date: o.shift.date,
+            startTime: o.shift.startTime,
+            endTime: o.shift.endTime,
+            shiftType: o.shift.typeConfig ? {
+              name: o.shift.typeConfig.name,
+              color: o.shift.typeConfig.color,
+            } : null,
+            zone: o.shift.zone ? {
+              id: o.shift.zone.id,
+              name: o.shift.zone.name,
+            } : null,
+            spotsRemaining: o.spotsRemaining,
+            isUserZone: o.isUserZone,
+          })),
+        })),
       },
       // Dispatcher slot openings - county/time slots needing a dispatcher
       dispatcherSlotOpenings,

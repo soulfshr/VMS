@@ -9,6 +9,7 @@ export interface FeatureFlag {
   value: boolean;
   source: FeatureSource;
   adminConfigurable: boolean;
+  devEnabled: boolean;
   globalValue: boolean | null;
   orgValue: boolean | null;
 }
@@ -24,6 +25,7 @@ const DEFAULT_FEATURE_FLAG: FeatureFlag = {
   value: false,
   source: 'env',
   adminConfigurable: false,
+  devEnabled: false,
   globalValue: null,
   orgValue: null,
 };

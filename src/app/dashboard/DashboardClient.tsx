@@ -295,9 +295,9 @@ export default function DashboardClient() {
               {/* Next Shift Widget */}
               {nextShift && <NextShiftWidget nextShift={nextShift} />}
 
-              {/* Upcoming Schedule */}
+              {/* Upcoming Schedule (exclude next shift if shown above) */}
               <UpcomingScheduleTable
-                upcomingShifts={upcomingShifts}
+                upcomingShifts={nextShift ? upcomingShifts.filter(s => s.id !== nextShift.id) : upcomingShifts}
                 upcomingDispatcherAssignments={upcomingDispatcherAssignments || []}
                 upcomingRegionalLeadAssignments={upcomingRegionalLeadAssignments || []}
                 dismissedShiftIds={dismissedShiftIds}

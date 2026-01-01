@@ -21,7 +21,9 @@ export async function GET(request: Request, { params }: RouteParams) {
 
     const { id } = await params;
     const orgId = await getCurrentOrgId();
-    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
+    const orgFilter = orgId
+      ? { organizationId: orgId }
+      : { organizationId: '__NO_ORG_SELECTED__' };
 
     const zone = await prisma.zone.findFirst({
       where: {
@@ -62,10 +64,12 @@ export async function PUT(request: Request, { params }: RouteParams) {
     }
 
     const { id } = await params;
-    const orgId = await getCurrentOrgId();
-    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
     const body = await request.json();
     const { name, county, description, signalGroup, isActive, color, fillOpacity, strokeWeight, boundaries } = body;
+    const orgId = await getCurrentOrgId();
+    const orgFilter = orgId
+      ? { organizationId: orgId }
+      : { organizationId: '__NO_ORG_SELECTED__' };
 
     // Check if zone exists and belongs to current org
     const existing = await prisma.zone.findFirst({
@@ -136,7 +140,9 @@ export async function DELETE(request: Request, { params }: RouteParams) {
 
     const { id } = await params;
     const orgId = await getCurrentOrgId();
-    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
+    const orgFilter = orgId
+      ? { organizationId: orgId }
+      : { organizationId: '__NO_ORG_SELECTED__' };
 
     // Check if zone exists and belongs to current org
     const existing = await prisma.zone.findFirst({

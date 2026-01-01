@@ -229,6 +229,7 @@ function QualificationPickerModal({
 
 // Bulk Edit Modal Component
 interface BulkEditData {
+  title?: string;
   typeConfigId?: string;
   minVolunteers?: number;
   maxVolunteers?: number;
@@ -258,6 +259,9 @@ function BulkEditModal({
 
   const handleSubmit = () => {
     const dataToSubmit: BulkEditData = {};
+    if (enabledFields.title && editData.title) {
+      dataToSubmit.title = editData.title;
+    }
     if (enabledFields.typeConfigId && editData.typeConfigId) {
       dataToSubmit.typeConfigId = editData.typeConfigId;
     }
@@ -283,6 +287,28 @@ function BulkEditModal({
         </p>
 
         <div className="space-y-4">
+          {/* Shift Name */}
+          <div className="border border-gray-200 rounded-lg p-4">
+            <label className="flex items-center gap-2 mb-3">
+              <input
+                type="checkbox"
+                checked={enabledFields.title || false}
+                onChange={(e) => setEnabledFields(prev => ({ ...prev, title: e.target.checked }))}
+                className="w-4 h-4 text-cyan-600 rounded focus:ring-cyan-500"
+              />
+              <span className="font-medium text-gray-900">Rename Shifts</span>
+            </label>
+            {enabledFields.title && (
+              <input
+                type="text"
+                value={editData.title || ''}
+                onChange={(e) => setEditData(prev => ({ ...prev, title: e.target.value }))}
+                placeholder="Enter new shift name..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              />
+            )}
+          </div>
+
           {/* Shift Type */}
           <div className="border border-gray-200 rounded-lg p-4">
             <label className="flex items-center gap-2 mb-3">

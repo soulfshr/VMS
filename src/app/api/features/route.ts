@@ -9,8 +9,11 @@ interface FeatureFlag {
   value: boolean;
   source: FeatureSource;
   // For admin UI: can this feature be toggled by admins?
-  // True when: global is ON (admin can disable) OR org override is explicitly true
+  // True only when global is ON
   adminConfigurable: boolean;
+  // True when dev has enabled this feature for this org (global is OFF but org override is true)
+  // Feature should be visible but read-only for admins in this case
+  devEnabled: boolean;
   // Raw values for debugging/advanced UI
   globalValue: boolean | null;
   orgValue: boolean | null;
@@ -61,16 +64,19 @@ function resolveFeature(
   }
 
   // Determine if admin can configure this feature
-  // Admin can configure when:
-  // 1. Global is ON (resolved global value is true) - admin can disable
-  // 2. Org override is explicitly true - dev enabled it, admin can see it
+  // Admin can only configure when global is ON
   const resolvedGlobal = globalValue ?? envDefault;
-  const adminConfigurable = resolvedGlobal === true || orgValue === true;
+  const adminConfigurable = resolvedGlobal === true;
+
+  // Dev-enabled: global is OFF but dev has enabled for this specific org
+  // Feature is visible to admin but read-only (only developer can toggle)
+  const devEnabled = resolvedGlobal === false && orgValue === true;
 
   return {
     value,
     source,
     adminConfigurable,
+    devEnabled,
     globalValue: globalValue ?? null,
     orgValue: orgValue ?? null,
   };
@@ -131,6 +137,7 @@ export async function GET() {
         value: ENV_FEATURE_DEFAULTS.trainings,
         source: 'env' as const,
         adminConfigurable: ENV_FEATURE_DEFAULTS.trainings,
+        devEnabled: false,
         globalValue: null,
         orgValue: null,
       },
@@ -138,6 +145,7 @@ export async function GET() {
         value: ENV_FEATURE_DEFAULTS.sightings,
         source: 'env' as const,
         adminConfigurable: ENV_FEATURE_DEFAULTS.sightings,
+        devEnabled: false,
         globalValue: null,
         orgValue: null,
       },
@@ -145,6 +153,7 @@ export async function GET() {
         value: ENV_FEATURE_DEFAULTS.maps,
         source: 'env' as const,
         adminConfigurable: ENV_FEATURE_DEFAULTS.maps,
+        devEnabled: false,
         globalValue: null,
         orgValue: null,
       },

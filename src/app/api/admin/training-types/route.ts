@@ -15,7 +15,9 @@ export async function GET() {
     }
 
     const orgId = await getCurrentOrgId();
-    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
+    const orgFilter = orgId
+      ? { organizationId: orgId }
+      : { organizationId: '__NO_ORG_SELECTED__' };
 
     const trainingTypes = await prisma.trainingType.findMany({
       where: {
@@ -77,7 +79,9 @@ export async function POST(request: Request) {
     }
 
     // Check for duplicate name or slug within the organization
-    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
+    const orgFilter = orgId
+      ? { organizationId: orgId }
+      : { organizationId: '__NO_ORG_SELECTED__' };
     const existing = await prisma.trainingType.findFirst({
       where: {
         OR: [{ name }, { slug }],

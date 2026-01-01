@@ -20,7 +20,9 @@ export async function GET(request: NextRequest) {
     const orgId = await getCurrentOrgId();
 
     // Strict org scoping - only show POIs for the current org
-    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
+    const orgFilter = orgId
+      ? { organizationId: orgId }
+      : { organizationId: '__NO_ORG_SELECTED__' };
 
     // Build where clause with org scoping
     const where: Record<string, unknown> = {

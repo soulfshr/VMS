@@ -12,7 +12,10 @@ export async function GET() {
     }
 
     const orgId = await getCurrentOrgId();
-    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
+    // If no org selected, use impossible filter to prevent data leakage
+    const orgFilter = orgId
+      ? { organizationId: orgId }
+      : { organizationId: '__NO_ORG_SELECTED__' };
 
     const qualifiedRoles = await prisma.qualifiedRole.findMany({
       where: {
@@ -60,7 +63,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Check for duplicate name or slug within the organization
-    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
+    // If no org, use impossible filter (shouldn't create records without org context)
+    const orgFilter = orgId
+      ? { organizationId: orgId }
+      : { organizationId: '__NO_ORG_SELECTED__' };
     const existing = await prisma.qualifiedRole.findFirst({
       where: {
         OR: [{ name }, { slug: slug.toUpperCase() }],

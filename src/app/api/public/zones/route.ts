@@ -8,7 +8,9 @@ export async function GET() {
     const orgId = await getCurrentOrgId();
 
     // Strict org scoping
-    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
+    const orgFilter = orgId
+      ? { organizationId: orgId }
+      : { organizationId: '__NO_ORG_SELECTED__' };
 
     const zones = await prisma.zone.findMany({
       where: {

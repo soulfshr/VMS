@@ -17,7 +17,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     const { id: sessionId } = await params;
     const orgId = await getCurrentOrgId();
-    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
+    const orgFilter = orgId
+      ? { organizationId: orgId }
+      : { organizationId: '__NO_ORG_SELECTED__' };
 
     // Check if session exists, is published, and belongs to current org
     const session = await prisma.trainingSession.findFirst({

@@ -67,10 +67,38 @@ export interface QualifiedOpening {
   spotsRemaining: number;
 }
 
+export interface RoleOpeningItem {
+  id: string;
+  title: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  shiftType: {
+    name: string;
+    color: string;
+  } | null;
+  zone: {
+    id: string;
+    name: string;
+  } | null;
+  spotsRemaining: number;
+  isUserZone: boolean;
+}
+
+export interface RoleOpenings {
+  roleId: string;
+  roleName: string;
+  roleSlug: string;
+  roleColor: string;
+  count: number;
+  openings: RoleOpeningItem[];
+}
+
 export interface QualifiedOpeningsData {
   userZones: QualifiedOpening[];
   otherZones: QualifiedOpening[];
   userQualifications: string[];
+  byRole?: RoleOpenings[];
 }
 
 export interface DispatcherSlotOpening {

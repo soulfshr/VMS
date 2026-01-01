@@ -23,7 +23,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
     // Strict org scoping - only fetch blast if it belongs to current org
     const orgId = await getCurrentOrgId();
-    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
+    const orgFilter = orgId
+      ? { organizationId: orgId }
+      : { organizationId: '__NO_ORG_SELECTED__' };
 
     const blast = await prisma.emailBlast.findFirst({
       where: { id, ...orgFilter },

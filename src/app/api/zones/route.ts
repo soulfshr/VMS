@@ -17,7 +17,9 @@ export async function GET(request: NextRequest) {
     const includeInactive = searchParams.get('includeInactive') === 'true';
 
     // Strict org scoping - only show zones for the current org
-    const orgFilter = orgId ? { organizationId: orgId } : { organizationId: null };
+    const orgFilter = orgId
+      ? { organizationId: orgId }
+      : { organizationId: '__NO_ORG_SELECTED__' };
 
     const zones = await prisma.zone.findMany({
       where: {

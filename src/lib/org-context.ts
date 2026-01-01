@@ -141,7 +141,8 @@ export async function getCurrentOrgSlug(): Promise<string | null> {
 
 /**
  * Create a Prisma where clause that scopes to the current organization
- * Requires org context - returns empty object if no org selected
+ * IMPORTANT: If no org is selected, returns a filter that matches NO records
+ * to prevent cross-org data leakage
  *
  * @example
  * const users = await prisma.user.findMany({
@@ -151,15 +152,16 @@ export async function getCurrentOrgSlug(): Promise<string | null> {
  *   }
  * });
  */
-export async function orgScope(): Promise<{ organizationId: string } | Record<string, never>> {
+export async function orgScope(): Promise<{ organizationId: string }> {
   const orgId = await getCurrentOrgId();
 
   if (orgId) {
     return { organizationId: orgId };
   }
 
-  // No org context: return empty (will match all - should be rare with new architecture)
-  return {};
+  // No org context: return impossible filter to prevent data leakage
+  // This ensures no records are returned rather than ALL records
+  return { organizationId: '__NO_ORG_SELECTED__' };
 }
 
 /**
