@@ -38,20 +38,35 @@ export async function getDbUser(): Promise<User | null> {
  * Get the database user with their zones
  *
  * MULTI-ORG AWARE: Overlays session's org-specific role.
+ * Filters qualifications to only include those from the current org.
  */
 export async function getDbUserWithZones() {
   const sessionUser = await getCurrentUser();
   if (!sessionUser) return null;
 
+  const orgId = await getCurrentOrgId();
+
   const dbUser = await prisma.user.findUnique({
     where: { id: sessionUser.id },
     include: {
       zones: {
+        // Filter to only include zones from current org
+        where: orgId ? {
+          zone: {
+            organizationId: orgId,
+          },
+        } : {},
         include: {
           zone: true,
         },
       },
       userQualifications: {
+        // Filter to only include qualifications from current org
+        where: orgId ? {
+          qualifiedRole: {
+            organizationId: orgId,
+          },
+        } : {},
         include: {
           qualifiedRole: true,
         },
