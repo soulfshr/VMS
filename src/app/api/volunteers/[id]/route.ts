@@ -255,10 +255,8 @@ export async function PATCH(
       );
     }
 
-    // Build update data
+    // Build update data for User model
     const updateData: {
-      role?: Role;
-      isActive?: boolean;
       isVerified?: boolean;
       name?: string;
       email?: string;
@@ -269,16 +267,22 @@ export async function PATCH(
       notes?: string | null;
     } = {};
 
+    // Build update data for OrganizationMember (per-org fields)
+    const membershipUpdateData: {
+      role?: Role;
+      isActive?: boolean;
+    } = {};
+
     if (body.role !== undefined) {
       const validRoles = ['VOLUNTEER', 'COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR'];
       if (!validRoles.includes(body.role)) {
         return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
       }
-      updateData.role = body.role as Role;
+      membershipUpdateData.role = body.role as Role;
     }
 
     if (body.isActive !== undefined) {
-      updateData.isActive = body.isActive;
+      membershipUpdateData.isActive = body.isActive;
     }
 
     if (body.isVerified !== undefined) {
@@ -410,6 +414,18 @@ export async function PATCH(
       }
     }
 
+    // Update membership (per-org role and isActive) if any membership fields changed
+    let updatedMembership = null;
+    if (Object.keys(membershipUpdateData).length > 0 && orgId) {
+      updatedMembership = await prisma.organizationMember.updateMany({
+        where: {
+          userId: id,
+          organizationId: orgId,
+        },
+        data: membershipUpdateData,
+      });
+    }
+
     // Update the volunteer
     const updated = await prisma.user.update({
       where: { id },
@@ -420,11 +436,9 @@ export async function PATCH(
         email: true,
         phone: true,
         signalHandle: true,
-        role: true,
         primaryLanguage: true,
         otherLanguages: true,
         notes: true,
-        isActive: true,
         isVerified: true,
         userQualifications: {
           select: {
@@ -438,8 +452,19 @@ export async function PATCH(
             },
           },
         },
+        // Include membership for current org to get per-org role and isActive
+        memberships: orgId ? {
+          where: { organizationId: orgId },
+          select: {
+            role: true,
+            isActive: true,
+          },
+        } : false,
       },
     });
+
+    // Get per-org role and isActive from membership
+    const membership = updated.memberships && updated.memberships[0];
 
     // Audit log the volunteer update
     await auditUpdate(
@@ -452,6 +477,9 @@ export async function PATCH(
 
     return NextResponse.json({
       ...updated,
+      // Use per-org fields from membership
+      role: membership?.role ?? 'VOLUNTEER',
+      isActive: membership?.isActive ?? true,
       qualifiedRoles: updated.userQualifications.map(uq => uq.qualifiedRole),
     });
   } catch (error) {

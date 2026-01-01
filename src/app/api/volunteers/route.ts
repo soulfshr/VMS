@@ -135,6 +135,19 @@ export async function GET(request: NextRequest) {
     const volunteers = await prisma.user.findMany({
       where,
       include: {
+        // Include the membership for current org to get per-org role
+        memberships: orgId ? {
+          where: {
+            organizationId: orgId,
+          },
+          select: {
+            role: true,
+            accountStatus: true,
+            isActive: true,
+            applicationDate: true,
+            rejectionReason: true,
+          },
+        } : false,
         zones: {
           include: {
             zone: {
@@ -231,24 +244,29 @@ export async function GET(request: NextRequest) {
     });
 
     // Transform the response
-    const result = volunteers.map(v => ({
-      id: v.id,
-      name: v.name,
-      email: v.email,
-      phone: v.phone,
-      signalHandle: v.signalHandle,
-      role: v.role,
-      primaryLanguage: v.primaryLanguage,
-      otherLanguages: v.otherLanguages,
-      notes: v.notes,
-      isActive: v.isActive,
-      isVerified: v.isVerified,
-      createdAt: v.createdAt,
-      // Account status fields for pending review
-      accountStatus: v.accountStatus,
-      applicationDate: v.applicationDate,
-      intakeResponses: v.intakeResponses,
-      rejectionReason: v.rejectionReason,
+    const result = volunteers.map(v => {
+      // Get the membership for current org (should be exactly one due to where filter)
+      const membership = v.memberships && v.memberships[0];
+      return {
+        id: v.id,
+        name: v.name,
+        email: v.email,
+        phone: v.phone,
+        signalHandle: v.signalHandle,
+        // Use per-org role from membership, fallback to user role for backwards compatibility
+        role: membership?.role ?? v.role,
+        primaryLanguage: v.primaryLanguage,
+        otherLanguages: v.otherLanguages,
+        notes: v.notes,
+        // Use per-org isActive from membership
+        isActive: membership?.isActive ?? v.isActive,
+        isVerified: v.isVerified,
+        createdAt: v.createdAt,
+        // Account status fields from membership (per-org)
+        accountStatus: membership?.accountStatus ?? v.accountStatus,
+        applicationDate: membership?.applicationDate ?? v.applicationDate,
+        intakeResponses: v.intakeResponses,
+        rejectionReason: membership?.rejectionReason ?? v.rejectionReason,
       // Only include lastLoginAt for developers
       ...(isDeveloper && { lastLoginAt: v.lastLoginAt }),
       qualifiedRoles: v.userQualifications.map(uq => ({
@@ -276,7 +294,8 @@ export async function GET(request: NextRequest) {
         isZoneLead: sv.isZoneLead,
       })),
       totalConfirmedShifts: v._count.shiftVolunteers,
-    }));
+    };
+    });
 
     // Get all qualified roles for editing (scoped to current org)
     const qualifiedRoles = await prisma.qualifiedRole.findMany({
