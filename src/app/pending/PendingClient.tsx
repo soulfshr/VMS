@@ -49,6 +49,10 @@ export default function PendingClient() {
 
   const handleSignOut = async () => {
     await signOut({ redirect: false });
+    // Manually clear auth cookies before redirect
+    const cookieOptions = '; path=/; domain=.ripple-vms.com; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure';
+    document.cookie = `__Secure-authjs.session-token=${cookieOptions}`;
+    document.cookie = `__Secure-authjs.callback-url=${cookieOptions}`;
     window.location.href = 'https://ripple-vms.com/login';
   };
 
