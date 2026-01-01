@@ -349,7 +349,8 @@ export async function GET() {
         }
 
         // For users with any qualification, show open spots
-        if (showAllAvailableShifts) {
+        // Show shifts regardless of scheduling model - if user has quals and shift has spots, show it
+        if (userHasAnyQualification) {
           // Use the first non-lead qualification for general volunteer spots
           const generalRole = user.userQualifications?.find(uq =>
             !uq.qualifiedRole.slug.includes('LEAD') &&
