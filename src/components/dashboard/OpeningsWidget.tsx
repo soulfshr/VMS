@@ -9,6 +9,7 @@ import type {
   UserZone,
   RoleOpenings,
 } from '@/types/dashboard';
+import { useOrgRoles } from '@/hooks/useOrgRoles';
 
 interface OpeningsWidgetProps {
   qualifiedOpenings: QualifiedOpeningsData;
@@ -41,6 +42,11 @@ export function OpeningsWidget({
   footerLink,
   footerText,
 }: OpeningsWidgetProps) {
+  const { getRoleName } = useOrgRoles();
+
+  // Get dynamic lead role name
+  const leadRoleName = getRoleName('ZONE_LEAD') || 'Zone Lead';
+
   // Use role-based tabs if available, otherwise fall back to legacy shift tab
   const roleOpenings = qualifiedOpenings?.byRole || [];
   const hasRoleOpenings = roleOpenings.length > 0;

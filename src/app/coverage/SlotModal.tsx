@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import type { DevUser } from '@/types/auth';
+import { useOrgRoles } from '@/hooks/useOrgRoles';
 
 interface SlotConfig {
   start: number;
@@ -81,6 +82,7 @@ export default function SlotModal({
   onClose,
   onUpdate,
 }: SlotModalProps) {
+  const { getRoleName } = useOrgRoles();
   const isSimpleMode = schedulingMode === 'SIMPLE';
   // Find user's primary zone or use initialZoneId or first zone
   const defaultZoneId = useMemo(() => {
@@ -212,8 +214,8 @@ export default function SlotModal({
   };
 
   const getRoleLabel = (roleType: string) => {
-    // Convert slug to readable label (e.g., ZONE_LEAD -> Zone Lead)
-    return roleType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).replace(/\B\w+/g, c => c.toLowerCase());
+    // Use dynamic role name from org config, or fallback to pattern-based conversion
+    return getRoleName(roleType);
   };
 
   return (
@@ -312,14 +314,14 @@ export default function SlotModal({
           <div className={`grid ${isSimpleMode ? 'grid-cols-2' : 'grid-cols-3'} gap-4 text-center`}>
             <div>
               <div className="text-lg">{getRoleIcon('DISPATCHER')}</div>
-              <div className="text-xs text-gray-500 mt-1">Dispatcher</div>
+              <div className="text-xs text-gray-500 mt-1">{getRoleLabel('DISPATCHER')}</div>
               <div className={`text-sm font-medium ${dispatcher ? 'text-green-600' : 'text-red-500'}`}>
                 {dispatcher ? dispatcher.userName.split(' ')[0] : 'OPEN'}
               </div>
             </div>
             <div>
               <div className="text-lg">{getRoleIcon('ZONE_LEAD')}</div>
-              <div className="text-xs text-gray-500 mt-1">Zone Lead</div>
+              <div className="text-xs text-gray-500 mt-1">{getRoleLabel('ZONE_LEAD')}</div>
               <div className={`text-sm font-medium ${zoneLead ? 'text-green-600' : 'text-red-500'}`}>
                 {zoneLead ? zoneLead.userName.split(' ')[0] : 'OPEN'}
               </div>
@@ -327,7 +329,7 @@ export default function SlotModal({
             {!isSimpleMode && (
               <div>
                 <div className="text-lg">{getRoleIcon('VERIFIER')}</div>
-                <div className="text-xs text-gray-500 mt-1">Verifiers</div>
+                <div className="text-xs text-gray-500 mt-1">{getRoleLabel('VERIFIER')}s</div>
                 <div className={`text-sm font-medium ${verifiers.length >= slot.config.minVols ? 'text-green-600' : 'text-yellow-600'}`}>
                   {verifiers.length} of {slot.config.minVols}
                 </div>
@@ -393,7 +395,7 @@ export default function SlotModal({
                   className="w-full py-2.5 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {getRoleIcon('DISPATCHER')}
-                  {loading ? 'Signing up...' : 'Sign Up as Dispatcher'}
+                  {loading ? 'Signing up...' : `Sign Up as ${getRoleLabel('DISPATCHER')}`}
                 </button>
               )}
               {canSignUpAsZoneLead && (
@@ -403,7 +405,7 @@ export default function SlotModal({
                   className="w-full py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {getRoleIcon('ZONE_LEAD')}
-                  {loading ? 'Signing up...' : 'Sign Up as Zone Lead'}
+                  {loading ? 'Signing up...' : `Sign Up as ${getRoleLabel('ZONE_LEAD')}`}
                 </button>
               )}
               {canSignUpAsVerifier && (
@@ -413,7 +415,7 @@ export default function SlotModal({
                   className="w-full py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {getRoleIcon('VERIFIER')}
-                  {loading ? 'Signing up...' : `Sign Up as Verifier (${slot.config.minVols - verifiers.length} spots)`}
+                  {loading ? 'Signing up...' : `Sign Up as ${getRoleLabel('VERIFIER')} (${slot.config.minVols - verifiers.length} spots)`}
                 </button>
               )}
               {!canSignUpAsDispatcher && !canSignUpAsZoneLead && !canSignUpAsVerifier && (

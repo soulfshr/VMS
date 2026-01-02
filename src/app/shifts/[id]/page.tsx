@@ -164,7 +164,7 @@ export default function ShiftDetailPage() {
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
           <p className="text-yellow-800 font-medium mb-2">Access Restricted</p>
           <p className="text-yellow-700 text-sm mb-4">
-            Shift signup is currently restricted to qualified zone leads and dispatchers.
+            Shift signup is currently restricted to qualified staff members.
           </p>
           <Link href="/shifts" className="text-cyan-600 hover:underline">
             ← Back to shifts

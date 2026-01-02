@@ -6,6 +6,7 @@ import type { DevUser } from '@/types/auth';
 import SlotModal from './SlotModal';
 import CoordinatorModal from './CoordinatorModal';
 import { isBeforeToday } from '@/lib/dates';
+import { useOrgRoles } from '@/hooks/useOrgRoles';
 
 interface SlotConfig {
   start: number;
@@ -133,6 +134,7 @@ function getSlotLabel(start: number, end: number): string {
 
 export default function CoverageClient() {
   const router = useRouter();
+  const { getRoleName } = useOrgRoles();
   const [user, setUser] = useState<DevUser | null>(null);
   const [userQualifications, setUserQualifications] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -702,21 +704,21 @@ export default function CoverageClient() {
                                 <div className="text-xs space-y-0.5">
                                   {/* Dispatcher */}
                                   <div className="flex items-center gap-1">
-                                    <span title="Dispatcher">&#128222;</span>
+                                    <span title={getRoleName('DISPATCHER')}>&#128222;</span>
                                     <span className={dispatcher ? 'text-gray-800' : 'text-gray-400'}>
                                       {dispatcher ? dispatcher.userName.split(' ')[0] : 'OPEN'}
                                     </span>
                                   </div>
                                   {/* Zone Lead */}
                                   <div className="flex items-center gap-1">
-                                    <span title="Zone Lead">&#128081;</span>
+                                    <span title={getRoleName('ZONE_LEAD')}>&#128081;</span>
                                     <span className={zoneLead ? 'text-gray-800' : 'text-gray-400'}>
                                       {zoneLead ? zoneLead.userName.split(' ')[0] : 'OPEN'}
                                     </span>
                                   </div>
                                   {/* Volunteers */}
                                   <div className="flex items-center gap-1">
-                                    <span title="Verifiers">&#128101;</span>
+                                    <span title={`${getRoleName('VERIFIER')}s`}>&#128101;</span>
                                     <span className={verifiers.length >= zoneSlot.volunteerTarget ? 'text-gray-800' : 'text-gray-400'}>
                                       {verifiers.length}/{zoneSlot.volunteerTarget}
                                     </span>

@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import { prisma } from '@/lib/db';
 import { escapeHtml, escapeHtmlPreserveBreaks } from '@/lib/html-escape';
 import { logger } from '@/lib/logger';
+import { getRoleTypeLabel } from '@/lib/role-utils';
 
 // Default organization timezone - used for formatting dates in emails
 // This ensures consistent display regardless of server timezone (UTC on Vercel)
@@ -1890,14 +1891,9 @@ function formatHourToTime(hour: number): string {
   return `${hour - 12}:00 PM`;
 }
 
-// Get role display name
+// Get role display name - uses pattern-based detection for flexibility across orgs
 function getRoleDisplayName(roleType: string): string {
-  switch (roleType) {
-    case 'DISPATCHER': return 'Dispatcher';
-    case 'ZONE_LEAD': return 'Zone Lead';
-    case 'VERIFIER': return 'Verifier';
-    default: return roleType;
-  }
+  return getRoleTypeLabel(roleType);
 }
 
 /**

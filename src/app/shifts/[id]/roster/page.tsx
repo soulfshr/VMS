@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useOrgRoles } from '@/hooks/useOrgRoles';
 
 interface Volunteer {
   id: string;
@@ -59,6 +60,7 @@ interface QualifiedRole {
 export default function RosterPage() {
   const params = useParams();
   const router = useRouter();
+  const { roles: qualifiedRoles, getRoleName, isLoading: rolesLoading } = useOrgRoles();
   const [shift, setShift] = useState<Shift | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
@@ -71,22 +73,14 @@ export default function RosterPage() {
   const [searching, setSearching] = useState(false);
   const [addingVolunteer, setAddingVolunteer] = useState<string | null>(null);
   const [addError, setAddError] = useState<string | null>(null);
-  const [qualifiedRoles, setQualifiedRoles] = useState<QualifiedRole[]>([]);
   const [selectedRoleFilter, setSelectedRoleFilter] = useState<string>('all');
+
+  // Get the lead role display name dynamically
+  const leadRoleName = getRoleName('ZONE_LEAD') || 'Zone Lead';
 
   useEffect(() => {
     fetchShift();
   }, [params.id]);
-
-  // Fetch qualified roles when modal opens
-  useEffect(() => {
-    if (showAddModal && qualifiedRoles.length === 0) {
-      fetch('/api/admin/qualified-roles')
-        .then(res => res.ok ? res.json() : [])
-        .then(data => setQualifiedRoles(data))
-        .catch(() => setQualifiedRoles([]));
-    }
-  }, [showAddModal, qualifiedRoles.length]);
 
   const fetchShift = async () => {
     try {
@@ -377,7 +371,7 @@ export default function RosterPage() {
                 Language
               </th>
               <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Zone Lead
+                {leadRoleName}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Status
@@ -418,9 +412,9 @@ export default function RosterPage() {
                         ? 'bg-purple-100 text-purple-800 hover:bg-purple-200'
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
-                    title={volunteer.isZoneLead ? 'Remove zone lead designation' : 'Designate as zone lead'}
+                    title={volunteer.isZoneLead ? `Remove ${leadRoleName} designation` : `Designate as ${leadRoleName}`}
                   >
-                    {volunteer.isZoneLead ? 'Zone Lead' : 'Volunteer'}
+                    {volunteer.isZoneLead ? leadRoleName : 'Volunteer'}
                   </button>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
