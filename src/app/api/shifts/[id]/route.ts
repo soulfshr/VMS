@@ -4,6 +4,7 @@ import { getDbUser } from '@/lib/user';
 import { ShiftType, ShiftStatus } from '@/generated/prisma/enums';
 import { auditUpdate, toAuditUser } from '@/lib/audit';
 import { getCurrentOrgId } from '@/lib/org-context';
+import { hasLeadQualification, hasDispatcherQualification } from '@/lib/role-utils';
 
 // GET /api/shifts/[id] - Get single shift with volunteers
 export async function GET(
@@ -38,13 +39,9 @@ export async function GET(
       },
       include: { qualifiedRole: { select: { slug: true } } },
     });
-    // Check for lead-type qualifications flexibly (different orgs use different names)
-    const leadSlugs = ['ZONE_LEAD', 'SHIFT_LEAD', 'TEAM_LEAD', 'LEAD', 'DISPATCHER'];
-    const hasLeadQualification = userQualifications.some(uq =>
-      leadSlugs.includes(uq.qualifiedRole.slug) ||
-      uq.qualifiedRole.slug.includes('LEAD') ||
-      uq.qualifiedRole.slug.includes('DISPATCH')
-    );
+    // Check for lead-type qualifications using pattern-based detection
+    const qualificationSlugs = userQualifications.map(uq => uq.qualifiedRole.slug);
+    const userHasLeadQualification = hasLeadQualification(qualificationSlugs) || hasDispatcherQualification(qualificationSlugs);
 
     const shift = await prisma.shift.findFirst({
       where: {
@@ -118,7 +115,7 @@ export async function GET(
 
     // In SIMPLE mode, restrict access for non-qualified users who aren't signed up
     const isUserSignedUp = shift.volunteers.some(v => v.userId === user.id);
-    if (schedulingMode === 'SIMPLE' && !isAdmin && !hasLeadQualification && !isUserSignedUp) {
+    if (schedulingMode === 'SIMPLE' && !isAdmin && !userHasLeadQualification && !isUserSignedUp) {
       return NextResponse.json({ error: 'Access restricted' }, { status: 403 });
     }
 

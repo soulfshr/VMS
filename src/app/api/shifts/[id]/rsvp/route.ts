@@ -9,6 +9,7 @@ import {
 } from '@/lib/email';
 import { auditCreate, auditUpdate, auditDelete, toAuditUser } from '@/lib/audit';
 import { getCurrentOrgId } from '@/lib/org-context';
+import { hasLeadQualification } from '@/lib/role-utils';
 
 // POST /api/shifts/[id]/rsvp - RSVP to a shift
 export async function POST(
@@ -70,12 +71,9 @@ export async function POST(
     // If requesting lead assignment, verify user has a lead qualification in current org
     // Different orgs may use different slugs for their lead role (ZONE_LEAD, SHIFT_LEAD, etc.)
     if (asZoneLead) {
-      // Accept any lead-type qualification (different orgs use different names)
-      const leadSlugs = ['ZONE_LEAD', 'SHIFT_LEAD', 'TEAM_LEAD', 'LEAD'];
-      const hasLeadQual = userQualifications.some(uq =>
-        leadSlugs.includes(uq.qualifiedRole.slug) ||
-        uq.qualifiedRole.slug.includes('LEAD')
-      );
+      // Accept any lead-type qualification using pattern-based detection
+      const qualificationSlugs = userQualifications.map(uq => uq.qualifiedRole.slug);
+      const hasLeadQual = hasLeadQualification(qualificationSlugs);
 
       if (!hasLeadQual) {
         return NextResponse.json(

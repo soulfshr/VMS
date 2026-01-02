@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { auditCreate, toAuditUser } from '@/lib/audit';
 import { getCurrentOrgId, getOrgIdForCreate } from '@/lib/org-context';
+import { isLeadRole, isDispatcherRole, hasLeadQualification, hasDispatcherQualification } from '@/lib/role-utils';
 
 // GET /api/shifts - List shifts with filters
 export async function GET(request: NextRequest) {
@@ -40,17 +41,13 @@ export async function GET(request: NextRequest) {
       },
       include: { qualifiedRole: { select: { slug: true } } },
     });
-    // Check for lead-type qualifications flexibly (different orgs use different names)
-    const leadSlugs = ['ZONE_LEAD', 'SHIFT_LEAD', 'TEAM_LEAD', 'LEAD', 'DISPATCHER'];
-    const hasLeadQualification = userQualifications.some(uq =>
-      leadSlugs.includes(uq.qualifiedRole.slug) ||
-      uq.qualifiedRole.slug.includes('LEAD') ||
-      uq.qualifiedRole.slug.includes('DISPATCH')
-    );
+    // Check for lead-type qualifications using pattern-based detection
+    const qualificationSlugs = userQualifications.map(uq => uq.qualifiedRole.slug);
+    const userHasLeadQualification = hasLeadQualification(qualificationSlugs) || hasDispatcherQualification(qualificationSlugs);
 
     // If SIMPLE mode and user is not admin and doesn't have lead qualifications,
     // only show shifts they're already signed up for
-    const simpleRestricted = schedulingMode === 'SIMPLE' && !isAdmin && !hasLeadQualification;
+    const simpleRestricted = schedulingMode === 'SIMPLE' && !isAdmin && !userHasLeadQualification;
 
     // Strict org scoping - only show shifts for the current org
     const orgFilter = orgId
@@ -81,18 +78,18 @@ export async function GET(request: NextRequest) {
         select: { slug: true },
       });
 
-      // Check for lead-type roles (isZoneLead flag) - flexible slug matching
-      const isLeadRole = role?.slug.includes('LEAD') || role?.slug === 'ZONE_LEAD' || role?.slug === 'SHIFT_LEAD';
-      const isDispatcherRole = role?.slug.includes('DISPATCH') || role?.slug === 'DISPATCHER';
+      // Check for lead-type roles (isZoneLead flag) - using pattern-based detection
+      const roleIsLead = role?.slug ? isLeadRole(role.slug) : false;
+      const roleIsDispatcher = role?.slug ? isDispatcherRole(role.slug) : false;
 
-      if (isLeadRole) {
+      if (roleIsLead) {
         // Lead roles are marked with isZoneLead: true
         where.volunteers = {
           some: {
             isZoneLead: true,
           },
         };
-      } else if (isDispatcherRole) {
+      } else if (roleIsDispatcher) {
         // Dispatchers are stored in DispatcherAssignment, not ShiftVolunteer
         // Skip this filter - we'd need a different query approach
         // For now, just skip filtering (leave where.volunteers unset)
