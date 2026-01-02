@@ -10,6 +10,7 @@ import {
 import { auditCreate, auditUpdate, auditDelete, toAuditUser } from '@/lib/audit';
 import { getCurrentOrgId } from '@/lib/org-context';
 import { hasLeadQualification } from '@/lib/role-utils';
+import { canManageRsvps, createPermissionContext } from '@/lib/permissions';
 
 // POST /api/shifts/[id]/rsvp - RSVP to a shift
 export async function POST(
@@ -354,7 +355,8 @@ export async function PATCH(
     }
 
     // Only coordinators and admins can update RSVP status
-    if (!['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
+    const ctx = createPermissionContext(user.role);
+    if (!canManageRsvps(ctx)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

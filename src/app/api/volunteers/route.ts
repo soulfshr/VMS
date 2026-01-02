@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { Role } from '@/generated/prisma/enums';
 import { getCurrentOrgId, getOrgIdForCreate, orgScope } from '@/lib/org-context';
+import { canViewVolunteerList, createPermissionContext } from '@/lib/permissions';
 
 // GET /api/volunteers - Get all volunteers (Coordinator/Admin only)
 export async function GET(request: NextRequest) {
@@ -13,7 +14,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Coordinators, dispatchers, admins, and developers can view all volunteers
-    if (!['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
+    const ctx = createPermissionContext(user.role);
+    if (!canViewVolunteerList(ctx)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

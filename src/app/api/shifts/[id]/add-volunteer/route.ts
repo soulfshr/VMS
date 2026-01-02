@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { sendShiftInviteEmail } from '@/lib/email';
 import { getCurrentOrgId } from '@/lib/org-context';
+import { canAddVolunteersToShift, createPermissionContext } from '@/lib/permissions';
 
 // POST /api/shifts/[id]/add-volunteer - Add a volunteer to a shift (Coordinator/Admin only)
 export async function POST(
@@ -16,7 +17,8 @@ export async function POST(
     }
 
     // Only coordinators and admins can add volunteers
-    if (!['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
+    const ctx = createPermissionContext(user.role);
+    if (!canAddVolunteersToShift(ctx)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

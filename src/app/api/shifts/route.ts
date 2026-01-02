@@ -4,6 +4,7 @@ import { getDbUser } from '@/lib/user';
 import { auditCreate, toAuditUser } from '@/lib/audit';
 import { getCurrentOrgId, getOrgIdForCreate } from '@/lib/org-context';
 import { isLeadRole, isDispatcherRole, hasLeadQualification, hasDispatcherQualification } from '@/lib/role-utils';
+import { hasElevatedPrivileges, canCreateShift, createPermissionContext } from '@/lib/permissions';
 
 // GET /api/shifts - List shifts with filters
 export async function GET(request: NextRequest) {
@@ -30,7 +31,8 @@ export async function GET(request: NextRequest) {
     const schedulingMode = settings?.schedulingMode || 'SIMPLE';
 
     // In SIMPLE mode, only DISPATCHER or ZONE_LEAD qualified users (or admins) can see shifts
-    const isAdmin = ['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role);
+    const ctx = createPermissionContext(user.role);
+    const isAdmin = hasElevatedPrivileges(ctx);
 
     // Check user's qualified roles from the database (scoped to current org)
     const userQualifications = await prisma.userQualification.findMany({
@@ -270,7 +272,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Check role - coordinators, dispatchers, and admins can create shifts
-    if (!['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
+    const ctx = createPermissionContext(user.role);
+    if (!canCreateShift(ctx)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
