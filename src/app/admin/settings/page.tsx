@@ -587,7 +587,7 @@ export default function AdminSettingsPage() {
                   The digest includes dispatcher assignments, zone coverage, and any gaps that need to be filled.
                 </p>
                 <p className="text-sm text-gray-500 mt-2">
-                  Recipients: Coordinators, Dispatchers, and Administrators who have email notifications enabled.
+                  Recipients: Staff members with coordinator-level access or above who have email notifications enabled.
                 </p>
               </div>
               <div className="ml-6">

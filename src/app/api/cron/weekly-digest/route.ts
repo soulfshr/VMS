@@ -4,6 +4,10 @@ import { sendWeeklyDigestEmail } from '@/lib/email';
 import { logger } from '@/lib/logger';
 import { getOrgTimezone } from '@/lib/timezone';
 
+// System roles that receive the weekly digest
+// These are coordinator-level and above who need schedule visibility
+const DIGEST_RECIPIENT_ROLES = ['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR', 'DEVELOPER'] as const;
+
 // Verify cron request is from Vercel
 function verifyCronRequest(request: NextRequest): boolean {
   // In development, allow requests without auth
@@ -285,7 +289,7 @@ export async function GET(request: NextRequest) {
       const memberRecipients = await prisma.organizationMember.findMany({
         where: {
           organizationId: orgId,
-          role: { in: ['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR', 'DEVELOPER'] },
+          role: { in: [...DIGEST_RECIPIENT_ROLES] },
           isActive: true,
           user: {
             isActive: true,
@@ -309,7 +313,7 @@ export async function GET(request: NextRequest) {
       // Legacy fallback: Query User directly
       recipients = await prisma.user.findMany({
         where: {
-          role: { in: ['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR', 'DEVELOPER'] },
+          role: { in: [...DIGEST_RECIPIENT_ROLES] },
           isActive: true,
           emailNotifications: true,
           ...(testEmail ? { email: testEmail } : {}),
