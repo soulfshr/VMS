@@ -109,13 +109,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user exists
-    const targetUser = await prisma.user.findUnique({
-      where: { id: userId },
+    // Get org context
+    const orgId = await getCurrentOrgId();
+
+    // Check if user exists AND is a member of the current organization
+    const targetUser = await prisma.user.findFirst({
+      where: {
+        id: userId,
+        // Multi-tenant: user must be a member of the current org
+        memberships: orgId ? {
+          some: {
+            organizationId: orgId,
+            isActive: true,
+          },
+        } : {},
+      },
     });
 
     if (!targetUser) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return NextResponse.json({ error: 'User not found in this organization' }, { status: 404 });
     }
 
     // Use upsert to handle case where assignment already exists for this user/county/date/time
@@ -129,7 +141,8 @@ export async function POST(request: NextRequest) {
     const parsedStartTime = new Date(startTime);
     const parsedEndTime = new Date(endTime);
 
-    const orgId = await getOrgIdForCreate();
+    // Use orgId from earlier check (or get it for create if not set)
+    const orgIdForCreate = orgId || await getOrgIdForCreate();
 
     const assignment = await prisma.dispatcherAssignment.upsert({
       where: {
@@ -147,7 +160,7 @@ export async function POST(request: NextRequest) {
         createdById: user.id,
       },
       create: {
-        organizationId: orgId,
+        organizationId: orgIdForCreate,
         userId,
         county,
         date: parsedDate,

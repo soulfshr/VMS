@@ -243,34 +243,25 @@ export default function CoverageDashboard() {
     return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
   };
 
+  // Role display helpers - use dynamic labels from API when available
   const getRoleBadge = (roleType: string) => {
-    switch (roleType) {
-      case 'ZONE_LEAD':
-        return <span className="text-yellow-600">Zone Lead</span>;
-      case 'VERIFIER':
-        return <span className="text-green-600">Verifier</span>;
-      case 'DISPATCHER':
-        return <span className="text-blue-600">Dispatcher</span>;
-      case 'DISPATCH_COORDINATOR':
-        return <span className="text-purple-600">Coordinator</span>;
-      default:
-        return <span>{roleType}</span>;
-    }
+    const label = data?.roleLabels?.[roleType] || roleType.replace(/_/g, ' ');
+    // Color mapping based on role type patterns
+    const colorClass = roleType.includes('LEAD') ? 'text-yellow-600' :
+                       roleType.includes('VERIFIER') ? 'text-green-600' :
+                       roleType.includes('DISPATCHER') && !roleType.includes('COORDINATOR') ? 'text-blue-600' :
+                       roleType.includes('COORDINATOR') ? 'text-purple-600' :
+                       'text-gray-600';
+    return <span className={colorClass}>{label}</span>;
   };
 
   const getRoleIcon = (roleType: string) => {
-    switch (roleType) {
-      case 'ZONE_LEAD':
-        return '👑';
-      case 'VERIFIER':
-        return '📋';
-      case 'DISPATCHER':
-        return '📡';
-      case 'DISPATCH_COORDINATOR':
-        return '🪄';
-      default:
-        return '';
-    }
+    // Icon mapping based on role type patterns
+    if (roleType.includes('LEAD')) return '👑';
+    if (roleType.includes('DISPATCHER') && !roleType.includes('COORDINATOR')) return '📡';
+    if (roleType.includes('COORDINATOR')) return '🪄';
+    if (roleType.includes('VERIFIER')) return '📋';
+    return '';
   };
 
   if (loading) {

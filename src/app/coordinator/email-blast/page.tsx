@@ -10,6 +10,14 @@ interface Zone {
   name: string;
 }
 
+interface QualifiedRole {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  color: string;
+}
+
 interface Shift {
   id: string;
   title: string;
@@ -66,7 +74,6 @@ const TEMPLATES: Record<EmailTemplate, { name: string; description: string; icon
 };
 
 const ROLES = ['VOLUNTEER', 'COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR'];
-const QUALIFICATIONS = ['VERIFIER', 'ZONE_LEAD', 'DISPATCHER'];
 const LANGUAGES = ['English', 'Spanish', 'French', 'Portuguese', 'Arabic', 'Chinese', 'Korean', 'Vietnamese'];
 
 export default function CoordinatorEmailBlastPage() {
@@ -87,6 +94,7 @@ export default function CoordinatorEmailBlastPage() {
     endDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
   });
   const [zones, setZones] = useState<Zone[]>([]);
+  const [qualifiedRoles, setQualifiedRoles] = useState<QualifiedRole[]>([]);
   const [preview, setPreview] = useState<PreviewResult | null>(null);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [isSending, setIsSending] = useState(false);
@@ -109,13 +117,23 @@ export default function CoordinatorEmailBlastPage() {
   const [selectedShiftIds, setSelectedShiftIds] = useState<Set<string>>(new Set());
   const [isLoadingShifts, setIsLoadingShifts] = useState(false);
 
-  // Fetch zones on mount
+  // Fetch zones, qualified roles, and history on mount
   useEffect(() => {
     fetch('/api/admin/zones')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
           setZones(data.filter((z: Zone & { isActive: boolean }) => z.isActive));
+        }
+      })
+      .catch(console.error);
+
+    // Fetch qualified roles for current org
+    fetch('/api/coordinator/qualified-roles')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setQualifiedRoles(data);
         }
       })
       .catch(console.error);
@@ -456,15 +474,15 @@ export default function CoordinatorEmailBlastPage() {
             </div>
 
             {/* Specific Qualifications */}
-            {filters.hasQualifications === 'any' && (
+            {filters.hasQualifications === 'any' && qualifiedRoles.length > 0 && (
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Specific Qualifications</label>
                 <div className="flex flex-wrap gap-2">
-                  {QUALIFICATIONS.map(q => (
+                  {qualifiedRoles.map(role => (
                     <label
-                      key={q}
+                      key={role.slug}
                       className={`px-3 py-1.5 rounded-full border cursor-pointer transition-colors ${
-                        filters.qualifications.includes(q)
+                        filters.qualifications.includes(role.slug)
                           ? 'bg-purple-100 border-purple-500 text-purple-700'
                           : 'bg-white border-gray-300 text-gray-700 hover:border-purple-300'
                       }`}
@@ -472,10 +490,10 @@ export default function CoordinatorEmailBlastPage() {
                       <input
                         type="checkbox"
                         className="sr-only"
-                        checked={filters.qualifications.includes(q)}
-                        onChange={() => handleFilterChange('qualifications', q)}
+                        checked={filters.qualifications.includes(role.slug)}
+                        onChange={() => handleFilterChange('qualifications', role.slug)}
                       />
-                      {q.replace(/_/g, ' ')}
+                      {role.name}
                     </label>
                   ))}
                 </div>

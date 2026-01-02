@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { sendShiftInviteEmail } from '@/lib/email';
+import { getCurrentOrgId } from '@/lib/org-context';
 
 // POST /api/shifts/[id]/add-volunteer - Add a volunteer to a shift (Coordinator/Admin only)
 export async function POST(
@@ -30,9 +31,16 @@ export async function POST(
       );
     }
 
-    // Check if shift exists
-    const shift = await prisma.shift.findUnique({
-      where: { id: shiftId },
+    // Get org context
+    const orgId = await getCurrentOrgId();
+
+    // Check if shift exists AND belongs to current org
+    const shift = await prisma.shift.findFirst({
+      where: {
+        id: shiftId,
+        // Multi-tenant: shift must belong to current org
+        ...(orgId ? { organizationId: orgId } : {}),
+      },
       include: {
         zone: true,
         typeConfig: { select: { name: true } },

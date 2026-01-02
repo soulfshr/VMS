@@ -106,9 +106,14 @@ export default function Header() {
   const user = session?.user;
   const isLoading = status === 'loading' || !mounted;
 
-  // Siembra-specific resources (Dispatch Process, User Guide, Dispatch Training)
-  const SIEMBRA_ORG_SLUGS = ['siembra-nc', 'siembra'];
-  const isSiembraOrg = orgSlug && SIEMBRA_ORG_SLUGS.includes(orgSlug);
+  // Org-specific resource links
+  // TODO: Move to org settings (customResourceLinks) for full multi-tenant support
+  // For now, certain orgs have dispatch-specific documentation
+  const ORG_SPECIFIC_RESOURCES: Record<string, boolean> = {
+    'siembra-nc': true,
+    'siembra': true,
+  };
+  const hasOrgSpecificResources = orgSlug && ORG_SPECIFIC_RESOURCES[orgSlug];
 
   const handleLogout = async () => {
     // Clear session via NextAuth API
@@ -319,8 +324,8 @@ export default function Header() {
                           Training
                         </Link>
                       )}
-                      {/* Siembra-specific resources */}
-                      {isSiembraOrg && (
+                      {/* Org-specific resources */}
+                      {hasOrgSpecificResources && (
                         <>
                           {features.trainings && <div className="border-t border-gray-100 my-1" />}
                           <Link
@@ -350,8 +355,8 @@ export default function Header() {
                           </a>
                         </>
                       )}
-                      {/* Show empty state for non-Siembra orgs without training */}
-                      {!isSiembraOrg && !features.trainings && (
+                      {/* Show empty state for orgs without custom resources and training */}
+                      {!hasOrgSpecificResources && !features.trainings && (
                         <p className="px-4 py-2 text-sm text-gray-500 italic">No resources available</p>
                       )}
                     </div>
@@ -558,7 +563,7 @@ export default function Header() {
                   </Link>
                 )}
                 {/* 8. Resources Group - only show if there are resources to display */}
-                {(features.trainings || isSiembraOrg) && (
+                {(features.trainings || hasOrgSpecificResources) && (
                   <div className="space-y-1">
                     <p className="px-2 py-1 text-xs font-medium text-gray-500 uppercase tracking-wider">Resources</p>
                     {features.trainings && (
@@ -570,8 +575,8 @@ export default function Header() {
                         Training
                       </Link>
                     )}
-                    {/* Siembra-specific resources */}
-                    {isSiembraOrg && (
+                    {/* Org-specific resources */}
+                    {hasOrgSpecificResources && (
                       <>
                         <Link
                           href="/resources"

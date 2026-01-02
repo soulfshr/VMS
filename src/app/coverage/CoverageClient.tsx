@@ -849,17 +849,13 @@ function MySignups({ userId, refreshKey, onUpdate }: { userId: string; refreshKe
     }
   };
 
+  // Role icon helper - use pattern-based matching for flexibility across orgs
   const getRoleIcon = (roleType: string) => {
-    switch (roleType) {
-      case 'DISPATCHER':
-        return <span title="Dispatcher">📡</span>;
-      case 'ZONE_LEAD':
-        return <span title="Zone Lead">👑</span>;
-      case 'DISPATCH_COORDINATOR':
-        return <span title="Dispatch Coordinator">🪄</span>;
-      default:
-        return <span title="Verifier">📋</span>;
-    }
+    const label = roleType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).replace(/\B\w+/g, c => c.toLowerCase());
+    if (roleType.includes('LEAD')) return <span title={label}>👑</span>;
+    if (roleType.includes('DISPATCHER') && !roleType.includes('COORDINATOR')) return <span title={label}>📡</span>;
+    if (roleType.includes('COORDINATOR')) return <span title={label}>🪄</span>;
+    return <span title={label}>📋</span>;
   };
 
   const formatDate = (dateStr: string) => {

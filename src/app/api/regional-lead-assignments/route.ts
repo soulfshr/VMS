@@ -106,18 +106,34 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden - cannot assign other users' }, { status: 403 });
     }
 
-    // Get the REGIONAL_LEAD qualified role
+    // Get org context for filtering
+    const orgId = await getCurrentOrgId();
+
+    // Get the REGIONAL_LEAD qualified role (scoped to current org)
     const regionalLeadRole = await prisma.qualifiedRole.findFirst({
-      where: { slug: 'REGIONAL_LEAD' },
+      where: {
+        slug: 'REGIONAL_LEAD',
+        // Multi-tenant: only match role from current org
+        ...(orgId ? { organizationId: orgId } : {}),
+      },
     });
 
     if (!regionalLeadRole) {
       return NextResponse.json({ error: 'Dispatch Coordinator role not configured' }, { status: 500 });
     }
 
-    // Check if target user has REGIONAL_LEAD qualification
-    const targetUser = await prisma.user.findUnique({
-      where: { id: targetUserId },
+    // Check if target user has REGIONAL_LEAD qualification AND is member of current org
+    const targetUser = await prisma.user.findFirst({
+      where: {
+        id: targetUserId,
+        // Multi-tenant: user must be a member of the current org
+        memberships: orgId ? {
+          some: {
+            organizationId: orgId,
+            isActive: true,
+          },
+        } : {},
+      },
       include: {
         userQualifications: {
           where: { qualifiedRoleId: regionalLeadRole.id },
@@ -126,7 +142,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!targetUser) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return NextResponse.json({ error: 'User not found in this organization' }, { status: 404 });
     }
 
     if (targetUser.userQualifications.length === 0) {
@@ -145,12 +161,13 @@ export async function POST(request: NextRequest) {
     const [year, month, day] = date.split('-').map(Number);
     const dateObj = new Date(Date.UTC(year, month - 1, day, 12, 0, 0, 0));
 
-    const orgId = await getOrgIdForCreate();
+    // Use orgId from earlier check (or get it for create if not set)
+    const orgIdForCreate = orgId || await getOrgIdForCreate();
 
     // Create the assignment
     const assignment = await prisma.regionalLeadAssignment.create({
       data: {
-        organizationId: orgId,
+        organizationId: orgIdForCreate,
         userId: targetUserId,
         date: dateObj,
         isPrimary,

@@ -11,35 +11,43 @@
  */
 
 import { prisma } from '@/lib/db';
+import { getCurrentOrgId } from '@/lib/org-context';
 
 // Default timezone if not configured
 export const DEFAULT_TIMEZONE = 'America/New_York';
 
 // Cache for org timezone to avoid repeated DB queries
-let cachedTimezone: string | null = null;
-let cacheTimestamp = 0;
+// Multi-tenant: Cache is keyed by org ID
+const timezoneCache: Map<string, { timezone: string; timestamp: number }> = new Map();
 const CACHE_TTL = 60000; // 1 minute cache
 
 /**
  * Fetch the organization's configured timezone from the database.
- * Results are cached for performance.
+ * Results are cached per-organization for performance.
  */
 export async function getOrgTimezone(): Promise<string> {
   const now = Date.now();
 
+  // Get current org context
+  const orgId = await getCurrentOrgId();
+  const cacheKey = orgId || 'default';
+
   // Return cached value if still valid
-  if (cachedTimezone && (now - cacheTimestamp) < CACHE_TTL) {
-    return cachedTimezone;
+  const cached = timezoneCache.get(cacheKey);
+  if (cached && (now - cached.timestamp) < CACHE_TTL) {
+    return cached.timezone;
   }
 
   try {
+    // Multi-tenant: Query for specific org's settings
     const settings = await prisma.organizationSettings.findFirst({
+      where: orgId ? { organizationId: orgId } : {},
       select: { timezone: true },
     });
 
-    cachedTimezone = settings?.timezone || DEFAULT_TIMEZONE;
-    cacheTimestamp = now;
-    return cachedTimezone;
+    const timezone = settings?.timezone || DEFAULT_TIMEZONE;
+    timezoneCache.set(cacheKey, { timezone, timestamp: now });
+    return timezone;
   } catch {
     // Fallback to default if DB query fails
     return DEFAULT_TIMEZONE;
@@ -50,8 +58,7 @@ export async function getOrgTimezone(): Promise<string> {
  * Clear the timezone cache (useful for testing or after settings change)
  */
 export function clearTimezoneCache(): void {
-  cachedTimezone = null;
-  cacheTimestamp = 0;
+  timezoneCache.clear();
 }
 
 // =============================================================================

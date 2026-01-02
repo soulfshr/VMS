@@ -50,10 +50,15 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
  * Get organization branding settings from database
  * Uses caching to avoid hitting DB on every email
  *
- * @param orgId - Optional organization ID. If not provided, returns first org settings (legacy behavior)
+ * @param orgId - Organization ID. If not provided, returns default branding (multi-tenant safe)
  */
 async function getBranding(orgId?: string): Promise<BrandingSettings> {
-  const cacheKey = orgId || 'default';
+  // Multi-tenant: If no orgId provided, return default branding to avoid cross-org leakage
+  if (!orgId) {
+    return DEFAULT_BRANDING;
+  }
+
+  const cacheKey = orgId;
 
   // Check cache
   const cached = brandingCacheByOrg.get(cacheKey);
@@ -62,9 +67,9 @@ async function getBranding(orgId?: string): Promise<BrandingSettings> {
   }
 
   try {
-    // Multi-org: Query for specific org's settings if orgId provided
+    // Multi-org: Query for specific org's settings
     const settings = await prisma.organizationSettings.findFirst({
-      where: orgId ? { organizationId: orgId } : {},
+      where: { organizationId: orgId },
     });
     const branding: BrandingSettings = settings ? {
       orgName: settings.orgName,

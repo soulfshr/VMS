@@ -203,28 +203,17 @@ export default function SlotModal({
     }
   };
 
+  // Role display helpers - use pattern-based matching for flexibility across orgs
   const getRoleIcon = (roleType: string) => {
-    switch (roleType) {
-      case 'DISPATCHER':
-        return <span className="text-lg">📡</span>;
-      case 'ZONE_LEAD':
-        return <span className="text-lg">👑</span>;
-      case 'DISPATCH_COORDINATOR':
-        return <span className="text-lg">🪄</span>;
-      default:
-        return <span className="text-lg">📋</span>;
-    }
+    if (roleType.includes('LEAD')) return <span className="text-lg">👑</span>;
+    if (roleType.includes('DISPATCHER') && !roleType.includes('COORDINATOR')) return <span className="text-lg">📡</span>;
+    if (roleType.includes('COORDINATOR')) return <span className="text-lg">🪄</span>;
+    return <span className="text-lg">📋</span>;
   };
 
   const getRoleLabel = (roleType: string) => {
-    switch (roleType) {
-      case 'DISPATCHER':
-        return 'Dispatcher';
-      case 'ZONE_LEAD':
-        return 'Zone Lead';
-      default:
-        return 'Verifier';
-    }
+    // Convert slug to readable label (e.g., ZONE_LEAD -> Zone Lead)
+    return roleType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).replace(/\B\w+/g, c => c.toLowerCase());
   };
 
   return (

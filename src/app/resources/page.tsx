@@ -139,8 +139,13 @@ const dispatchProcess: DispatchStep[] = [
   },
 ];
 
-// Siembra NC uses these specific dispatch process resources
-const SIEMBRA_ORG_SLUGS = ['siembra-nc', 'siembra'];
+// Org-specific resource configuration
+// TODO: Move to org settings (customResourceLinks) for full multi-tenant support
+// For now, certain orgs have dispatch-specific documentation
+const ORG_SPECIFIC_RESOURCES: Record<string, boolean> = {
+  'siembra-nc': true,
+  'siembra': true,
+};
 
 export default function ResourcesPage() {
   const router = useRouter();
@@ -167,8 +172,8 @@ export default function ResourcesPage() {
       });
   }, [router]);
 
-  // Check if this is a Siembra org (the only org with configured resources currently)
-  const isSiembraOrg = orgSlug && SIEMBRA_ORG_SLUGS.includes(orgSlug);
+  // Check if this org has configured resources
+  const hasOrgSpecificResources = orgSlug && ORG_SPECIFIC_RESOURCES[orgSlug];
 
   if (loading || !user) {
     return (
@@ -193,8 +198,8 @@ export default function ResourcesPage() {
     }
   };
 
-  // Show placeholder for non-Siembra orgs
-  if (!isSiembraOrg) {
+  // Show placeholder for orgs without configured resources
+  if (!hasOrgSpecificResources) {
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="container mx-auto px-4 py-6">

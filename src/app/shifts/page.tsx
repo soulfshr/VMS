@@ -7,17 +7,29 @@ import type { DevUser, Qualification } from '@/types/auth';
 import { useMultiSelect } from '@/hooks/useMultiSelect';
 import GuidedTour from '@/components/onboarding/GuidedTour';
 
-// Qualification labels for display
-const qualificationLabels: Record<Qualification, string> = {
+// Qualification labels - fallbacks for dynamic qualified roles
+// These are used when qualified role data is not available
+const defaultQualificationLabels: Record<string, string> = {
   VERIFIER: 'Verifier',
   ZONE_LEAD: 'Zone Lead',
   DISPATCHER: 'Dispatcher',
 };
 
-const qualificationDescriptions: Record<Qualification, string> = {
+const defaultQualificationDescriptions: Record<string, string> = {
   VERIFIER: 'Verify community members at patrol locations',
   ZONE_LEAD: 'Lead and coordinate volunteers in your zone',
   DISPATCHER: 'Handle dispatch calls and coordinate responses',
+};
+
+// Helper to get label from slug
+const getQualificationLabel = (slug: string, qualifiedRoles?: Array<{slug: string; name: string}>) => {
+  const role = qualifiedRoles?.find(r => r.slug === slug);
+  return role?.name || defaultQualificationLabels[slug] || slug.replace(/_/g, ' ');
+};
+
+const getQualificationDescription = (slug: string, qualifiedRoles?: Array<{slug: string; description: string | null}>) => {
+  const role = qualifiedRoles?.find(r => r.slug === slug);
+  return role?.description || defaultQualificationDescriptions[slug] || '';
 };
 
 interface Zone {
@@ -174,12 +186,20 @@ function ConfirmRsvpsModal({
   );
 }
 
+// Qualified role type for dynamic role data
+interface QualifiedRoleData {
+  slug: string;
+  name: string;
+  description: string | null;
+}
+
 // Qualification Picker Modal Component
 function QualificationPickerModal({
   isOpen,
   onClose,
   onSelect,
   qualifications,
+  qualifiedRoles,
   shiftTitle,
   isSubmitting,
 }: {
@@ -187,6 +207,7 @@ function QualificationPickerModal({
   onClose: () => void;
   onSelect: (qualification: Qualification) => void;
   qualifications: Qualification[];
+  qualifiedRoles?: QualifiedRoleData[];
   shiftTitle: string;
   isSubmitting: boolean;
 }) {
@@ -209,8 +230,8 @@ function QualificationPickerModal({
               disabled={isSubmitting}
               className="w-full text-left p-4 border border-gray-200 rounded-lg hover:border-cyan-500 hover:bg-cyan-50 transition-colors disabled:opacity-50"
             >
-              <div className="font-medium text-gray-900">{qualificationLabels[qual]}</div>
-              <div className="text-sm text-gray-500">{qualificationDescriptions[qual]}</div>
+              <div className="font-medium text-gray-900">{getQualificationLabel(qual, qualifiedRoles)}</div>
+              <div className="text-sm text-gray-500">{getQualificationDescription(qual, qualifiedRoles)}</div>
             </button>
           ))}
         </div>
@@ -675,6 +696,7 @@ function ShiftsPageContent() {
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [zones, setZones] = useState<Zone[]>([]);
   const [shiftTypes, setShiftTypes] = useState<ShiftTypeConfig[]>([]);
+  const [qualifiedRoles, setQualifiedRoles] = useState<QualifiedRoleData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filterType, setFilterType] = useState<string>('all');
@@ -755,8 +777,9 @@ function ShiftsPageContent() {
       fetch('/api/zones').then(res => res.json()),
       fetch('/api/shift-types').then(res => res.json()).catch(() => []),
       fetch('/api/settings/public').then(res => res.json()).catch(() => ({ schedulingMode: 'SIMPLE', autoConfirmRsvp: false })),
+      fetch('/api/coordinator/qualified-roles').then(res => res.json()).catch(() => []),
     ])
-      .then(([sessionData, zonesData, shiftTypesData, settingsData]) => {
+      .then(([sessionData, zonesData, shiftTypesData, settingsData, qualifiedRolesData]) => {
         if (!sessionData.user) {
           router.push('/login');
           return;
@@ -767,6 +790,9 @@ function ShiftsPageContent() {
         }
         if (Array.isArray(shiftTypesData)) {
           setShiftTypes(shiftTypesData);
+        }
+        if (Array.isArray(qualifiedRolesData)) {
+          setQualifiedRoles(qualifiedRolesData);
         }
         if (settingsData?.schedulingMode) {
           setSchedulingMode(settingsData.schedulingMode);
@@ -1583,6 +1609,7 @@ function ShiftsPageContent() {
         }}
         onSelect={handleQualificationSelect}
         qualifications={user?.qualifications || []}
+        qualifiedRoles={qualifiedRoles}
         shiftTitle={pendingRsvpShift?.title || ''}
         isSubmitting={rsvpingShiftId !== null}
       />
