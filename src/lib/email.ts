@@ -207,12 +207,22 @@ export async function sendEmail(params: {
 }): Promise<void> {
   const { to, subject, html, fromName, fromAddress, replyTo } = params;
 
+  // Sanitize fromName: remove control characters, newlines, and trim
+  const sanitizedFromName = fromName
+    ? fromName.replace(/[\x00-\x1F\x7F\r\n]/g, '').trim()
+    : '';
+
+  // Validate fromAddress format
+  if (!fromAddress || !/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(fromAddress)) {
+    throw new Error(`Invalid from address format: ${fromAddress}`);
+  }
+
   // Build Source with display name - use RFC 2047 encoding for special characters
-  const source = fromName
-    ? `=?UTF-8?B?${Buffer.from(fromName).toString('base64')}?= <${fromAddress}>`
+  const source = sanitizedFromName
+    ? `=?UTF-8?B?${Buffer.from(sanitizedFromName).toString('base64')}?= <${fromAddress}>`
     : fromAddress;
 
-  console.log('[Email] Sending email with Source:', source);
+  console.log('[Email] Sending email with fromName:', JSON.stringify(sanitizedFromName), 'fromAddress:', fromAddress);
 
   // Note: SES SendEmailCommand doesn't support custom headers directly
   // Unsubscribe link is included in the email footer instead
@@ -268,15 +278,26 @@ async function sendEmailWithCalendar(params: {
 
   const boundary = `----=_Part_${Date.now()}_${Math.random().toString(36).substring(2)}`;
 
+  // Sanitize fromName: remove control characters, newlines, and trim
+  // This prevents MIME header injection and malformed headers
+  const sanitizedFromName = fromName
+    ? fromName.replace(/[\x00-\x1F\x7F\r\n]/g, '').trim()
+    : '';
+
+  // Validate fromAddress format
+  if (!fromAddress || !/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(fromAddress)) {
+    throw new Error(`Invalid from address format: ${fromAddress}`);
+  }
+
   // RFC 2047 encode the from name for proper display in email clients
-  const encodedFromName = fromName
-    ? `=?UTF-8?B?${Buffer.from(fromName).toString('base64')}?=`
+  const encodedFromName = sanitizedFromName
+    ? `=?UTF-8?B?${Buffer.from(sanitizedFromName).toString('base64')}?=`
     : '';
   const fromHeader = encodedFromName
     ? `From: ${encodedFromName} <${fromAddress}>`
     : `From: ${fromAddress}`;
 
-  console.log('[Email] Sending calendar email with From:', fromHeader, 'Method:', calendarMethod);
+  console.log('[Email] Sending calendar email with fromName:', JSON.stringify(sanitizedFromName), 'fromAddress:', fromAddress, 'Method:', calendarMethod);
 
   // Normalize HTML: remove all newlines and extra whitespace to create single-line HTML
   // This avoids MIME line ending issues while keeping the email readable
