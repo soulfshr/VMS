@@ -7,6 +7,7 @@ import dynamic from 'next/dynamic';
 import { Views } from 'react-big-calendar';
 import type { DevUser } from '@/types/auth';
 import type { CalendarEvent } from '@/components/ShiftCalendar';
+import ShiftSignupModal from '@/components/ShiftSignupModal';
 
 // Dynamically import ShiftCalendar to avoid SSR issues
 const ShiftCalendar = dynamic(
@@ -87,6 +88,7 @@ export default function ShiftCalendarPage() {
   const [filterType, setFilterType] = useState<string>('all');
   const [filterZone, setFilterZone] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [selectedShiftId, setSelectedShiftId] = useState<string | null>(null);
 
   const fetchShifts = useCallback(async () => {
     try {
@@ -156,9 +158,19 @@ export default function ShiftCalendarPage() {
       }));
   }, [shifts, filterStatus]);
 
-  // Handle event click
+  // Handle event click - open signup modal
   const handleSelectEvent = (event: CalendarEvent) => {
-    router.push(`/shifts/${event.id}`);
+    setSelectedShiftId(event.id);
+  };
+
+  // Close modal and optionally refresh data
+  const handleModalClose = () => {
+    setSelectedShiftId(null);
+  };
+
+  const handleModalUpdate = () => {
+    fetchShifts();
+    setSelectedShiftId(null);
   };
 
   // Handle slot selection (create new shift) - only for coordinators/admins
@@ -302,9 +314,19 @@ export default function ShiftCalendarPage() {
         <div className="mt-4 text-sm text-gray-500">
           Showing {events.length} shift{events.length !== 1 ? 's' : ''}.
           {canCreateShift && ' Click on a date to create a new shift.'}
-          {' '}Click on a shift to view details.
+          {' '}Click on a shift to sign up.
         </div>
       </div>
+
+      {/* Signup Modal */}
+      {selectedShiftId && user && (
+        <ShiftSignupModal
+          shiftId={selectedShiftId}
+          currentUserId={user.id}
+          onClose={handleModalClose}
+          onUpdate={handleModalUpdate}
+        />
+      )}
     </div>
   );
 }

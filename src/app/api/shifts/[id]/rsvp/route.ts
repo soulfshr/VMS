@@ -25,11 +25,15 @@ export async function POST(
 
     // Parse optional parameters from body
     let qualification: Qualification | null = null;
+    let qualifiedRoleId: string | null = null;
     let asZoneLead = false;
     try {
       const body = await request.json();
       if (body.qualification && Object.values(Qualification).includes(body.qualification)) {
         qualification = body.qualification as Qualification;
+      }
+      if (body.qualifiedRoleId) {
+        qualifiedRoleId = body.qualifiedRoleId;
       }
       if (body.asZoneLead === true) {
         asZoneLead = true;
@@ -40,18 +44,32 @@ export async function POST(
 
     const orgIdForQual = await getCurrentOrgId();
 
+    // Get user's qualifications for validation
+    const userQualifications = await prisma.userQualification.findMany({
+      where: {
+        userId: user.id,
+        // Multi-org: Only check qualifications from current org's qualified roles
+        qualifiedRole: orgIdForQual ? { organizationId: orgIdForQual } : {},
+      },
+      include: { qualifiedRole: { select: { id: true, slug: true } } },
+    });
+
+    // If signing up for a specific role, verify user has that qualification
+    if (qualifiedRoleId) {
+      const hasQualification = userQualifications.some(
+        uq => uq.qualifiedRole.id === qualifiedRoleId
+      );
+      if (!hasQualification) {
+        return NextResponse.json(
+          { error: 'You are not qualified for this role' },
+          { status: 403 }
+        );
+      }
+    }
+
     // If requesting lead assignment, verify user has a lead qualification in current org
     // Different orgs may use different slugs for their lead role (ZONE_LEAD, SHIFT_LEAD, etc.)
     if (asZoneLead) {
-      const userQualifications = await prisma.userQualification.findMany({
-        where: {
-          userId: user.id,
-          // Multi-org: Only check qualifications from current org's qualified roles
-          qualifiedRole: orgIdForQual ? { organizationId: orgIdForQual } : {},
-        },
-        include: { qualifiedRole: { select: { slug: true } } },
-      });
-
       // Accept any lead-type qualification (different orgs use different names)
       const leadSlugs = ['ZONE_LEAD', 'SHIFT_LEAD', 'TEAM_LEAD', 'LEAD'];
       const hasLeadQual = userQualifications.some(uq =>
@@ -141,6 +159,7 @@ export async function POST(
           status: autoConfirm ? 'CONFIRMED' : 'PENDING',
           confirmedAt: autoConfirm ? new Date() : null,
           qualification,
+          qualifiedRoleId, // Link to the specific role if provided
           isZoneLead: asZoneLead,
         },
         include: {

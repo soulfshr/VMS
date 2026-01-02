@@ -60,6 +60,22 @@ export async function GET(
             name: true,
             slug: true,
             color: true,
+            qualifiedRoleRequirements: {
+              select: {
+                id: true,
+                minRequired: true,
+                maxAllowed: true,
+                qualifiedRole: {
+                  select: {
+                    id: true,
+                    name: true,
+                    slug: true,
+                    color: true,
+                    description: true,
+                  },
+                },
+              },
+            },
           },
         },
         volunteers: {
@@ -118,6 +134,9 @@ export async function GET(
     const pendingCount = shift.volunteers.filter(v => v.status === 'PENDING').length;
     const userRsvp = shift.volunteers.find(v => v.userId === user.id);
 
+    // Extract user's qualification slugs for frontend use
+    const userQualificationSlugs = userQualifications.map(uq => uq.qualifiedRole.slug);
+
     return NextResponse.json({
       ...shift,
       confirmedCount,        // Volunteers that count toward minimum
@@ -126,6 +145,7 @@ export async function GET(
       spotsLeft: shift.maxVolunteers - confirmedCount,
       userRsvpStatus: userRsvp?.status || null,
       userRsvpId: userRsvp?.id || null,
+      userQualifications: userQualificationSlugs, // User's qualification slugs for role-based signup
       isCoordinator: ['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role),
       // Exception fields
       hasRoleException: shift.hasRoleException,
