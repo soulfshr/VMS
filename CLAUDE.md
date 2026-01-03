@@ -31,7 +31,7 @@ This ensures https://test.dev.ripple-vms.com always points to the latest preview
 
 **Correct workflow:**
 1. For dev: `vercel` → then `vercel alias <url> test.dev.ripple-vms.com`
-2. For prod: `vercel --prod` (no alias needed, uses nc.ripple-vms.com automatically)
+2. For prod: `vercel --prod` (uses configured production domains)
 
 **Database hosts:**
 - Dev/Preview and Production use separate Neon databases (check Vercel env vars)

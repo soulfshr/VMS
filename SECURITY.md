@@ -52,7 +52,7 @@ The following are out of scope:
 
 ## Security Practices
 
-For information about our security practices, data handling, and architecture, see our [Security & Architecture](https://nc.ripple-vms.com/about/security) page.
+For information about our security practices, data handling, and architecture, see our [Security & Architecture](https://ripple-vms.com/about/security) page.
 
 Key practices include:
 - HTTPS/TLS encryption for all traffic

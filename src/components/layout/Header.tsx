@@ -71,7 +71,7 @@ export default function Header() {
     if (typeof window !== 'undefined') {
       const hostname = window.location.hostname;
       const isDevUrl = hostname.includes('dev-') || hostname.includes('preview') || hostname === 'localhost';
-      const isProdUrl = hostname === 'nc.ripple-vms.com' || hostname === 'ripple-vms.com';
+      const isProdUrl = hostname.endsWith('.ripple-vms.com') && !hostname.includes('dev') || hostname === 'ripple-vms.com';
       const isProdEnv = vercelEnv === 'production';
       const isDevEnv = vercelEnv === 'preview' || vercelEnv === 'development';
 

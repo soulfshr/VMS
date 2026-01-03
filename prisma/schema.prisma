@@ -116,7 +116,7 @@ enum AccountStatus {
 model Organization {
   id              String   @id @default(cuid())
   name            String                        // Display name: "Siembra NC"
-  slug            String   @unique              // Subdomain: "nc" → nc.ripple-vms.com
+  slug            String   @unique              // Subdomain: "org-slug" → org-slug.ripple-vms.com
 
   // Contact info
   email           String?

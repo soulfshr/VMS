@@ -271,7 +271,7 @@ export default function TermsOfServicePage() {
             <p className="text-gray-600 mb-4">
               <strong>RippleVMS</strong><br />
               Email: <a href="mailto:triangle.dispatch.group@gmail.com" className="text-cyan-600 hover:underline">triangle.dispatch.group@gmail.com</a><br />
-              Website: <a href="https://nc.ripple-vms.com" className="text-cyan-600 hover:underline">nc.ripple-vms.com</a>
+              Website: <a href="https://ripple-vms.com" className="text-cyan-600 hover:underline">ripple-vms.com</a>
             </p>
             <p className="text-gray-600 mb-4">
               For general inquiries about volunteer activities, please contact your assigned coordinator.

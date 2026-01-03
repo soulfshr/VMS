@@ -11,8 +11,7 @@
 Transform Siembra NC VMS into **Ripple VMS**, a multi-tenant platform where each organization gets their own subdomain with admin-configurable settings.
 
 **URL Structure:** `<organization>.ripple-vms.com`
-- `nc.ripple-vms.com` → Siembra NC (current production)
-- `neworleans.ripple-vms.com` → New Orleans RDN
+- `org-slug.ripple-vms.com` → Organization instance
 - `app.ripple-vms.com` → Platform landing/marketing page
 
 ---
@@ -109,7 +108,7 @@ Organization (new root entity)
 model Organization {
   id              String   @id @default(cuid())
   name            String                        // Display name: "Siembra NC"
-  slug            String   @unique              // Subdomain: "nc" → nc.ripple-vms.com
+  slug            String   @unique              // Subdomain: "org-slug" → org-slug.ripple-vms.com
 
   // Contact info
   email           String?
@@ -259,11 +258,10 @@ model OrganizationMember {
 Each organization gets a subdomain of `ripple-vms.com`:
 
 ```
-nc.ripple-vms.com           → Siembra NC (slug: "nc")
-neworleans.ripple-vms.com   → New Orleans RDN (slug: "neworleans")
+org-slug.ripple-vms.com     → Organization instance (slug: "org-slug")
 app.ripple-vms.com          → Platform landing page
 www.ripple-vms.com          → Redirect to app.ripple-vms.com
-dev-nc.ripple-vms.com       → Dev environment (reserved)
+dev-*.ripple-vms.com        → Dev environment (reserved)
 ```
 
 ### Subdomain Resolution
@@ -271,7 +269,7 @@ dev-nc.ripple-vms.com       → Dev environment (reserved)
 ```typescript
 // src/lib/org-resolver.ts
 export async function getOrgFromSubdomain(hostname: string): Promise<Organization | null> {
-  // Extract subdomain: "nc.ripple-vms.com" → "nc"
+  // Extract subdomain: "org-slug.ripple-vms.com" → "org-slug"
   const subdomain = hostname.split('.')[0];
 
   // Skip platform subdomains
@@ -305,8 +303,7 @@ export async function getOrgFromSubdomain(hostname: string): Promise<Organizatio
 
 Organizations can optionally map their own domain:
 ```
-vms.siembranc.org → nc.ripple-vms.com
-vms.nolardn.org   → neworleans.ripple-vms.com
+vms.example-org.org → example-org.ripple-vms.com
 ```
 
 This requires:
@@ -539,7 +536,7 @@ _dmarc.ripple-vms.com → TXT → "v=DMARC1; p=quarantine; rua=mailto:dmarc@ripp
 ripple-vms.com → MX → inbound-smtp.us-east-1.amazonaws.com (priority 10)
 ```
 
-**Key Point:** Verifying `ripple-vms.com` in SES automatically allows sending from **any subdomain** (e.g., `nc.ripple-vms.com`, `neworleans.ripple-vms.com`). No additional verification needed per organization.
+**Key Point:** Verifying `ripple-vms.com` in SES automatically allows sending from **any subdomain** (e.g., `org-slug.ripple-vms.com`). No additional verification needed per organization.
 
 ### Email Sending Pattern
 
@@ -547,8 +544,7 @@ Each organization's emails use a **subdomain-based sender address**:
 
 | Organization | Sender Address | Display Name |
 |--------------|----------------|--------------|
-| Siembra NC | `noreply@nc.ripple-vms.com` | "Siembra NC" |
-| New Orleans | `noreply@neworleans.ripple-vms.com` | "New Orleans RDN" |
+| Example Org | `noreply@example-org.ripple-vms.com` | "Example Org" |
 | Platform | `noreply@ripple-vms.com` | "Ripple VMS" |
 
 **Implementation:**
@@ -560,7 +556,7 @@ function getEmailFrom(organization: Organization): string {
   return `"${senderName}" <${senderAddress}>`;
 }
 
-// Example output: "Siembra NC" <noreply@nc.ripple-vms.com>
+// Example output: "Example Org" <noreply@example-org.ripple-vms.com>
 ```
 
 ### OrganizationSettings Email Fields (Already Exist)

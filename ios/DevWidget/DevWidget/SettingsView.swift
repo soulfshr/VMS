@@ -45,7 +45,7 @@ struct SettingsView: View {
                 } header: {
                     Text("API Configuration")
                 } footer: {
-                    Text("Get your API key from the VMS Developer dashboard. Server URL should be like https://nc.ripple-vms.com")
+                    Text("Get your API key from the VMS Developer dashboard. Server URL should be like https://your-org.ripple-vms.com")
                 }
 
                 if let error = error {

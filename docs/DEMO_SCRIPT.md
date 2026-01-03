@@ -7,7 +7,7 @@
 
 ## Scene 1: Public Landing & About (45 sec)
 
-**URL:** https://nc.ripple-vms.com
+**URL:** https://ripple-vms.com
 
 **Show:**
 - Landing page hero with RippleVMS branding
@@ -22,7 +22,7 @@
 
 ## Scene 2: Public ICE Sighting Report (1 min)
 
-**URL:** https://nc.ripple-vms.com/report
+**URL:** https://ripple-vms.com/report
 
 **Show:**
 - Anonymous reporting form

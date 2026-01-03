@@ -404,8 +404,8 @@ aws s3 ls s3://ripple-vms-backups/database-backups/ --recursive \
 Set up external monitoring to detect issues independent of the application:
 
 **UptimeRobot (Free tier):**
-1. Create monitor for health check: `https://nc.ripple-vms.com/api/cron/health-check`
-2. Create monitor for application: `https://nc.ripple-vms.com`
+1. Create monitor for health check: `https://your-org.ripple-vms.com/api/cron/health-check`
+2. Create monitor for application: `https://your-org.ripple-vms.com`
 3. Alert if down for > 5 minutes
 
 **AWS CloudWatch (if using AWS):**
