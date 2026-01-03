@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
+import { getCurrentOrgId } from '@/lib/org-context';
 
-// Default intake questions to seed
-const DEFAULT_QUESTIONS = [
+// Fallback defaults if no templates exist in database
+const FALLBACK_DEFAULTS = [
   {
     question: 'Do you have any prior experience with community organizing or rapid response?',
     type: 'textarea',
@@ -41,7 +42,7 @@ const DEFAULT_QUESTIONS = [
   },
 ];
 
-// POST /api/admin/intake-questions/seed - Seed default intake questions
+// POST /api/admin/intake-questions/seed - Seed default intake questions from templates
 export async function POST() {
   try {
     const user = await getDbUser();
@@ -49,8 +50,12 @@ export async function POST() {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Check if questions already exist
-    const existingCount = await prisma.intakeQuestion.count();
+    const orgId = await getCurrentOrgId();
+
+    // Check if questions already exist for this org
+    const existingCount = await prisma.intakeQuestion.count({
+      where: orgId ? { organizationId: orgId } : {},
+    });
     if (existingCount > 0) {
       return NextResponse.json(
         { error: 'Intake questions already exist. Delete them first if you want to re-seed.' },
@@ -58,14 +63,35 @@ export async function POST() {
       );
     }
 
-    // Create default questions
+    // Try to get templates from database first
+    const templates = await prisma.defaultIntakeQuestionTemplate.findMany({
+      orderBy: { sortOrder: 'asc' },
+    });
+
+    // Use templates if they exist, otherwise use fallback defaults
+    const questionsToCreate = templates.length > 0
+      ? templates.map(t => ({
+          question: t.question,
+          type: t.type,
+          options: t.options,
+          required: t.required,
+          sortOrder: t.sortOrder,
+          organizationId: orgId || undefined,
+        }))
+      : FALLBACK_DEFAULTS.map(q => ({
+          ...q,
+          organizationId: orgId || undefined,
+        }));
+
+    // Create questions for this org
     const created = await prisma.intakeQuestion.createMany({
-      data: DEFAULT_QUESTIONS,
+      data: questionsToCreate,
     });
 
     return NextResponse.json({
-      message: `Seeded ${created.count} default intake questions`,
+      message: `Seeded ${created.count} intake questions${templates.length > 0 ? ' from templates' : ' from defaults'}`,
       count: created.count,
+      fromTemplates: templates.length > 0,
     });
   } catch (error) {
     console.error('Error seeding intake questions:', error);

@@ -404,6 +404,37 @@ export default function DeveloperOverviewPage() {
         </div>
       </div>
 
+      {/* Developer Tools */}
+      <div className="mt-6 bg-white rounded-xl border border-gray-200">
+        <div className="p-4 border-b border-gray-200">
+          <h2 className="font-semibold text-gray-900">Developer Tools</h2>
+          <p className="text-sm text-gray-500 mt-1">Platform-wide configuration and tools</p>
+        </div>
+        <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Link
+            href="/developer/global-feature-flags"
+            className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <div className="font-medium text-gray-900">Feature Flags</div>
+            <p className="text-sm text-gray-500 mt-1">Toggle global platform features</p>
+          </Link>
+          <Link
+            href="/developer/default-intake-questions"
+            className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <div className="font-medium text-gray-900">Default Intake Questions</div>
+            <p className="text-sm text-gray-500 mt-1">Templates for org signup forms</p>
+          </Link>
+          <Link
+            href="/developer/logs"
+            className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <div className="font-medium text-gray-900">System Logs</div>
+            <p className="text-sm text-gray-500 mt-1">View all application logs</p>
+          </Link>
+        </div>
+      </div>
+
       {/* Quick Actions */}
       <div className="mt-6 flex flex-wrap gap-2 sm:gap-4">
         <button

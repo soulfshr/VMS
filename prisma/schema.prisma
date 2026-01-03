@@ -380,6 +380,20 @@ model IntakeQuestion {
   @@index([organizationId])
 }
 
+// Default templates that get copied when orgs seed their intake questions
+// Managed by developers via /developer/default-intake-questions
+model DefaultIntakeQuestionTemplate {
+  id          String   @id @default(cuid())
+  question    String                           // The question text
+  type        String   @default("text")        // "text", "textarea", "select"
+  options     String[] @default([])            // Options for select type
+  required    Boolean  @default(false)
+  sortOrder   Int      @default(0)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 // ============================================
 // SHIFT TYPE CONFIGURATION
 // ============================================
