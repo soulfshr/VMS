@@ -31,6 +31,7 @@ interface BrandingSettings {
   emailReplyTo: string;
   emailFooter: string;
   timezone: string;
+  logoUrl: string | null;
 }
 
 // Default branding (used if no settings exist)
@@ -41,6 +42,7 @@ const DEFAULT_BRANDING: BrandingSettings = {
   emailReplyTo: REPLY_TO_EMAIL,
   emailFooter: 'RippleVMS Team',
   timezone: DEFAULT_TIMEZONE,
+  logoUrl: null,
 };
 
 // Cache for branding settings per org (refreshes every 5 minutes)
@@ -79,6 +81,7 @@ async function getBranding(orgId?: string): Promise<BrandingSettings> {
       emailReplyTo: settings.emailReplyTo || settings.emailFromAddress || REPLY_TO_EMAIL,
       emailFooter: settings.emailFooter,
       timezone: settings.timezone || DEFAULT_TIMEZONE,
+      logoUrl: settings.logoUrl || null,
     } : DEFAULT_BRANDING;
 
     // Update cache
@@ -173,6 +176,28 @@ function getCalendarButtons(googleCalUrl: string): string {
          style="display: inline-block; background: #4285f4; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: 500; font-size: 14px;">
         📅 Add to Google Calendar
       </a>
+    </div>
+  `;
+}
+
+// Generate email header with organization logo (if available)
+function getEmailHeader(branding?: BrandingSettings): string {
+  const orgName = branding?.orgName || DEFAULT_BRANDING.orgName;
+  const logoUrl = branding?.logoUrl;
+
+  // If org has a custom logo, show it. Otherwise, show text-only header.
+  if (logoUrl) {
+    return `
+      <div style="text-align: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #e5e7eb;">
+        <img src="${logoUrl}" alt="${orgName}" style="max-height: 60px; max-width: 200px; height: auto; width: auto;" />
+      </div>
+    `;
+  }
+
+  // Text-only header when no logo is configured
+  return `
+    <div style="text-align: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #e5e7eb;">
+      <h1 style="margin: 0; color: #0891b2; font-size: 24px; font-weight: 600;">${escapeHtml(orgName)}</h1>
     </div>
   `;
 }
@@ -393,6 +418,7 @@ export async function sendShiftSignupEmail(params: ShiftEmailParams): Promise<vo
       unsubscribeToken,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          ${getEmailHeader(branding)}
           <h2 style="color: #0891b2;">Shift Signup Received</h2>
           <p>Hi ${escapeHtml(volunteerName)},</p>
           <p>Thank you for signing up! Your request has been received and is pending confirmation.</p>
@@ -474,6 +500,7 @@ export async function sendShiftConfirmationEmail(params: ShiftEmailParams): Prom
       calendarContent: calendar.toString(),
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          ${getEmailHeader(branding)}
           <h2 style="color: #0891b2;">Your Shift is Confirmed!</h2>
           <p>Hi ${escapeHtml(volunteerName)},</p>
           <p>Great news! Your shift has been confirmed.</p>
@@ -531,6 +558,7 @@ export async function sendShiftCancellationEmail(params: Omit<ShiftEmailParams, 
       unsubscribeToken,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          ${getEmailHeader(branding)}
           <h2 style="color: #dc2626;">Shift Cancellation Confirmed</h2>
           <p>Hi ${escapeHtml(volunteerName)},</p>
           <p>Your shift signup has been cancelled.</p>
@@ -601,6 +629,7 @@ export async function sendShiftCancelledByCoordinatorEmail(params: ShiftCancelle
       unsubscribeToken,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          ${getEmailHeader(branding)}
           <h2 style="color: #dc2626;">Shift Has Been Cancelled</h2>
           <p>Hi ${escapeHtml(volunteerName)},</p>
           <p>We're sorry to inform you that a shift you were signed up for has been cancelled by a coordinator.</p>
@@ -698,6 +727,7 @@ export async function sendShiftInviteEmail(params: ShiftInviteParams): Promise<v
       calendarContent: calendar.toString(),
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          ${getEmailHeader(branding)}
           <h2 style="color: #0891b2;">You've Been Added to a Shift!</h2>
           <p>Hi ${escapeHtml(volunteerName)},</p>
           <p>${escapeHtml(coordinatorName)} has added you to a volunteer shift. You are confirmed and ready to go!</p>
@@ -1683,6 +1713,7 @@ export async function sendDispatcherSlotConfirmationEmail(params: DispatcherSlot
       calendarContent: calendar.toString(),
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          ${getEmailHeader(branding)}
           <h2 style="color: #2563eb;">Dispatcher Assignment Confirmed!</h2>
           <p>Hi ${escapeHtml(dispatcherName)},</p>
           <p>You've successfully claimed a dispatcher slot. Thank you for stepping up!</p>
@@ -1754,43 +1785,38 @@ export async function sendWelcomeEmail(params: WelcomeEmailParams): Promise<bool
       replyTo: branding.emailReplyTo,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background: #0891b2; color: white; padding: 16px 24px; border-radius: 8px 8px 0 0;">
-            <h2 style="margin: 0;">${branding.orgName}</h2>
+          ${getEmailHeader(branding)}
+          <h2 style="color: #059669; margin-top: 0;">🎉 You're Approved!</h2>
+          <p>Hi ${escapeHtml(name)},</p>
+          <p>Great news! Your volunteer application has been approved. Welcome to the ${branding.orgName} team!</p>
+
+          <div style="background: #ecfdf5; padding: 16px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #059669;">
+            <h4 style="margin-top: 0; color: #065f46;">Your Account Details</h4>
+            <p style="margin: 8px 0;"><strong>Role:</strong> ${escapeHtml(roleDisplay[role] || role)}</p>
+            <p style="margin: 8px 0;"><strong>Email:</strong> ${escapeHtml(email)}</p>
           </div>
 
-          <div style="border: 1px solid #e5e7eb; border-top: none; padding: 24px; border-radius: 0 0 8px 8px;">
-            <h2 style="color: #059669; margin-top: 0;">🎉 You're Approved!</h2>
-            <p>Hi ${escapeHtml(name)},</p>
-            <p>Great news! Your volunteer application has been approved. Welcome to the ${branding.orgName} team!</p>
-
-            <div style="background: #ecfdf5; padding: 16px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #059669;">
-              <h4 style="margin-top: 0; color: #065f46;">Your Account Details</h4>
-              <p style="margin: 8px 0;"><strong>Role:</strong> ${escapeHtml(roleDisplay[role] || role)}</p>
-              <p style="margin: 8px 0;"><strong>Email:</strong> ${escapeHtml(email)}</p>
-            </div>
-
-            <div style="text-align: center; margin: 32px 0;">
-              <a href="${loginUrl}"
-                 style="display: inline-block; background: #0891b2; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
-                Log In to Get Started
-              </a>
-            </div>
-
-            <div style="background: #f0f9ff; padding: 16px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #0891b2;">
-              <h4 style="margin-top: 0; color: #0369a1;">What's Next?</h4>
-              <ul style="margin: 0; padding-left: 20px; color: #374151;">
-                <li style="margin-bottom: 8px;">Log in and complete your profile</li>
-                <li style="margin-bottom: 8px;">Browse available shifts and sign up</li>
-                <li>Check out any required trainings</li>
-              </ul>
-            </div>
-
-            <p style="color: #6b7280; font-size: 14px;">
-              If you have any questions, don't hesitate to reach out to our coordinators.
-            </p>
-
-            ${getEmailFooter(undefined, branding)}
+          <div style="text-align: center; margin: 32px 0;">
+            <a href="${loginUrl}"
+               style="display: inline-block; background: #0891b2; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
+              Log In to Get Started
+            </a>
           </div>
+
+          <div style="background: #f0f9ff; padding: 16px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #0891b2;">
+            <h4 style="margin-top: 0; color: #0369a1;">What's Next?</h4>
+            <ul style="margin: 0; padding-left: 20px; color: #374151;">
+              <li style="margin-bottom: 8px;">Log in and complete your profile</li>
+              <li style="margin-bottom: 8px;">Browse available shifts and sign up</li>
+              <li>Check out any required trainings</li>
+            </ul>
+          </div>
+
+          <p style="color: #6b7280; font-size: 14px;">
+            If you have any questions, don't hesitate to reach out to our coordinators.
+          </p>
+
+          ${getEmailFooter(undefined, branding)}
         </div>
       `,
     });
@@ -1831,30 +1857,25 @@ export async function sendApplicationRejectedEmail(params: ApplicationRejectedEm
       replyTo: branding.emailReplyTo,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background: #6b7280; color: white; padding: 16px 24px; border-radius: 8px 8px 0 0;">
-            <h2 style="margin: 0;">${branding.orgName}</h2>
-          </div>
+          ${getEmailHeader(branding)}
+          <h2 style="color: #374151; margin-top: 0;">Application Update</h2>
+          <p>Hi ${escapeHtml(name)},</p>
+          <p>Thank you for your interest in volunteering with ${branding.orgName}. After careful review, we're unable to approve your application at this time.</p>
 
-          <div style="border: 1px solid #e5e7eb; border-top: none; padding: 24px; border-radius: 0 0 8px 8px;">
-            <h2 style="color: #374151; margin-top: 0;">Application Update</h2>
-            <p>Hi ${escapeHtml(name)},</p>
-            <p>Thank you for your interest in volunteering with ${branding.orgName}. After careful review, we're unable to approve your application at this time.</p>
+          ${rejectionReason ? `
+            <div style="background: #f3f4f6; padding: 16px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #6b7280;">
+              <h4 style="margin-top: 0; color: #374151;">Reason</h4>
+              <p style="margin: 0; color: #4b5563;">${escapeHtml(rejectionReason)}</p>
+            </div>
+          ` : ''}
 
-            ${rejectionReason ? `
-              <div style="background: #f3f4f6; padding: 16px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #6b7280;">
-                <h4 style="margin-top: 0; color: #374151;">Reason</h4>
-                <p style="margin: 0; color: #4b5563;">${escapeHtml(rejectionReason)}</p>
-              </div>
-            ` : ''}
+          <p>If you have questions about this decision or believe there may have been an error, please don't hesitate to contact us.</p>
 
-            <p>If you have questions about this decision or believe there may have been an error, please don't hesitate to contact us.</p>
+          <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+            We appreciate your interest in ${branding.orgName} and wish you all the best.
+          </p>
 
-            <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
-              We appreciate your interest in ${branding.orgName} and wish you all the best.
-            </p>
-
-            ${getEmailFooter(undefined, branding)}
-          </div>
+          ${getEmailFooter(undefined, branding)}
         </div>
       `,
     });
@@ -1955,6 +1976,7 @@ export async function sendCoverageSignupConfirmationEmail(params: CoverageSignup
       calendarContent: calendar.toString(),
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          ${getEmailHeader(branding)}
           <h2 style="color: #0891b2;">Coverage Slot Confirmed!</h2>
           <p>Hi ${escapeHtml(volunteerName)},</p>
           <p>You've successfully signed up for a coverage slot. Thank you for volunteering!</p>
@@ -2036,6 +2058,7 @@ export async function sendCoverageCancellationEmail(params: CoverageSignupEmailP
       calendarMethod: 'CANCEL',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          ${getEmailHeader(branding)}
           <h2 style="color: #dc2626;">Coverage Cancellation Confirmed</h2>
           <p>Hi ${escapeHtml(volunteerName)},</p>
           <p>Your coverage signup has been cancelled.</p>

@@ -26,6 +26,7 @@ export default function Header() {
   const [mounted, setMounted] = useState(false);
   const [orgName, setOrgName] = useState<string | null>(null);
   const [orgSlug, setOrgSlug] = useState<string | null>(null);
+  const [orgLogoUrl, setOrgLogoUrl] = useState<string | null>(null);
 
   // Refs for click-outside detection
   const resourcesRef = useRef<HTMLDivElement>(null);
@@ -57,6 +58,9 @@ export default function Header() {
           }
           if (data.slug) {
             setOrgSlug(data.slug);
+          }
+          if (data.logoUrl) {
+            setOrgLogoUrl(data.logoUrl);
           }
         })
         .catch(err => console.error('Failed to fetch org info:', err));
@@ -190,6 +194,19 @@ export default function Header() {
                 <div className="hidden sm:block">
                   <OrgSwitcher currentOrgName={orgName} />
                 </div>
+                {/* Organization Logo (custom branding) */}
+                {orgLogoUrl && (
+                  <>
+                    <div className="h-10 w-px bg-gray-300 hidden sm:block" />
+                    <div className="hidden sm:block">
+                      <img
+                        src={orgLogoUrl}
+                        alt={orgName ? `${orgName} logo` : 'Organization logo'}
+                        className="h-12 w-auto max-w-[120px] object-contain"
+                      />
+                    </div>
+                  </>
+                )}
               </>
             )}
           </div>
@@ -487,11 +504,22 @@ export default function Header() {
             {user ? (
               <div className="space-y-2">
                 <div className="px-2 py-2 bg-gray-100 rounded-lg mb-4">
-                  <p className="text-sm font-medium text-gray-900">{user.name}</p>
-                  <p className="text-xs text-gray-500">{user.role} {user.zone && `- ${user.zone}`}</p>
-                  {orgName && (
-                    <p className="text-xs text-cyan-600 font-medium mt-1">{orgName}</p>
-                  )}
+                  <div className="flex items-center gap-3">
+                    {orgLogoUrl && (
+                      <img
+                        src={orgLogoUrl}
+                        alt={orgName ? `${orgName} logo` : 'Organization logo'}
+                        className="h-10 w-auto max-w-[80px] object-contain"
+                      />
+                    )}
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{user.name}</p>
+                      <p className="text-xs text-gray-500">{user.role} {user.zone && `- ${user.zone}`}</p>
+                      {orgName && (
+                        <p className="text-xs text-cyan-600 font-medium mt-1">{orgName}</p>
+                      )}
+                    </div>
+                  </div>
                 </div>
                 {/* 1. My Dashboard */}
                 <Link

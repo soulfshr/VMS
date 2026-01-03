@@ -53,6 +53,12 @@ export const dashboardTour: TourDefinition = {
       'bottom'
     ),
     createStep(
+      '[data-tour="org-switcher"]',
+      'Organization Switcher',
+      'If you belong to multiple organizations, use this to switch between them. Your organization\'s logo appears in the header.',
+      'bottom'
+    ),
+    createStep(
       '[data-tour="quick-stats"]',
       'Quick Stats',
       'Track your volunteer activity at a glance: upcoming shifts, hours this month, training progress, and available shifts to sign up for.',
@@ -72,7 +78,7 @@ export const dashboardTour: TourDefinition = {
     ),
     createStep(
       '[data-tour="coverage-overview"]',
-      'Triangle Coverage Summary',
+      'Coverage Summary',
       'Leaders see coverage by role: Zone Leads, Dispatchers, Verifiers, and Coordinators. Progress bars show filled vs needed positions for This Week and Next Week.',
       'bottom'
     ),
@@ -229,24 +235,30 @@ export const volunteersTour: TourDefinition = {
 
 export const trainingsTour: TourDefinition = {
   name: 'trainings',
-  title: 'Trainings Page Tour',
+  title: 'Training Center Tour',
   steps: [
     createStep(
       '[data-tour="training-list"]',
-      'Available Trainings',
-      'Browse all training modules. Required trainings must be completed before you can sign up for certain shifts.',
+      'Training Modules',
+      'Browse self-paced training modules. Each module contains videos, content, and optional quizzes to test your knowledge.',
       'top'
     ),
     createStep(
       '[data-tour="training-progress"]',
       'Your Progress',
-      'See which trainings you\'ve completed and which are still pending.',
+      'Track your completion status across all modules. Required modules must be completed to access certain features or shifts.',
       'bottom'
     ),
     createStep(
-      '[data-tour="training-rsvp"]',
-      'Sign Up for Training',
-      'Click to RSVP for in-person training sessions or access online training materials.',
+      '[data-tour="training-module"]',
+      'Module Content',
+      'Each module includes video lessons, written content, and may require passing a quiz to mark as complete.',
+      'left'
+    ),
+    createStep(
+      '[data-tour="training-quiz"]',
+      'Knowledge Quizzes',
+      'Some modules include quizzes to verify understanding. Pass the quiz to receive credit for completing the module.',
       'left'
     ),
   ],
@@ -258,20 +270,38 @@ export const adminTour: TourDefinition = {
   steps: [
     createStep(
       '[data-tour="admin-settings"]',
-      'System Settings',
-      'Configure global settings like RSVP auto-confirmation mode and organization details.',
+      'Organization Settings',
+      'Configure RSVP auto-confirmation, scheduling mode, and timezone settings for your organization.',
+      'bottom'
+    ),
+    createStep(
+      '[data-tour="branding-settings"]',
+      'Branding & Logo',
+      'Upload your organization\'s logo and customize email branding. Your logo appears in the header and email templates.',
+      'bottom'
+    ),
+    createStep(
+      '[data-tour="feature-flags"]',
+      'Feature Toggles',
+      'Enable or disable features like Training Center, Sightings/Dispatch, and Maps for your organization.',
       'bottom'
     ),
     createStep(
       '[data-tour="zone-management"]',
       'Zone Management',
-      'Add, edit, or remove zones. Assign Signal group links for real-time coordination.',
+      'Add, edit, or remove zones. Assign Signal group links and counties for real-time coordination.',
       'top'
     ),
     createStep(
-      '[data-tour="shift-types"]',
-      'Shift Types',
-      'Configure shift types and their requirements (which qualifications are needed).',
+      '[data-tour="intake-questions"]',
+      'Intake Questions',
+      'Configure custom questions that new volunteer applicants must answer during signup.',
+      'top'
+    ),
+    createStep(
+      '[data-tour="pois"]',
+      'Points of Interest',
+      'Manage POIs that appear on the map - shelters, legal resources, community centers, and more.',
       'top'
     ),
   ],
@@ -407,7 +437,11 @@ export function filterStepsForRole(steps: TourStep[], role: string): TourStep[] 
 
   const adminTargets = [
     '[data-tour="admin-settings"]',
+    '[data-tour="branding-settings"]',
+    '[data-tour="feature-flags"]',
     '[data-tour="zone-management"]',
+    '[data-tour="intake-questions"]',
+    '[data-tour="pois"]',
     '[data-tour="shift-types"]',
   ];
 

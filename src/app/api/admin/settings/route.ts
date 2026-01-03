@@ -107,6 +107,7 @@ export async function PUT(request: Request) {
       emailFromAddress,
       emailFooter,
       emailReplyTo,
+      logoUrl,  // Base64 data URI for org logo
       // Feature flag overrides
       featureTrainings,
       featureSightings,
@@ -221,6 +222,24 @@ export async function PUT(request: Request) {
       }
     }
 
+    // Validate logo URL (base64 data URI)
+    if (logoUrl !== undefined) {
+      // Allow null or empty string to clear the logo
+      if (logoUrl !== null && logoUrl !== '') {
+        if (typeof logoUrl !== 'string') {
+          return NextResponse.json({ error: 'Logo must be a string' }, { status: 400 });
+        }
+        // Check if it's a valid base64 data URI for images
+        if (!logoUrl.startsWith('data:image/')) {
+          return NextResponse.json({ error: 'Logo must be a base64-encoded image (data:image/...)' }, { status: 400 });
+        }
+        // Limit size to ~500KB (base64 is ~33% larger than original)
+        if (logoUrl.length > 700000) {
+          return NextResponse.json({ error: 'Logo image is too large. Please use an image under 500KB.' }, { status: 400 });
+        }
+      }
+    }
+
     // Validate weekly digest send hour
     if (weeklyDigestSendHour !== undefined) {
       const hour = parseInt(weeklyDigestSendHour);
@@ -298,6 +317,8 @@ export async function PUT(request: Request) {
           ...(emailFromAddress !== undefined && { emailFromAddress }),
           ...(emailReplyTo !== undefined && { emailReplyTo }),
           ...(emailFooter !== undefined && { emailFooter }),
+          // Logo - allow null to clear
+          ...(logoUrl !== undefined && { logoUrl: logoUrl || null }),
           // Feature flags can be null (reset to default), true, or false
           ...(featureTrainings !== undefined && { featureTrainings }),
           ...(featureSightings !== undefined && { featureSightings }),

@@ -12,6 +12,7 @@ interface Settings {
   emailFromAddress: string;
   emailReplyTo: string;
   emailFooter: string;
+  logoUrl: string | null;
   // Email digest settings
   weeklyDigestEnabled: boolean;
   weeklyDigestSendHour: number;
@@ -176,6 +177,83 @@ export default function AdminSettingsPage() {
     }
   };
 
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setMessage({ type: 'error', text: 'Please select an image file (PNG, JPG, GIF, etc.)' });
+      return;
+    }
+
+    // Validate file size (500KB max)
+    if (file.size > 500 * 1024) {
+      setMessage({ type: 'error', text: 'Image is too large. Please use an image under 500KB.' });
+      return;
+    }
+
+    setIsSaving(true);
+    setMessage(null);
+
+    try {
+      // Convert to base64
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64 = reader.result as string;
+
+        const res = await fetch('/api/admin/settings', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ logoUrl: base64 }),
+        });
+
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || 'Failed to upload logo');
+        }
+
+        const updated = await res.json();
+        setSettings(updated);
+        setMessage({ type: 'success', text: 'Logo uploaded successfully' });
+        setIsSaving(false);
+      };
+      reader.onerror = () => {
+        setMessage({ type: 'error', text: 'Failed to read image file' });
+        setIsSaving(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('Error uploading logo:', err);
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to upload logo' });
+      setIsSaving(false);
+    }
+  };
+
+  const handleRemoveLogo = async () => {
+    setIsSaving(true);
+    setMessage(null);
+
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ logoUrl: null }),
+      });
+
+      if (!res.ok) throw new Error('Failed to remove logo');
+
+      const updated = await res.json();
+      setSettings(updated);
+      setMessage({ type: 'success', text: 'Logo removed' });
+    } catch (err) {
+      console.error('Error removing logo:', err);
+      setMessage({ type: 'error', text: 'Failed to remove logo' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleUpdateInviteCode = async (value: string) => {
     if (!settings) return;
 
@@ -319,13 +397,62 @@ export default function AdminSettingsPage() {
 
       </div>
 
-      {/* Email Branding Settings */}
+      {/* Branding Settings */}
       <div className="mt-8">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Email Branding</h2>
+        <h2 className="text-xl font-bold text-gray-900 mb-4">Organization Branding</h2>
         <p className="text-gray-600 mb-4">
-          Customize how your organization appears in emails sent by the system.
+          Customize how your organization appears in the app and emails.
         </p>
         <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-200">
+          {/* Organization Logo */}
+          <div className="p-6">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Organization Logo
+                </h3>
+                <p className="text-sm text-gray-500 mt-1 max-w-xl">
+                  Upload a logo to display in the header and emails. Recommended size: 200x200px or smaller. Max file size: 500KB.
+                </p>
+              </div>
+              <div className="ml-6 flex items-center gap-4">
+                {settings?.logoUrl ? (
+                  <div className="flex items-center gap-3">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={settings.logoUrl}
+                      alt="Organization logo"
+                      className="w-16 h-16 object-contain rounded-lg border border-gray-200 bg-gray-50"
+                    />
+                    <button
+                      onClick={handleRemoveLogo}
+                      disabled={isSaving}
+                      className="text-sm text-red-600 hover:text-red-700 disabled:opacity-50"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <div className="w-16 h-16 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400">
+                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                )}
+                <label className={`cursor-pointer px-4 py-2 bg-cyan-600 text-white text-sm font-medium rounded-lg hover:bg-cyan-700 transition-colors ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                  {settings?.logoUrl ? 'Change' : 'Upload'}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoUpload}
+                    disabled={isSaving}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+            </div>
+          </div>
+
           {/* Organization Name */}
           <div className="p-6">
             <div className="flex items-start justify-between">
