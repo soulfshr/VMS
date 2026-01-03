@@ -294,7 +294,7 @@ model OrganizationSettings {
   mapEmbedUrl      String?                             // Google My Maps embed URL
 
   // RSVP Settings
-  autoConfirmRsvp Boolean  @default(false)  // If true, RSVPs are immediately confirmed
+  autoConfirmRsvp Boolean  @default(true)  // If true, RSVPs are immediately confirmed
 
   // Timezone
   timezone        String   @default("America/New_York")

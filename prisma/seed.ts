@@ -49,7 +49,7 @@ async function main() {
   await prisma.organizationSettings.create({
     data: {
       id: 'org-settings-1',
-      autoConfirmRsvp: false,  // Require manual confirmation by default
+      autoConfirmRsvp: true,  // Auto-confirm RSVPs by default
       timezone: 'America/New_York',
     },
   });
