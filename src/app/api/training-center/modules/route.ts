@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { auditCreate, toAuditUser } from '@/lib/audit';
 import { getCurrentOrgId } from '@/lib/org-context';
+import { canManageTrainingCenter, createPermissionContext } from '@/lib/permissions';
 
 // GET /api/training-center/modules - List all modules
 export async function GET(request: NextRequest) {
@@ -17,7 +18,8 @@ export async function GET(request: NextRequest) {
     const published = searchParams.get('published'); // 'true' for learner view
 
     // Non-developers can only see published modules
-    const isDeveloper = user.role === 'DEVELOPER';
+    const ctx = createPermissionContext(user.role);
+    const isDeveloper = canManageTrainingCenter(ctx);
 
     // Multi-tenant: Show modules that are either global (null) or belong to current org
     const orgId = await getCurrentOrgId();
@@ -120,7 +122,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Only DEVELOPER role can access Training Center
-    if (user.role !== 'DEVELOPER') {
+    const ctx = createPermissionContext(user.role);
+    if (!canManageTrainingCenter(ctx)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

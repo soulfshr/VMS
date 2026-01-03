@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { updateShiftExceptionStatus } from '@/lib/shift-exception';
+import { hasElevatedPrivileges, createPermissionContext } from '@/lib/permissions';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -20,7 +21,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Only coordinators and above can check/update exceptions
-    if (!['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
+    const ctx = createPermissionContext(user.role);
+    if (!hasElevatedPrivileges(ctx)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

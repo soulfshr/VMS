@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDbUser } from '@/lib/user';
 import { getUploadPresignedUrl } from '@/lib/s3';
+import { canManageTrainingCenter, createPermissionContext } from '@/lib/permissions';
 
 const ALLOWED_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
 const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB limit
@@ -19,7 +20,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (user.role !== 'DEVELOPER') {
+    const ctx = createPermissionContext(user.role);
+    if (!canManageTrainingCenter(ctx)) {
       console.log('[Training Upload] Forbidden - user role is:', user.role);
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }

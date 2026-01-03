@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { getOrgTimezone, parseDisplayDate } from '@/lib/timezone';
 import { getCurrentOrgId, getOrgIdForCreate } from '@/lib/org-context';
+import { canManageDispatcherAssignments, createPermissionContext } from '@/lib/permissions';
 
 // GET /api/dispatcher-assignments - List dispatcher assignments with filters
 export async function GET(request: NextRequest) {
@@ -86,7 +87,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Check role
-    if (!['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
+    const ctx = createPermissionContext(user.role);
+    if (!canManageDispatcherAssignments(ctx)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

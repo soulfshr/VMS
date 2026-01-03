@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import type { Prisma } from '@/generated/prisma/client';
 import { getCurrentOrgId } from '@/lib/org-context';
+import { canManageOrgSettings, createPermissionContext } from '@/lib/permissions';
 
 /**
  * GET /api/coverage/config
@@ -18,8 +19,8 @@ export async function GET(request: NextRequest) {
     }
 
     // COORDINATOR, ADMINISTRATOR, and DEVELOPER can view configs
-    const allowedRoles = ['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'];
-    if (!allowedRoles.includes(user.role)) {
+    const ctx = createPermissionContext(user.role);
+    if (!canManageOrgSettings(ctx)) {
       return NextResponse.json(
         { error: 'Only coordinators and administrators can view coverage configurations' },
         { status: 403 }
@@ -93,8 +94,8 @@ export async function PATCH(request: NextRequest) {
     }
 
     // COORDINATOR, ADMINISTRATOR, and DEVELOPER can edit configs
-    const allowedRoles = ['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'];
-    if (!allowedRoles.includes(user.role)) {
+    const ctx = createPermissionContext(user.role);
+    if (!canManageOrgSettings(ctx)) {
       return NextResponse.json(
         { error: 'Only coordinators and administrators can manage coverage configurations' },
         { status: 403 }
@@ -202,8 +203,8 @@ export async function POST(request: NextRequest) {
     }
 
     // COORDINATOR, ADMINISTRATOR, and DEVELOPER can create configs
-    const allowedRoles = ['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'];
-    if (!allowedRoles.includes(user.role)) {
+    const ctx = createPermissionContext(user.role);
+    if (!canManageOrgSettings(ctx)) {
       return NextResponse.json(
         { error: 'Only coordinators and administrators can manage coverage configurations' },
         { status: 403 }

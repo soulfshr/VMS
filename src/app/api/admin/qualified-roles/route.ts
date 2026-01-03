@@ -2,12 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { getCurrentOrgId, getOrgIdForCreate } from '@/lib/org-context';
+import { canManageQualifiedRoles, createPermissionContext } from '@/lib/permissions';
 
 // GET /api/admin/qualified-roles - List all qualified roles
 export async function GET() {
   try {
     const user = await getDbUser();
-    if (!user || !['ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const ctx = createPermissionContext(user.role);
+    if (!canManageQualifiedRoles(ctx)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -46,7 +51,11 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const user = await getDbUser();
-    if (!user || !['ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const ctx = createPermissionContext(user.role);
+    if (!canManageQualifiedRoles(ctx)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

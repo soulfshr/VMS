@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { auditCreate, toAuditUser } from '@/lib/audit';
 import { getCurrentOrgId, getOrgIdForCreate } from '@/lib/org-context';
+import { hasElevatedPrivileges, canAccessAdminSettings, createPermissionContext } from '@/lib/permissions';
 
 // GET /api/admin/zones - List all zones (including archived)
 export async function GET() {
@@ -12,7 +13,8 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     // Allow coordinators, dispatchers, and developers to read zones
-    if (!['ADMINISTRATOR', 'COORDINATOR', 'DISPATCHER', 'DEVELOPER'].includes(user.role)) {
+    const ctx = createPermissionContext(user.role);
+    if (!hasElevatedPrivileges(ctx)) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
@@ -51,7 +53,8 @@ export async function POST(request: Request) {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    if (!['ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
+    const ctx = createPermissionContext(user.role);
+    if (!canAccessAdminSettings(ctx)) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 

@@ -4,6 +4,7 @@ import { getDbUser } from '@/lib/user';
 import { CoverageOverrideType } from '@/generated/prisma/client';
 import { parseDateStringToUTC, dateToString } from '@/lib/dates';
 import { getCurrentOrgId, getOrgIdForCreate } from '@/lib/org-context';
+import { canManageOrgSettings, createPermissionContext } from '@/lib/permissions';
 
 /**
  * GET /api/coverage/overrides
@@ -22,8 +23,8 @@ export async function GET(request: NextRequest) {
     }
 
     // COORDINATOR, ADMINISTRATOR, and DEVELOPER can view overrides
-    const allowedRoles = ['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'];
-    if (!allowedRoles.includes(user.role)) {
+    const ctx = createPermissionContext(user.role);
+    if (!canManageOrgSettings(ctx)) {
       return NextResponse.json(
         { error: 'Only coordinators and administrators can view coverage overrides' },
         { status: 403 }
@@ -127,8 +128,8 @@ export async function POST(request: NextRequest) {
     }
 
     // COORDINATOR, ADMINISTRATOR, and DEVELOPER can create overrides
-    const allowedRoles = ['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'];
-    if (!allowedRoles.includes(user.role)) {
+    const ctx = createPermissionContext(user.role);
+    if (!canManageOrgSettings(ctx)) {
       return NextResponse.json(
         { error: 'Only coordinators and administrators can create coverage overrides' },
         { status: 403 }

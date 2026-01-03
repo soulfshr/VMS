@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { getCurrentOrgId } from '@/lib/org-context';
+import { canAccessAdminSettings, createPermissionContext } from '@/lib/permissions';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -11,7 +12,11 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const user = await getDbUser();
-    if (!user || !['ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const ctx = createPermissionContext(user.role);
+    if (!canAccessAdminSettings(ctx)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -60,7 +65,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
     const user = await getDbUser();
-    if (!user || !['ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const ctx = createPermissionContext(user.role);
+    if (!canAccessAdminSettings(ctx)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -153,7 +162,11 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const user = await getDbUser();
-    if (!user || !['ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const ctx = createPermissionContext(user.role);
+    if (!canAccessAdminSettings(ctx)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

@@ -4,6 +4,7 @@ import { getDbUser } from '@/lib/user';
 import { auditUpdate, toAuditUser } from '@/lib/audit';
 import { getCurrentOrgId, getOrgIdForCreate } from '@/lib/org-context';
 import { getGlobalSettings, ENV_FEATURE_DEFAULTS } from '@/lib/global-settings';
+import { canAccessAdminSettings, createPermissionContext } from '@/lib/permissions';
 
 // GET /api/admin/settings - Get organization settings
 export async function GET() {
@@ -32,7 +33,8 @@ export async function GET() {
     }
 
     // Allow ADMINISTRATOR and DEVELOPER roles
-    if (!['ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
+    const ctx = createPermissionContext(user.role);
+    if (!canAccessAdminSettings(ctx)) {
       return NextResponse.json({ error: 'Admin or Developer access required' }, { status: 403 });
     }
 
@@ -84,7 +86,8 @@ export async function PUT(request: Request) {
     }
 
     // Allow ADMINISTRATOR and DEVELOPER roles
-    if (!['ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
+    const ctx = createPermissionContext(user.role);
+    if (!canAccessAdminSettings(ctx)) {
       return NextResponse.json({ error: 'Admin or Developer access required' }, { status: 403 });
     }
 

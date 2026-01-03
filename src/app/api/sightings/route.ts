@@ -5,6 +5,7 @@ import { SightingStatus } from '@/generated/prisma/enums';
 import { sendSightingNotificationToDispatchers } from '@/lib/email';
 import { checkRateLimitAsync, getClientIp, RATE_LIMITS, rateLimitResponse } from '@/lib/rate-limit';
 import { getCurrentOrgId, getOrgIdForCreate } from '@/lib/org-context';
+import { hasElevatedPrivileges, createPermissionContext } from '@/lib/permissions';
 
 // POST /api/sightings - Create a new ICE sighting report
 // - PUBLIC submissions (unauthenticated): All SALUTE fields required, status = NEW
@@ -200,8 +201,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Only dispatchers, coordinators, and admins can view sightings
-    const allowedRoles = ['DISPATCHER', 'COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'];
-    if (!allowedRoles.includes(user.role)) {
+    const ctx = createPermissionContext(user.role);
+    if (!hasElevatedPrivileges(ctx)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

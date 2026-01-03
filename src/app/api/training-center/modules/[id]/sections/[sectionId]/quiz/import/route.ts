@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { QuestionType } from '@/generated/prisma/enums';
+import { canManageTrainingCenter, createPermissionContext } from '@/lib/permissions';
 
 interface ImportedQuestion {
   questionText: string;
@@ -129,7 +130,8 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (user.role !== 'DEVELOPER') {
+    const ctx = createPermissionContext(user.role);
+    if (!canManageTrainingCenter(ctx)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

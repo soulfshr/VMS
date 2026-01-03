@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { getCurrentOrgId } from '@/lib/org-context';
+import { canManageOrgSettings, hasElevatedPrivileges, createPermissionContext } from '@/lib/permissions';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -56,7 +57,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Add computed fields
-    const isCoordinator = ['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role);
+    const ctx = createPermissionContext(user.role);
+    const isCoordinator = hasElevatedPrivileges(ctx);
     const sessionWithCounts = {
       ...session,
       confirmedCount: session.attendees.filter(a => a.status === 'CONFIRMED').length,
@@ -81,7 +83,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (!['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
+    const ctx = createPermissionContext(user.role);
+    if (!canManageOrgSettings(ctx)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -156,7 +159,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (!['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
+    const ctx = createPermissionContext(user.role);
+    if (!canManageOrgSettings(ctx)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

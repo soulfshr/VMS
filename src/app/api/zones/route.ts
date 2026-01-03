@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { getCurrentOrgId, getOrgIdForCreate } from '@/lib/org-context';
+import { isAdmin, createPermissionContext } from '@/lib/permissions';
 
 // GET /api/zones - List all zones (authenticated)
 export async function GET(request: NextRequest) {
@@ -47,7 +48,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (!['ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
+    const ctx = createPermissionContext(user.role);
+    if (!isAdmin(ctx)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

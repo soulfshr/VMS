@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
+import { canEditShift, createPermissionContext } from '@/lib/permissions';
 
 interface ShiftImportData {
   title: string;
@@ -85,7 +86,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Check role
-    if (!['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
+    const ctx = createPermissionContext(user.role);
+    if (!canEditShift(ctx)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

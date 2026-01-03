@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { SightingStatus, SightingDisposition } from '@/generated/prisma/enums';
 import { getCurrentOrgId } from '@/lib/org-context';
+import { hasElevatedPrivileges, createPermissionContext } from '@/lib/permissions';
 
 // GET /api/sightings/[id] - Get a single sighting (requires authentication)
 export async function GET(
@@ -16,8 +17,8 @@ export async function GET(
     }
 
     // Only dispatchers, coordinators, and admins can view sightings
-    const allowedRoles = ['DISPATCHER', 'COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'];
-    if (!allowedRoles.includes(user.role)) {
+    const ctx = createPermissionContext(user.role);
+    if (!hasElevatedPrivileges(ctx)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -63,8 +64,8 @@ export async function PATCH(
     }
 
     // Only dispatchers, coordinators, and admins can update sightings
-    const allowedRoles = ['DISPATCHER', 'COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'];
-    if (!allowedRoles.includes(user.role)) {
+    const ctx = createPermissionContext(user.role);
+    if (!hasElevatedPrivileges(ctx)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

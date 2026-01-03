@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { Role, Qualification } from '@/generated/prisma/enums';
 import { getCurrentOrgId } from '@/lib/org-context';
+import { canSendEmailBlast, createPermissionContext } from '@/lib/permissions';
 
 export interface EmailBlastFilters {
   roles?: string[];
@@ -21,7 +22,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Only coordinators and admins can preview email blasts
-    if (!['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
+    const ctx = createPermissionContext(user.role);
+    if (!canSendEmailBlast(ctx)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

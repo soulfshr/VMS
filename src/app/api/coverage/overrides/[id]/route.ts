@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { CoverageOverrideType, Prisma } from '@/generated/prisma/client';
+import { canManageOrgSettings, createPermissionContext } from '@/lib/permissions';
 
 /**
  * GET /api/coverage/overrides/[id]
@@ -18,8 +19,8 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const allowedRoles = ['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'];
-    if (!allowedRoles.includes(user.role)) {
+    const ctx = createPermissionContext(user.role);
+    if (!canManageOrgSettings(ctx)) {
       return NextResponse.json(
         { error: 'Only coordinators and administrators can view coverage overrides' },
         { status: 403 }
@@ -93,8 +94,8 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const allowedRoles = ['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'];
-    if (!allowedRoles.includes(user.role)) {
+    const ctx = createPermissionContext(user.role);
+    if (!canManageOrgSettings(ctx)) {
       return NextResponse.json(
         { error: 'Only coordinators and administrators can update coverage overrides' },
         { status: 403 }
@@ -233,8 +234,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const allowedRoles = ['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'];
-    if (!allowedRoles.includes(user.role)) {
+    const ctx = createPermissionContext(user.role);
+    if (!canManageOrgSettings(ctx)) {
       return NextResponse.json(
         { error: 'Only coordinators and administrators can delete coverage overrides' },
         { status: 403 }

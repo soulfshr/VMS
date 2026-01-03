@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { getCurrentOrgId } from '@/lib/org-context';
+import { canManageDispatcherAssignments, createPermissionContext } from '@/lib/permissions';
 
 // GET /api/dispatcher-assignments/[id] - Get single assignment
 export async function GET(
@@ -56,7 +57,8 @@ export async function PUT(
     }
 
     // Check role
-    if (!['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
+    const ctx = createPermissionContext(user.role);
+    if (!canManageDispatcherAssignments(ctx)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -156,7 +158,8 @@ export async function DELETE(
 
     // Allow if user owns the assignment OR is coordinator/admin
     const isOwner = assignment.userId === user.id;
-    const isAdmin = ['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role);
+    const ctx = createPermissionContext(user.role);
+    const isAdmin = canManageDispatcherAssignments(ctx);
 
     if (!isOwner && !isAdmin) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
+import { canManageOrgSettings, createPermissionContext } from '@/lib/permissions';
 
 // GET /api/regional-lead-assignments/[id] - Get single assignment
 export async function GET(
@@ -52,7 +53,8 @@ export async function PUT(
     }
 
     // Check role - only Coordinators/Admins can update
-    if (!['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
+    const ctx = createPermissionContext(user.role);
+    if (!canManageOrgSettings(ctx)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -115,7 +117,8 @@ export async function DELETE(
 
     // Check if user can delete: either own assignment or Coordinator/Admin
     const isOwnAssignment = assignment.userId === user.id;
-    const isPrivilegedUser = ['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role);
+    const ctx = createPermissionContext(user.role);
+    const isPrivilegedUser = canManageOrgSettings(ctx);
 
     if (!isOwnAssignment && !isPrivilegedUser) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });

@@ -257,3 +257,11 @@ export function hasElevatedPrivileges(ctx: PermissionContext): boolean {
 export function isAdmin(ctx: PermissionContext): boolean {
   return ['ADMINISTRATOR', 'DEVELOPER'].includes(ctx.systemRole);
 }
+
+/**
+ * Check if user can manage training center (create/edit modules, quizzes, etc.)
+ * Currently restricted to DEVELOPER role only
+ */
+export function canManageTrainingCenter(ctx: PermissionContext): boolean {
+  return ctx.systemRole === 'DEVELOPER';
+}

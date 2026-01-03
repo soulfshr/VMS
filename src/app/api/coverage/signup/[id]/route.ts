@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { sendCoverageCancellationEmail } from '@/lib/email';
 import { dateToString, isBeforeToday } from '@/lib/dates';
+import { canManageOrgSettings, createPermissionContext } from '@/lib/permissions';
 
 /**
  * DELETE /api/coverage/signup/[id]
@@ -39,11 +40,8 @@ export async function DELETE(
 
     // Check ownership (users can only cancel their own signups)
     // Admins, coordinators, and developers can cancel any signup
-    const canCancel =
-      signup.userId === user.id ||
-      user.role === 'ADMINISTRATOR' ||
-      user.role === 'COORDINATOR' ||
-      user.role === 'DEVELOPER';
+    const ctx = createPermissionContext(user.role);
+    const canCancel = signup.userId === user.id || canManageOrgSettings(ctx);
 
     if (!canCancel) {
       return NextResponse.json(

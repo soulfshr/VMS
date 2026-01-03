@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { getCurrentOrgId, getOrgIdForCreate } from '@/lib/org-context';
+import { canAccessAdminSettings, createPermissionContext } from '@/lib/permissions';
 
 // GET /api/admin/shift-types - List all shift types (including archived)
 export async function GET() {
@@ -10,7 +11,8 @@ export async function GET() {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    if (!['ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
+    const ctx = createPermissionContext(user.role);
+    if (!canAccessAdminSettings(ctx)) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
@@ -59,7 +61,8 @@ export async function POST(request: Request) {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    if (!['ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
+    const ctx = createPermissionContext(user.role);
+    if (!canAccessAdminSettings(ctx)) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { getCurrentOrgId } from '@/lib/org-context';
+import { hasElevatedPrivileges, createPermissionContext } from '@/lib/permissions';
 
 // GET /api/coordinator/qualified-roles - List all qualified roles (read-only)
 // Accessible by COORDINATOR, DISPATCHER, and ADMINISTRATOR
@@ -13,7 +14,8 @@ export async function GET() {
     }
 
     // Allow coordinator, dispatcher, and admin
-    if (!['COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
+    const ctx = createPermissionContext(user.role);
+    if (!hasElevatedPrivileges(ctx)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

@@ -4,6 +4,7 @@ import { getDbUser } from '@/lib/user';
 import { getOrgIdForCreate } from '@/lib/org-context';
 import { parseScheduleDocx, scheduleToShifts } from '@/lib/schedule-parser';
 import { getOrgTimezone, parseDisplayDate, parseDisplayDateTime } from '@/lib/timezone';
+import { canCreateShift, createPermissionContext } from '@/lib/permissions';
 
 interface ImportOptions {
   zoneId: string;
@@ -22,7 +23,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Check role
-    if (!['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
+    const ctx = createPermissionContext(user.role);
+    if (!canCreateShift(ctx)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

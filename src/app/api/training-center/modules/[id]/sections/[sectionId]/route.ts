@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
+import { canManageTrainingCenter, createPermissionContext } from '@/lib/permissions';
 
 interface RouteParams {
   params: Promise<{ id: string; sectionId: string }>;
@@ -14,7 +15,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (user.role !== 'DEVELOPER') {
+    const ctx = createPermissionContext(user.role);
+    if (!canManageTrainingCenter(ctx)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -60,7 +62,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (user.role !== 'DEVELOPER') {
+    const ctx = createPermissionContext(user.role);
+    if (!canManageTrainingCenter(ctx)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -124,7 +127,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (user.role !== 'DEVELOPER') {
+    const ctx = createPermissionContext(user.role);
+    if (!canManageTrainingCenter(ctx)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

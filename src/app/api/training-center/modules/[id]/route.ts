@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { auditUpdate, auditDelete, toAuditUser } from '@/lib/audit';
 import { getCurrentOrgId } from '@/lib/org-context';
+import { canManageTrainingCenter, createPermissionContext } from '@/lib/permissions';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -17,7 +18,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     const { id } = await params;
-    const isDeveloper = user.role === 'DEVELOPER';
+    const ctx = createPermissionContext(user.role);
+    const isDeveloper = canManageTrainingCenter(ctx);
 
     // Multi-tenant: Show modules that are either global (null) or belong to current org
     const orgId = await getCurrentOrgId();
@@ -142,7 +144,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
 
     // Only DEVELOPER role can access Training Center
-    if (user.role !== 'DEVELOPER') {
+    const ctx = createPermissionContext(user.role);
+    if (!canManageTrainingCenter(ctx)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -277,7 +280,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Only DEVELOPER role can access Training Center
-    if (user.role !== 'DEVELOPER') {
+    const ctx = createPermissionContext(user.role);
+    if (!canManageTrainingCenter(ctx)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

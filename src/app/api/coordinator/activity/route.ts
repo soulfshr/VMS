@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { getCurrentOrgId } from '@/lib/org-context';
+import { hasElevatedPrivileges, createPermissionContext } from '@/lib/permissions';
 
 /**
  * GET /api/coordinator/activity
@@ -17,8 +18,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Allow coordinators and above
-    const allowedRoles = ['COORDINATOR', 'ADMINISTRATOR', 'DISPATCHER', 'DEVELOPER'];
-    if (!allowedRoles.includes(user.role)) {
+    const ctx = createPermissionContext(user.role);
+    if (!hasElevatedPrivileges(ctx)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

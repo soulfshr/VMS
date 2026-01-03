@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { getCurrentOrgId, getOrgIdForCreate } from '@/lib/org-context';
+import { canManageOrgSettings, createPermissionContext } from '@/lib/permissions';
 
 // GET /api/trainings - List training sessions with filters
 export async function GET(request: NextRequest) {
@@ -99,7 +100,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Only coordinators and admins can create training sessions
-    if (!['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
+    const ctx = createPermissionContext(user.role);
+    if (!canManageOrgSettings(ctx)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { getCurrentOrgId } from '@/lib/org-context';
+import { canSendEmailBlast, createPermissionContext } from '@/lib/permissions';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -15,7 +16,8 @@ export async function GET(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (!['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
+    const ctx = createPermissionContext(user.role);
+    if (!canSendEmailBlast(ctx)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

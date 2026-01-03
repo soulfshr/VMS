@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
+import { canManageOrgSettings, createPermissionContext } from '@/lib/permissions';
 
 // POST /api/trainings/cancel - Cancel multiple training sessions (Coordinator/Admin only)
 export async function POST(request: NextRequest) {
@@ -11,7 +12,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Only coordinators and admins can cancel trainings
-    if (!['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
+    const ctx = createPermissionContext(user.role);
+    if (!canManageOrgSettings(ctx)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

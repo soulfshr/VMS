@@ -2,12 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { getCurrentOrgId, getOrgIdForCreate } from '@/lib/org-context';
+import { hasElevatedPrivileges, createPermissionContext } from '@/lib/permissions';
 
 // GET /api/admin/pois - List all POIs with filters
 export async function GET(request: NextRequest) {
   try {
     const user = await getDbUser();
-    if (!user || !['ADMINISTRATOR', 'COORDINATOR', 'DISPATCHER'].includes(user.role)) {
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const ctx = createPermissionContext(user.role);
+    if (!hasElevatedPrivileges(ctx)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -129,7 +134,11 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const user = await getDbUser();
-    if (!user || !['ADMINISTRATOR', 'COORDINATOR', 'DISPATCHER'].includes(user.role)) {
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const ctx = createPermissionContext(user.role);
+    if (!hasElevatedPrivileges(ctx)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

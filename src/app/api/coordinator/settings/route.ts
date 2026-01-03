@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { getCurrentOrgId, getOrgIdForCreate } from '@/lib/org-context';
+import { canManageOrgSettings, createPermissionContext } from '@/lib/permissions';
 
 // GET /api/coordinator/settings - Get scheduling settings
 export async function GET() {
@@ -10,8 +11,8 @@ export async function GET() {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    // Allow COORDINATOR, ADMINISTRATOR, and DEVELOPER roles
-    if (!['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
+    const ctx = createPermissionContext(user.role);
+    if (!canManageOrgSettings(ctx)) {
       return NextResponse.json({ error: 'Coordinator access required' }, { status: 403 });
     }
 
@@ -51,8 +52,8 @@ export async function PUT(request: Request) {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    // Allow COORDINATOR, ADMINISTRATOR, and DEVELOPER roles
-    if (!['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
+    const ctx = createPermissionContext(user.role);
+    if (!canManageOrgSettings(ctx)) {
       return NextResponse.json({ error: 'Coordinator access required' }, { status: 403 });
     }
 

@@ -5,6 +5,7 @@ import { ShiftType, ShiftStatus } from '@/generated/prisma/enums';
 import { auditUpdate, toAuditUser } from '@/lib/audit';
 import { getCurrentOrgId } from '@/lib/org-context';
 import { hasLeadQualification, hasDispatcherQualification } from '@/lib/role-utils';
+import { canEditShift, createPermissionContext } from '@/lib/permissions';
 
 // GET /api/shifts/[id] - Get single shift with volunteers
 export async function GET(
@@ -168,7 +169,8 @@ export async function PUT(
     }
 
     // Only coordinators and admins can update shifts
-    if (!['COORDINATOR', 'ADMINISTRATOR', 'DEVELOPER'].includes(user.role)) {
+    const ctx = createPermissionContext(user.role);
+    if (!canEditShift(ctx)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
