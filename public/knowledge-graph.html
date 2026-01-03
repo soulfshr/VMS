@@ -97,11 +97,11 @@
             <h1>RippleVMS Knowledge Graph</h1>
             <p>Interactive visualization of system architecture and component relationships</p>
             <div class="stats-grid">
-                <div class="stat-card"><div class="stat-value">142</div><div class="stat-label">TypeScript Files</div></div>
-                <div class="stat-card"><div class="stat-value">24</div><div class="stat-label">Database Models</div></div>
-                <div class="stat-card"><div class="stat-value">48+</div><div class="stat-label">API Routes</div></div>
-                <div class="stat-card"><div class="stat-value">25</div><div class="stat-label">Components</div></div>
-                <div class="stat-card"><div class="stat-value">4</div><div class="stat-label">User Roles</div></div>
+                <div class="stat-card"><div class="stat-value">180+</div><div class="stat-label">TypeScript Files</div></div>
+                <div class="stat-card"><div class="stat-value">38</div><div class="stat-label">Database Models</div></div>
+                <div class="stat-card"><div class="stat-value">125+</div><div class="stat-label">API Routes</div></div>
+                <div class="stat-card"><div class="stat-value">78</div><div class="stat-label">Pages</div></div>
+                <div class="stat-card"><div class="stat-value">5</div><div class="stat-label">User Roles</div></div>
             </div>
         </header>
 
@@ -121,14 +121,17 @@
 flowchart TB
     subgraph Client["Client Layer"]
         Dashboard
+        Coverage["Coverage Grid"]
         Schedule
         Shifts
         Sightings
         Volunteers
         Coordinator
         Admin
-        Resources["Resources (Map, Training, Docs)"]
+        TrainingCenter["Training Center"]
+        Resources["Resources (Map, Docs)"]
         Settings
+        Developer["Developer Console"]
     end
     subgraph Components["Component Layer"]
         Layout["Layout Components"]
@@ -143,7 +146,10 @@ flowchart TB
         SightingsAPI["/api/sightings"]
         VolunteersAPI["/api/volunteers"]
         ScheduleAPI["/api/schedule"]
+        CoverageAPI["/api/coverage"]
+        TrainingCenterAPI["/api/training-center"]
         AdminAPI["/api/admin"]
+        DeveloperAPI["/api/developer"]
         ProfileAPI["/api/profile"]
     end
     subgraph Services["Service Layer"]
@@ -170,12 +176,14 @@ flowchart TB
             <div class="card">
                 <h2>Tech Stack</h2>
                 <div class="tech-grid">
-                    <div class="tech-card"><div class="tech-name">Next.js 15.5.9</div><div class="tech-desc">App Router, Server Components</div></div>
-                    <div class="tech-card"><div class="tech-name">Prisma ORM</div><div class="tech-desc">Database access & migrations</div></div>
+                    <div class="tech-card"><div class="tech-name">Next.js 16</div><div class="tech-desc">App Router, Server Components</div></div>
+                    <div class="tech-card"><div class="tech-name">Prisma ORM</div><div class="tech-desc">Database access with Neon adapter</div></div>
                     <div class="tech-card"><div class="tech-name">Neon PostgreSQL</div><div class="tech-desc">Serverless database</div></div>
                     <div class="tech-card"><div class="tech-name">TypeScript</div><div class="tech-desc">Type-safe JavaScript</div></div>
                     <div class="tech-card"><div class="tech-name">Tailwind CSS</div><div class="tech-desc">Utility-first styling</div></div>
-                    <div class="tech-card"><div class="tech-name">AWS SES + S3</div><div class="tech-desc">Email & media storage</div></div>
+                    <div class="tech-card"><div class="tech-name">Resend</div><div class="tech-desc">Email notifications</div></div>
+                    <div class="tech-card"><div class="tech-name">Google Maps</div><div class="tech-desc">Zone boundaries & POIs</div></div>
+                    <div class="tech-card"><div class="tech-name">Vercel</div><div class="tech-desc">Hosting & deployment</div></div>
                 </div>
             </div>
         </section>
@@ -304,6 +312,125 @@ erDiagram
                     <div class="tech-card" style="border-left: 4px solid var(--accent-green);"><div class="tech-name">Disposition</div><div class="tech-desc">CONFIRMED | UNVERIFIED | FALSE_ALARM</div></div>
                 </div>
             </div>
+            <div class="card">
+                <h2>Training Center (Self-Paced)</h2>
+                <pre class="mermaid">
+erDiagram
+    TrainingModule ||--o{ ModuleSection : contains
+    TrainingModule ||--o{ ModuleEnrollment : has
+    ModuleSection ||--o| ModuleQuiz : has
+    ModuleQuiz ||--o{ QuizQuestion : contains
+    QuizQuestion ||--o{ QuizOption : has
+    ModuleEnrollment ||--o{ SectionProgress : tracks
+    ModuleEnrollment ||--o{ QuizAttempt : has
+    TrainingModule {
+        string id PK
+        string title
+        string description
+        enum status
+        int estimatedMinutes
+        string qualifiedRoleId FK
+    }
+    ModuleSection {
+        string id PK
+        enum type
+        string title
+        string content
+        int sortOrder
+    }
+    ModuleQuiz {
+        string id PK
+        int passingScore
+        int maxAttempts
+        boolean shuffleQuestions
+    }
+    ModuleEnrollment {
+        string id PK
+        string oderId FK
+        enum status
+        datetime completedAt
+    }
+                </pre>
+                <div class="tech-grid" style="margin-top: 1rem;">
+                    <div class="tech-card" style="border-left: 4px solid var(--accent-cyan);"><div class="tech-name">Section Types</div><div class="tech-desc">VIDEO | TEXT | QUIZ | RESOURCE | ATTESTATION</div></div>
+                    <div class="tech-card" style="border-left: 4px solid var(--accent-purple);"><div class="tech-name">Enrollment Status</div><div class="tech-desc">NOT_STARTED → IN_PROGRESS → COMPLETED</div></div>
+                </div>
+            </div>
+            <div class="card">
+                <h2>Coverage Grid (2-Hour Slots)</h2>
+                <pre class="mermaid">
+erDiagram
+    Zone ||--o{ CoverageConfig : has
+    CoverageConfig ||--o{ CoverageSignup : schedules
+    User ||--o{ CoverageSignup : signs_up
+    QualifiedRole ||--o{ CoverageSignup : requires
+    Zone ||--o{ CoverageOverride : has
+    CoverageConfig {
+        string id PK
+        string zoneId FK
+        enum dayOfWeek
+        int startHour
+        int endHour
+        int minVolunteers
+    }
+    CoverageSignup {
+        string id PK
+        string userId FK
+        string qualifiedRoleId FK
+        datetime date
+        int startHour
+        int endHour
+    }
+    CoverageOverride {
+        string id PK
+        datetime date
+        enum type
+        string notes
+    }
+                </pre>
+                <div class="tech-grid" style="margin-top: 1rem;">
+                    <div class="tech-card" style="border-left: 4px solid var(--accent-cyan);"><div class="tech-name">Time Blocks</div><div class="tech-desc">Fixed 2-hour slots: 6am-8am, 8am-10am, etc.</div></div>
+                    <div class="tech-card" style="border-left: 4px solid var(--accent-orange);"><div class="tech-name">Override Types</div><div class="tech-desc">CLOSURE | ADJUST_REQUIREMENTS</div></div>
+                </div>
+            </div>
+            <div class="card">
+                <h2>Multi-Tenant Organization</h2>
+                <pre class="mermaid">
+erDiagram
+    Organization ||--o{ OrganizationMember : has
+    Organization ||--|| OrganizationSettings : configures
+    User ||--o{ OrganizationMember : belongs_to
+    Organization ||--o{ Zone : owns
+    Organization ||--o{ Shift : owns
+    Organization {
+        string id PK
+        string name
+        string slug UK
+        string logo
+        boolean isActive
+    }
+    OrganizationMember {
+        string id PK
+        string userId FK
+        string orgId FK
+        enum role
+        enum status
+        json intakeAnswers
+    }
+    OrganizationSettings {
+        string id PK
+        string orgId FK
+        string emailFromName
+        enum dispatcherMode
+        enum volunteerMode
+        boolean autoConfirmRsvp
+    }
+                </pre>
+                <div class="tech-grid" style="margin-top: 1rem;">
+                    <div class="tech-card" style="border-left: 4px solid var(--accent-blue);"><div class="tech-name">Multi-Org</div><div class="tech-desc">Users can belong to multiple organizations</div></div>
+                    <div class="tech-card" style="border-left: 4px solid var(--accent-purple);"><div class="tech-name">Subdomain Routing</div><div class="tech-desc">[org-slug].ripple-vms.com</div></div>
+                </div>
+            </div>
         </section>
 
         <!-- API Routes Section -->
@@ -364,6 +491,30 @@ erDiagram
                     <div class="api-route"><span class="api-method get">GET</span><span class="api-path">/api/admin/shift-types</span><span class="api-desc">Shift type config</span></div>
                     <div class="api-route"><span class="api-method get">GET</span><span class="api-path">/api/admin/qualified-roles</span><span class="api-desc">Qualified roles</span></div>
                     <div class="api-route"><span class="api-method post">POST</span><span class="api-path">/api/admin/email-blast</span><span class="api-desc">Send email blast</span></div>
+                    <div class="api-route"><span class="api-method get">GET</span><span class="api-path">/api/admin/intake-questions</span><span class="api-desc">Intake question config</span></div>
+                    <div class="api-route"><span class="api-method get">GET</span><span class="api-path">/api/admin/pois</span><span class="api-desc">Points of interest</span></div>
+                    <div class="api-route"><span class="api-method get">GET</span><span class="api-path">/api/admin/poi-categories</span><span class="api-desc">POI categories</span></div>
+                    <div class="api-route"><span class="api-method get">GET</span><span class="api-path">/api/admin/settings</span><span class="api-desc">Organization settings</span></div>
+                </div>
+                <div class="api-group">
+                    <div class="api-group-title">Training Center</div>
+                    <div class="api-route"><span class="api-method get">GET</span><span class="api-path">/api/training-center/modules</span><span class="api-desc">List training modules</span></div>
+                    <div class="api-route"><span class="api-method post">POST</span><span class="api-path">/api/training-center/modules</span><span class="api-desc">Create module</span></div>
+                    <div class="api-route"><span class="api-method get">GET</span><span class="api-path">/api/training-center/modules/[id]</span><span class="api-desc">Get module details</span></div>
+                    <div class="api-route"><span class="api-method post">POST</span><span class="api-path">/api/training-center/modules/[id]/sections</span><span class="api-desc">Add section</span></div>
+                    <div class="api-route"><span class="api-method post">POST</span><span class="api-path">/api/training-center/quiz/[quizId]/attempt</span><span class="api-desc">Submit quiz attempt</span></div>
+                    <div class="api-route"><span class="api-method get">GET</span><span class="api-path">/api/training-center/progress/[moduleId]</span><span class="api-desc">Get user progress</span></div>
+                    <div class="api-route"><span class="api-method get">GET</span><span class="api-path">/api/training-center/stats</span><span class="api-desc">Module statistics</span></div>
+                </div>
+                <div class="api-group">
+                    <div class="api-group-title">Developer</div>
+                    <div class="api-route"><span class="api-method get">GET</span><span class="api-path">/api/developer/stats</span><span class="api-desc">System statistics</span></div>
+                    <div class="api-route"><span class="api-method get">GET</span><span class="api-path">/api/developer/health</span><span class="api-desc">Health check</span></div>
+                    <div class="api-route"><span class="api-method get">GET</span><span class="api-path">/api/developer/logs</span><span class="api-desc">System logs</span></div>
+                    <div class="api-route"><span class="api-method get">GET</span><span class="api-path">/api/developer/audit</span><span class="api-desc">Audit trail</span></div>
+                    <div class="api-route"><span class="api-method get">GET</span><span class="api-path">/api/developer/organizations</span><span class="api-desc">Organization management</span></div>
+                    <div class="api-route"><span class="api-method get">GET</span><span class="api-path">/api/developer/global-settings</span><span class="api-desc">Global feature flags</span></div>
+                    <div class="api-route"><span class="api-method get">GET</span><span class="api-path">/api/developer/default-intake-questions</span><span class="api-desc">Default question templates</span></div>
                 </div>
             </div>
         </section>
@@ -504,6 +655,56 @@ graph TD
                     <div class="tech-card" style="border-left: 4px solid var(--accent-orange);"><div class="tech-name">Visual Display</div><div class="tech-desc">Orange "Backup Disp." row in schedule view</div></div>
                 </div>
             </div>
+            <div class="card">
+                <h2>Training Center Module Workflow</h2>
+                <p style="margin-bottom: 1rem; color: var(--text-secondary);">Self-paced learning with progress tracking and qualification grants</p>
+<pre class="mermaid">
+graph TD
+A["Admin Creates Module"]
+A --> B["Add Sections"]
+B --> C["VIDEO / TEXT / QUIZ / RESOURCE / ATTESTATION"]
+C --> D["Configure Quiz"]
+D --> E["Set Passing Score & Attempts"]
+E --> F["Link to Qualified Role"]
+F --> G["Publish Module"]
+G --> H["Volunteer Starts Module"]
+H --> I["Complete Each Section"]
+I --> J{"All Sections Complete?"}
+J -->|No| I
+J -->|Yes| K["Module COMPLETED"]
+K --> L["Auto-grant Qualified Role"]
+L --> M["Volunteer Eligible for Shifts"]
+</pre>
+                <div class="tech-grid" style="margin-top: 1rem;">
+                    <div class="tech-card" style="border-left: 4px solid var(--accent-cyan);"><div class="tech-name">Progress Tracking</div><div class="tech-desc">Video watch %, quiz scores, section completion</div></div>
+                    <div class="tech-card" style="border-left: 4px solid var(--accent-green);"><div class="tech-name">Auto-Qualification</div><div class="tech-desc">Completing module grants linked QualifiedRole</div></div>
+                </div>
+            </div>
+            <div class="card">
+                <h2>Coverage Grid Signup Workflow</h2>
+                <p style="margin-bottom: 1rem; color: var(--text-secondary);">2-hour time slot scheduling for granular coverage</p>
+<pre class="mermaid">
+graph TD
+A["Volunteer Views Coverage Grid"]
+A --> B["Select Zone & Date"]
+B --> C["View Available Time Slots"]
+C --> D{"Has Required Qualification?"}
+D -->|No| E["Cannot Sign Up"]
+D -->|Yes| F["Click Time Slot"]
+F --> G["Select Role"]
+G --> H["Confirm Signup"]
+H --> I["CoverageSignup Created"]
+I --> J["Appears on Schedule"]
+subgraph Override["Admin Override Options"]
+    K["Set CLOSURE"]
+    L["ADJUST_REQUIREMENTS"]
+end
+</pre>
+                <div class="tech-grid" style="margin-top: 1rem;">
+                    <div class="tech-card" style="border-left: 4px solid var(--accent-cyan);"><div class="tech-name">Fixed Slots</div><div class="tech-desc">6am-8am, 8am-10am, 10am-12pm, etc.</div></div>
+                    <div class="tech-card" style="border-left: 4px solid var(--accent-purple);"><div class="tech-name">Role-Based</div><div class="tech-desc">Verifier, Zone Lead, Dispatcher, Coordinator</div></div>
+                </div>
+            </div>
         </section>
 
         <!-- Permissions Section -->
@@ -511,7 +712,8 @@ graph TD
             <div class="card">
                 <h2>User Roles</h2>
                 <div class="tech-grid">
-                    <div class="tech-card" style="border-left: 4px solid var(--accent-purple);"><div class="tech-name role-admin">ADMINISTRATOR</div><div class="tech-desc">Full system access, user management, settings</div></div>
+                    <div class="tech-card" style="border-left: 4px solid var(--accent-red);"><div class="tech-name" style="color: var(--accent-red);">DEVELOPER</div><div class="tech-desc">Platform-wide admin, multi-org management, system monitoring</div></div>
+                    <div class="tech-card" style="border-left: 4px solid var(--accent-purple);"><div class="tech-name role-admin">ADMINISTRATOR</div><div class="tech-desc">Full org system access, user management, settings</div></div>
                     <div class="tech-card" style="border-left: 4px solid var(--accent-blue);"><div class="tech-name role-coord">COORDINATOR</div><div class="tech-desc">Manage shifts, volunteers, trainings</div></div>
                     <div class="tech-card" style="border-left: 4px solid var(--accent-orange);"><div class="tech-name role-dispatch">DISPATCHER</div><div class="tech-desc">Full coordinator access plus real-time coordination</div></div>
                     <div class="tech-card" style="border-left: 4px solid var(--accent-green);"><div class="tech-name role-volunteer">VOLUNTEER</div><div class="tech-desc">View/RSVP shifts, update profile</div></div>
@@ -566,8 +768,8 @@ graph TD
         </section>
 
         <footer>
-            <p>RippleVMS Knowledge Graph | Updated December 19, 2025</p>
-            <p style="font-size: 0.85rem; margin-top: 0.5rem;">Next.js 15.5.9 | Prisma ORM | PostgreSQL | TypeScript | Tailwind CSS</p>
+            <p>RippleVMS Knowledge Graph | Updated January 3, 2026</p>
+            <p style="font-size: 0.85rem; margin-top: 0.5rem;">Next.js 16 | Prisma ORM | PostgreSQL (Neon) | TypeScript | Tailwind CSS | Resend</p>
         </footer>
     </div>
 

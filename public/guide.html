@@ -62,11 +62,14 @@
             <li><a href="#sightings" class="toc-link block text-gray-600 hover:text-cyan-600">ICE Sightings</a></li>
             <li><a href="#shifts" class="toc-link block text-gray-600 hover:text-cyan-600">Shifts</a></li>
             <li><a href="#trainings" class="toc-link block text-gray-600 hover:text-cyan-600">Trainings</a></li>
+            <li><a href="#training-center" class="toc-link block text-gray-600 hover:text-cyan-600">Training Center</a></li>
+            <li><a href="#coverage" class="toc-link block text-gray-600 hover:text-cyan-600">Coverage Grid</a></li>
             <li><a href="#schedule" class="toc-link block text-gray-600 hover:text-cyan-600">Schedule</a></li>
             <li><a href="#volunteers" class="toc-link block text-gray-600 hover:text-cyan-600">Volunteers</a></li>
             <li><a href="#profile" class="toc-link block text-gray-600 hover:text-cyan-600">Profile</a></li>
             <li><a href="#admin" class="toc-link block text-gray-600 hover:text-cyan-600">Admin Panel</a></li>
             <li><a href="#qualified-roles" class="toc-link block text-gray-600 hover:text-cyan-600 ml-4 text-xs">- Qualified Roles</a></li>
+            <li><a href="#map" class="toc-link block text-gray-600 hover:text-cyan-600">Map & POIs</a></li>
             <li><a href="#email-blasts" class="toc-link block text-gray-600 hover:text-cyan-600">Email Blasts</a></li>
             <li><a href="#workflows" class="toc-link block text-gray-600 hover:text-cyan-600">Common Workflows</a></li>
             <li><a href="#tips" class="toc-link block text-gray-600 hover:text-cyan-600">Tips & Best Practices</a></li>
@@ -91,7 +94,7 @@
               </div>
               <div>
                 <h3 class="font-semibold text-gray-900">Shift Scheduling</h3>
-                <p class="text-sm text-gray-600">Manage shifts across 13 zones in Durham, Orange, and Wake counties</p>
+                <p class="text-sm text-gray-600">Manage shifts across multiple zones and counties in your organization</p>
               </div>
             </div>
             <div class="flex items-start gap-3 p-4 bg-blue-50 rounded-lg">
@@ -237,6 +240,10 @@
             </div>
             <div class="flex items-center gap-2 text-sm">
               <span class="w-2 h-2 bg-cyan-500 rounded-full"></span>
+              <strong>Coverage</strong> - 2-hour time slot signup grid (if enabled)
+            </div>
+            <div class="flex items-center gap-2 text-sm">
+              <span class="w-2 h-2 bg-cyan-500 rounded-full"></span>
               <strong>Schedule</strong> - Weekly schedule view with dispatcher/zone lead assignments
             </div>
             <div class="flex items-center gap-2 text-sm">
@@ -277,7 +284,8 @@
           <p class="text-gray-600 mb-4">The Resources dropdown provides quick access to maps, training, and documentation:</p>
           <ul class="list-disc list-inside text-gray-600 space-y-1">
             <li><strong>Map</strong> - Interactive coverage map with zones and POIs</li>
-            <li><strong>Training</strong> - View training sessions and modules</li>
+            <li><strong>Training</strong> - View scheduled training sessions</li>
+            <li><strong>Training Center</strong> - Self-paced learning modules with videos, quizzes, and certifications</li>
             <li><strong>Dispatch Process</strong> - Step-by-step dispatch process documentation</li>
             <li><strong>User Guide</strong> - This comprehensive system guide</li>
             <li><strong>Dispatch Training</strong> - Google Slides presentation for dispatcher training</li>
@@ -689,6 +697,168 @@
           </ol>
         </section>
 
+        <!-- Training Center -->
+        <section id="training-center" class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
+          <h2 class="text-2xl font-bold text-gray-900 mb-6">Training Center</h2>
+          <p class="text-gray-600 mb-6">The Training Center provides self-paced learning modules that volunteers can complete on their own schedule. Unlike scheduled training sessions, these modules are available 24/7 and include interactive content like videos, quizzes, and resources.</p>
+
+          <h3 class="text-lg font-semibold text-gray-900 mb-3">Accessing Training Center</h3>
+          <p class="text-gray-600 mb-4">Navigate to <strong>Resources &rarr; Training Center</strong> from the main navigation to access your learning dashboard.</p>
+          <ul class="list-disc list-inside text-gray-600 mb-6 space-y-1">
+            <li><strong>Dashboard</strong> - View your progress, completed modules, and available courses</li>
+            <li><strong>Module Library</strong> - Browse all available training modules</li>
+            <li><strong>My Learning</strong> - Track in-progress and completed courses</li>
+          </ul>
+
+          <h3 class="text-lg font-semibold text-gray-900 mb-3">Module Types</h3>
+          <p class="text-gray-600 mb-4">Training modules contain different types of content sections:</p>
+          <div class="overflow-x-auto mb-6">
+            <table class="w-full text-sm">
+              <thead>
+                <tr>
+                  <th>Section Type</th>
+                  <th>Description</th>
+                  <th>Completion Requirement</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Video</strong></td>
+                  <td>Instructional video content</td>
+                  <td>Watch to specified percentage (typically 90%)</td>
+                </tr>
+                <tr>
+                  <td><strong>Text</strong></td>
+                  <td>Written content and instructions</td>
+                  <td>Read and mark as complete</td>
+                </tr>
+                <tr>
+                  <td><strong>Quiz</strong></td>
+                  <td>Knowledge assessment with multiple choice questions</td>
+                  <td>Pass with minimum score (typically 80%)</td>
+                </tr>
+                <tr>
+                  <td><strong>Resource</strong></td>
+                  <td>Downloadable files and reference materials</td>
+                  <td>Download or mark as reviewed</td>
+                </tr>
+                <tr>
+                  <td><strong>Attestation</strong></td>
+                  <td>Acknowledgment or agreement checkboxes</td>
+                  <td>Check all required boxes</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3 class="text-lg font-semibold text-gray-900 mb-3">Completing a Module</h3>
+          <ol class="list-decimal list-inside text-gray-600 mb-6 space-y-2">
+            <li>Click on a module from the library to view its details</li>
+            <li>Click <strong>"Start Module"</strong> or <strong>"Continue"</strong> to begin learning</li>
+            <li>Complete each section in order - progress is saved automatically</li>
+            <li>For quizzes, answer questions and submit - you may have multiple attempts</li>
+            <li>When all sections are complete, the module is marked as finished</li>
+          </ol>
+
+          <div class="p-4 bg-green-50 border border-green-200 rounded-lg mb-6">
+            <h4 class="font-semibold text-green-900 mb-2">Earning Qualified Roles</h4>
+            <p class="text-sm text-gray-600">Some modules grant Qualified Roles upon completion. For example, completing the "Zone Lead Certification" module may automatically grant you the Zone Lead qualification, enabling you to sign up for Zone Lead positions.</p>
+          </div>
+
+          <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h4 class="font-semibold text-blue-900 mb-2">Managing Modules (Coordinators/Admins)</h4>
+            <ul class="list-disc list-inside text-sm text-gray-600 space-y-1">
+              <li>Create modules with multiple section types</li>
+              <li>Upload video content and resources</li>
+              <li>Configure quizzes with passing scores and attempt limits</li>
+              <li>Link modules to Qualified Roles for auto-granting</li>
+              <li>Track volunteer completion progress</li>
+            </ul>
+          </div>
+        </section>
+
+        <!-- Coverage Grid -->
+        <section id="coverage" class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
+          <h2 class="text-2xl font-bold text-gray-900 mb-6">Coverage Grid</h2>
+          <p class="text-gray-600 mb-6">The Coverage Grid is an alternative scheduling system that divides each day into fixed 2-hour time blocks. Volunteers sign up for specific time slots rather than full shifts, providing more granular coverage management.</p>
+
+          <div class="p-4 bg-cyan-50 border border-cyan-200 rounded-lg mb-6">
+            <h4 class="font-semibold text-cyan-900 mb-2">When is Coverage Grid Used?</h4>
+            <p class="text-sm text-gray-600">Your organization may use either the traditional Shift system or the Coverage Grid (or both). Check with your coordinator to understand which scheduling model your organization uses.</p>
+          </div>
+
+          <h3 class="text-lg font-semibold text-gray-900 mb-3">Time Blocks</h3>
+          <p class="text-gray-600 mb-4">Coverage is organized into fixed 2-hour time blocks throughout the day:</p>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
+            <div class="p-2 bg-gray-100 rounded text-center text-sm">6am - 8am</div>
+            <div class="p-2 bg-gray-100 rounded text-center text-sm">8am - 10am</div>
+            <div class="p-2 bg-gray-100 rounded text-center text-sm">10am - 12pm</div>
+            <div class="p-2 bg-gray-100 rounded text-center text-sm">12pm - 2pm</div>
+            <div class="p-2 bg-gray-100 rounded text-center text-sm">2pm - 4pm</div>
+            <div class="p-2 bg-gray-100 rounded text-center text-sm">4pm - 6pm</div>
+            <div class="p-2 bg-gray-100 rounded text-center text-sm">6pm - 8pm</div>
+            <div class="p-2 bg-gray-100 rounded text-center text-sm">8pm - 10pm</div>
+          </div>
+
+          <h3 class="text-lg font-semibold text-gray-900 mb-3">Signing Up for Coverage</h3>
+          <ol class="list-decimal list-inside text-gray-600 mb-6 space-y-2">
+            <li>Navigate to <strong>Coverage</strong> from the main navigation</li>
+            <li>View the weekly grid showing all zones and time blocks</li>
+            <li>Click on an empty slot to sign up for that time block</li>
+            <li>Select your role (Verifier, Zone Lead, Dispatcher) if multiple are available</li>
+            <li>Confirm your signup</li>
+          </ol>
+
+          <h3 class="text-lg font-semibold text-gray-900 mb-3">Coverage Roles</h3>
+          <div class="overflow-x-auto mb-6">
+            <table class="w-full text-sm">
+              <thead>
+                <tr>
+                  <th>Role</th>
+                  <th>Scope</th>
+                  <th>Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">Verifier</span></td>
+                  <td>Zone</td>
+                  <td>Field volunteers who verify sighting reports</td>
+                </tr>
+                <tr>
+                  <td><span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">Zone Lead</span></td>
+                  <td>Zone</td>
+                  <td>Leads field operations in a specific zone</td>
+                </tr>
+                <tr>
+                  <td><span class="px-2 py-1 bg-amber-100 text-amber-800 rounded text-xs font-medium">Dispatcher</span></td>
+                  <td>Zone/County</td>
+                  <td>Coordinates communications for a zone or county</td>
+                </tr>
+                <tr>
+                  <td><span class="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-medium">Regional Coordinator</span></td>
+                  <td>All Zones</td>
+                  <td>Regional coordinators covering all zones for a time block</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="p-4 bg-orange-50 border border-orange-200 rounded-lg mb-6">
+            <h4 class="font-semibold text-orange-900 mb-2">Coverage Overrides</h4>
+            <p class="text-sm text-gray-600 mb-2">Coordinators can set overrides for specific days:</p>
+            <ul class="list-disc list-inside text-sm text-gray-600 space-y-1">
+              <li><strong>Closure</strong> - No coverage needed (holidays, closures)</li>
+              <li><strong>Adjusted Requirements</strong> - Modified volunteer minimums for special events</li>
+            </ul>
+          </div>
+
+          <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h4 class="font-semibold text-blue-900 mb-2">Configuring Coverage (Coordinators/Admins)</h4>
+            <p class="text-sm text-gray-600">Navigate to <strong>Coordinator &rarr; Coverage Config</strong> to configure coverage templates, set requirements per zone, and manage overrides.</p>
+          </div>
+        </section>
+
         <!-- Schedule -->
         <section id="schedule" class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
           <h2 class="text-2xl font-bold text-gray-900 mb-6">Schedule</h2>
@@ -857,8 +1027,20 @@ John Doe,john@example.com,(919) 555-0100,VOLUNTEER,"Durham 1;Durham 2",English</
               <p class="text-sm text-gray-600">Manage customizable positions volunteers can fill during shifts (e.g., Verifier, Zone Lead, Dispatcher).</p>
             </div>
             <div class="p-4 border border-gray-200 rounded-lg">
+              <h3 class="font-semibold text-gray-900 mb-2">Intake Questions</h3>
+              <p class="text-sm text-gray-600">Configure signup form questions for new volunteers (text, textarea, select). Seed from default templates.</p>
+            </div>
+            <div class="p-4 border border-gray-200 rounded-lg">
+              <h3 class="font-semibold text-gray-900 mb-2">Points of Interest</h3>
+              <p class="text-sm text-gray-600">Manage POIs like detention centers, safe spaces, and schools. Categorize with colors and icons.</p>
+            </div>
+            <div class="p-4 border border-gray-200 rounded-lg">
+              <h3 class="font-semibold text-gray-900 mb-2">POI Categories</h3>
+              <p class="text-sm text-gray-600">Configure POI categories with custom colors and icons for map display.</p>
+            </div>
+            <div class="p-4 border border-gray-200 rounded-lg">
               <h3 class="font-semibold text-gray-900 mb-2">System Settings</h3>
-              <p class="text-sm text-gray-600">Configure organization name, email notifications, defaults, and dispatcher scheduling mode.</p>
+              <p class="text-sm text-gray-600">Configure organization name, email notifications, defaults, dispatcher scheduling mode, and feature flags.</p>
             </div>
           </div>
 
@@ -934,6 +1116,72 @@ John Doe,john@example.com,(919) 555-0100,VOLUNTEER,"Durham 1;Durham 2",English</
               <li><strong>Color</strong> - Each zone can have a unique color for easy identification</li>
               <li><strong>Map Status</strong> - Shows "Drawn" or "Not set" indicating if boundaries exist</li>
               <li><strong>Coverage Map</strong> - Zone boundaries appear on the public landing page map</li>
+            </ul>
+          </div>
+        </section>
+
+        <!-- Map & POIs -->
+        <section id="map" class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
+          <h2 class="text-2xl font-bold text-gray-900 mb-6">Map & Points of Interest</h2>
+          <p class="text-gray-600 mb-6">The interactive map provides visualization of your organization's coverage area, zones, and Points of Interest (POIs).</p>
+
+          <h3 class="text-lg font-semibold text-gray-900 mb-3">Accessing the Map</h3>
+          <p class="text-gray-600 mb-4">Navigate to <strong>Resources &rarr; Map</strong> from the main navigation to view the interactive map.</p>
+          <ul class="list-disc list-inside text-gray-600 mb-6 space-y-1">
+            <li><strong>Zone Boundaries</strong> - Colored polygons showing each zone's coverage area</li>
+            <li><strong>Points of Interest</strong> - Markers for important locations (detention centers, safe spaces, schools)</li>
+            <li><strong>Filter Controls</strong> - Toggle visibility of different POI categories</li>
+          </ul>
+
+          <h3 class="text-lg font-semibold text-gray-900 mb-3">Points of Interest Categories</h3>
+          <p class="text-gray-600 mb-4">POIs are organized into categories configured by administrators:</p>
+          <div class="overflow-x-auto mb-6">
+            <table class="w-full text-sm">
+              <thead>
+                <tr>
+                  <th>Category</th>
+                  <th>Description</th>
+                  <th>Example Locations</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="px-2 py-1 bg-red-100 text-red-800 rounded text-xs font-medium">ICE/Enforcement</span></td>
+                  <td>Immigration enforcement locations</td>
+                  <td>Detention centers, ICE offices, known checkpoints</td>
+                </tr>
+                <tr>
+                  <td><span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">Safe Spaces</span></td>
+                  <td>Community safe zones</td>
+                  <td>Churches, community centers, legal aid offices</td>
+                </tr>
+                <tr>
+                  <td><span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">Schools</span></td>
+                  <td>Educational institutions</td>
+                  <td>Schools, universities, daycare centers</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg mb-6">
+            <h4 class="font-semibold text-blue-900 mb-2">Managing POIs (Coordinators/Admins)</h4>
+            <ol class="list-decimal list-inside text-sm text-gray-600 space-y-1">
+              <li>Navigate to <strong>Admin &rarr; Points of Interest</strong></li>
+              <li>Click <strong>"Add POI"</strong> to create a new location</li>
+              <li>Enter name, description, address, and select category</li>
+              <li>Set coordinates by clicking on the map or entering manually</li>
+              <li>Save the POI - it will appear on the map for all users</li>
+            </ol>
+          </div>
+
+          <div class="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+            <h4 class="font-semibold text-purple-900 mb-2">Managing POI Categories (Admins)</h4>
+            <p class="text-sm text-gray-600">Navigate to <strong>Admin &rarr; POI Categories</strong> to create custom categories with:</p>
+            <ul class="list-disc list-inside text-sm text-gray-600 mt-2 space-y-1">
+              <li>Custom name and description</li>
+              <li>Category color for map markers</li>
+              <li>Icon selection for visual identification</li>
             </ul>
           </div>
         </section>
@@ -1277,7 +1525,7 @@ John Doe,john@example.com,(919) 555-0100,VOLUNTEER,"Durham 1;Durham 2",English</
         <!-- Footer -->
         <footer class="text-center text-gray-500 text-sm mt-8 pb-8">
           <p>RippleVMS - Volunteer Management System</p>
-          <p>Last updated: December 14, 2025</p>
+          <p>Last updated: January 3, 2026</p>
         </footer>
       </main>
     </div>
