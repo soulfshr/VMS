@@ -10,6 +10,7 @@ const adminNavItems = [
   { href: '/admin/settings', label: 'General Settings', icon: '⚙️', adminOnly: true },
   { href: '/admin/features', label: 'Features', icon: '🚩', adminOnly: true },
   { href: '/admin/email-blast', label: 'Email Blast', icon: '📧', adminOnly: false },
+  { href: '/admin/email-templates', label: 'Email Templates', icon: '📨', adminOnly: true },
   { href: '/admin/qualified-roles', label: 'Qualified Roles', icon: '🏅', adminOnly: true },
   { href: '/admin/shift-types', label: 'Shift Types', icon: '📋', adminOnly: true },
   { href: '/admin/training-types', label: 'Training Types', icon: '🎓', adminOnly: true },

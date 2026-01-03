@@ -147,6 +147,7 @@ model Organization {
   dispatcherAssignments    DispatcherAssignment[]
   regionalLeadAssignments  RegionalLeadAssignment[]
   emailBlasts         EmailBlast[]
+  emailTemplates      EmailTemplateConfig[]
 
   // NEW: Organization members (multi-org support)
   members             OrganizationMember[]
@@ -459,6 +460,42 @@ model ShiftTypeQualifiedRoleRequirement {
 }
 
 // ============================================
+// EMAIL TEMPLATE CONFIG (Org-specific email templates)
+// ============================================
+
+model EmailTemplateConfig {
+  id              String   @id @default(cuid())
+  name            String                        // "Schedule Announcement", "Custom Welcome"
+  slug            String                        // "SCHEDULE_ANNOUNCEMENT", "CUSTOM_WELCOME"
+  description     String?                       // Description shown in template picker
+  icon            String   @default("📧")       // Emoji icon for UI
+
+  // Template content
+  defaultSubject  String                        // Default subject line
+  defaultContent  String   @db.Text             // Default body content
+
+  // Template type for special handling
+  // SYSTEM templates have special rendering (e.g., {{zoneShifts}} placeholder)
+  // CUSTOM templates are user-defined with no special placeholders
+  templateType    String   @default("CUSTOM")   // "SYSTEM" or "CUSTOM"
+
+  // Status and ordering
+  isActive        Boolean  @default(true)
+  sortOrder       Int      @default(0)
+
+  // Multi-tenant: Organization scope
+  organizationId  String?
+  organization    Organization? @relation(fields: [organizationId], references: [id])
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Unique slug per org
+  @@unique([organizationId, slug])
+  @@index([organizationId])
+}
+
+// ============================================
 // USER & AUTHENTICATION
 // ============================================
 
@@ -562,10 +599,38 @@ model User {
   // Invite request reviews
   reviewedInviteRequests   InviteRequest[] @relation("InviteRequestReviewedBy")
 
+  // Mobile device tokens for push notifications
+  deviceTokens             DeviceToken[]
+
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
   @@index([organizationId])
+}
+
+// ============================================
+// MOBILE DEVICE TOKENS (Push Notifications)
+// ============================================
+
+model DeviceToken {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  token       String   @unique   // APNs device token (iOS) or FCM token (Android)
+  platform    String             // "ios" or "android"
+  isActive    Boolean  @default(true)
+
+  // Device metadata (optional)
+  deviceModel String?            // e.g., "iPhone 15 Pro"
+  osVersion   String?            // e.g., "iOS 17.2"
+  appVersion  String?            // e.g., "1.0.0"
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([platform, isActive])
 }
 
 // ============================================

@@ -3,7 +3,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 
-type EmailTemplate = 'GENERAL_NEWSLETTER' | 'SCHEDULE_ANNOUNCEMENT' | 'TRAINING_ANNOUNCEMENT' | 'FREEFORM';
+interface EmailTemplateConfig {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  icon: string;
+  defaultSubject: string;
+  defaultContent: string;
+  templateType: 'SYSTEM' | 'CUSTOM';
+  isActive: boolean;
+  sortOrder: number;
+}
 
 interface Zone {
   id: string;
@@ -42,43 +53,14 @@ interface PreviewResult {
   sample: Array<{ id: string; name: string; email: string; role: string }>;
 }
 
-const TEMPLATES: Record<EmailTemplate, { name: string; description: string; icon: string; defaultSubject: string; defaultContent: string }> = {
-  GENERAL_NEWSLETTER: {
-    name: 'General Newsletter',
-    description: 'General updates and announcements',
-    icon: '📰',
-    defaultSubject: 'Volunteer Update',
-    defaultContent: '',
-  },
-  SCHEDULE_ANNOUNCEMENT: {
-    name: 'Schedule Announcement',
-    description: 'New shifts available with zone-specific listings',
-    icon: '📅',
-    defaultSubject: 'New Volunteer Shifts Available',
-    defaultContent: 'Our neighbors are counting on us. Whether you can spare a few hours or a full day, your presence strengthens our community\'s safety net. Please consider signing up for an open shift below.',
-  },
-  TRAINING_ANNOUNCEMENT: {
-    name: 'Training Announcement',
-    description: 'Upcoming trainings with session listings',
-    icon: '🎓',
-    defaultSubject: 'Upcoming Training Sessions',
-    defaultContent: 'We have new training opportunities coming up! Building your skills helps strengthen our community\'s rapid response network. Check out the upcoming sessions below and RSVP to secure your spot.',
-  },
-  FREEFORM: {
-    name: 'Freeform',
-    description: 'Custom subject and body',
-    icon: '✏️',
-    defaultSubject: '',
-    defaultContent: '',
-  },
-};
-
 const ROLES = ['VOLUNTEER', 'COORDINATOR', 'DISPATCHER', 'ADMINISTRATOR'];
 const LANGUAGES = ['English', 'Spanish', 'French', 'Portuguese', 'Arabic', 'Chinese', 'Korean', 'Vietnamese'];
 
 export default function CoordinatorEmailBlastPage() {
   const [step, setStep] = useState(1);
-  const [template, setTemplate] = useState<EmailTemplate | null>(null);
+  const [templates, setTemplates] = useState<EmailTemplateConfig[]>([]);
+  const [isLoadingTemplates, setIsLoadingTemplates] = useState(true);
+  const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplateConfig | null>(null);
   const [filters, setFilters] = useState<Filters>({
     roles: [],
     qualifications: [],
@@ -117,8 +99,19 @@ export default function CoordinatorEmailBlastPage() {
   const [selectedShiftIds, setSelectedShiftIds] = useState<Set<string>>(new Set());
   const [isLoadingShifts, setIsLoadingShifts] = useState(false);
 
-  // Fetch zones, qualified roles, and history on mount
+  // Fetch templates, zones, qualified roles, and history on mount
   useEffect(() => {
+    // Fetch email templates
+    fetch('/api/admin/email-templates')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setTemplates(data.filter((t: EmailTemplateConfig) => t.isActive));
+        }
+      })
+      .catch(console.error)
+      .finally(() => setIsLoadingTemplates(false));
+
     fetch('/api/admin/zones')
       .then(res => res.json())
       .then(data => {
@@ -151,7 +144,7 @@ export default function CoordinatorEmailBlastPage() {
 
   // Fetch shifts when date range changes and template is SCHEDULE_ANNOUNCEMENT
   useEffect(() => {
-    if (template !== 'SCHEDULE_ANNOUNCEMENT') return;
+    if (selectedTemplate?.slug !== 'SCHEDULE_ANNOUNCEMENT') return;
 
     const fetchShifts = async () => {
       setIsLoadingShifts(true);
@@ -196,7 +189,7 @@ export default function CoordinatorEmailBlastPage() {
     };
 
     fetchShifts();
-  }, [template, dateRange.startDate, dateRange.endDate]);
+  }, [selectedTemplate?.slug, dateRange.startDate, dateRange.endDate]);
 
   // Fetch preview when filters change
   const fetchPreview = useCallback(async () => {
@@ -221,10 +214,10 @@ export default function CoordinatorEmailBlastPage() {
     }
   }, [step, fetchPreview]);
 
-  const handleTemplateSelect = (t: EmailTemplate) => {
-    setTemplate(t);
-    setSubject(TEMPLATES[t].defaultSubject);
-    setContent(TEMPLATES[t].defaultContent);
+  const handleTemplateSelect = (t: EmailTemplateConfig) => {
+    setSelectedTemplate(t);
+    setSubject(t.defaultSubject);
+    setContent(t.defaultContent);
     setStep(2);
   };
 
@@ -264,21 +257,28 @@ export default function CoordinatorEmailBlastPage() {
   };
 
   const handleSend = async () => {
-    if (!template || !subject || !content) return;
+    if (!selectedTemplate || !subject || !content) return;
 
     setIsSending(true);
     try {
       const payload: {
-        template: EmailTemplate;
+        template: string;
+        templateId: string;
         subject: string;
         content: string;
         filters: Filters;
         dateRange?: { startDate: string; endDate: string };
         selectedShiftIds?: string[];
-      } = { template, subject, content, filters };
+      } = {
+        template: selectedTemplate.slug,
+        templateId: selectedTemplate.id,
+        subject,
+        content,
+        filters,
+      };
 
       // Include dateRange and selected shifts for SCHEDULE_ANNOUNCEMENT
-      if (template === 'SCHEDULE_ANNOUNCEMENT') {
+      if (selectedTemplate.slug === 'SCHEDULE_ANNOUNCEMENT') {
         payload.dateRange = dateRange;
         payload.selectedShiftIds = Array.from(selectedShiftIds);
       }
@@ -303,7 +303,7 @@ export default function CoordinatorEmailBlastPage() {
 
   const resetForm = () => {
     setStep(1);
-    setTemplate(null);
+    setSelectedTemplate(null);
     setFilters({ roles: [], qualifications: [], zones: [], languages: [], hasQualifications: 'any' });
     setSubject('');
     setContent('');
@@ -392,23 +392,46 @@ export default function CoordinatorEmailBlastPage() {
 
       {/* Step 1: Template Selection */}
       {step === 1 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {(Object.keys(TEMPLATES) as EmailTemplate[]).map(t => (
-            <button
-              key={t}
-              onClick={() => handleTemplateSelect(t)}
-              className={`text-left p-6 bg-white rounded-xl border-2 transition-all ${
-                template === t
-                  ? 'border-cyan-500 bg-cyan-50'
-                  : 'border-gray-200 hover:border-cyan-300'
-              }`}
-            >
-              <div className="text-3xl mb-2">{TEMPLATES[t].icon}</div>
-              <h3 className="font-semibold text-gray-900">{TEMPLATES[t].name}</h3>
-              <p className="text-sm text-gray-500 mt-1">{TEMPLATES[t].description}</p>
-            </button>
-          ))}
-        </div>
+        <>
+          {isLoadingTemplates ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="animate-spin w-8 h-8 border-4 border-cyan-600 border-t-transparent rounded-full" />
+            </div>
+          ) : templates.length === 0 ? (
+            <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+              <div className="text-4xl mb-4">📧</div>
+              <h3 className="font-semibold text-gray-900 mb-2">No Email Templates Found</h3>
+              <p className="text-gray-500 mb-4">
+                Contact an administrator to set up email templates.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {templates.map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => handleTemplateSelect(t)}
+                  className={`text-left p-6 bg-white rounded-xl border-2 transition-all ${
+                    selectedTemplate?.id === t.id
+                      ? 'border-cyan-500 bg-cyan-50'
+                      : 'border-gray-200 hover:border-cyan-300'
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="text-3xl mb-2">{t.icon}</div>
+                    {t.templateType === 'SYSTEM' && (
+                      <span className="px-2 py-0.5 text-xs bg-purple-100 text-purple-700 rounded-full">
+                        System
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="font-semibold text-gray-900">{t.name}</h3>
+                  <p className="text-sm text-gray-500 mt-1">{t.description}</p>
+                </button>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {/* Step 2: Recipient Filters */}
@@ -623,7 +646,7 @@ export default function CoordinatorEmailBlastPage() {
                 rows={10}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                 placeholder={
-                  template === 'FREEFORM'
+                  selectedTemplate?.slug === 'FREEFORM'
                     ? 'Write your message here...'
                     : 'Enter the main content of your message. This will be inserted into the template.'
                 }
@@ -635,7 +658,7 @@ export default function CoordinatorEmailBlastPage() {
           </div>
 
           {/* Date Range and Shift Selection for Schedule Announcement */}
-          {template === 'SCHEDULE_ANNOUNCEMENT' && (
+          {selectedTemplate?.slug === 'SCHEDULE_ANNOUNCEMENT' && (
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
               <h4 className="font-medium text-blue-900 mb-3 flex items-center gap-2">
                 <span className="text-xl">📅</span>
@@ -743,7 +766,7 @@ export default function CoordinatorEmailBlastPage() {
             </button>
             <button
               onClick={() => setStep(4)}
-              disabled={!subject || !content || (template === 'SCHEDULE_ANNOUNCEMENT' && selectedShiftIds.size === 0)}
+              disabled={!subject || !content || (selectedTemplate?.slug === 'SCHEDULE_ANNOUNCEMENT' && selectedShiftIds.size === 0)}
               className="px-6 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Preview →
@@ -761,7 +784,7 @@ export default function CoordinatorEmailBlastPage() {
             <div className="space-y-4">
               <div>
                 <p className="text-sm text-gray-500">Template</p>
-                <p className="font-medium">{template && TEMPLATES[template].name}</p>
+                <p className="font-medium">{selectedTemplate?.name}</p>
               </div>
 
               <div>
@@ -774,7 +797,7 @@ export default function CoordinatorEmailBlastPage() {
                 <p className="font-medium">{preview?.count ?? 0} volunteers</p>
               </div>
 
-              {template === 'SCHEDULE_ANNOUNCEMENT' && (
+              {selectedTemplate?.slug === 'SCHEDULE_ANNOUNCEMENT' && (
                 <div>
                   <p className="text-sm text-gray-500">Shifts Included</p>
                   <p className="font-medium">{selectedShiftIds.size} shifts selected</p>
