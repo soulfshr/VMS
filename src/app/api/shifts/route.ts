@@ -3,7 +3,7 @@ import { prisma } from '@/lib/db';
 import { getDbUser } from '@/lib/user';
 import { auditCreate, toAuditUser } from '@/lib/audit';
 import { getCurrentOrgId, getOrgIdForCreate } from '@/lib/org-context';
-import { isLeadRole, isDispatcherRole, hasLeadQualification, hasDispatcherQualification } from '@/lib/role-utils';
+import { isLeadRole, isDispatcherRole, hasLeadQualification, hasDispatcherQualification, hasVerifierQualification } from '@/lib/role-utils';
 import { hasElevatedPrivileges, canCreateShift, createPermissionContext } from '@/lib/permissions';
 
 // GET /api/shifts - List shifts with filters
@@ -43,13 +43,16 @@ export async function GET(request: NextRequest) {
       },
       include: { qualifiedRole: { select: { slug: true } } },
     });
-    // Check for lead-type qualifications using pattern-based detection
+    // Check for qualifications that allow browsing all shifts
+    // Lead roles (Zone Lead, Shift Lead), Dispatcher roles, and Verifier/Escort roles can all browse
     const qualificationSlugs = userQualifications.map(uq => uq.qualifiedRole.slug);
-    const userHasLeadQualification = hasLeadQualification(qualificationSlugs) || hasDispatcherQualification(qualificationSlugs);
+    const userCanBrowseShifts = hasLeadQualification(qualificationSlugs) ||
+                                hasDispatcherQualification(qualificationSlugs) ||
+                                hasVerifierQualification(qualificationSlugs);
 
-    // If SIMPLE mode and user is not admin and doesn't have lead qualifications,
+    // If SIMPLE mode and user is not admin and doesn't have browse-able qualifications,
     // only show shifts they're already signed up for
-    const simpleRestricted = schedulingMode === 'SIMPLE' && !isAdmin && !userHasLeadQualification;
+    const simpleRestricted = schedulingMode === 'SIMPLE' && !isAdmin && !userCanBrowseShifts;
 
     // Strict org scoping - only show shifts for the current org
     const orgFilter = orgId

@@ -231,9 +231,9 @@ export default function Header() {
                 >
                   My Dashboard
                 </Link>
-                {/* 2. Schedule - Coverage Grid or Shifts based on org setting */}
+                {/* 2. Schedule - Coverage Grid or Shifts Calendar based on org setting */}
                 <Link
-                  href={primarySchedulingModel === 'SHIFTS' ? '/shifts' : '/coverage'}
+                  href={primarySchedulingModel === 'SHIFTS' ? '/shifts/calendar' : '/coverage'}
                   className={`text-sm font-medium transition-colors ${
                     (primarySchedulingModel === 'SHIFTS' ? pathname.startsWith('/shifts') : pathname.startsWith('/coverage'))
                       ? 'text-cyan-700'
@@ -529,9 +529,9 @@ export default function Header() {
                 >
                   My Dashboard
                 </Link>
-                {/* 2. Schedule - Coverage Grid or Shifts based on org setting */}
+                {/* 2. Schedule - Coverage Grid or Shifts Calendar based on org setting */}
                 <Link
-                  href={primarySchedulingModel === 'SHIFTS' ? '/shifts' : '/coverage'}
+                  href={primarySchedulingModel === 'SHIFTS' ? '/shifts/calendar' : '/coverage'}
                   className="block px-2 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
                   onClick={() => setIsMenuOpen(false)}
                 >

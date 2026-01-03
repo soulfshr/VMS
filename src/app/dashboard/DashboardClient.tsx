@@ -293,7 +293,13 @@ export default function DashboardClient() {
               />
 
               {/* Next Shift Widget */}
-              {nextShift && <NextShiftWidget nextShift={nextShift} />}
+              {nextShift && (
+                <NextShiftWidget
+                  nextShift={nextShift}
+                  onCancelRsvp={handleCancelShiftRsvp}
+                  cancellingShiftId={cancellingShiftId}
+                />
+              )}
 
               {/* Upcoming Schedule (exclude next shift if shown above) */}
               <UpcomingScheduleTable
